@@ -19,9 +19,16 @@ export const metadata: Metadata = {
  * compiled Bootstrap 5 — importing Bootstrap from npm as well would load two
  * conflicting copies of the same framework.
  *
- * Dark mode is resolved here, on the server, from a cookie, so the class is on
- * `<html>` in the very first byte of HTML and a dark-mode user never sees the
- * white flash a client-side toggle would cause.
+ * Dark mode is resolved here, on the server, from a cookie, so the class is in
+ * the very first byte of HTML and a dark-mode user never sees the white flash a
+ * client-side toggle would cause.
+ *
+ * The class goes on `<body>`, not `<html>`. Hope UI expresses dark mode as
+ * `.dark { color: …; background-color: #151824 !important }` — a rule that
+ * paints the element carrying the class — while `hope-ui.min.css` sets
+ * `--bs-body-bg: #F5F6FA` on `body` itself. Putting the class on `<html>` left
+ * `body` painting its own light background over the dark one, which is how
+ * dark cards ended up floating on a light page.
  */
 export default async function RootLayout({
   children,
@@ -30,7 +37,7 @@ export default async function RootLayout({
   const theme = parseTheme(store.get(THEME_COOKIE_NAME)?.value);
 
   return (
-    <html lang="th" className={theme === 'dark' ? 'dark' : undefined}>
+    <html lang="th">
       <head>
         <link rel="icon" href="/hope-ui/assets/images/favicon.ico" />
         {/* Stylesheet order matches Hope UI's own demo page. */}
@@ -39,7 +46,7 @@ export default async function RootLayout({
         <link rel="stylesheet" href="/hope-ui/assets/css/dark.min.css" />
         <link rel="stylesheet" href="/hope-ui/assets/css/hope-ui.min.css" />
       </head>
-      <body>
+      <body className={theme === 'dark' ? 'dark' : undefined}>
         {children}
         {/*
           Bootstrap's JS, vendored from Hope UI, for dropdowns, collapses,

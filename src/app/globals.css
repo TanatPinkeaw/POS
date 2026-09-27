@@ -12,13 +12,22 @@
     'Segoe UI', sans-serif;
 }
 
-body,
-.form-control,
-.form-select,
-.btn,
-.card,
-.table,
-.modal-content {
+/*
+ * Prefixed with `html` on purpose. Next injects this file's stylesheet before
+ * the `<link>`ed Hope UI sheets in <head>, so a bare `body` rule of equal
+ * specificity loses to Hope UI's own `body { font-family: Inter, sans-serif }`
+ * and Thai text silently falls through to the browser default. The extra type
+ * selector wins the cascade deterministically, without `!important`.
+ */
+html body,
+html .form-control,
+html .form-select,
+html .btn,
+html .card,
+html .table,
+html .modal-content,
+html .dropdown-menu,
+html .list-group-item {
   font-family: var(--pos-font-stack);
 }
 

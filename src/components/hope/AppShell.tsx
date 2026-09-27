@@ -75,9 +75,12 @@ export function AppShell({
   const [preOrderAlert, setPreOrderAlert] = useState(0);
 
   // The server already rendered the correct class; mirror it into state so the
-  // toggle button shows the right icon on first paint.
+  // toggle button shows the right icon before the first interaction.
+  //
+  // Reads `body`, not `documentElement`: Hope UI's `.dark` rule paints whichever
+  // element carries the class, and `--bs-body-bg` is declared on `body`.
   useEffect(() => {
-    setTheme(parseTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light'));
+    setTheme(parseTheme(document.body.classList.contains('dark') ? 'dark' : 'light'));
   }, []);
 
   // Any nav click is a user gesture, so it is the safe moment to unlock audio.
@@ -107,7 +110,8 @@ export function AppShell({
   const toggleTheme = (): void => {
     const next: Theme = theme === 'dark' ? 'light' : 'dark';
     setTheme(next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
+    document.body.classList.toggle('dark', next === 'dark');
+    // Persisted so the server can render the class on the next request.
     document.cookie = `${THEME_COOKIE_NAME}=${next}; path=/; max-age=${THEME_COOKIE_MAX_AGE}; samesite=lax`;
   };
 
