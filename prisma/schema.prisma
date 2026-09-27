@@ -1,0 +1,277 @@
+// Prisma schema for the Realtime POS / Inventory / Pre-order system.
+//
+// Mirrors `system_requirements_document.md` §7. Two additions (both flagged in
+// README.md and docs/adr/0001-schema-deviations-from-srs.md):
+//   * stock_logs.reason          — §4.3 mandates an adjustment-reason enum that
+//                                  §7's DDL forgot to declare.
+//   * orders.pickup_expires_at   — §3 Phase 3 mandates a holding-time limit.
+//
+// Deliberately absent: time_logs.work_hours. It is a PostgreSQL STORED generated
+// column, which Prisma cannot model, so it lives in the initial migration only
+// and is read with $queryRaw.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------- enums
+
+enum user_role {
+  member
+  employee
+  admin
+}
+
+enum order_type {
+  pos_walkin
+  preorder
+}
+
+enum order_status {
+  pending
+  confirmed
+  ready_for_pickup
+  completed
+  cancelled
+}
+
+enum payment_method {
+  cash
+  promptpay
+  points
+  mixed
+}
+
+enum stock_movement_type {
+  manual_adjust
+  pos_sale
+  preorder_reserve
+  preorder_cancel
+  restock
+}
+
+enum stock_adjustment_reason {
+  REASON_RESTOCK
+  REASON_DAMAGED
+  REASON_EXPIRED
+  REASON_CORRECTION
+}
+
+enum shift_status {
+  open
+  closed
+}
+
+// ---------------------------------------------------------------- users
+
+model users {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String?   @unique @db.VarChar(255)
+  phone          String    @unique @db.VarChar(20)
+  password_hash  String    @db.VarChar(255)
+  full_name      String    @db.VarChar(100)
+  role           user_role @default(member)
+  points_balance Int       @default(0)
+  is_active      Boolean   @default(true)
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  orders_as_customer orders[]             @relation("order_customer")
+  orders_as_cashier  orders[]             @relation("order_cashier")
+  stock_logs         stock_logs[]
+  schedule_shifts    work_schedules[]     @relation("schedule_employee")
+  schedules_authored work_schedules[]     @relation("schedule_author")
+  time_logs          time_logs[]
+  shifts_opened      cash_shifts[]        @relation("shift_opener")
+  shifts_closed      cash_shifts[]        @relation("shift_closer")
+  point_transactions point_transactions[]
+}
+
+// ---------------------------------------------------------------- catalog
+
+model categories {
+  id         Int        @id @default(autoincrement())
+  name       String     @db.VarChar(100)
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  products   products[]
+}
+
+model products {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id  Int?
+  barcode      String?  @unique @db.VarChar(64)
+  name         String   @db.VarChar(150)
+  description  String?
+  cost_price   Decimal  @default(0) @db.Decimal(10, 2)
+  sale_price   Decimal  @default(0) @db.Decimal(10, 2)
+  stock_qty    Int      @default(0)
+  reserved_qty Int      @default(0)
+  image_url    String?
+  is_active    Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  category    categories?    @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  stock_logs  stock_logs[]
+  order_items order_items[]
+
+  @@index([category_id])
+  @@index([is_active])
+}
+
+model stock_logs {
+  id            BigInt                    @id @default(autoincrement())
+  product_id    String                    @db.Uuid
+  changed_by    String                    @db.Uuid
+  movement_type stock_movement_type
+  reason        stock_adjustment_reason?
+  qty_changed   Int
+  balance_after Int
+  note          String?
+  created_at    DateTime                  @default(now()) @db.Timestamptz(6)
+
+  product products @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  user    users    @relation(fields: [changed_by], references: [id])
+
+  @@index([product_id, created_at])
+  @@index([created_at])
+}
+
+// ---------------------------------------------------------------- staffing
+
+model work_schedules {
+  id          Int      @id @default(autoincrement())
+  employee_id String   @db.Uuid
+  shift_date  DateTime @db.Date
+  start_time  DateTime @db.Time(6)
+  end_time    DateTime @db.Time(6)
+  note        String?
+  created_by  String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  employee users @relation("schedule_employee", fields: [employee_id], references: [id], onDelete: Cascade)
+  author   users @relation("schedule_author", fields: [created_by], references: [id])
+
+  @@unique([employee_id, shift_date])
+  @@index([shift_date])
+}
+
+// work_hours is a STORED generated column added by the initial migration.
+model time_logs {
+  id          Int       @id @default(autoincrement())
+  employee_id String    @db.Uuid
+  check_in    DateTime  @default(now()) @db.Timestamptz(6)
+  check_out   DateTime? @db.Timestamptz(6)
+  note        String?
+
+  employee users @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@index([employee_id, check_in])
+}
+
+model cash_shifts {
+  id            Int          @id @default(autoincrement())
+  opened_by     String       @db.Uuid
+  closed_by     String?      @db.Uuid
+  opened_at     DateTime     @default(now()) @db.Timestamptz(6)
+  closed_at     DateTime?    @db.Timestamptz(6)
+  initial_cash  Decimal      @default(0) @db.Decimal(10, 2)
+  expected_cash Decimal?     @db.Decimal(10, 2)
+  actual_cash   Decimal?     @db.Decimal(10, 2)
+  status        shift_status @default(open)
+
+  opener   users      @relation("shift_opener", fields: [opened_by], references: [id])
+  closer   users?     @relation("shift_closer", fields: [closed_by], references: [id])
+  payments payments[]
+
+  @@index([status])
+}
+
+// ---------------------------------------------------------------- orders
+
+model orders {
+  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_number      String       @unique @db.VarChar(30)
+  order_type        order_type   @default(pos_walkin)
+  status            order_status @default(pending)
+  customer_id       String?      @db.Uuid
+  cashier_id        String?      @db.Uuid
+  pickup_pin        String?      @db.VarChar(6)
+  pickup_expires_at DateTime?    @db.Timestamptz(6)
+  subtotal_amount   Decimal      @default(0) @db.Decimal(10, 2)
+  discount_amount   Decimal      @default(0) @db.Decimal(10, 2)
+  final_amount      Decimal      @default(0) @db.Decimal(10, 2)
+  points_earned     Int          @default(0)
+  points_redeemed   Int          @default(0)
+  cancel_reason     String?
+  created_at        DateTime     @default(now()) @db.Timestamptz(6)
+  confirmed_at      DateTime?    @db.Timestamptz(6)
+  ready_at          DateTime?    @db.Timestamptz(6)
+  completed_at      DateTime?    @db.Timestamptz(6)
+  cancelled_at      DateTime?    @db.Timestamptz(6)
+
+  customer           users?               @relation("order_customer", fields: [customer_id], references: [id], onDelete: SetNull)
+  cashier            users?               @relation("order_cashier", fields: [cashier_id], references: [id], onDelete: SetNull)
+  items              order_items[]
+  payments           payments[]
+  point_transactions point_transactions[]
+
+  @@index([status])
+  @@index([created_at])
+  @@index([order_type, status])
+}
+
+model order_items {
+  id          BigInt  @id @default(autoincrement())
+  order_id    String  @db.Uuid
+  product_id  String  @db.Uuid
+  unit_price  Decimal @db.Decimal(10, 2)
+  unit_cost   Decimal @db.Decimal(10, 2)
+  quantity    Int
+  total_price Decimal @db.Decimal(10, 2)
+
+  order   orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product products @relation(fields: [product_id], references: [id])
+
+  @@index([order_id])
+  @@index([product_id])
+}
+
+model payments {
+  id              Int            @id @default(autoincrement())
+  order_id        String         @db.Uuid
+  shift_id        Int?
+  method          payment_method
+  amount          Decimal        @db.Decimal(10, 2)
+  received_amount Decimal?       @db.Decimal(10, 2)
+  change_amount   Decimal?       @db.Decimal(10, 2)
+  transaction_ref String?        @db.VarChar(100)
+  paid_at         DateTime       @default(now()) @db.Timestamptz(6)
+
+  order orders      @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  shift cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: SetNull)
+
+  @@index([order_id])
+  @@index([shift_id])
+  @@index([paid_at])
+}
+
+model point_transactions {
+  id            BigInt   @id @default(autoincrement())
+  user_id       String   @db.Uuid
+  order_id      String?  @db.Uuid
+  points_change Int
+  balance_after Int
+  description   String?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  user  users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  order orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, created_at])
+}

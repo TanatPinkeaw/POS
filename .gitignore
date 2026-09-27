@@ -1,0 +1,31 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+
+.env
+.env.local
+.env*.local
+
+# Local product image uploads are runtime data, not source.
+public/uploads/
+
+# Vendored Hope UI source clone used while extracting assets.
+.tmp-hope-ui/
+
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+tsconfig.tsbuildinfo
+next-env.d.ts
+
+coverage/
+test-results/
+playwright-report/
+
+/generated/prisma
+
+# Vendored Hope UI assets are committed deliberately (2.6 MB, see README).
+# Uploaded product images are runtime data, not source.

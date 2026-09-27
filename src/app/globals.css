@@ -1,0 +1,67 @@
+/*
+ * Layered on top of Hope UI's compiled stylesheet.
+ *
+ * Hope UI ships `@import` for Inter, which has no Thai coverage, so the stack
+ * is extended rather than replaced: Latin still renders in Inter, Thai falls
+ * through to Noto Sans Thai.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --pos-font-stack: 'Inter', 'Noto Sans Thai', 'IBM Plex Sans Thai', system-ui, -apple-system,
+    'Segoe UI', sans-serif;
+}
+
+body,
+.form-control,
+.form-select,
+.btn,
+.card,
+.table,
+.modal-content {
+  font-family: var(--pos-font-stack);
+}
+
+/* Hope UI's sidebar toggle expects a pointer; it is a div, not a button. */
+.sidebar-toggle,
+.nav-link[data-toggle='sidebar'] {
+  cursor: pointer;
+}
+
+/* Thai text has taller ascenders and descenders than Latin: give it room. */
+.table > :not(caption) > * > * {
+  vertical-align: middle;
+}
+
+/* Numbers in tables and totals read better aligned to the right. */
+.pos-numeric {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.pos-receipt {
+  font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barcode scanner input should look like a scanner target, not a search box. */
+.pos-scan-input {
+  font-family: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+  letter-spacing: 0.08em;
+}
+
+/* A pre-order board column that has nothing in it should still be droppable. */
+.pos-board-column {
+  min-height: 8rem;
+}
+
+/* Highlight a row whose order is about to expire. */
+.pos-urgent {
+  background-color: rgba(220, 53, 69, 0.06);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

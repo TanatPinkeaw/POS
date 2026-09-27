@@ -1,0 +1,60 @@
+{
+  "name": "pos-realtime",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Realtime POS, Inventory, 4-Phase Pre-order & Staff Management System",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "build": "next build",
+    "start": "cross-env NODE_ENV=production tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:unit": "vitest run tests/loyalty.test.ts tests/order-state.test.ts tests/shift.test.ts tests/settlement.test.ts",
+    "test:integration": "vitest run tests/inventory-concurrency.test.ts tests/order-lifecycle.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio",
+    "smoke": "tsx scripts/smoke-test.ts",
+    "db:test:prepare": "tsx scripts/prepare-test-db.ts",
+    "db:setup": "npm run db:generate && npm run db:migrate && npm run db:seed && npm run db:test:prepare"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "7.10.0",
+    "apexcharts": "^7.6.1",
+    "bcryptjs": "^3.0.2",
+    "exceljs": "^4.4.0",
+    "jose": "^6.1.0",
+    "next": "16.3.6",
+    "pg": "^8.23.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "zod": "^4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "cross-env": "^10.1.0",
+    "prisma": "7.10.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "allowScripts": {
+    "prisma@7.10.0": true,
+    "@prisma/engines@7.10.0": true,
+    "esbuild@0.28.2": true
+  }
+}
