@@ -88,6 +88,41 @@ export class ApprovalRejectedError extends DomainError {
   }
 }
 
+/**
+ * A caller has spent the attempts they had on a door that needs no session.
+ *
+ * A 429, and the wait is carried in the body rather than in a `Retry-After`
+ * header: every client here already reads the error envelope, and a header would
+ * be a second contract for the same fact. `context.retryAfterSeconds` is a number
+ * so a screen can count down; the message says it in words for the person holding
+ * the phone.
+ */
+export class RateLimitedError extends DomainError {
+  constructor(
+    readonly policy: string,
+    readonly retryAfterSeconds: number,
+  ) {
+    super(
+      `พยายามหลายครั้งเกินไป — กรุณารออีก ${formatWait(retryAfterSeconds)}`,
+      'RATE_LIMITED',
+      429,
+      { policy, retryAfterSeconds },
+    );
+  }
+}
+
+/**
+ * "อีก 3 นาที", "อีก 45 วินาที" — rounded up, because a wait a person is given is
+ * never shorter than it turns out to be. A message a user reads is Thai (the rule
+ * the whole app follows); the machine-readable half is `retryAfterSeconds`.
+ */
+function formatWait(seconds: number): string {
+  if (seconds >= 60) {
+    return `${Math.ceil(seconds / 60)} นาที`;
+  }
+  return `${Math.max(1, seconds)} วินาที`;
+}
+
 /** The caller is not authenticated. */
 export class UnauthenticatedError extends DomainError {
   constructor(message = 'Sign in to continue') {

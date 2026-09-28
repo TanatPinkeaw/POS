@@ -1500,6 +1500,86 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     }
   }
 
+  /* ---------------- 13. a door that counts the attempts */
+  section('13. A door that counts the attempts');
+
+  /*
+   * Last on purpose. This leg spends a bucket, and a bucket spent in the middle
+   * of the journey would make some later refusal look like the feature under test
+   * when it was really the limiter. The identifier is one nobody has an account
+   * for, so the only buckets it touches are this section's own.
+   */
+  const guessed = 'nobody-here@example.com';
+  const wrongAttempts: number[] = [];
+  for (let attempt = 0; attempt < 11; attempt += 1) {
+    const refusal = await anonymous.request('/api/v1/auth/login', {
+      method: 'POST',
+      body: { identifier: guessed, password: 'not-the-password' },
+    });
+    wrongAttempts.push(refusal.status);
+  }
+
+  check(
+    'ten wrong passwords are refused one at a time (401)',
+    wrongAttempts.slice(0, 10).every((status) => status === 401),
+    wrongAttempts,
+  );
+  check(
+    'and the eleventh is refused by the door itself, not by the password (429)',
+    wrongAttempts[10] === 429,
+    wrongAttempts,
+  );
+
+  /*
+   * The wait is read off the body rather than a header, because the envelope is
+   * what every client here already parses and a second contract for the same fact
+   * is a second thing to keep true.
+   */
+  const limitedResponse = await fetch(`${base}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ identifier: guessed, password: 'not-the-password' }),
+  });
+  const limitedBody = (await limitedResponse.json()) as {
+    error?: { code?: string; retryAfterSeconds?: number };
+  };
+  check(
+    'and it says how long to wait, in the body the till already reads',
+    limitedResponse.status === 429 &&
+      limitedBody.error?.code === 'RATE_LIMITED' &&
+      (limitedBody.error?.retryAfterSeconds ?? 0) > 0,
+    limitedBody.error,
+  );
+
+  /*
+   * The property that makes this usable in a shop: the bucket is the *account and
+   * the address*, so guessing at one login cannot lock a colleague out of the till
+   * standing next to it.
+   */
+  const colleague = new Session(() => base);
+  const signedIn = await colleague.request('/api/v1/auth/login', {
+    method: 'POST',
+    body: { identifier: CASHIER.phone, password: CASHIER.password },
+  });
+  check(
+    'and a guessed account does not lock the shop out of its own till',
+    signedIn.status === 200 && signedIn.data !== null,
+    signedIn.error ?? signedIn.status,
+  );
+
+  const limitedTrail = await admin.call<AuditPageDto>('/api/v1/audit?action=rate_limited');
+  check(
+    'the burst is written to the trail exactly once, not once per attempt',
+    limitedTrail.total === 1,
+    limitedTrail.total,
+  );
+  check(
+    'and the row names the door and the account that was guessed at',
+    limitedTrail.entries[0]?.detail?.policy === 'login_failure' &&
+      limitedTrail.entries[0]?.detail?.scope === guessed,
+    limitedTrail.entries[0],
+  );
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`

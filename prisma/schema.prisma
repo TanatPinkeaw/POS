@@ -245,6 +245,14 @@ enum audit_action {
   pin_locked
   display_paired
   display_revoked
+  /**
+   * A caller spent every attempt a rate-limited door allowed them.
+   * Recorded once per burst rather than once per request: the event an owner
+   * needs is "somebody started guessing", and a row per refusal would be a trail
+   * the attacker writes to at volume. `pin_locked` is the same idea one layer
+   * down, where five wrong PINs for one admin is the trip.
+   */
+  rate_limited
 }
 
 // ---------------------------------------------------------------- users

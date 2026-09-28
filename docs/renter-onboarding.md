@@ -117,6 +117,7 @@ email in this system; recovery is a SQL statement (see §8).
 | Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Tick the lines coming back and how many of each — or leave it blank to hand the whole bill back. The credit note itemises exactly what it reverses, and the customer can come back later for the rest. Always needs a supervisor PIN, even for the owner. |
 | Reports | `/admin/reports` | Four Excel workbooks, per date range. |
 | Roster & timesheet | `/admin/schedules` | Roster shifts per employee per day; the timesheet shows lateness and overtime. |
+| Check what happened | `/admin/audit` | Every gated action, newest first: who was at the till, whose PIN approved it, the amounts and the reasons. Nothing here can be edited or deleted, including by us — filter by action or by person. |
 
 ---
 
@@ -260,4 +261,9 @@ Recorded here so nobody discovers it during service:
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.
 - No offline mode: the till needs the network it is served from.
-- No rate limiting, no audit-log viewer screen.
+- No rate limiting on anything you are *signed in* to: the limiter counts attempts
+  on the doors that need no session (signing in, the supervisor PIN, the setup
+  wizard, display pairing, the bank webhook). Nothing there is a ceiling your own
+  till can reach, and typing a password wrong ten times in a quarter of an hour
+  will make you wait — one account at a time, so a colleague at the next till is
+  unaffected.

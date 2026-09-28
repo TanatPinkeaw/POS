@@ -16,6 +16,7 @@
  */
 import { readJson, withApi } from '@/lib/api';
 import { ConflictError } from '@/lib/errors';
+import { chargeRateLimit } from '@/lib/rate-limit';
 import { setupSchema } from '@/lib/schemas';
 import { hasShop } from '@/lib/shop';
 import { initialiseSystem } from '@/lib/setup';
@@ -27,6 +28,14 @@ export async function GET(): Promise<Response> {
 
 export async function POST(request: Request): Promise<Response> {
   return withApi(async () => {
+    /*
+     * The most valuable unauthenticated target in the application — it writes a
+     * shop row and the administrator who owns it — so it is charged before the
+     * work, and its policy has the longest window of any here. A real shop posts
+     * this once, in its first minute of life.
+     */
+    await chargeRateLimit(request, 'setup_attempt');
+
     if (await hasShop()) {
       throw new ConflictError('This system has already been set up', 'ALREADY_INITIALISED');
     }

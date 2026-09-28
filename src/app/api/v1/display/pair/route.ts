@@ -12,10 +12,19 @@
  */
 import { readJson, withApi } from '@/lib/api';
 import { redeemPairingCode } from '@/lib/display-devices';
+import { chargeRateLimit } from '@/lib/rate-limit';
 import { displayPairSchema } from '@/lib/schemas';
 
 export async function POST(request: Request): Promise<Response> {
   return withApi(async () => {
+    /*
+     * Six digits is a million possibilities and the code dies minutes after it is
+     * minted, so this is not the guessable door the login route is. What it is, is
+     * a door that answers a wrong code for free — and a display hanging on a wall
+     * in a shop is a machine somebody can sit next to and walk a code space from.
+     */
+    await chargeRateLimit(request, 'pair_attempt');
+
     const body = await readJson(request, displayPairSchema);
     return redeemPairingCode(body.code);
   });

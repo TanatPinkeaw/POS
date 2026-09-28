@@ -163,6 +163,14 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
 - **`CHECK ((direction = 'refund') = (credit_note_id IS NOT NULL))` on
   `payments`** (repeated here because it is the one that reads oddly): a refund
   leg must name a credit note, and a sale leg must not.
+- **The rate limiter's buckets live in the process, not in a table**
+  (`src/lib/rate-limit.ts`), so a restart forgets them and a second process would
+  be a second limiter. The policy is pure (`rate-limit-policy.ts`) and keyed by the
+  address the *socket* reports; `X-Forwarded-For` is believed only when that
+  address is private. `src/server.ts` stamps `x-client-address` and overwrites
+  whatever the caller sent — never trust an inbound copy. Only the first refusal of
+  a burst is audited (`rate_limited`), because the endpoint is reachable without a
+  session and a row per refusal would be a free way to fill the trail.
 
 ---
 
@@ -251,7 +259,8 @@ both halves SSH again.
 
 The design-system migration is **finished**, and so is the money work that followed
 it: a paid bill can be reversed wholly or one line at a time, with a credit note
-behind every note (ADRs 0004, 0008), an incoming transfer can close its own bill
+behind every note (ADRs 0004, 0008), the five doors that need no session count
+attempts and refuse a burst (ADR 0009), an incoming transfer can close its own bill
 from the shop's own bank notification with
 no payment provider (ADR 0005), a pre-order is handed over with either a scanned QR
 or the PIN beside it (ADR 0006), and the messages that used to need somebody
@@ -296,4 +305,4 @@ Open threads, roughly in the order worth doing:
 
 Known product gaps are listed at the end of `README.md` (no way to create a member,
 overtime approval, LINE addresses for customers, multiple branches, product images,
-production hardening).
+RTL, object storage).

@@ -1,0 +1,173 @@
+// Seam under test: what a caller spends when a door is counted, against a real
+// database.
+//
+// The arithmetic is pinned in `rate-limit-policy.test.ts` without a database; what
+// this file pins is the part that only exists at runtime — that a refusal is a 429
+// rather than a 500, that two accounts do not share a bucket, and that a burst
+// writes *one* row to the trail rather than one per refused request. The last of
+// those is the one worth a real database: it is the difference between a limiter
+// and an amplifier an attacker points at the audit table.
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { listAuditLogs } from '@/lib/audit';
+import { RateLimitedError } from '@/lib/errors';
+import { chargeRateLimit, rateLimitBucketCount, resetRateLimits } from '@/lib/rate-limit';
+import { RATE_LIMIT_POLICIES } from '@/lib/rate-limit-policy';
+
+import { prisma, resetDatabase } from './helpers/test-db';
+
+/** A request as the custom server presents one: the socket address, stamped on. */
+function requestFrom(address: string, forwardedFor?: string): Request {
+  return new Request('http://localhost/api/v1/auth/login', {
+    method: 'POST',
+    headers: {
+      'x-client-address': address,
+      ...(forwardedFor ? { 'x-forwarded-for': forwardedFor } : {}),
+    },
+  });
+}
+
+/** Spends the whole capacity, then returns whether the next attempt was refused. */
+async function spendAndRefuse(
+  request: Request,
+  policy: keyof typeof RATE_LIMIT_POLICIES,
+  scope?: string,
+): Promise<unknown> {
+  const { capacity } = RATE_LIMIT_POLICIES[policy];
+  for (let attempt = 0; attempt < capacity; attempt += 1) {
+    await chargeRateLimit(request, policy, scope);
+  }
+  return chargeRateLimit(request, policy, scope).catch((error: unknown) => error);
+}
+
+beforeEach(async () => {
+  await resetDatabase();
+  // The store is module-level state, so a suite that did not clear it would
+  // inherit the previous test's spent buckets and fail for the wrong reason.
+  resetRateLimits();
+});
+
+afterEach(() => {
+  resetRateLimits();
+});
+
+describe('charging an attempt', () => {
+  it('lets a caller spend the capacity and refuses the attempt after it', async () => {
+    const request = requestFrom('203.0.113.9');
+
+    const refused = await spendAndRefuse(request, 'login_failure', 'cashier@shop.test');
+
+    expect(refused).toBeInstanceOf(RateLimitedError);
+    expect((refused as RateLimitedError).httpStatus).toBe(429);
+    expect((refused as RateLimitedError).retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it('keeps one account out of another account`s bucket', async () => {
+    const request = requestFrom('203.0.113.9');
+
+    await spendAndRefuse(request, 'login_failure', 'first@shop.test');
+
+    // The same address, a different identifier: untouched, because a limit that
+    // locked out a colleague would be a limit the shop turns off.
+    await expect(
+      chargeRateLimit(request, 'login_failure', 'second@shop.test'),
+    ).resolves.toBeUndefined();
+  });
+
+  it('keys on the address when no scope is given', async () => {
+    const mine = requestFrom('203.0.113.9');
+
+    await spendAndRefuse(mine, 'approval_failure');
+
+    // A different caller is unaffected — the bucket is the address, not the door.
+    await expect(chargeRateLimit(requestFrom('203.0.113.10'), 'approval_failure')).resolves.toBeUndefined();
+    await expect(chargeRateLimit(mine, 'approval_failure')).rejects.toThrow(RateLimitedError);
+  });
+
+  it('treats a dual-stack loopback and its IPv4 form as one caller', async () => {
+    const mapped = requestFrom('::ffff:127.0.0.1');
+
+    await spendAndRefuse(mapped, 'pair_attempt');
+
+    await expect(chargeRateLimit(requestFrom('127.0.0.1'), 'pair_attempt')).rejects.toThrow(
+      RateLimitedError,
+    );
+  });
+
+  it('does not let a caller pick its own bucket with a forwarded header', async () => {
+    await spendAndRefuse(requestFrom('198.51.100.7', '203.0.113.9'), 'pair_attempt');
+
+    // The same caller, a different header: the bucket did not move.
+    await expect(
+      chargeRateLimit(requestFrom('198.51.100.7', '10.0.0.1'), 'pair_attempt'),
+    ).rejects.toThrow(RateLimitedError);
+
+    // While a caller our own proxy forwarded *is* its own bucket, which is the
+    // whole reason the header is read at all.
+    await expect(
+      chargeRateLimit(requestFrom('127.0.0.1', '203.0.113.9'), 'pair_attempt'),
+    ).resolves.toBeUndefined();
+  });
+});
+
+describe('what a trip writes down', () => {
+  it('records one row for a burst, however many attempts follow it', async () => {
+    const request = requestFrom('203.0.113.9');
+
+    await spendAndRefuse(request, 'login_failure', 'cashier@shop.test');
+
+    // Four more refused attempts — this is the attack continuing, not four events.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await expect(
+        chargeRateLimit(request, 'login_failure', 'cashier@shop.test'),
+      ).rejects.toThrow(RateLimitedError);
+    }
+
+    const trail = await listAuditLogs({ action: 'rate_limited' });
+    expect(trail).toHaveLength(1);
+    expect(trail[0]?.detail).toMatchObject({
+      policy: 'login_failure',
+      scope: 'cashier@shop.test',
+      address: '203.0.113.9',
+    });
+  });
+
+  it('names the door and the address, and nobody as the actor', async () => {
+    await spendAndRefuse(requestFrom('203.0.113.9'), 'inbound_notification');
+
+    const trail = await listAuditLogs({ action: 'rate_limited' });
+    expect(trail[0]?.actor).toBeNull();
+    expect(trail[0]?.detail?.policy).toBe('inbound_notification');
+    expect(trail[0]?.detail?.retryAfterSeconds).toBeGreaterThan(0);
+  });
+
+  it('does not write a row for an attempt that was allowed', async () => {
+    await chargeRateLimit(requestFrom('203.0.113.9'), 'pair_attempt');
+
+    expect(await listAuditLogs({ action: 'rate_limited' })).toHaveLength(0);
+  });
+});
+
+describe('the buckets themselves', () => {
+  it('counts one bucket per caller, and forgets them on request', async () => {
+    await chargeRateLimit(requestFrom('203.0.113.9'), 'pair_attempt');
+    await chargeRateLimit(requestFrom('203.0.113.10'), 'pair_attempt');
+
+    expect(rateLimitBucketCount()).toBe(2);
+    resetRateLimits();
+    expect(rateLimitBucketCount()).toBe(0);
+  });
+
+  it('would forget nothing that could still refuse, at the sweep`s age', async () => {
+    // The sweep's safety rests on this: a bucket idle for the forget age has
+    // refilled to full, so dropping it cannot let anybody through sooner than
+    // waiting would have.
+    const { FORGET_IDLE_AFTER_MS } = await import('@/lib/rate-limit');
+
+    for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {
+      expect(policy.windowMs, name).toBeLessThanOrEqual(FORGET_IDLE_AFTER_MS);
+    }
+  });
+});afterAll(async () => {
+  await prisma.$disconnect();
+});

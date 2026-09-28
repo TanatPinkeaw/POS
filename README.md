@@ -189,9 +189,9 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 609 tests across 43 files: unit + integration
+npm test                # 639 tests across 45 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 124 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 130 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -204,11 +204,12 @@ presupposes the demo data. Acceptance drops a private PostgreSQL schema
 the setup wizard's API, the staff API, a catalogue spreadsheet and a VAT sale —
 asserting that `net + VAT === gross` to the satang, that the first receipt takes
 the renter's own series (`FR-<year>-000001`), that a reprint matches the sale
-exactly, and that the demo seed now *refuses* to touch the configured shop.
+exactly, that a customer returning one item of two can come back for the rest, and
+that the demo seed now *refuses* to touch the configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 82 of its
+or that quietly began fetching a font from another origin passes all 130 of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.
@@ -241,6 +242,11 @@ was misread because of it — the application was right and the harness was lyin
   foots to the invoice exactly, that a line cannot be returned twice, that every unit
   comes back to the shelf exactly once, and that the bill is `refunded` only when the
   last line does.
+- **The limiter on the doors that need no session**, including that a bucket refills
+  continuously rather than resetting a window, that nobody is ever told to wait zero
+  seconds, that a dual-stack loopback is one caller rather than two, that a forged
+  `X-Forwarded-For` from a public address cannot mint a fresh bucket, and that a burst
+  of refused attempts writes exactly one row to the trail.
 - **Money arriving from a bank notification**, including the refusals: an amount
   matching a bill but naming none, two candidates for one amount, money that
   arrives after the QR was withdrawn, and a bridge retrying the same message.
@@ -552,6 +558,38 @@ that no bill has closed (the expensive one — the customer has paid and no rece
 exists), and money that could not be matched to anything at all. Where the figures
 disagree, the screen says which side is larger; nothing here claims to know why.
 
+### Refusing to be guessed at
+
+Every endpoint here refuses the wrong answer already — a wrong password signs nobody
+in, a wrong supervisor PIN issues no token, a wrong webhook secret writes no row. What
+none of them bounded was how *many times* it could be asked: a supervisor PIN locks
+after five wrong tries for one admin, and nothing stopped an attacker walking the list
+of admins five tries each. `docs/adr/0009-rate-limiting.md` is the decision.
+
+The limiter covers the five doors that need no session — signing in, supervisor
+approval, the setup wizard, display pairing, and the bank-notification webhook — and it
+is a **token bucket**, so a caller with no history arrives full, a burst is spent and
+refilled at a rate rather than locked out until a clock turns, and nothing has to be
+reset. Login counts two things, because they are two questions: wrong passwords for one
+account (keyed by the address *and* the identifier, so guessing at one login cannot
+lock out the colleague beside it) and wrong passwords from one address, which is what a
+spray across many accounts spends.
+
+**A signed-in till is not limited**, deliberately: a cashier who can outrun the API is a
+performance problem, not a security one, and a ceiling a busy Saturday hits is one the
+shop switches off. The failures are charged and the successes are free, so a shop behind
+one address cannot exhaust itself logging in at nine o'clock.
+
+The policy is pure and unit-tested (`src/lib/rate-limit-policy.ts`); the buckets live in
+the process, which is honest for one Node listener and stated as a limit rather than
+hidden — a second process would be a second limiter, each half as strict. Who a request
+is from is the address the **socket** reports, with `X-Forwarded-For` believed only when
+that socket is itself private, so a caller cannot pick its own bucket by sending a
+header. When a burst trips, the trail gets **one** row (`rate_limited`) naming the door,
+the address and the account that was guessed at — one, not one per refusal, because this
+is the one endpoint an unauthenticated caller could otherwise make write to the audit
+table for free.
+
 ---
 
 ## Deliberate deviations and additions
@@ -594,6 +632,7 @@ goes through them.
 | `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
 | `docs/adr/0007-notification-outbox.md` | The notification outbox: written with the fact, sent by a worker the shop runs, and why a customer's code never goes to the shop's LINE group. |
 | `docs/adr/0008-partial-refunds.md` | Per-line refunds: the note itemises, several notes per invoice, and why the closing note takes the remainder. |
+| `docs/adr/0009-rate-limiting.md` | The limiter on the doors that need no session: a token bucket per process, who a request is from, and why only the first refusal is written down. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
@@ -614,8 +653,8 @@ Deferred deliberately, and listed here rather than discovered during service:
   issuance serialises on the shop row (ADR 0002 §4) — correct for one till.
 - **Product images and a shop logo.** `products.image_url` and `shops.logo_url`
   exist; there is no upload and no storage.
-- **Production hardening:** rate limiting, an audit-log viewer, RTL, and object
-  storage.
+- **Production hardening:** RTL, and object storage. (Rate limiting and the
+  audit-log viewer are in — see below.)
 - **A reconciliation screen over a date range.** The dashboard reconciles *today*:
   what the bank confirmed against what closed a bill, with the transfers left
   over. Comparing a week or a month against a statement is still two screens.

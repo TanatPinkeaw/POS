@@ -1,0 +1,16 @@
+-- ----------------------------------------------------------- rate limiting
+--
+-- The limiter's memory is in the process, so this migration adds no table. What it
+-- adds is the one thing about a refusal that has to outlive the process: the fact
+-- that a caller spent every attempt a door allowed them.
+--
+-- Written once per burst and not once per request. A refusal is cheap to provoke —
+-- it is the one endpoint an unauthenticated caller can make write to the trail —
+-- so a row per attempt would hand an attacker a free amplifier, and the row an
+-- owner actually wants is the first one.
+--
+-- `ADD VALUE` and not a new type: `audit_action` is read by the trail screen, whose
+-- labels are exhaustive over the union in `src/lib/audit-view.ts`. Adding a value
+-- the screen does not know would show a raw enum string, and the compiler enforces
+-- the pair rather than a reviewer.
+ALTER TYPE "audit_action" ADD VALUE IF NOT EXISTS 'rate_limited';

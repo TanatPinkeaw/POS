@@ -204,8 +204,10 @@ rather than a screen, so it belongs before the shop needs it, not after.
 
 ### 4.6 Images, and the rest of the polish list
 
-Product images and a shop logo (columns exist, no upload), an audit-log viewer,
-rate limiting. Cheap, visible, and each unlocks perceived quality.
+Product images and a shop logo (columns exist, no upload), RTL, object storage.
+Cheap, visible, and each unlocks perceived quality. The audit-log viewer and the
+rate limiter are done (ADRs 0009 and the trail screen), and the limiter's
+per-process buckets are the gap that remains inside it — see decision 1 there.
 
 ---
 
@@ -261,8 +263,10 @@ Stated here rather than implied anywhere above:
    bank confirmed against what closed a bill, with the payments that closed
    nothing called out. What is left here is a range rather than a day, for a
    statement that covers a week or a month.
-9. **Audit-log viewer plus rate limiting** — hardening; do it before exposing the
-   till to a public network.
+9. ~~**Audit-log viewer plus rate limiting**~~ — **done**. The trail screen reads
+   every action back with its people and its details, and the limiter counts
+   attempts on the five doors that need no session (ADR 0009). What it does not
+   do is scale past one process, which is the right size for one shop.
 10. **Kitchen/table features** — only if we decide to serve food service. Today
     that is a different product, and chasing it would cost us the stock and
     pre-order advantages.

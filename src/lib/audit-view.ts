@@ -20,7 +20,8 @@ export type AuditAction =
   | 'pin_reset'
   | 'pin_locked'
   | 'display_paired'
-  | 'display_revoked';
+  | 'display_revoked'
+  | 'rate_limited';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -34,6 +35,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'pin_locked',
   'display_paired',
   'display_revoked',
+  'rate_limited',
 ];
 
 /**
@@ -55,6 +57,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   pin_locked: 'PIN ถูกล็อก',
   display_paired: 'เพิ่มจอลูกค้า',
   display_revoked: 'ยกเลิกจอลูกค้า',
+  rate_limited: 'ถูกรับจำกัดความถี่ (พยายามซ้ำหลายครั้ง)',
 };
 
 /**
@@ -87,6 +90,9 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   pin_locked: 'danger',
   display_paired: 'neutral',
   display_revoked: 'neutral',
+  // Alarming, but not the same as money moving: nobody got in and nothing left
+  // the drawer, so it is the row an owner reads and then goes looking.
+  rate_limited: 'danger',
 };
 
 /**
@@ -149,6 +155,16 @@ export function auditTargetLabel(row: AuditRow): string {
     case 'pin_reset':
     case 'pin_locked':
       return row.targetId ? `ผู้ใช้ ${row.targetId}` : 'ผู้ใช้';
+    case 'rate_limited': {
+      // The door that was knocked on, and where from — the two facts that make
+      // the row worth reading rather than merely alarming.
+      const policy = typeof row.detail?.policy === 'string' ? row.detail.policy : null;
+      const address = typeof row.detail?.address === 'string' ? row.detail.address : null;
+      if (policy && address) {
+        return `${policy} · ${address}`;
+      }
+      return policy ?? 'ระบบจำกัดความถี่';
+    }
     default:
       return row.targetId ?? '';
   }

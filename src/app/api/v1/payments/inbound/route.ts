@@ -20,11 +20,21 @@ import { ConflictError } from '@/lib/errors';
 import { broadcastPaymentPaid } from '@/lib/display-broadcast';
 import { listInboundTransfers, recordInboundTransfer } from '@/lib/inbound-payments';
 import { findIntent } from '@/lib/payment-intents';
+import { chargeRateLimit } from '@/lib/rate-limit';
 import { inboundTransferSchema } from '@/lib/schemas';
 import { requestHasPaymentSecret } from '@/lib/webhook-secret';
 
 export async function POST(request: Request): Promise<Response> {
   return withApi(async () => {
+    /*
+     * Charged *before* the secret is checked, which is the opposite of the login
+     * route and for a reason: here the secret is the thing being guessed, so the
+     * work to protect is the comparison itself. A shop's own bridge posts a
+     * message per bank notification and never comes near this ceiling; a caller
+     * walking the secret space reaches it in seconds.
+     */
+    await chargeRateLimit(request, 'inbound_notification');
+
     if (!requestHasPaymentSecret(request)) {
       /*
        * One refusal for both "wrong secret" and "no secret configured", because

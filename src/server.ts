@@ -30,6 +30,18 @@ async function main(): Promise<void> {
   await app.prepare();
 
   const httpServer = createServer((request, response) => {
+    /*
+     * The socket's own address, stamped onto the request before Next builds its
+     * Web `Request`, so the rate limiter has something a caller cannot choose.
+     *
+     * Overwritten unconditionally rather than merged: a client that sends its own
+     * `x-client-address` must not get to pick which bucket it spends, and the only
+     * place that knows the peer is this one. `X-Forwarded-For` is deliberately
+     * *not* trusted here or discarded here — `clientAddress` decides, and it
+     * believes the header only when the socket is a private address, which is the
+     * shape of a proxy we run ourselves.
+     */
+    request.headers['x-client-address'] = request.socket.remoteAddress ?? '';
     void handle(request, response);
   });
 

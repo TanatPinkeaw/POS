@@ -138,7 +138,8 @@ export const audit_action = {
   pin_reset: 'pin_reset',
   pin_locked: 'pin_locked',
   display_paired: 'display_paired',
-  display_revoked: 'display_revoked'
+  display_revoked: 'display_revoked',
+  rate_limited: 'rate_limited'
 } as const
 
 export type audit_action = (typeof audit_action)[keyof typeof audit_action]
