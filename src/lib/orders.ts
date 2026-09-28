@@ -19,6 +19,19 @@ import {
   sellFromStock,
 } from './inventory';
 import { pointsEarned as computePointsEarned } from './loyalty';
+/*
+ * The outbox is written from inside the order transactions, deliberately: a
+ * message about an order has to commit with the order, or a process that dies
+ * between the two leaves a customer who is never told their parcel is waiting.
+ * Only the planner and the outbox are imported — never a transport — so this
+ * module still has no idea how a message travels.
+ */
+import {
+  planOrderReadyNotification,
+  planPreOrderPlacedNotification,
+  readNotifyConfig,
+} from './notify-message';
+import { enqueueNotification } from './notify-outbox';
 import { consumeIntent } from './payment-intents';
 import { fromDecimal, roundThb, sumThb } from './money';
 import { canTransition, type OrderStatus } from './order-state';
@@ -588,6 +601,29 @@ export async function placePreOrder(input: {
       })),
     });
 
+    /*
+     * SRS §3 Phase 1, the half that was missing: the board chimes, and the shop's
+     * own phone gets the message. A counter away from the screen is the normal case
+     * in a small shop, and until now it heard nothing at all.
+     */
+    const customer = await tx.users.findUnique({
+      where: { id: input.customerId },
+      select: { full_name: true },
+    });
+    await enqueueNotification(
+      tx,
+      planPreOrderPlacedNotification(
+        {
+          orderId: order.id,
+          orderNumber,
+          customerName: customer?.full_name ?? null,
+          itemCount: priced.length,
+          totalThb: subtotal,
+        },
+        readNotifyConfig(),
+      ),
+    );
+
     return {
       orderId: order.id,
       orderNumber,
@@ -717,6 +753,30 @@ export async function markOrderReady(input: {
         cashier_id: input.employeeId,
       },
     });
+
+    /*
+     * SRS §3 Phase 3: the customer is told, on whatever channel the shop
+     * configured. Written with the status change rather than posted after it, and
+     * the planner refuses to put the code on a channel that cannot address the
+     * customer — see `planOrderReadyNotification`.
+     */
+    const order = await tx.orders.findUniqueOrThrow({
+      where: { id: input.orderId },
+      select: { order_number: true, customer: { select: { phone: true } } },
+    });
+    await enqueueNotification(
+      tx,
+      planOrderReadyNotification(
+        {
+          orderId: input.orderId,
+          orderNumber: order.order_number,
+          pickupPin,
+          holdUntil: pickupExpiresAt,
+          customerPhone: order.customer?.phone ?? null,
+        },
+        readNotifyConfig(),
+      ),
+    );
 
     return { pickupPin, pickupExpiresAt };
   }, TRANSACTION_OPTIONS);

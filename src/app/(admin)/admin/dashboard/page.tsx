@@ -26,6 +26,7 @@ import {
   type InboundTransferView,
 } from '@/lib/inbound-transfer-view';
 import { formatThb } from '@/lib/money';
+import { listAbandonedNotifications, outboxHealth } from '@/lib/notify-outbox';
 import { closedTransferTotals, listAwaitingCollection } from '@/lib/payment-intents';
 import type { AwaitingCollectionView } from '@/lib/payment-intents-view';
 
@@ -37,6 +38,16 @@ import type { AwaitingCollectionView } from '@/lib/payment-intents-view';
  * the axis maths it used to delegate lives in `src/lib/chart.ts` where it is
  * tested.
  */
+
+/**
+ * What each kind of queued message is, in the words a manager uses.
+ * A map rather than a template string, so an unknown kind shows its own name
+ * instead of a sentence with a hole in it.
+ */
+const NOTIFICATION_KIND_LABELS: Record<string, string> = {
+  pre_order_placed: 'พรีออเดอร์ใหม่',
+  order_ready: 'ของพร้อมรับ',
+};
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'รอยืนยัน',
@@ -77,13 +88,22 @@ export default async function DashboardPage() {
    * person will see it.
    */
   const dayBounds = bangkokDayBounds();
-  const [snapshot, unattributed, inboundToday, closedToday, awaiting] = await Promise.all([
-    dashboardSnapshot(),
-    listInboundTransfers(),
-    inboundDaySummary(),
-    closedTransferTotals(dayBounds),
-    listAwaitingCollection(),
-  ]);
+  /*
+   * Notifications that gave up, read here for the same reason the unattributed
+   * transfers are: a message that never arrived is invisible from inside the
+   * system that queued it. Six failed attempts is a wrong gateway URL, and the
+   * only place a shop will find that out is a screen like this one.
+   */
+  const [snapshot, unattributed, inboundToday, closedToday, awaiting, outbox, undelivered] =
+    await Promise.all([
+      dashboardSnapshot(),
+      listInboundTransfers(),
+      inboundDaySummary(),
+      closedTransferTotals(dayBounds),
+      listAwaitingCollection(),
+      outboxHealth(),
+      listAbandonedNotifications(),
+    ]);
 
   /*
    * The day's transfers, read two ways: what the bank confirmed, and what actually
@@ -187,6 +207,35 @@ export default async function DashboardPage() {
       cardLabel: 'จัดการ',
       align: 'end',
       render: (row) => <InboundDismissButton transfer={row} />,
+    },
+  ];
+
+  type UndeliveredRow = (typeof undelivered)[number];
+  const undeliveredColumns: Column<UndeliveredRow>[] = [
+    {
+      key: 'kind',
+      header: 'ข้อความ',
+      cardLabel: 'ข้อความ',
+      render: (row) => NOTIFICATION_KIND_LABELS[row.kind] ?? row.kind,
+    },
+    {
+      key: 'recipient',
+      header: 'ปลายทาง',
+      cardLabel: 'ปลายทาง',
+      render: (row) => <span className="ln-mono">{row.recipient}</span>,
+    },
+    {
+      key: 'attempts',
+      header: 'ลองแล้ว',
+      cardLabel: 'ลองแล้ว',
+      align: 'end',
+      render: (row) => <span className="ln-num">{row.attempts} ครั้ง</span>,
+    },
+    {
+      key: 'error',
+      header: 'สาเหตุที่ผู้ให้บริการแจ้ง',
+      cardLabel: 'สาเหตุ',
+      render: (row) => <span className="ln-mono">{shorten(row.lastError ?? '—', 60)}</span>,
     },
   ];
 
@@ -457,6 +506,26 @@ export default async function DashboardPage() {
             rows={unattributed}
             getRowKey={(row) => row.id}
             caption="เงินโอนเข้าที่ระบบยังไม่รู้ว่าเป็นบิลไหน"
+          />
+        </Card>
+      ) : null}
+
+      {/*
+        Delivery that has given up. Rendered only when it has, and with the
+        gateway's own words attached — a shop that has just fixed a URL needs to
+        know which messages never made it, not that the queue is empty.
+      */}
+      {outbox.abandoned > 0 ? (
+        <Card
+          title="ข้อความแจ้งเตือนที่ส่งไม่ออก"
+          subtitle="ระบบลองส่งซ้ำหลายครั้งแล้วไม่สำเร็จ — มักเกิดจาก URL หรือคีย์ของช่องทางที่ตั้งไว้ผิด"
+          flush
+        >
+          <DataTable
+            columns={undeliveredColumns}
+            rows={undelivered}
+            getRowKey={(row) => row.id}
+            caption="ข้อความที่ส่งไม่ออก และเหตุผลที่ผู้ให้บริการตอบกลับมา"
           />
         </Card>
       ) : null}

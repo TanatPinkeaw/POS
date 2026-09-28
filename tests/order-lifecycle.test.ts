@@ -1,7 +1,7 @@
 // Seam under test: the SRS §3 lifecycle end to end, against a real database.
 // Every assertion is about observable state — order status, the two stock
 // counters, the ledger — never about internals.
-import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeShift, openShift } from '@/lib/cash-shifts';
 import { ConflictError } from '@/lib/errors';
@@ -434,5 +434,56 @@ describe('the tender lines a receipt is printed from', () => {
     expect(sale.tenders.reduce((total, tender) => total + tenderedAmount(tender), 0)).toBe(
       sale.finalAmountThb + sale.changeThb,
     );
+  });
+});
+
+describe('the messages an order leaves behind', () => {
+  it('queues the shop a note at placement and the customer a code at packing', async () => {
+    /*
+     * The outbox is written by the order transaction, not after it, which is the
+     * only reason a message cannot go missing when the process dies between
+     * committing the order and telling anybody about it.
+     */
+    vi.stubEnv('NOTIFY_CHANNEL', 'webhook');
+    vi.stubEnv('NOTIFY_STAFF_TO', '0800000001');
+    try {
+      const productId = await withProduct(10, 100);
+      const placed = await placePreOrder({
+        customerId: people.memberId,
+        lines: [{ productId, quantity: 1 }],
+      });
+      await confirmOrder({ orderId: placed.orderId, employeeId: people.employeeId });
+      const packed = await markOrderReady({
+        orderId: placed.orderId,
+        employeeId: people.employeeId,
+      });
+
+      const queued = await prisma.notifications.findMany({ orderBy: { id: 'asc' } });
+
+      expect(queued.map((row) => row.kind)).toEqual(['pre_order_placed', 'order_ready']);
+      // The shop's own note goes to the shop; the collection code goes to the
+      // customer's phone and nowhere else.
+      expect(queued[0]?.recipient).toBe('0800000001');
+      expect(queued[1]?.recipient).toBe('0900000001');
+      expect(queued[1]?.body).toContain(packed.pickupPin);
+      expect(queued[0]?.body).toContain(placed.orderNumber);
+      expect(queued.every((row) => row.status === 'pending' && row.attempts === 0)).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('queues nothing at all when the shop has configured no channel', async () => {
+    // The in-app path is the fallback, and it is not a degraded one: a shop with
+    // no gateway gets no half-configured messages to clean up either.
+    const productId = await withProduct(10, 100);
+    const placed = await placePreOrder({
+      customerId: people.memberId,
+      lines: [{ productId, quantity: 1 }],
+    });
+    await confirmOrder({ orderId: placed.orderId, employeeId: people.employeeId });
+    await markOrderReady({ orderId: placed.orderId, employeeId: people.employeeId });
+
+    expect(await prisma.notifications.count()).toBe(0);
   });
 });
