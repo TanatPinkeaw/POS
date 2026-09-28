@@ -13,10 +13,12 @@ import { openShift } from '@/lib/cash-shifts';
 import { createPosSale } from '@/lib/orders';
 import {
   cancelIntent,
+  closedTransferTotals,
   confirmIntent,
   consumeIntent,
   createIntent,
   findIntent,
+  listAwaitingCollection,
   sweepExpiredIntents,
 } from '@/lib/payment-intents';
 import { createShop } from '@/lib/shop';
@@ -224,6 +226,56 @@ describe('settling a bill with a paid QR', () => {
     await expect(
       cancelIntent({ ref: intent.ref, actorId: people.employeeId }),
     ).rejects.toBeInstanceOf(ConflictError);
+  });
+});
+
+describe('money that arrived and closed no bill', () => {
+  it('names a payment waiting longer than its own QR was valid', async () => {
+    const { shiftId } = await shopWithPromptPay();
+    const intent = await createIntent({ shiftId, cashierId: people.employeeId, amountThb: 88 });
+    await confirmIntent({ ref: intent.ref, confirmedByUserId: people.adminId });
+
+    // Seconds later this is the normal, transient state and worth no screen at all.
+    expect(await listAwaitingCollection()).toEqual([]);
+
+    /*
+     * Long after the QR's own window has gone by, it is a sale nobody rang up —
+     * the most expensive thing the dashboard can find, because the customer has
+     * paid, the shop has their money, and no receipt exists.
+     */
+    const later = await listAwaitingCollection(new Date(Date.now() + 10 * 60 * 1000));
+    expect(later).toHaveLength(1);
+    expect(later[0]?.ref).toBe(intent.ref);
+    expect(later[0]?.amountThb).toBe(88);
+    expect(later[0]?.cashierName).toBe('แคชเชียร์');
+    expect(later[0]?.waitingMinutes).toBe(10);
+  });
+
+  it('stops naming it once the bill is rung up, and counts it as a closed transfer', async () => {
+    const { shiftId } = await shopWithPromptPay();
+    const product = await seedProduct({ name: 'กาแฟ', stockQty: 5, salePrice: 88 });
+    const intent = await createIntent({ shiftId, cashierId: people.employeeId, amountThb: 88 });
+    await confirmIntent({ ref: intent.ref, confirmedByUserId: people.adminId });
+
+    const sale = await createPosSale({
+      cashierId: people.employeeId,
+      shiftId,
+      lines: [{ productId: product.id, quantity: 1 }],
+      customerId: null,
+      settlement: { promptpay: 88 },
+      intentRef: intent.ref,
+    });
+
+    expect(sale.finalAmountThb).toBe(88);
+    const later = new Date(Date.now() + 10 * 60 * 1000);
+    expect(await listAwaitingCollection(later)).toEqual([]);
+
+    // The other number the day's reconciliation needs: transfers that closed a bill.
+    const totals = await closedTransferTotals({
+      from: new Date(Date.now() - 60_000),
+      to: later,
+    });
+    expect(totals).toEqual({ count: 1, amountThb: 88 });
   });
 });
 

@@ -12,6 +12,7 @@ import { openShift } from '@/lib/cash-shifts';
 import { ConflictError, ValidationError } from '@/lib/errors';
 import {
   dismissInboundTransfer,
+  inboundDaySummary,
   listInboundTransfers,
   recordInboundTransfer,
 } from '@/lib/inbound-payments';
@@ -313,6 +314,57 @@ describe('money a person says is not ours', () => {
     ).rejects.toBeInstanceOf(ValidationError);
 
     expect((await listInboundTransfers()).map((row) => row.id)).toEqual([record.id]);
+  });
+});
+
+describe("a day's transfers, added up", () => {
+  it('counts what matched and what did not, and the money in each', async () => {
+    const { shiftId } = await openShop();
+    const intent = await qr(shiftId, 107);
+
+    await recordInboundTransfer({
+      amountThb: 107,
+      text: `โอน ${intent.ref}`,
+      source: 'bank-bridge',
+    });
+    await recordInboundTransfer({
+      amountThb: 11,
+      text: 'โอน 11.00',
+      source: 'bank-bridge',
+    });
+
+    const today = await inboundDaySummary();
+    expect(today).toEqual({
+      matchedCount: 1,
+      matchedThb: 107,
+      unmatchedCount: 1,
+      unmatchedThb: 11,
+      dismissedCount: 0,
+    });
+
+    /*
+     * And yesterday's money is not today's. The window is the *bank's* day, built
+     * from Bangkok rather than from the process's timezone, so a transfer made at
+     * 23:50 belongs to the day it was made however late the bridge posted it.
+     */
+    const tomorrow = await inboundDaySummary(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    expect(tomorrow.matchedCount).toBe(0);
+    expect(tomorrow.unmatchedThb).toBe(0);
+  });
+
+  it('counts money it could not read without inventing a figure for it', async () => {
+    await openShop();
+    await recordInboundTransfer({
+      amountThb: null,
+      text: 'มีเงินเข้าบัญชี',
+      source: 'bank-bridge',
+    });
+
+    const today = await inboundDaySummary();
+    // The count says something is waiting; the sum stays empty, because a sum of
+    // one unknown and nothing else is not zero — it is unknown.
+    expect(today.unmatchedCount).toBe(1);
+    expect(today.unmatchedThb).toBe(0);
   });
 });
 

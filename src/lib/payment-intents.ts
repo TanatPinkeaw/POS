@@ -32,9 +32,17 @@ import { fromDecimal, roundThb } from './money';
 import { buildPromptPayPayload, type PromptPayIdType } from './promptpay';
 import { recordAudit } from './audit';
 import { loadShop } from './shop';
-import type { PaymentIntentStatus, PaymentIntentView } from './payment-intents-view';
+import type {
+  AwaitingCollectionView,
+  PaymentIntentStatus,
+  PaymentIntentView,
+} from './payment-intents-view';
 
-export type { PaymentIntentStatus, PaymentIntentView } from './payment-intents-view';
+export type {
+  AwaitingCollectionView,
+  PaymentIntentStatus,
+  PaymentIntentView,
+} from './payment-intents-view';
 
 /**
  * How long a QR stays payable.
@@ -289,6 +297,73 @@ export async function cancelIntent(input: {
     throw new NotFoundError(`Payment intent ${input.ref}`);
   }
   return intent;
+}
+
+/**
+ * QR transfers that closed a bill inside a window, as a total.
+ *
+ * The other half of the day's reconciliation: `consumed` is the only status that
+ * means a sale exists, so this is what the day's confirmed transfers are compared
+ * against (`inbound-reconcile.ts`).
+ */
+export async function closedTransferTotals(input: {
+  from: Date;
+  to: Date;
+}): Promise<{ count: number; amountThb: number }> {
+  const rows = await prisma.$queryRaw<{ count: bigint; amount: unknown }[]>`
+    SELECT COUNT(*) AS count, COALESCE(SUM("amount"), 0) AS amount
+      FROM "payment_intents"
+     WHERE "status" = 'consumed'
+       AND "consumed_at" >= ${input.from}
+       AND "consumed_at" <  ${input.to}
+  `;
+  const row = rows[0];
+  return {
+    count: row ? Number(row.count) : 0,
+    amountThb: row ? fromDecimal(row.amount as never) : 0,
+  };
+}
+
+/**
+ * Money that arrived and closed no bill.
+ *
+ * A QR is confirmed within seconds of the customer paying, and consumed the moment
+ * the cashier finishes the sale — so a `paid` intent that is *still* paid after
+ * the code's own payable window has gone by is a sale nobody rang up. That window
+ * is the threshold, rather than a number invented for this screen: if a bill did
+ * not close inside the time its QR was valid, something happened that a person
+ * should look at.
+ *
+ * Oldest first — the money that has been sitting longest is the one to chase.
+ */
+export async function listAwaitingCollection(
+  now: Date = new Date(),
+  limit = 10,
+): Promise<AwaitingCollectionView[]> {
+  const cutoff = new Date(now.getTime() - intentTtlSeconds() * 1000);
+
+  const rows = await prisma.payment_intents.findMany({
+    where: { status: 'paid', order_id: null, paid_at: { lt: cutoff } },
+    orderBy: { paid_at: 'asc' },
+    take: limit,
+    select: {
+      ref: true,
+      amount: true,
+      paid_at: true,
+      cashier: { select: { full_name: true } },
+    },
+  });
+
+  return rows.map((row) => {
+    const paidAt = row.paid_at ?? now;
+    return {
+      ref: row.ref,
+      amountThb: fromDecimal(row.amount),
+      paidAt: paidAt.toISOString(),
+      cashierName: row.cashier?.full_name ?? null,
+      waitingMinutes: Math.max(0, Math.floor((now.getTime() - paidAt.getTime()) / 60_000)),
+    };
+  });
 }
 
 /** One intent by reference, swept for expiry first. */

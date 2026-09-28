@@ -46,6 +46,25 @@ export function formatCountdown(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+/**
+ * Money that arrived and closed no bill.
+ *
+ * A QR goes `paid` the instant a confirmation lands and only becomes `consumed`
+ * when the till finishes the sale, so this list is normally empty — and when it
+ * is not, it is the most expensive thing on the screen: a customer has paid, the
+ * shop has their money, and no receipt exists.
+ */
+export interface AwaitingCollectionView {
+  ref: string;
+  amountThb: number;
+  /** ISO instant the money was confirmed. */
+  paidAt: string;
+  /** Who was at the till when the QR was issued, so somebody can be asked. */
+  cashierName: string | null;
+  /** How long it has been sitting, for the sentence beside it. */
+  waitingMinutes: number;
+}
+
 export const PAYMENT_INTENT_STATUS_LABELS: Record<PaymentIntentStatus, string> = {
   pending: 'รอรับเงิน',
   paid: 'เงินเข้าแล้ว',

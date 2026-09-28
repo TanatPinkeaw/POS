@@ -230,9 +230,11 @@ Stated here rather than implied anywhere above:
 **Competitive parity, which follows demand rather than correctness:**
 
 8. ~~**QR payment generation and verification at the till**~~ — **done** without a
-   PSP: the QR is generated at the till and the bill is closed from the shop's own
-   bank notification (ADR 0005). What is left here is a screen for the money that
-   matched, so a statement can be reconciled in one place.
+   PSP: the QR is generated at the till, the bill is closed from the shop's own
+   bank notification (ADR 0005), and the dashboard reconciles the day — what the
+   bank confirmed against what closed a bill, with the payments that closed
+   nothing called out. What is left here is a range rather than a day, for a
+   statement that covers a week or a month.
 9. **Audit-log viewer plus rate limiting** — hardening; do it before exposing the
    till to a public network.
 10. **Kitchen/table features** — only if we decide to serve food service. Today

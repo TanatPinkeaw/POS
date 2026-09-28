@@ -88,6 +88,21 @@ export function parseBangkokDay(value: string): Date {
 }
 
 /**
+ * The instants a Bangkok calendar day spans: inclusive midnight to the next.
+ *
+ * The half-open pair is the shape every day-scoped query wants — `>= from` and
+ * `< to` — and writing it out at each call site is how a query ends up including
+ * the first second of tomorrow and counting a sale twice across two screens.
+ */
+export function bangkokDayBounds(now: Date = new Date()): { from: Date; to: Date } {
+  const day = bangkokDateString(now);
+  return {
+    from: parseBangkokDay(day),
+    to: parseBangkokDay(addBangkokDays(day, 1)),
+  };
+}
+
+/**
  * True when `value` is a `YYYY-MM-DD` that names a real Bangkok day.
  *
  * The boolean sibling of `parseBangkokDay`, for validators that want to reject a

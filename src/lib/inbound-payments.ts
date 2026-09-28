@@ -23,6 +23,7 @@
  * closed a bill that is still sitting on a QR, which is not recoverable at all:
  * a lie in the money record is worse than a gap in it.
  */
+import { bangkokDayBounds } from './bangkok-time';
 import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { matchInboundTransfer, type InboundRefusalReason } from './inbound-match';
@@ -183,15 +184,72 @@ async function candidatesFor(amountThb: number, receivedAt: Date) {
 export async function listInboundTransfers(input: {
   status?: InboundStatus;
   limit?: number;
+  /** Inclusive lower bound on the bank's own instant. */
+  from?: Date;
+  /** Exclusive upper bound, so a day and the next abut without overlapping. */
+  to?: Date;
 } = {}): Promise<InboundTransferView[]> {
   const rows = await prisma.inbound_payments.findMany({
-    where: { status: input.status ?? 'unmatched' },
+    where: {
+      status: input.status ?? 'unmatched',
+      ...(input.from || input.to
+        ? { received_at: { ...(input.from ? { gte: input.from } : {}), ...(input.to ? { lt: input.to } : {}) } }
+        : {}),
+    },
     // Newest first, and `id` breaks the tie: two notifications posted in the same
     // millisecond are ordered by arrival rather than arbitrarily.
     orderBy: [{ received_at: 'desc' }, { id: 'desc' }],
     take: input.limit ?? INBOUND_PAGE_SIZE,
   });
   return rows.map(toView);
+}
+
+/** A day's transfers, by what became of them. */
+export interface InboundDaySummary {
+  matchedCount: number;
+  matchedThb: number;
+  unmatchedCount: number;
+  /** Money waiting for a person. Zero when the amount could not be read. */
+  unmatchedThb: number;
+  dismissedCount: number;
+}
+
+/**
+ * What the bank reported today, grouped by outcome.
+ *
+ * Today means the *bank's* day: `received_at` is when the money moved, so a
+ * notification that sat in a mailbox until morning still belongs to the day the
+ * transfer happened. The waiting list on the screen is deliberately not limited
+ * to today — money nobody has dealt with is still nobody's business to ignore
+ * because midnight passed.
+ */
+export async function inboundDaySummary(now: Date = new Date()): Promise<InboundDaySummary> {
+  const { from, to } = bangkokDayBounds(now);
+
+  const rows = await prisma.inbound_payments.groupBy({
+    by: ['status'],
+    where: { received_at: { gte: from, lt: to } },
+    _count: { _all: true },
+    _sum: { amount: true },
+  });
+
+  const find = (status: InboundStatus) => rows.find((row) => row.status === status);
+  const matched = find('matched');
+  const unmatched = find('unmatched');
+  const dismissed = find('dismissed');
+
+  return {
+    matchedCount: matched?._count._all ?? 0,
+    matchedThb: matched?._sum.amount ? fromDecimal(matched._sum.amount) : 0,
+    unmatchedCount: unmatched?._count._all ?? 0,
+    /*
+     * Money with no readable amount contributes nothing here, which is the honest
+     * number: a sum has to be a sum of figures. The count beside it is what tells
+     * the owner that something unread is waiting.
+     */
+    unmatchedThb: unmatched?._sum.amount ? fromDecimal(unmatched._sum.amount) : 0,
+    dismissedCount: dismissed?._count._all ?? 0,
+  };
 }
 
 /**

@@ -88,7 +88,7 @@ tried and hurt, and several are enforced by a test or a check.
 7. **Pure logic and persistence stay in separate modules.** State machines,
    pricing and the loyalty/discount maths are pure functions in `src/lib/*-rules`
    or alongside their domain; the database lives in a separate module. That split
-   is why 313 of the 502 tests need no database at all.
+   is why 319 of the 512 tests need no database at all.
 8. **Every route handler funnels through `withApi` and stamps its own
    authorisation.** The role always comes from the signed session token, never
    from a request body. `src/proxy.ts` decides which *area* an unauthenticated
@@ -141,6 +141,10 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   second refund is impossible even when two requests race past `canTransition`.
   `refunded` is a terminal order status (`src/lib/order-state.ts`), and the only
   edge into it is `refund` out of `completed`.
+- **`inbound_payments` is only half of a transfer.** The other half is the
+  `payment_intents` row that closed a bill, and the only way to see the day as a
+  whole is to compare them (`src/lib/inbound-reconcile.ts`). A change to either
+  status machine changes that comparison.
 - **`UNIQUE (source, external_id)` on `inbound_payments`** — the same bank message
   is recorded once, so a retrying bridge cannot double-count money. `external_id`
   is the bank's own `Message-ID`, falling back to the mailbox UID.
@@ -258,9 +262,9 @@ Open threads, roughly in the order worth doing:
    three asks for. The shape is a credit note that itemises the part it reverses
    rather than mirroring its invoice, and it is the head of the gap list in
    `README.md`.
-2. **Reconciling matched transfers.** Unattributed money is visible and closable,
-   but money that matched a bill is only visible in the audit trail, so a shop
-   checking a bank statement against a day still reads two lists.
+2. **A reconciliation over a range.** The dashboard reconciles today — confirmed
+   transfers against the bills they closed, plus what is waiting — but a statement
+   covering a week is still compared by hand.
 3. **Notification outbox with a real channel** (gap analysis §4.2). The bridge
    proves the shop can carry facts outward; the same bridge pattern is half of what
    a LINE/SMS notifier needs.

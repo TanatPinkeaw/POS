@@ -189,7 +189,7 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 502 tests across 34 files: unit + integration
+npm test                # 512 tests across 35 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 82 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
@@ -240,6 +240,9 @@ was misread because of it — the application was right and the harness was lyin
 - **Money arriving from a bank notification**, including the refusals: an amount
   matching a bill but naming none, two candidates for one amount, money that
   arrives after the QR was withdrawn, and a bridge retrying the same message.
+- **The day's transfers against the bills they closed**, including that a satang
+  is a difference, that a payment waiting longer than its own QR was valid is
+  named, and that a QR transfer stops being flagged the moment its bill is rung up.
 
 `npm run smoke` drives the running server as a browser would — logging in as all
 three roles, placing a pre-order, confirming it, collecting it with a PIN,
@@ -319,7 +322,7 @@ endpoint that says so.
 
 The domain rules are split into **pure functions** (loyalty, settlement, the
 state machine, the discrepancy formula) and **persistence** modules. That split
-is why 313 of the 502 tests need no database at all, and why the money rules can
+is why 319 of the 512 tests need no database at all, and why the money rules can
 be checked without a running server.
 
 ---
@@ -342,6 +345,7 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | `GET /api/v1/orders/{id}/credit-note` | Reprint data for that credit note — the sibling of the receipt route. |
 | `POST /api/v1/payments/inbound` | A bank notification, from the shop's own bridge. Machine-only, shared secret. |
 | `GET /api/v1/payments/inbound` | Money the bank reported that could not be matched to a bill. Admin-only. |
+| `/admin/dashboard` → เงินโอนเข้าวันนี้ | Confirmed vs closed transfers for the day, the awaiting-collection list, and the unmatched list. |
 
 Two database-enforced invariants carry most of the weight:
 
@@ -460,6 +464,15 @@ needs bank API onboarding and an authority this system should not hold: a bug in
 matcher that closes a bill is a bill closed wrongly, while a bug in one that pays
 out is money gone.
 
+**And the day adds up in one place.** Every transfer leaves two traces — the bank's
+confirmation and the bill that closed — and the dashboard compares them: confirmed,
+closed, and the difference with both of its normal explanations (a transfer
+confirmed by hand at the till, or money that arrived and was never rung up).
+Beneath it are the two lists that make it actionable: payments the bank confirmed
+that no bill has closed (the expensive one — the customer has paid and no receipt
+exists), and money that could not be matched to anything at all. Where the figures
+disagree, the screen says which side is larger; nothing here claims to know why.
+
 ---
 
 ## Deliberate deviations and additions
@@ -522,6 +535,6 @@ Deferred deliberately, and listed here rather than discovered during service:
   exist; there is no upload and no storage.
 - **Production hardening:** rate limiting, an audit-log viewer, RTL, and object
   storage.
-- **A reconciliation screen for matched transfers.** Unattributed money is visible
-  and closable; money that matched a bill is only visible in the audit trail, so a
-  shop reconciling a statement against the day still reads two lists.
+- **A reconciliation screen over a date range.** The dashboard reconciles *today*:
+  what the bank confirmed against what closed a bill, with the transfers left
+  over. Comparing a week or a month against a statement is still two screens.

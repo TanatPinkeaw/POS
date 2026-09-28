@@ -5,6 +5,7 @@ import {
   CardGrid,
   DataTable,
   EmptyState,
+  InlineNotice,
   Money,
   PageHeader,
   Pill,
@@ -15,14 +16,18 @@ import {
   type Column,
 } from '@/components/ds';
 import { dashboardSnapshot } from '@/lib/analytics';
-import { bangkokDateTimeString } from '@/lib/bangkok-time';
+import { bangkokDateTimeString, bangkokDayBounds } from '@/lib/bangkok-time';
 import { shortThaiDay, type TrendPoint } from '@/lib/chart';
-import { listInboundTransfers } from '@/lib/inbound-payments';
+import { inboundDaySummary, listInboundTransfers } from '@/lib/inbound-payments';
+import { reconcileTransfers } from '@/lib/inbound-reconcile';
 import {
   INBOUND_REFUSAL_LABELS,
+  RECONCILE_VERDICTS,
   type InboundTransferView,
 } from '@/lib/inbound-transfer-view';
 import { formatThb } from '@/lib/money';
+import { closedTransferTotals, listAwaitingCollection } from '@/lib/payment-intents';
+import type { AwaitingCollectionView } from '@/lib/payment-intents-view';
 
 /**
  * Sales dashboard and financial analytics — SRS §2, admin-only.
@@ -71,10 +76,28 @@ export default async function DashboardPage() {
    * safe to run: a notification that cannot be matched has to end up somewhere a
    * person will see it.
    */
-  const [snapshot, unattributed] = await Promise.all([
+  const dayBounds = bangkokDayBounds();
+  const [snapshot, unattributed, inboundToday, closedToday, awaiting] = await Promise.all([
     dashboardSnapshot(),
     listInboundTransfers(),
+    inboundDaySummary(),
+    closedTransferTotals(dayBounds),
+    listAwaitingCollection(),
   ]);
+
+  /*
+   * The day's transfers, read two ways: what the bank confirmed, and what actually
+   * closed a bill. Where they disagree the screen says which side is larger and
+   * names the two normal causes — because a shop that confirms transfers by hand
+   * has no notifications at all, and that is not a fault. What it *cannot* say is
+   * "nothing is wrong", which is why the transfers themselves are listed under it.
+   */
+  const reconciled = reconcileTransfers({
+    confirmedThb: inboundToday.matchedThb,
+    closedThb: closedToday.amountThb,
+  });
+  const hasTransferNews =
+    inboundToday.matchedCount + closedToday.count + awaiting.length > 0;
 
   const points: TrendPoint[] = snapshot.salesByDay.map((day) => ({
     label: shortThaiDay(day.day),
@@ -86,6 +109,44 @@ export default async function DashboardPage() {
   type StockRow = (typeof snapshot.lowStock)[number];
   type OrderRow = (typeof snapshot.recentOrders)[number];
   type InboundRow = InboundTransferView;
+
+  const awaitingColumns: Column<AwaitingCollectionView>[] = [
+    {
+      key: 'ref',
+      header: 'รหัสรับเงิน',
+      cardLabel: 'รหัสรับเงิน',
+      render: (row) => <span className="ln-mono">{row.ref}</span>,
+    },
+    {
+      key: 'amount',
+      header: 'ยอดที่ลูกค้าโอน',
+      align: 'end',
+      render: (row) => <Money amount={row.amountThb} />,
+    },
+    {
+      key: 'paidAt',
+      header: 'ธนาคารยืนยันเมื่อ',
+      cardLabel: 'ธนาคารยืนยันเมื่อ',
+      render: (row) => <span className="ln-num">{bangkokDateTimeString(new Date(row.paidAt))}</span>,
+    },
+    {
+      key: 'waiting',
+      header: 'รอมาแล้ว',
+      cardLabel: 'รอมาแล้ว',
+      render: (row) => (
+        <Pill tone={row.waitingMinutes >= 60 ? 'danger' : 'warning'}>
+          {row.waitingMinutes < 60
+            ? `${row.waitingMinutes} นาที`
+            : `${Math.floor(row.waitingMinutes / 60)} ชม.`}
+        </Pill>
+      ),
+    },
+    {
+      key: 'cashier',
+      header: 'แคชเชียร์',
+      render: (row) => row.cashierName ?? '—',
+    },
+  ];
 
   const inboundColumns: Column<InboundRow>[] = [
     {
@@ -331,6 +392,53 @@ export default async function DashboardPage() {
           />
         </Card>
       </CardGrid>
+
+      {/*
+        The reconciliation, rendered only on a day that had transfers. Everything
+        on it is read from the same two sources the till writes — the bank's
+        confirmation and the QR that closed — so an owner comparing a statement can
+        do it here rather than from two lists.
+      */}
+      {hasTransferNews ? (
+        <Card
+          title="เงินโอนเข้าวันนี้"
+          subtitle="เงินที่ธนาคารยืนยัน เทียบกับบิลที่ปิดด้วยการโอน — พร้อมรายการที่ยังต้องตาม"
+        >
+          <Stack gap="lg">
+            <Stat
+              label="ธนาคารยืนยัน"
+              value={<Money amount={reconciled.confirmedThb} />}
+              hint={`${inboundToday.matchedCount} รายการ`}
+              icon="cash"
+            />
+            <Stat
+              label="ปิดบิลด้วยการโอน"
+              value={<Money amount={reconciled.closedThb} />}
+              hint={`${closedToday.count} บิล`}
+              icon="check"
+            />
+            <InlineNotice
+              tone={reconciled.verdict === 'balanced' ? 'success' : 'warning'}
+              title={
+                reconciled.verdict === 'balanced'
+                  ? 'ยอดโอนตรงกับบิลที่ปิด'
+                  : `ต่างกัน ${formatThb(Math.abs(reconciled.differenceThb))}`
+              }
+            >
+              {RECONCILE_VERDICTS[reconciled.verdict]}
+            </InlineNotice>
+
+            {awaiting.length > 0 ? (
+              <DataTable
+                columns={awaitingColumns}
+                rows={awaiting}
+                getRowKey={(row) => row.ref}
+                caption="เงินที่ลูกค้าโอนแล้วแต่ยังไม่ปิดบิล"
+              />
+            ) : null}
+          </Stack>
+        </Card>
+      ) : null}
 
       {/*
         Rendered only when there is something to do, and that is a judgement: an
