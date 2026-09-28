@@ -1,14 +1,16 @@
 /*
  * Base layer: reset, typography, focus, print.
  *
- * This replaces Bootstrap's Reboot as the foundation of the UI. It is written to
- * coexist with Hope UI during the screen-by-screen migration, which means two
- * rules of engagement:
+ * This replaced Bootstrap's Reboot as the foundation of the UI, and it is the
+ * only base layer now: the vendored theme it was written to coexist with was
+ * removed in phase 5 (ADR 0003). Two rules of engagement it was written under,
+ * one of which is now history:
  *
- *   1. **Element selectors are prefixed with `html`.** Next injects this file
- *      before the linked Hope UI sheets, so `h1 { … }` loses to Hope UI's `h1`,
- *      while `html h1 { … }` (specificity 0,0,2) wins deterministically without
- *      `!important`. Later, when Hope UI is gone, the prefix is harmless.
+ *   1. **Element selectors are prefixed with `html`.** That prefix was load-
+ *      bearing while the linked Hope UI sheets were also in `<head>` — Next
+ *      injects this file first, so `h1 { … }` lost to Hope UI's `h1`, while
+ *      `html h1 { … }` (specificity 0,0,2) won deterministically without
+ *      `!important`. The prefix is inert now and is kept as-is.
  *   2. **Nothing here sets a font size in px on a component.** Components own
  *      their own type; this file only sets the document defaults.
  */
@@ -51,6 +53,16 @@ html h6 {
 }
 
 html p {
+  margin: 0;
+}
+
+/*
+ * Bootstrap's Reboot zeroes a definition list's indent; without this every `<dl>`
+ * is indented by the browser's default 40px and its terms gain a bottom margin.
+ * Needed as soon as the first timesheet renders a `<dt>`/`<dd>` pair.
+ */
+html dl,
+html dd {
   margin: 0;
 }
 
@@ -120,6 +132,51 @@ html pre {
 html .ln-mono {
   font-family: var(--ln-font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * A figure read across a counter: a pickup PIN, a queue number, a total someone is
+ * checking against a till. Monospace so a digit cannot be misread, tabular so it
+ * does not reflow, and letter-spaced so it does not read as part of the sentence
+ * beside it.
+ */
+html .ln-figure {
+  font-size: var(--ln-size-3xl);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+/*
+ * Secondary information beside a primary one: a barcode under a product name, a
+ * reservation count beside a stock figure. A muted `--ln-text-subtle` rather than
+ * an opacity, so it keeps its contrast ratio on every surface.
+ */
+html .ln-muted {
+  color: var(--ln-text-subtle);
+}
+
+/*
+ * A row of controls that belong together — the two buttons at the end of a table
+ * row, a pair of filter chips. `inline-flex` so it sits inside a table cell without
+ * claiming the full width the way a block row would.
+ */
+html .ln-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ln-space-2);
+}
+
+/*
+ * A compact bullet list: the reasons an import row was rejected, the quantities a
+ * count did not match. Inside a notice or a table cell, `<ul>`'s own indent and
+ * margin are both already accounted for by the container.
+ */
+html .ln-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding-left: var(--ln-space-5);
 }
 
 /* -------------------------------------------------------------------- focus */

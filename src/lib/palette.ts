@@ -1,29 +1,42 @@
 /**
- * The brand ramp, derived from one seed colour.
+ * The brand ramp, built from seven chosen anchor colours.
  *
  * Pure and separate from `scripts/brand-palette.ts` on purpose: the ramp is a
- * *design decision* that deserves tests (lightness must step monotonically, the
- * seed must survive verbatim, the on-brand text must be legible), and a script
+ * *design decision* that deserves tests (lightness must step monotonically, every
+ * anchor must survive verbatim, the on-brand text must be legible), and a script
  * whose only entry point is `main()` cannot be tested without writing a file.
  */
-import { hexToRgb, mix, readableTextOn } from './color';
+import { mix, readableTextOn } from './color';
 
-/** Where each step sits between the seed and white (above 600) or black (below). */
-export const BRAND_STEPS: readonly {
-  step: number;
-  toward: 'white' | 'black' | 'seed';
-  weight: number;
-}[] = [
-  { step: 50, toward: 'white', weight: 0.94 },
-  { step: 100, toward: 'white', weight: 0.88 },
-  { step: 200, toward: 'white', weight: 0.74 },
-  { step: 300, toward: 'white', weight: 0.58 },
-  { step: 400, toward: 'white', weight: 0.38 },
-  { step: 500, toward: 'white', weight: 0.18 },
-  { step: 600, toward: 'seed', weight: 0 },
-  { step: 700, toward: 'black', weight: 0.14 },
-  { step: 800, toward: 'black', weight: 0.3 },
-  { step: 900, toward: 'black', weight: 0.46 },
+/**
+ * The steps the anchors occupy, lightest first.
+ *
+ * The palette arrived as seven colours chosen by eye rather than as a formula, so
+ * the ramp is *anchored* rather than interpolated: steps 50–600 are those seven
+ * colours byte for byte, and only the three steps below them are derived. That is
+ * the inverse of the seed-based ramp this replaced, where one colour was exact and
+ * the other nine were approximations of it.
+ *
+ * The steps are assigned by measured luminance, which is not the order a list of
+ * swatches reads in. `#fbdab2` is lighter than `#fbbf93` is lighter than `#fa8072`
+ * — and a ramp that ignored that would put a hover state lighter than the button
+ * it belongs to.
+ */
+export const BRAND_ANCHOR_STEPS = [50, 100, 200, 300, 400, 500, 600] as const;
+
+/**
+ * The steps below the deepest anchor, mixed toward black.
+ *
+ * The palette stops at a mid-dark olive: right for a primary fill, too light to be
+ * a pressed state, a dark-mode canvas, or a shadowed edge. These three are derived
+ * for that reason, exactly as the seed-based ramp derived the steps under its own
+ * seed — the exact colours are the ones a human picked, and the mechanical ones are
+ * the ones nobody had an opinion about.
+ */
+const BRAND_DARK_STEPS: readonly { step: number; weight: number }[] = [
+  { step: 700, weight: 0.14 },
+  { step: 800, weight: 0.3 },
+  { step: 900, weight: 0.46 },
 ];
 
 /** Surfaces, borders and text. Named 0–950, so 0 is the lightest. */
@@ -32,12 +45,25 @@ export const NEUTRAL_STEPS = [
 ] as const;
 
 /**
- * 600 is the seed itself — the step every design system this replaces would call
- * "the" colour, and therefore what `--ln-brand` points at.
+ * 600 is the deepest anchor — the step every design system this replaces would
+ * call "the" colour, and therefore what `--ln-brand` points at.
  */
-export const SEED_STEP = 600;
+export const SEED_STEP = BRAND_ANCHOR_STEPS[BRAND_ANCHOR_STEPS.length - 1]!;
 
-const WHITE = '#ffffff';
+/**
+ * The anchor `--ln-brand` points at. Every generator that needs *the* brand colour
+ * rather than the scale goes through this, so "which step is the brand" is decided
+ * in one place.
+ */
+export function primaryAnchor(anchors: readonly string[]): string {
+  const index = BRAND_ANCHOR_STEPS.indexOf(SEED_STEP);
+  const hex = index === -1 ? undefined : anchors[index];
+  if (!hex) {
+    throw new Error(`The brand anchors must include step ${SEED_STEP}`);
+  }
+  return hex;
+}
+
 const BLACK = '#000000';
 /** The darkest neutral: not pure black, which is harsh on a lit till screen. */
 const INK = '#0b0c12';
@@ -45,9 +71,12 @@ const INK = '#0b0c12';
 /**
  * How much of the brand hue is mixed into every neutral.
  *
- * A pure grey ramp beside a saturated indigo looks like two palettes. Four
- * percent is below the threshold where anyone would call the greys "blue", but
- * enough that surfaces and the brand read as related.
+ * A pure grey ramp beside a saturated olive looks like two palettes. Four percent
+ * is below the threshold where anyone would call the greys "green" — a cast that
+ * low is a temperature, not a hue — but enough that surfaces and the brand read as
+ * related. It also has a job the previous indigo cast did not: on a warm palette a
+ * *cool* grey reads as a bug rather than as neutrality, because the two sit
+ * together in the same table without a border between them.
  */
 const NEUTRAL_CAST = 0.04;
 
@@ -65,12 +94,16 @@ const NEUTRAL_CAST = 0.04;
  *
  * So: the *values* are chosen, and they are chosen to be the light, low-chroma
  * surfaces a retail back office expects — `50` is the canvas, `200` is the border,
- * `600` is muted text. Only the *cast* is derived from the seed, which is what
- * keeps the greys related to the brand without turning them into a tint of it.
+ * `600` is muted text. Only the *cast* is derived from the brand, which is what
+ * keeps the greys related to it without turning them into a tint of it.
  *
  * `0` is pure white and takes no cast at all: a card on the canvas has to be
  * white, because that contrast against the canvas is what the layout reads as
  * "card" once elevation is gone.
+ *
+ * Because the cast is applied *to* these anchors rather than derived beside them,
+ * re-anchoring the brand re-tints every surface in the app from one edit — which
+ * is the whole reason the anchors are kept as plain values.
  */
 const NEUTRAL_ANCHORS: Record<number, string> = {
   0: '#ffffff',
@@ -91,10 +124,10 @@ const NEUTRAL_ANCHORS: Record<number, string> = {
 /**
  * How much of the cast each step may carry.
  *
- * The near-white surfaces are held back deliberately. A 4 % indigo cast on a
- * canvas is a blue-grey page, and on white it is a lavender card — so the steps
- * that exist to be *clean surfaces* carry a quarter of the cast, while the mid
- * greys that sit beside the brand in a table or a chart carry all of it.
+ * The near-white surfaces are held back deliberately. A 4 % cast on a canvas is a
+ * green-grey page, and on white it is a cream card — so the steps that exist to be
+ * *clean surfaces* carry a quarter of the cast, while the mid greys that sit
+ * beside the brand in a table or a chart carry all of it.
  */
 const CAST_FACTOR: Record<number, number> = {
   0: 0,
@@ -117,25 +150,31 @@ export interface RampEntry {
   hex: string;
 }
 
-export function buildBrandRamp(seed: string): RampEntry[] {
-  return BRAND_STEPS.map(({ step, toward, weight }) => ({
-    step,
-    hex:
-      toward === 'seed'
-        ? seed
-        : toward === 'white'
-          ? mix(seed, WHITE, weight)
-          : mix(seed, BLACK, weight),
-  }));
+export function buildBrandRamp(anchors: readonly string[]): RampEntry[] {
+  if (anchors.length !== BRAND_ANCHOR_STEPS.length) {
+    throw new Error(
+      `Expected ${BRAND_ANCHOR_STEPS.length} brand anchors, received ${anchors.length}`,
+    );
+  }
+
+  const primary = primaryAnchor(anchors);
+
+  return [
+    ...anchors.map((hex, index) => ({ step: BRAND_ANCHOR_STEPS[index]!, hex })),
+    ...BRAND_DARK_STEPS.map(({ step, weight }) => ({
+      step,
+      hex: mix(primary, BLACK, weight),
+    })),
+  ];
 }
 
-export function buildNeutralRamp(seed: string): RampEntry[] {
+export function buildNeutralRamp(primary: string): RampEntry[] {
   return NEUTRAL_STEPS.map((step) => {
     const anchor = NEUTRAL_ANCHORS[step];
     if (!anchor) {
       throw new Error(`No neutral anchor for step ${step}`);
     }
-    return { step, hex: mix(anchor, seed, NEUTRAL_CAST * (CAST_FACTOR[step] ?? 1)) };
+    return { step, hex: mix(anchor, primary, NEUTRAL_CAST * (CAST_FACTOR[step] ?? 1)) };
   });
 }
 
@@ -153,10 +192,17 @@ export const RAMP_END = '/* ramp:end */';
  *
  * Nine hues, and every one is chosen against a constraint rather than by taste:
  * the light value must be legible as text on white (the soft tint a pill uses is
- * derived from it, so the pill and the text it carries are the same hue), and the
- * dark value must be legible on the dark surface. Both are asserted in the test
- * suite, which is what stops a tenth category from being added with an
- * unreadable colour later.
+ * derived from it, so the pill and the text it carries are the same hue), the
+ * dark value must be legible on the dark surface, and — since the brand became a
+ * warm sweep from olive to salmon — neither may sit within a visible distance of
+ * any step of the brand ramp. All three are asserted in the test suite, which is
+ * what stops a tenth category from being added with an unreadable or
+ * brand-coloured value later.
+ *
+ * The dark warm hues (amber, orange, red) are deliberately saturated. The brand's
+ * light steps occupy the same warm band, and a dark surface leaves lightness no
+ * room to separate them, so chroma is the only axis that can — a pastel orange had
+ * measured ΔE 7 from `--ln-brand-100`, i.e. the same colour.
  *
  * Colours are assigned from a category's id, so a shop that bulk-imported its
  * categories still gets distinguishable aisles with no extra data entry.
@@ -174,9 +220,9 @@ export const CATEGORY_COLORS: readonly CategoryColor[] = [
   { key: 'blue', light: '#1d4ed8', dark: '#93b4ff' },
   { key: 'teal', light: '#0f6f68', dark: '#7fd8cf' },
   { key: 'green', light: '#15733a', dark: '#86e0a5' },
-  { key: 'amber', light: '#8a5f05', dark: '#f3cd7a' },
-  { key: 'orange', light: '#a8480a', dark: '#f6b27f' },
-  { key: 'red', light: '#b3261e', dark: '#ffa39a' },
+  { key: 'amber', light: '#8a5f05', dark: '#ffd95e' },
+  { key: 'orange', light: '#a8480a', dark: '#ffa03a' },
+  { key: 'red', light: '#b3261e', dark: '#ff5252' },
   { key: 'rose', light: '#9d174d', dark: '#f7a6c4' },
   { key: 'violet', light: '#6326cc', dark: '#c3abff' },
 ];
@@ -198,20 +244,22 @@ export function categoryColorKey(categoryId: number | null | undefined): string 
   return CATEGORY_COLORS[index]!.key;
 }
 
-/** The generated CSS. Deterministic: same seed in, same bytes out. */
-export function renderRampBlock(seed: string): string {
-  const brand = buildBrandRamp(seed);
+/** The generated CSS. Deterministic: same anchors in, same bytes out. */
+export function renderRampBlock(anchors: readonly string[]): string {
+  const brand = buildBrandRamp(anchors);
+  const seed = primaryAnchor(anchors);
   const neutral = buildNeutralRamp(seed);
 
   const lines: string[] = [];
   lines.push('/*');
   lines.push(' * GENERATED — do not edit by hand. `npm run brand:palette` rewrites');
-  lines.push(' * everything between the ramp markers from the seed in src/brand/brand.ts.');
-  lines.push(' * The semantic layer below this block is hand-written on purpose.');
+  lines.push(' * everything between the ramp markers from the anchors in');
+  lines.push(' * src/brand/brand.ts. The semantic layer below this block is hand-written');
+  lines.push(' * on purpose.');
   lines.push(' */');
   lines.push(':root {');
 
-  lines.push('  /* brand — 600 is the seed itself */');
+  lines.push('  /* brand — 50–600 are the chosen anchors verbatim, 700–900 are derived */');
   for (const { step, hex } of brand) {
     lines.push(`  --ln-brand-${step}: ${hex};`);
   }
@@ -225,15 +273,6 @@ export function renderRampBlock(seed: string): string {
   lines.push('');
   lines.push('  /* Legible text on a brand fill, chosen by contrast rather than by taste. */');
   lines.push(`  --ln-on-brand: ${readableTextOn(seed)};`);
-  lines.push('');
-  lines.push(
-    '  /* The seed as bare channels. Bootstrap-era code needs `r, g, b` for its',
-  );
-  lines.push('     `rgba(var(--x), 0.2)` form, and hardcoding the triple here is how a',
-  );
-  lines.push('     rebrand ends up half-applied. */');
-  const { r, g, b } = hexToRgb(seed);
-  lines.push(`  --ln-brand-rgb: ${r}, ${g}, ${b};`);
   lines.push('}');
 
   lines.push('');

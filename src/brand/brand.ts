@@ -35,16 +35,42 @@ export const BRAND = {
 } as const;
 
 /**
- * The brand colour seed. One value — `npm run brand:palette` derives the whole
- * 50–900 scale, the muted steps, and the dark-mode variants from it, so changing
- * the brand is a one-line change and never a hunt through stylesheets.
+ * The brand palette: seven chosen colours, lightest first.
  *
- * Indigo rather than the Hope UI blue this replaced: it has to stay legible
- * beside the three colours that already carry meaning on a till screen — green
- * (money in), amber (attention), red (money out) — so the brand sits in the
- * violet-blue corner where nothing else competes.
+ * `npm run brand:palette` writes these into the 50–600 steps of the ramp verbatim
+ * and derives only the three steps below them, so changing the brand is an edit to
+ * this list and never a hunt through stylesheets.
+ *
+ * Olive through to salmon rather than the indigo this replaced. The palette is a
+ * hue sweep — a green that ripens into a warm coral as it lightens — because the
+ * three colours that already carry meaning on a till screen are green (money in),
+ * amber (attention) and red (money out); a brand that sits between them can never
+ * be mistaken for a status, and the deep end stays dark enough to be the primary
+ * fill with white text on it.
+ *
+ * The order here is the palette, not the ramp: the ramp sorts these by measured
+ * luminance, which puts `#fa8072` between `#c5b380` and `#8e8e54`. That reordering
+ * is deliberate and load-bearing — a ramp whose steps do not get monotonically
+ * lighter is a ramp that cannot be used for a hover state.
  */
-export const BRAND_SEED = '#2e3bd8';
+export const BRAND_ANCHORS = [
+  '#fbdab2',
+  '#fbbf93',
+  '#fba17d',
+  '#c5b380',
+  '#fa8072',
+  '#8e8e54',
+  '#556b2f',
+] as const;
+
+/**
+ * The primary colour: the deepest anchor, and the colour of an action.
+ *
+ * Kept as a named export because plenty of places need *a* brand colour rather
+ * than a scale — the app icons, the browser chrome — and they should not have to
+ * know which step is the primary one.
+ */
+export const BRAND_SEED = '#556b2f';
 
 /** The colour a mobile browser paints its chrome with, per scheme. */
 export const THEME_COLOR = { light: BRAND_SEED, dark: '#12131C' } as const;

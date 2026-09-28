@@ -11,12 +11,16 @@
  *
  * Reading the file rather than a copy of its values is what makes that work. A
  * copied table would pass while the shipped stylesheet failed.
+ *
+ * The second half of the file asks the complementary question: not "is this pair
+ * legible" but "are these two colours *different*" — a status must not look like
+ * the brand, and the nine aisle colours must not look like each other.
  */
 import { readFileSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
-import { contrastRatio, mix } from '@/lib/color';
+import { contrastRatio, deltaE, mix, relativeLuminance } from '@/lib/color';
 
 const TOKENS_PATH = 'src/design/tokens.css';
 
@@ -346,6 +350,106 @@ describe.each(['light', 'dark'] as const)('tokens.css contrast (%s)', (scheme) =
     // only affordance a keyboard user gets on a 32 px target.
     const ratio = contrastRatio(color(scheme, '--ln-brand'), color(scheme, '--ln-canvas'));
     expect(ratio, `focus ring on canvas is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+  });
+});
+
+/**
+ * A colour is "clear of" another when the difference is past the point where the
+ * eye reads them as one colour. CIE76 ΔE 20 is that line: an order of magnitude
+ * above the just-noticeable difference, and where the palette audit found the
+ * failures it was written to catch — the two worst were ΔE 7 and ΔE 14, a status
+ * chip and a brand chip painted the same colour on a dark till.
+ *
+ * The tighter floor for statuses between themselves (25) is deliberate: two status
+ * chips sit inches apart in the same list, so they have to be told apart at a
+ * glance rather than from memory.
+ */
+const CLEAR_OF_BRAND = 20;
+const CLEAR_OF_EACH_OTHER = { status: 25, category: 15 } as const;
+
+const BRAND_STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900] as const;
+const STATUS_KEYS = ['success', 'warning', 'danger', 'info'] as const;
+
+describe.each(['light', 'dark'] as const)('brand separation (%s)', (scheme) => {
+  const brand = BRAND_STEPS.map((step) => ({
+    step,
+    hex: color(scheme, `--ln-brand-${step}`),
+  }));
+
+  const roles = [
+    ...STATUS_KEYS.map((key) => ({ role: 'status' as const, key, hex: color(scheme, `--ln-${key}`) })),
+    ...CATEGORY_KEYS.map((key) => ({ role: 'category' as const, key, hex: color(scheme, `--ln-cat-${key}`) })),
+  ];
+
+  it('keeps every status and category colour clear of every brand step', () => {
+    // The brand is a warm sweep from olive to salmon, which is exactly where a
+    // warning, a danger and a success all want to live. This is the assertion that
+    // keeps them apart — without it, a rebrand silently flattens the two together
+    // and nothing else in the suite notices.
+    for (const { role, key, hex } of roles) {
+      for (const step of brand) {
+        const distance = deltaE(hex, step.hex);
+        expect(
+          distance,
+          `${role} ${key} (${hex}) vs brand-${step.step} (${step.hex}) is ΔE ${distance.toFixed(1)} in ${scheme} mode`,
+        ).toBeGreaterThanOrEqual(CLEAR_OF_BRAND);
+      }
+    }
+  });
+
+  it('keeps the four statuses clear of each other', () => {
+    for (let i = 0; i < STATUS_KEYS.length; i += 1) {
+      for (let j = i + 1; j < STATUS_KEYS.length; j += 1) {
+        const first = color(scheme, `--ln-${STATUS_KEYS[i]!}`);
+        const second = color(scheme, `--ln-${STATUS_KEYS[j]!}`);
+        const distance = deltaE(first, second);
+        expect(
+          distance,
+          `${STATUS_KEYS[i]} and ${STATUS_KEYS[j]} are ΔE ${distance.toFixed(1)} in ${scheme} mode`,
+        ).toBeGreaterThanOrEqual(CLEAR_OF_EACH_OTHER.status);
+      }
+    }
+  });
+
+  it('keeps the nine aisle colours clear of each other', () => {
+    // A shop with nine categories should not end up with two aisles that look
+    // alike — the whole point of colour-coding them is peripheral recognition.
+    for (let i = 0; i < CATEGORY_KEYS.length; i += 1) {
+      for (let j = i + 1; j < CATEGORY_KEYS.length; j += 1) {
+        const first = color(scheme, `--ln-cat-${CATEGORY_KEYS[i]!}`);
+        const second = color(scheme, `--ln-cat-${CATEGORY_KEYS[j]!}`);
+        const distance = deltaE(first, second);
+        expect(
+          distance,
+          `${CATEGORY_KEYS[i]} and ${CATEGORY_KEYS[j]} are ΔE ${distance.toFixed(1)} in ${scheme} mode`,
+        ).toBeGreaterThanOrEqual(CLEAR_OF_EACH_OTHER.category);
+      }
+    }
+  });
+});
+
+describe('brand states', () => {
+  const steps = ['--ln-brand', '--ln-brand-hover', '--ln-brand-active'] as const;
+
+  it('darkens on hover in light mode and lightens in dark mode, never the reverse', () => {
+    // The direction is what matters, not the size: many palettes put a hover step a
+    // hair away from its resting step, and one that lands on the *other* side of it
+    // reads as a rendering fault rather than as feedback. The brand swap made this
+    // reachable, because the ramp's 200 and 300 steps are the same lightness to the
+    // eye while still being ordered by WCAG luminance.
+    const light = steps.map((name) => relativeLuminance(color('light', name)));
+    for (let index = 1; index < light.length; index += 1) {
+      expect(light[index]!, `${steps[index]} is not darker than ${steps[index - 1]}`).toBeLessThan(
+        light[index - 1]!,
+      );
+    }
+
+    const dark = steps.map((name) => relativeLuminance(color('dark', name)));
+    for (let index = 1; index < dark.length; index += 1) {
+      expect(dark[index]!, `${steps[index]} is not lighter than ${steps[index - 1]}`).toBeGreaterThan(
+        dark[index - 1]!,
+      );
+    }
   });
 });
 

@@ -1,19 +1,25 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
-import { BRAND_SEED } from '@/brand/brand';
-import { contrastRatio, hexToRgb, relativeLuminance } from '@/lib/color';
+import { BRAND_ANCHORS, BRAND_SEED, THEME_COLOR } from '@/brand/brand';
+import { contrastRatio, relativeLuminance } from '@/lib/color';
 import {
+  BRAND_ANCHOR_STEPS,
   buildBrandRamp,
   buildNeutralRamp,
   NEUTRAL_STEPS,
+  primaryAnchor,
   renderRampBlock,
   SEED_STEP,
 } from '@/lib/palette';
 
 const HEX = /^#[0-9a-f]{6}$/;
 
+const PRIMARY = primaryAnchor(BRAND_ANCHORS);
+
 describe('buildBrandRamp', () => {
-  const ramp = buildBrandRamp(BRAND_SEED);
+  const ramp = buildBrandRamp(BRAND_ANCHORS);
 
   it('covers the ten steps a design system expects', () => {
     expect(ramp.map((entry) => entry.step)).toEqual([
@@ -21,10 +27,22 @@ describe('buildBrandRamp', () => {
     ]);
   });
 
-  it('reproduces the seed verbatim at step 600', () => {
-    // The property that makes "change the brand" a one-line change: the seed is
-    // not approximated by the ramp, it *is* a step of it.
-    expect(ramp.find((entry) => entry.step === SEED_STEP)?.hex).toBe(BRAND_SEED);
+  it('reproduces every chosen anchor verbatim, at its own step', () => {
+    // The property that makes a rebrand an edit to one list: the anchors are not
+    // approximated by the ramp, they *are* steps of it — all seven of them.
+    for (const [index, hex] of BRAND_ANCHORS.entries()) {
+      expect(ramp.find((entry) => entry.step === BRAND_ANCHOR_STEPS[index])?.hex).toBe(hex);
+    }
+  });
+
+  it('puts the primary anchor at step 600', () => {
+    expect(ramp.find((entry) => entry.step === SEED_STEP)?.hex).toBe(PRIMARY);
+    expect(BRAND_SEED).toBe(PRIMARY);
+  });
+
+  it('refuses an anchor list of the wrong length', () => {
+    // A ramp with four colours in it would silently produce undefined steps.
+    expect(() => buildBrandRamp(BRAND_ANCHORS.slice(0, 4))).toThrow(/Expected 7 brand anchors/);
   });
 
   it('steps monotonically darker, so no two steps are the same colour', () => {
@@ -40,28 +58,30 @@ describe('buildBrandRamp', () => {
     }
   });
 
-  it('keeps the seed legible as text on white', () => {
+  it('keeps the primary legible as text on white', () => {
     // 600 is what `--ln-brand` points at, so it is used both as the colour of a
     // link on a white card and as the background of a primary button. The second
-    // reading (white text *on* the seed) is the same contrast ratio, because the
-    // ratio is symmetric.
-    expect(contrastRatio(BRAND_SEED, '#ffffff')).toBeGreaterThanOrEqual(4.5);
+    // reading (white text *on* the primary) is the same contrast ratio, because
+    // the ratio is symmetric. This is the constraint that decides *which* anchor 
+    // can be the primary at all: of the seven, only the deepest one clears AA on a
+    // white card.
+    expect(contrastRatio(PRIMARY, '#ffffff')).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('gives dark mode a lighter brand step rather than reusing the seed', () => {
-    // tokens.css sets `--ln-brand: var(--ln-brand-400)` under `body.dark`, for the
+  it('gives dark mode a lighter brand step rather than reusing the primary', () => {
+    // tokens.css sets `--ln-brand: var(--ln-brand-300)` under `body.dark`, for the
     // surface #171a2b. This asserts that choice is an improvement, not a habit:
-    // the seed itself would be too dark to read on a dark surface.
+    // the primary itself is too dark to read on a dark surface.
     const darkSurface = '#171a2b';
-    const four = ramp.find((entry) => entry.step === 400)?.hex ?? '';
-    expect(contrastRatio(four, darkSurface)).toBeGreaterThan(
-      contrastRatio(BRAND_SEED, darkSurface),
+    const three = ramp.find((entry) => entry.step === 300)?.hex ?? '';
+    expect(contrastRatio(three, darkSurface)).toBeGreaterThan(
+      contrastRatio(PRIMARY, darkSurface),
     );
   });
 });
 
 describe('buildNeutralRamp', () => {
-  const ramp = buildNeutralRamp(BRAND_SEED);
+  const ramp = buildNeutralRamp(PRIMARY);
 
   it('covers every declared step', () => {
     expect(ramp.map((entry) => entry.step)).toEqual([...NEUTRAL_STEPS]);
@@ -92,10 +112,10 @@ describe('buildNeutralRamp', () => {
 });
 
 describe('renderRampBlock', () => {
-  const block = renderRampBlock(BRAND_SEED);
+  const block = renderRampBlock(BRAND_ANCHORS);
 
   it('is deterministic, so a regenerated file produces no diff', () => {
-    expect(renderRampBlock(BRAND_SEED)).toBe(block);
+    expect(renderRampBlock(BRAND_ANCHORS)).toBe(block);
   });
 
   it('emits exactly one declaration per brand and neutral step, plus on-brand', () => {
@@ -104,15 +124,28 @@ describe('renderRampBlock', () => {
     expect(block.match(/--ln-on-brand:/g)).toHaveLength(1);
   });
 
-  it('publishes the seed as bare RGB channels, matching the ramp', () => {
-    // The Bootstrap-era bridge needs `r, g, b` for its `rgba(var(--x), 0.2)` form.
-    // Hardcoding that triple next to a generated ramp is exactly how a rebrand
-    // ends up half-applied, so it is generated from the same seed.
-    const { r, g, b } = hexToRgb(BRAND_SEED);
-    expect(block).toContain(`--ln-brand-rgb: ${r}, ${g}, ${b};`);
+  it('carries no Bootstrap-era token, so nothing outlives the bridge', () => {
+    // `--ln-brand-rgb` existed only so the vendored theme's `rgba(var(--x), 0.2)`
+    // form could be bridged. The theme is gone (ADR 0003), so a bare RGB triple
+    // reappearing here would be a token with no consumer.
+    expect(block).not.toContain('--ln-brand-rgb');
   });
 
   it('warns that it is generated', () => {
     expect(block).toContain('GENERATED');
+  });
+});
+
+describe('the installed-app manifest', () => {
+  const manifest = JSON.parse(readFileSync('public/manifest.webmanifest', 'utf8')) as {
+    theme_color?: string;
+  };
+
+  it('paints the browser chrome in the colour the app declares for it', () => {
+    // Two files declare the theme colour — `metadata.themeColor`, which comes from
+    // THEME_COLOR, and the manifest the OS reads, which is hand-written — and only
+    // one of them is generated. Without this, a rebrand ships a phone in the old
+    // colour, which is a drift nothing else in the suite would catch.
+    expect(manifest.theme_color?.toLowerCase()).toBe(THEME_COLOR.light);
   });
 });

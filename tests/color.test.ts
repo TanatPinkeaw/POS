@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
 import { BRAND_SEED } from '@/brand/brand';
-import { contrastRatio, hexToRgb, mix, readableTextOn, relativeLuminance, rgbToHex } from '@/lib/color';
+import {
+  contrastRatio,
+  deltaE,
+  hexToRgb,
+  lab,
+  mix,
+  readableTextOn,
+  relativeLuminance,
+  rgbToHex,
+} from '@/lib/color';
 
 describe('hexToRgb', () => {
   it('reads six-digit hex', () => {
@@ -69,6 +78,48 @@ describe('contrastRatio', () => {
       contrastRatio('#ffffff', BRAND_SEED),
       10,
     );
+  });
+});
+
+describe('lab', () => {
+  it('puts white and black at the ends of the lightness axis', () => {
+    expect(lab('#ffffff').l).toBeCloseTo(100, 2);
+    expect(lab('#000000').l).toBeCloseTo(0, 2);
+  });
+
+  it('matches the published value for sRGB red', () => {
+    // The one colour every Lab implementation agrees on, which is what makes this
+    // a check of the transform rather than of itself.
+    const red = lab('#ff0000');
+    expect(red.l).toBeCloseTo(53.24, 1);
+    expect(red.a).toBeCloseTo(80.09, 1);
+    expect(red.b).toBeCloseTo(67.2, 1);
+  });
+
+  it('is neutral on the grey axis', () => {
+    const grey = lab('#808080');
+    expect(grey.a).toBeCloseTo(0, 2);
+    expect(grey.b).toBeCloseTo(0, 2);
+  });
+});
+
+describe('deltaE', () => {
+  it('is 100 between black and white, the maximum for these ends', () => {
+    expect(deltaE('#000000', '#ffffff')).toBeCloseTo(100, 1);
+  });
+
+  it('is 0 for a colour against itself, and symmetric', () => {
+    expect(deltaE(BRAND_SEED, BRAND_SEED)).toBe(0);
+    expect(deltaE('#556b2f', '#fa8072')).toBeCloseTo(deltaE('#fa8072', '#556b2f'), 10);
+  });
+
+  it('catches a hue difference that a contrast ratio cannot see', () => {
+    // Contrast is a lightness measure, and blind to hue: these two sit at almost
+    // the same luminance, so the ratio says "barely a difference" while they are an
+    // olive and a green — which is exactly how a status chip ends up looking like
+    // the brand on a till. This is the comparison `deltaE` exists for.
+    expect(contrastRatio('#556b2f', '#19794a')).toBeLessThan(2);
+    expect(deltaE('#556b2f', '#19794a')).toBeGreaterThan(20);
   });
 });
 

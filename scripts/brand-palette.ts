@@ -10,8 +10,8 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 
-import { BRAND_SEED } from '../src/brand/brand';
-import { RAMP_END, RAMP_START, renderRampBlock } from '../src/lib/palette';
+import { BRAND_ANCHORS } from '../src/brand/brand';
+import { primaryAnchor, RAMP_END, RAMP_START, renderRampBlock } from '../src/lib/palette';
 
 const TOKENS_PATH = 'src/design/tokens.css';
 
@@ -26,23 +26,24 @@ function main(): void {
     process.exit(1);
   }
 
-  const block = renderRampBlock(BRAND_SEED);
+  const block = renderRampBlock(BRAND_ANCHORS);
   const current = source.slice(start + RAMP_START.length, end).trim();
 
   if (current === block) {
-    console.log(`brand palette: up to date (seed ${BRAND_SEED})`);
+    console.log(`brand palette: up to date (primary ${primaryAnchor(BRAND_ANCHORS)})`);
     return;
   }
 
   if (check) {
     console.error(
-      `brand palette is stale.\n  seed in src/brand/brand.ts: ${BRAND_SEED}\n  run: npm run brand:palette`,
+      `brand palette is stale.\n  anchors in src/brand/brand.ts: ${BRAND_ANCHORS.join(', ')}` +
+        `\n  run: npm run brand:palette`,
     );
     process.exit(1);
   }
 
   writeFileSync(TOKENS_PATH, `${source.slice(0, start + RAMP_START.length)}\n${block}\n${source.slice(end)}`);
-  console.log(`brand palette: rewrote ${TOKENS_PATH} from seed ${BRAND_SEED}`);
+  console.log(`brand palette: rewrote ${TOKENS_PATH} from ${BRAND_ANCHORS.length} anchors`);
 }
 
 main();

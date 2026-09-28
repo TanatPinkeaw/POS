@@ -86,6 +86,57 @@ export function contrastRatio(a: string, b: string): number {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+/* ------------------------------------------------------------------ distance */
+
+/** CIE L*a*b*, the space colour *differences* are measured in. */
+export interface Lab {
+  /** Lightness, 0 (black) to 100 (white). */
+  l: number;
+  /** Green to red. */
+  a: number;
+  /** Blue to yellow. */
+  b: number;
+}
+
+/* D65, the white point sRGB is defined against. */
+const WHITE_POINT = { x: 0.95047, y: 1, z: 1.08883 };
+const EPSILON = 216 / 24389;
+const KAPPA = 24389 / 27;
+
+/** sRGB → CIE L*a*b*. */
+export function lab(hex: string): Lab {
+  const { r, g, b } = hexToRgb(hex);
+  const linear = [toLinear(r), toLinear(g), toLinear(b)] as const;
+
+  const x = (0.4124564 * linear[0] + 0.3575761 * linear[1] + 0.1804375 * linear[2]) / WHITE_POINT.x;
+  const y = (0.2126729 * linear[0] + 0.7151522 * linear[1] + 0.0721750 * linear[2]) / WHITE_POINT.y;
+  const z = (0.0193339 * linear[0] + 0.1191920 * linear[1] + 0.9503041 * linear[2]) / WHITE_POINT.z;
+
+  const f = (value: number): number =>
+    value > EPSILON ? Math.cbrt(value) : (KAPPA * value + 16) / 116;
+  const fx = f(x);
+  const fy = f(y);
+  const fz = f(z);
+
+  return { l: 116 * fy - 16, a: 500 * (fx - fy), b: 200 * (fy - fz) };
+}
+
+/**
+ * CIE76 colour difference. Roughly: under 2 is invisible, 2–10 is a shade of the
+ * same colour, 10–20 is a clearly different colour, over 20 is a different colour
+ * family.
+ *
+ * CIE76 rather than CIEDE2000 because the question asked here is blunt — *is a
+ * status colour confusable with the brand at a glance, on a counter, through a
+ * cheap panel?* — and the older formula answers it with a tenth of the code. The
+ * thresholds the design system asserts are set with that slack in mind.
+ */
+export function deltaE(a: string, b: string): number {
+  const first = lab(a);
+  const second = lab(b);
+  return Math.hypot(first.l - second.l, first.a - second.a, first.b - second.b);
+}
+
 /**
  * The text colour to use on a filled surface, chosen by contrast rather than by
  * taste. `#0b0c12` is the project's ink rather than pure black, which is harsh

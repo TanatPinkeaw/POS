@@ -4,7 +4,8 @@
  * Two layers, deliberately:
  *
  *   1. the generated ramps between the ramp markers, owned by
- *      `scripts/brand-palette.ts` and derived from one seed colour;
+ *      `scripts/brand-palette.ts` and built from the anchor colours in
+ *      `src/brand/brand.ts`;
  *   2. the semantic tokens below them, written by hand, which are the only
  *      names components are allowed to use.
  *
@@ -13,56 +14,52 @@
  * what lets dark mode change the answer without touching a component. This is
  * the split that makes a design system survive its first redesign.
  *
- * CASCADE NOTE. Next injects this file before the `<link>`ed Hope UI sheets in
- * <head>, so a bare `:root` block loses to Hope UI's own `:root`. Everything here
- * is therefore scoped to `html:root` (specificity 0,1,1 rather than 0,1,0) and
- * dark mode to `html body.dark` (0,1,2). That is why the extra `html` is there —
- * it is not decoration, and it is what lets the brand land on screens that have
- * not been migrated yet. When Hope UI is finally removed in phase 5 these
- * selectors can be simplified, and until then they cost nothing.
+ * CASCADE NOTE. The `html` prefix on the selectors below is a leftover. It was
+ * load-bearing while the vendored Hope UI sheets were also in `<head>`: Next
+ * injects this file first, so a bare `:root` lost to Hope UI's own `:root`, and
+ * `html:root` (0,1,1 rather than 0,1,0) was the fix. Those sheets were removed in
+ * phase 5 (ADR 0003), which makes the extra `html` inert — it is kept because it
+ * costs nothing and simplifying it would churn every selector in the file for no
+ * behavioural change.
  */
 
 /* ramp:start */
 /*
  * GENERATED — do not edit by hand. `npm run brand:palette` rewrites
- * everything between the ramp markers from the seed in src/brand/brand.ts.
- * The semantic layer below this block is hand-written on purpose.
+ * everything between the ramp markers from the anchors in
+ * src/brand/brand.ts. The semantic layer below this block is hand-written
+ * on purpose.
  */
 :root {
-  /* brand — 600 is the seed itself */
-  --ln-brand-50: #f2f3fd;
-  --ln-brand-100: #e6e7fa;
-  --ln-brand-200: #c9ccf5;
-  --ln-brand-300: #a7adef;
-  --ln-brand-400: #7d85e7;
-  --ln-brand-500: #545edf;
-  --ln-brand-600: #2e3bd8;
-  --ln-brand-700: #2833ba;
-  --ln-brand-800: #202997;
-  --ln-brand-900: #192075;
+  /* brand — 50–600 are the chosen anchors verbatim, 700–900 are derived */
+  --ln-brand-50: #fbdab2;
+  --ln-brand-100: #fbbf93;
+  --ln-brand-200: #fba17d;
+  --ln-brand-300: #c5b380;
+  --ln-brand-400: #fa8072;
+  --ln-brand-500: #8e8e54;
+  --ln-brand-600: #556b2f;
+  --ln-brand-700: #495c28;
+  --ln-brand-800: #3c4b21;
+  --ln-brand-900: #2e3a19;
 
   /* neutrals — anchored surface values, carrying a small cast of the brand hue */
   --ln-neutral-0: #ffffff;
-  --ln-neutral-25: #f8f9fc;
-  --ln-neutral-50: #f2f4f7;
-  --ln-neutral-100: #e9ebf1;
-  --ln-neutral-200: #dee3e9;
-  --ln-neutral-300: #ced4dd;
-  --ln-neutral-400: #a3aabb;
-  --ln-neutral-500: #5c6477;
-  --ln-neutral-600: #4a5163;
-  --ln-neutral-700: #3a404f;
-  --ln-neutral-800: #292d3a;
-  --ln-neutral-900: #1d1f2c;
-  --ln-neutral-950: #0b0d14;
+  --ln-neutral-25: #f8fafa;
+  --ln-neutral-50: #f2f4f5;
+  --ln-neutral-100: #eaecee;
+  --ln-neutral-200: #dfe4e5;
+  --ln-neutral-300: #cfd5d8;
+  --ln-neutral-400: #a4acb5;
+  --ln-neutral-500: #5e6670;
+  --ln-neutral-600: #4b535c;
+  --ln-neutral-700: #3b4248;
+  --ln-neutral-800: #2a2f35;
+  --ln-neutral-900: #1e2028;
+  --ln-neutral-950: #0c0d12;
 
   /* Legible text on a brand fill, chosen by contrast rather than by taste. */
   --ln-on-brand: #ffffff;
-
-  /* The seed as bare channels. Bootstrap-era code needs `r, g, b` for its
-     `rgba(var(--x), 0.2)` form, and hardcoding the triple here is how a
-     rebrand ends up half-applied. */
-  --ln-brand-rgb: 46, 59, 216;
 }
 
 /*
@@ -87,9 +84,9 @@ html:has(body.dark) {
   --ln-cat-blue: #93b4ff;
   --ln-cat-teal: #7fd8cf;
   --ln-cat-green: #86e0a5;
-  --ln-cat-amber: #f3cd7a;
-  --ln-cat-orange: #f6b27f;
-  --ln-cat-red: #ffa39a;
+  --ln-cat-amber: #ffd95e;
+  --ln-cat-orange: #ffa03a;
+  --ln-cat-red: #ff5252;
   --ln-cat-rose: #f7a6c4;
   --ln-cat-violet: #c3abff;
 }
@@ -201,7 +198,15 @@ html:root {
   --ln-brand: var(--ln-brand-600);
   --ln-brand-hover: var(--ln-brand-700);
   --ln-brand-active: var(--ln-brand-800);
-  --ln-brand-soft: var(--ln-brand-50);
+  /*
+   * Soft is the 50 step at 60 %, not the 50 step flat. A brand fill and brand text
+   * have to clear AA *on each other*, and on this palette the flat 50 step lands at
+   * 4.47:1 against the 600 step — a fail by three hundredths, which is exactly the
+   * kind of miss that gets "fixed" by nudging a colour for years. Halving it toward
+   * the surface keeps the tint legible in both directions and matches the form dark
+   * mode already uses.
+   */
+  --ln-brand-soft: color-mix(in srgb, var(--ln-brand-50) 60%, transparent);
   --ln-brand-soft-border: var(--ln-brand-200);
   --ln-brand-ring: color-mix(in srgb, var(--ln-brand-600) 35%, transparent);
 
@@ -243,13 +248,12 @@ html:root {
  * never in leading.
  */
 /*
- * These two selectors are unprefixed, unlike everything else in this file. The
- * `html` prefix elsewhere exists to beat Hope UI on selectors Hope UI also
- * writes; Hope UI has never heard of `--ln-*`, so there is nothing to beat, and an
- * unprefixed attribute selector is what lets a *nested* area choose its own
- * density (a compact admin drawer opened over a touch till, or the reverse) — an
- * element that carries the attribute wins against the value it inherited, which a
- * `html `-descendant selector could not express.
+ * These two selectors are unprefixed, unlike the rest of this file, and not
+ * because of any cascade fight: a density block has to be re-selectable by an
+ * element nested inside another one. An unprefixed attribute selector is what
+ * lets a *nested* area choose its own density (a compact admin drawer opened over
+ * a touch till, or the reverse) — an element carrying the attribute wins against
+ * the value it inherited, which a `html `-descendant selector could not express.
  */
 html:root,
 [data-density='compact'] {
@@ -319,9 +323,7 @@ html:root,
 }
 
 /*
- * Dark mode, keyed off the class the server already renders from the theme
- * cookie — the same `.dark` that Hope UI scopes its own dark rules under, so the
- * two systems agree while both are loaded.
+ * Dark mode, keyed off the class the server renders from the theme cookie.
  *
  * Depth is carried by borders rather than shadows here: a shadow on a dark
  * surface is invisible at best and muddy at worst, which is why the shadows are
@@ -357,20 +359,36 @@ html:has(body.dark) {
    * mode was below AA. 300 also carries the *fill* case, which is why `on-brand`
    * flips to ink here — a pale fill with dark text is the only way a dark theme can
    * keep a filled primary button legible without inventing a second brand colour.
+   *
+   * Hover jumps to 100 rather than 200, which looks like skipping a step and is not:
+   * this palette's 200 (peach) and 300 (tan) are the same lightness to the eye — a
+   * 74 and a 73 on the Lab scale — so hovering 200 would have made a button a shade
+   * *darker* than its resting state. A pressed state has to move the same way in
+   * every theme, and the test suite asserts this one does.
    */
   --ln-brand: var(--ln-brand-300);
-  --ln-brand-hover: var(--ln-brand-200);
-  --ln-brand-active: var(--ln-brand-100);
+  --ln-brand-hover: var(--ln-brand-100);
+  --ln-brand-active: var(--ln-brand-50);
   --ln-on-brand: var(--ln-neutral-950);
   --ln-brand-soft: color-mix(in srgb, var(--ln-brand-300) 16%, transparent);
   --ln-brand-soft-border: color-mix(in srgb, var(--ln-brand-300) 40%, transparent);
   --ln-brand-ring: color-mix(in srgb, var(--ln-brand-300) 45%, transparent);
 
+  /*
+   * Two of these are louder than a dark theme usually sets them, and that is a
+   * measurement rather than a taste. The brand's light steps are a cream, a peach
+   * and a coral; on a dark canvas a *pastel* status lands on top of them — the old
+   * danger chip sat ΔE 14 from `--ln-brand-400` and the old warning chip ΔE 18 from
+   * `--ln-brand-100`, which on a counter is the same colour. Saturation is the only
+   * axis left to separate a warm status from a warm brand, because on a dark surface
+   * neither can buy distance with lightness. `tests/contrast.test.ts` asserts the
+   * separation holds.
+   */
   --ln-success: #6fd3a2;
   --ln-success-soft: rgba(25, 121, 74, 0.22);
-  --ln-warning: #f2ba6b;
+  --ln-warning: #ffc94d;
   --ln-warning-soft: rgba(154, 91, 6, 0.24);
-  --ln-danger: #ff9a92;
+  --ln-danger: #ff5252;
   --ln-danger-soft: rgba(179, 38, 30, 0.24);
   --ln-info: #7fd0dc;
   --ln-info-soft: rgba(18, 97, 111, 0.24);
@@ -378,30 +396,4 @@ html:has(body.dark) {
   --ln-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --ln-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
   --ln-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
-}
-
-/* -------------------------------------------------------------- hope bridge */
-
-/*
- * The transitional bridge (removed in phase 5). Hope UI reads its colour from
- * `--bs-primary`, `--bs-primary-rgb` and exactly two tint steps, so overriding
- * four variables re-skins every screen that has not been migrated to the design
- * system yet. That is what lets the brand land across the whole app in one commit
- * instead of leaving it half-recoloured for the length of the migration.
- */
-html:root {
-  --bs-primary: var(--ln-brand);
-  --bs-primary-rgb: var(--ln-brand-rgb);
-  --bs-primary-tint-20: var(--ln-brand-400);
-  --bs-primary-tint-90: var(--ln-brand-100);
-
-  /*
-   * Links are the one place the bridge cannot be lazy: Hope UI declares
-   * `--bs-link-color: #3a57e8` on `:root` and every bare `<a>` in the app reads
-   * it, so a link left unbridged is a visible seam between the migrated and
-   * unmigrated halves of the same page. `--ln-brand` rather than the 600 step, so
-   * dark mode flips it along with everything else.
-   */
-  --bs-link-color: var(--ln-brand);
-  --bs-link-hover-color: var(--ln-brand-hover);
 }

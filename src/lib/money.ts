@@ -72,3 +72,14 @@ export function formatThb(amount: number): string {
   const grouped = whole.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${negative ? '-' : ''}฿${grouped}.${fraction.toString().padStart(2, '0')}`;
 }
+
+/**
+ * `฿1,234` — the whole-baht form, for the one place satang are noise.
+ *
+ * Axis labels: a scale of `฿1,000.00 / ฿2,000.00 / ฿3,000.00` is three quarters
+ * punctuation, and the reader needs the shape of the trend rather than the exact
+ * figure — which is what the point's own tooltip is for.
+ */
+export function formatThbShort(amount: number): string {
+  return formatThb(amount).replace(/\.00$/, '');
+}
