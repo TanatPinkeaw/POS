@@ -142,3 +142,20 @@ export const audit_action = {
 } as const
 
 export type audit_action = (typeof audit_action)[keyof typeof audit_action]
+
+
+export const notification_channel = {
+  line: 'line',
+  webhook: 'webhook'
+} as const
+
+export type notification_channel = (typeof notification_channel)[keyof typeof notification_channel]
+
+
+export const notification_status = {
+  pending: 'pending',
+  sent: 'sent',
+  abandoned: 'abandoned'
+} as const
+
+export type notification_status = (typeof notification_status)[keyof typeof notification_status]

@@ -154,6 +154,32 @@ export type payment_intents = Prisma.payment_intentsModel
  */
 export type inbound_payments = Prisma.inbound_paymentsModel
 /**
+ * Model notifications
+ * *
+ *  * A message that should go out, written in the same transaction that made it true.
+ *  *
+ *  * The order matters and is the whole point of the table. `markOrderReady` commits
+ *  * the order and this row together, so a process that dies between the commit and
+ *  * the send loses nothing: the fact is on disk before anything tries to deliver it,
+ *  * and the worker picks it up on its next pass. Announcing after the fact with a
+ *  * `fetch` in the request path — which is what most systems do first — turns a
+ *  * dropped connection into a customer who is never told their parcel is waiting.
+ *  *
+ *  * Three details carry the design:
+ *  *
+ *  *   * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
+ *  *     about one order, so a route that is retried, a worker that runs twice, and a
+ *  *     double click all produce one message.
+ *  *   * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
+ *  *     itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
+ *  *     `next_attempt_at` forward *before* it tries, so a worker killed mid-send
+ *  *     leaves a row that comes back rather than one stuck in flight forever.
+ *  *   * `body` is the message as it will be sent, not a template name. Rendered
+ *  *     once, when the fact was fresh, so an edit to the wording tomorrow cannot
+ *  *     rewrite what a customer was told yesterday.
+ */
+export type notifications = Prisma.notificationsModel
+/**
  * Model display_devices
  * *
  *  * A customer-facing screen that has been paired with this till.

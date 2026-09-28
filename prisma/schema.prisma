@@ -470,6 +470,7 @@ model orders {
   point_transactions point_transactions[]
   payment_intents    payment_intents[]
   credit_note        credit_notes?
+  notifications      notifications[]
 
   @@index([status])
   @@index([created_at])
@@ -693,6 +694,87 @@ model inbound_payments {
 
   @@unique([source, external_id])
   @@index([status, received_at])
+}
+
+// ------------------------------------------------- notification outbox
+
+/**
+ * Which transport a queued message goes out on.
+ * Two, and both of them are a `fetch` to a URL the shop already has. This system
+ * owns no SMS account and no payment provider for the same reason it reads the
+ * shop's own bank mail: a subscription is a thing a small shop has to keep
+ * paying, and every one of them is a company that can go away.
+ */
+enum notification_channel {
+  /** LINE Messaging API push. Addresses a LINE user id or group id, not a phone. */
+  line
+  /** A JSON POST to the shop's own gateway — an SMS provider, or a script. */
+  webhook
+}
+
+/**
+ * What became of one queued message.
+ * `abandoned` is not a failure of the message, it is a failure of the *shop's
+ * configuration*: six attempts over eight hours all hit the same wrong URL. It is
+ * its own state rather than staying `pending` so that a wrong gateway shows up as
+ * a growing pile of rows with a reason attached, instead of a worker that grinds
+ * on them forever.
+ */
+enum notification_status {
+  pending
+  sent
+  abandoned
+}
+
+/**
+ * A message that should go out, written in the same transaction that made it true.
+ *
+ * The order matters and is the whole point of the table. `markOrderReady` commits
+ * the order and this row together, so a process that dies between the commit and
+ * the send loses nothing: the fact is on disk before anything tries to deliver it,
+ * and the worker picks it up on its next pass. Announcing after the fact with a
+ * `fetch` in the request path — which is what most systems do first — turns a
+ * dropped connection into a customer who is never told their parcel is waiting.
+ *
+ * Three details carry the design:
+ *
+ *   * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
+ *     about one order, so a route that is retried, a worker that runs twice, and a
+ *     double click all produce one message.
+ *   * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
+ *     itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
+ *     `next_attempt_at` forward *before* it tries, so a worker killed mid-send
+ *     leaves a row that comes back rather than one stuck in flight forever.
+ *   * `body` is the message as it will be sent, not a template name. Rendered
+ *     once, when the fact was fresh, so an edit to the wording tomorrow cannot
+ *     rewrite what a customer was told yesterday.
+ */
+model notifications {
+  id              BigInt              @id @default(autoincrement())
+  kind            String              @db.VarChar(40)
+  channel         notification_channel
+  /** A phone number for a gateway, a group id for LINE. */
+  recipient       String              @db.VarChar(120)
+  body            String
+  status          notification_status @default(pending)
+  attempts        Int                 @default(0)
+  next_attempt_at DateTime            @default(now()) @db.Timestamptz(6)
+  last_error      String?
+  /**
+   * The order this is about, which is also what makes it unique.
+   * Null would mean a message about nothing in particular; nothing sends one yet,
+   * and the unique index treats nulls as distinct, so a future shop-wide
+   * announcement is not blocked by this constraint.
+   */
+  order_id        String?             @db.Uuid
+  created_at      DateTime            @default(now()) @db.Timestamptz(6)
+  sent_at         DateTime?           @db.Timestamptz(6)
+
+  order orders? @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@unique([kind, order_id])
+  /** The worker's query: everything due, oldest first. */
+  @@index([status, next_attempt_at])
 }
 
 // ---------------------------------------------------------------- display

@@ -24,6 +24,10 @@ const TABLES = [
   // the next test's refund look like a double refund, because the guard against
   // one is a unique index on the order it reverses.
   'credit_notes',
+  // Cascade from `orders` would reach these too, but they are written *in* the
+  // same transactions as orders and a leftover row would make the next test's
+  // dedupe assertion pass for the wrong reason.
+  'notifications',
   'order_items',
   'orders',
   'stock_logs',

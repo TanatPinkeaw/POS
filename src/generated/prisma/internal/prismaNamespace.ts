@@ -412,6 +412,7 @@ export const ModelName = {
   credit_notes: 'credit_notes',
   payment_intents: 'payment_intents',
   inbound_payments: 'inbound_payments',
+  notifications: 'notifications',
   display_devices: 'display_devices',
   point_transactions: 'point_transactions'
 } as const
@@ -429,7 +430,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "payment_intents" | "inbound_payments" | "display_devices" | "point_transactions"
+    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1543,6 +1544,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    notifications: {
+      payload: Prisma.$notificationsPayload<ExtArgs>
+      fields: Prisma.notificationsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.notificationsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.notificationsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>
+        }
+        findFirst: {
+          args: Prisma.notificationsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.notificationsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>
+        }
+        findMany: {
+          args: Prisma.notificationsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>[]
+        }
+        create: {
+          args: Prisma.notificationsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>
+        }
+        createMany: {
+          args: Prisma.notificationsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.notificationsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>[]
+        }
+        delete: {
+          args: Prisma.notificationsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>
+        }
+        update: {
+          args: Prisma.notificationsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>
+        }
+        deleteMany: {
+          args: Prisma.notificationsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.notificationsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.notificationsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>[]
+        }
+        upsert: {
+          args: Prisma.notificationsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notificationsPayload>
+        }
+        aggregate: {
+          args: Prisma.NotificationsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotifications>
+        }
+        groupBy: {
+          args: Prisma.notificationsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotificationsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.notificationsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NotificationsCountAggregateOutputType> | number
+        }
+      }
+    }
     display_devices: {
       payload: Prisma.$display_devicesPayload<ExtArgs>
       fields: Prisma.display_devicesFieldRefs
@@ -1993,6 +2068,24 @@ export const Inbound_paymentsScalarFieldEnum = {
 export type Inbound_paymentsScalarFieldEnum = (typeof Inbound_paymentsScalarFieldEnum)[keyof typeof Inbound_paymentsScalarFieldEnum]
 
 
+export const NotificationsScalarFieldEnum = {
+  id: 'id',
+  kind: 'kind',
+  channel: 'channel',
+  recipient: 'recipient',
+  body: 'body',
+  status: 'status',
+  attempts: 'attempts',
+  next_attempt_at: 'next_attempt_at',
+  last_error: 'last_error',
+  order_id: 'order_id',
+  created_at: 'created_at',
+  sent_at: 'sent_at'
+} as const
+
+export type NotificationsScalarFieldEnum = (typeof NotificationsScalarFieldEnum)[keyof typeof NotificationsScalarFieldEnum]
+
+
 export const Display_devicesScalarFieldEnum = {
   id: 'id',
   label: 'label',
@@ -2342,6 +2435,34 @@ export type ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> = FieldRef
 
 
 /**
+ * Reference to a field of type 'notification_channel'
+ */
+export type Enumnotification_channelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'notification_channel'>
+    
+
+
+/**
+ * Reference to a field of type 'notification_channel[]'
+ */
+export type ListEnumnotification_channelFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'notification_channel[]'>
+    
+
+
+/**
+ * Reference to a field of type 'notification_status'
+ */
+export type Enumnotification_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'notification_status'>
+    
+
+
+/**
+ * Reference to a field of type 'notification_status[]'
+ */
+export type ListEnumnotification_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'notification_status[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2520,6 +2641,7 @@ export type GlobalOmitConfig = {
   credit_notes?: Prisma.credit_notesOmit
   payment_intents?: Prisma.payment_intentsOmit
   inbound_payments?: Prisma.inbound_paymentsOmit
+  notifications?: Prisma.notificationsOmit
   display_devices?: Prisma.display_devicesOmit
   point_transactions?: Prisma.point_transactionsOmit
 }
