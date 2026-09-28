@@ -1,0 +1,181 @@
+/*
+ * Buttons.
+ *
+ * Sized from `--ln-control-h`, which the density block supplies: 28/34/44 on a
+ * compact back office, 40/48/56 on a touch till. That indirection is the whole
+ * reason one Button serves both — the alternative is a `dense` prop threaded
+ * through every call site, and then a screen where the prop was forgotten.
+ *
+ * Flat by design. `box-shadow` on a button is how a themed template makes a
+ * button look raised on a canvas that is already carrying a shadow; here the fill
+ * is the affordance and the shadow is reserved for things that float over the
+ * page. Hover and press move the *colour*, which survives a washed-out till screen
+ * in daylight where a 1px shadow does not.
+ *
+ * No `!important` and no Bootstrap class names: on a migrated screen these rules
+ * are the only thing styling a button.
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ln-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--ln-radius-md);
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color var(--ln-duration-fast) var(--ln-ease),
+    border-color var(--ln-duration-fast) var(--ln-ease),
+    color var(--ln-duration-fast) var(--ln-ease);
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+.label {
+  display: inline-block;
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+.iconOnly {
+  padding-inline: 0;
+  aspect-ratio: 1;
+}
+
+/* ------------------------------------------------------------------- sizes */
+
+.sm {
+  min-height: var(--ln-control-h-sm);
+  padding: 0 var(--ln-space-3);
+  font-size: var(--ln-size-sm);
+}
+
+.md {
+  min-height: var(--ln-control-h);
+  padding: 0 var(--ln-space-4);
+  font-size: var(--ln-size-base);
+}
+
+.lg {
+  min-height: var(--ln-control-h-lg);
+  padding: 0 var(--ln-space-5);
+  font-size: var(--ln-size-lg);
+}
+
+/* ---------------------------------------------------------------- variants */
+
+.primary {
+  background: var(--ln-brand);
+  color: var(--ln-on-brand);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--ln-brand-hover);
+  color: var(--ln-on-brand);
+}
+
+.primary:active:not(:disabled) {
+  background: var(--ln-brand-active);
+}
+
+.secondary {
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  border-color: var(--ln-border-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--ln-surface-2);
+  color: var(--ln-text);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ln-text-muted);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--ln-surface-2);
+  color: var(--ln-text);
+}
+
+/*
+ * A bare text button, for the third-order action that should read as a link
+ * without pretending to be one ("ล้าง", "เอาออก"). It keeps the button's hit area,
+ * which a real `<a>` inside a sentence does not.
+ */
+.text {
+  background: transparent;
+  color: var(--ln-brand);
+  padding-inline: var(--ln-space-2);
+}
+
+.text:hover:not(:disabled) {
+  background: var(--ln-brand-soft);
+  color: var(--ln-brand-hover);
+}
+
+/*
+ * Destructive actions are outlined rather than filled. A solid red button is the
+ * most eye-catching thing on a screen, which is the opposite of what a control
+ * that cancels an order should be — it should be findable, not inviting.
+ */
+.danger {
+  background: var(--ln-surface);
+  color: var(--ln-danger);
+  border-color: color-mix(in srgb, var(--ln-danger) 45%, transparent);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--ln-danger-soft);
+  color: var(--ln-danger);
+}
+
+.success {
+  background: var(--ln-success);
+  color: #ffffff;
+}
+
+.success:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ln-success) 85%, #000000);
+  color: #ffffff;
+}
+
+/* ------------------------------------------------------------------ spinner */
+
+/*
+ * CurrentColor, so one spinner works on a filled button and an outlined one.
+ * The negative margin pulls it into the gap instead of shifting the label when it
+ * appears, which is what stops a busy button from twitching.
+ */
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--ln-radius-pill);
+  animation: ln-spin 640ms linear infinite;
+}
+
+@keyframes ln-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

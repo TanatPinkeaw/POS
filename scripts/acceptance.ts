@@ -1,0 +1,790 @@
+/**
+ * Virgin-deployment acceptance run — `npm run acceptance`.
+ *
+ * This proves what `npm run smoke` structurally cannot: the whole renter journey
+ * against a database that has never been used. The smoke test starts from the
+ * demo seed — its personas *are* seeded accounts — so it can never tell you
+ * whether a shop that has just been installed actually works. This script starts
+ * from an empty schema and drives the setup wizard's API, the staff API, a
+ * catalogue import, a VAT sale, and the receipt that comes out the other end.
+ *
+ * Why this is a Node script and not the curl/bash harness it replaces: that
+ * harness lied on Windows in two independent ways.
+ *
+ *   1. Thai text passed as a `curl -d` argument is re-encoded through the
+ *      console codepage. The shop name arrived as "?????????? ?????????" and was
+ *      stored that way, so every assertion about it failed while the application
+ *      was behaving perfectly. (Confirmed by reading the row back with psql.)
+ *   2. `curl -F file=@/tmp/catalogue.csv` is a *mingw* curl being handed a Git
+ *      Bash path. It cannot open the file, the request never leaves the machine,
+ *      and the empty response looks exactly like a server bug.
+ *
+ * Both produced silent, plausible-looking failures. `fetch` sends UTF-8 and
+ * reads real filesystem paths, so a failure here is a failure in the app.
+ *
+ * Isolation: everything happens in a dedicated PostgreSQL *schema* named
+ * `accept`, inside the database `TEST_DATABASE_URL` points at. A schema needs
+ * only CREATE privilege — no superuser, no CREATEDB — so this needs no
+ * privileged setup of its own, and it cannot disturb the default schema that the
+ * app and the vitest suites share. The schema is dropped again on the way out.
+ *
+ * Usage:
+ *   npm run acceptance                      drop → migrate → build → serve → check
+ *   npm run acceptance -- --skip-build      reuse the existing `.next` build
+ *   npm run acceptance -- --keep            leave the scratch schema to inspect
+ *   npm run acceptance -- --base-url URL    check a server that is already running
+ */
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { createServer } from 'node:net';
+import { loadEnvFile } from 'node:process';
+
+import { Client } from 'pg';
+
+/* ------------------------------------------------------------------ config */
+
+if (existsSync('.env')) {
+  loadEnvFile('.env');
+}
+
+const SCRATCH_SCHEMA = 'accept';
+const FIRST_PORT = 3211;
+
+/**
+ * Deliberately awkward: Thai, a space, and a leading/trailing-space risk. The
+ * old harness failed on exactly this string, so it is the string to keep.
+ */
+const SHOP = {
+  name: 'ร้านกาแฟ เหลี่ยมนอก สาขาแรก',
+  branchLabel: 'สาขาแรก',
+  taxId: '1103700123456',
+  isVatRegistered: true,
+  vatRate: 7,
+  receiptPrefix: 'FR',
+};
+
+const ADMIN = { fullName: 'ผู้จัดการ เหลี่ยมนอก', phone: '0800000300', password: 'accept-admin-1' };
+const CASHIER = { fullName: 'มาลี เหลี่ยมนอก', phone: '0800000301', password: 'accept-cashier-1' };
+
+/** One product at 107 THB — a shelf price that splits cleanly into 100 + 7. */
+const COFFEE = { barcode: 'LNM0000001', name: 'กาแฟเหลี่ยมนอก 250 มล.', cost: 60, price: 107, stock: 12 };
+const WATER = { barcode: 'LNM0000002', name: 'น้ำเปล่าเหลี่ยมนอก 600 มล.', cost: 8, price: 25, stock: 24 };
+
+/**
+ * Headers are the canonical Thai ones from `IMPORT_COLUMNS`. Matching is exact
+ * after normalisation, so this file is also a test that the documented template
+ * is the template a renter can actually fill in.
+ */
+const CATALOGUE_CSV = [
+  'บาร์โค้ด,ชื่อสินค้า,หมวดหมู่,ราคาทุน,ราคาขาย,จำนวนสต็อก',
+  `${COFFEE.barcode},${COFFEE.name},เครื่องดื่ม,${COFFEE.cost},${COFFEE.price},${COFFEE.stock}`,
+  `${WATER.barcode},${WATER.name},เครื่องดื่ม,${WATER.cost},${WATER.price},${WATER.stock}`,
+].join('\r\n');
+
+/** One usable row and one with no name, which the import must skip, not die on. */
+const PARTIAL_CSV = [
+  'บาร์โค้ด,ชื่อสินค้า,หมวดหมู่,ราคาทุน,ราคาขาย,จำนวนสต็อก',
+  'LNM0000003,ชาเหลี่ยมนอก 500 มล.,เครื่องดื่ม,20,45,6',
+  'LNM0000004,,เครื่องดื่ม,10,20,5',
+].join('\r\n');
+
+/* ------------------------------------------------------------------ plumbing */
+
+/** Set once in `main`; every request goes through it. */
+let base = '';
+
+interface ApiResult<T> {
+  status: number;
+  data: T | null;
+  error: string | null;
+}
+
+/**
+ * A cookie jar per persona that never throws on an error status.
+ *
+ * The smoke test's version throws, which is right when every call is expected to
+ * succeed. Acceptance has to assert on refusals — 401, 403, 409, 422 — so the
+ * status is returned rather than raised.
+ */
+class Session {
+  private cookie = '';
+
+  private absorb(response: Response): void {
+    for (const raw of response.headers.getSetCookie?.() ?? []) {
+      const [pair] = raw.split(';');
+      if (pair?.startsWith('pos_session=')) {
+        this.cookie = pair;
+      }
+    }
+  }
+
+  async request<T>(
+    path: string,
+    init: { method?: string; body?: unknown } = {},
+  ): Promise<ApiResult<T>> {
+    const response = await fetch(`${base}${path}`, {
+      method: init.method ?? 'GET',
+      headers: {
+        ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(this.cookie ? { cookie: this.cookie } : {}),
+      },
+      body: init.body === undefined ? undefined : JSON.stringify(init.body),
+      redirect: 'manual',
+    });
+    this.absorb(response);
+
+    const text = await response.text();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = null;
+    }
+
+    const envelope = parsed as { data?: T; error?: { message?: string } } | null;
+    return {
+      status: response.status,
+      data: (envelope?.data ?? null) as T | null,
+      error: envelope?.error?.message ?? (envelope === null ? text.slice(0, 200) : null),
+    };
+  }
+
+  /** Sends multipart form data, which is how the catalogue import works. */
+  async postForm<T>(path: string, form: FormData): Promise<ApiResult<T>> {
+    const response = await fetch(`${base}${path}`, {
+      method: 'POST',
+      headers: this.cookie ? { cookie: this.cookie } : {},
+      body: form,
+      redirect: 'manual',
+    });
+    this.absorb(response);
+
+    const text = await response.text();
+    let parsed: unknown = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = null;
+    }
+    const envelope = parsed as { data?: T; error?: { message?: string } } | null;
+    return {
+      status: response.status,
+      data: (envelope?.data ?? null) as T | null,
+      error: envelope?.error?.message ?? (envelope === null ? text.slice(0, 200) : null),
+    };
+  }
+
+  /** Sends a body that is expected to succeed, and explains itself when it does not. */
+  async call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+    const result = await this.request<T>(path, init);
+    if (result.status >= 400 || result.error !== null) {
+      throw new Error(`${init.method ?? 'GET'} ${path} → ${result.status}: ${result.error}`);
+    }
+    return result.data as T;
+  }
+
+  async login(credentials: { identifier: string; password: string }): Promise<void> {
+    await this.call('/api/v1/auth/login', { method: 'POST', body: credentials });
+  }
+
+  raw(path: string): Promise<Response> {
+    return fetch(`${base}${path}`, {
+      headers: this.cookie ? { cookie: this.cookie } : {},
+      redirect: 'manual',
+    });
+  }
+}
+
+function csvForm(text: string, mode: 'preview' | 'commit', filename = 'catalogue.csv'): FormData {
+  const form = new FormData();
+  form.append('file', new Blob([text], { type: 'text/csv' }), filename);
+  form.append('mode', mode);
+  return form;
+}
+
+/** Picks a port the OS says is free, so a running dev server is never disturbed. */
+async function freePort(start: number): Promise<number> {
+  for (let port = start; port < start + 40; port += 1) {
+    const available = await new Promise<boolean>((resolve) => {
+      const probe = createServer();
+      probe.once('error', () => resolve(false));
+      probe.once('listening', () => probe.close(() => resolve(true)));
+      probe.listen(port, '127.0.0.1');
+    });
+    if (available) {
+      return port;
+    }
+  }
+  throw new Error(`No free port between ${start} and ${start + 40}`);
+}
+
+/** The scratch connection string: the configured database, a private schema. */
+function scratchUrl(source: string): string {
+  const parsed = new URL(source);
+  parsed.searchParams.set('schema', SCRATCH_SCHEMA);
+  return parsed.toString();
+}
+
+/**
+ * Drops the scratch schema, optionally recreating it empty.
+ *
+ * The schema is recreated here rather than left to `prisma migrate deploy`, so
+ * the run does not depend on whether the migration engine creates a missing
+ * schema for a `?schema=` parameter.
+ *
+ * Connects with explicit fields rather than passing the URL straight to `pg`,
+ * because `?schema=` is a Prisma-only parameter: libpq would reject it as an
+ * unknown runtime setting.
+ */
+async function resetScratchSchema(source: string, recreate: boolean): Promise<void> {
+  const parsed = new URL(source);
+  const client = new Client({
+    host: parsed.hostname,
+    port: Number(parsed.port) || 5432,
+    user: decodeURIComponent(parsed.username),
+    password: decodeURIComponent(parsed.password),
+    database: parsed.pathname.replace(/^\//, ''),
+  });
+  await client.connect();
+  try {
+    await client.query(`DROP SCHEMA IF EXISTS "${SCRATCH_SCHEMA}" CASCADE`);
+    if (recreate) {
+      await client.query(`CREATE SCHEMA "${SCRATCH_SCHEMA}"`);
+    }
+  } finally {
+    await client.end();
+  }
+}
+
+/** Runs a command through the shell, because npx on Windows is a `.cmd` shim. */
+function shell(step: string, command: string, env?: NodeJS.ProcessEnv): void {
+  const result = spawnSync(command, { stdio: 'inherit', shell: true, env: env ?? process.env });
+  if (result.error) {
+    throw new Error(`${step} could not start: ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    throw new Error(`${step} failed with exit code ${result.status ?? 'null'}`);
+  }
+}
+
+function startServer(url: string, port: number): { child: ChildProcess; log: () => string } {
+  const lines: string[] = [];
+  const child = spawn(process.execPath, ['--import', 'tsx', 'src/server.ts'], {
+    env: {
+      ...process.env,
+      DATABASE_URL: url,
+      NODE_ENV: 'production',
+      PORT: String(port),
+      HOSTNAME: '127.0.0.1',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  child.stdout?.on('data', (chunk: Buffer) => lines.push(chunk.toString('utf8')));
+  child.stderr?.on('data', (chunk: Buffer) => lines.push(chunk.toString('utf8')));
+  return { child, log: () => lines.join('') };
+}
+
+async function waitForServer(child: ChildProcess, log: () => string): Promise<void> {
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(`The server exited with code ${child.exitCode}.\n${log()}`);
+    }
+    try {
+      const response = await fetch(`${base}/api/v1/setup`, { signal: AbortSignal.timeout(3000) });
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Not listening yet.
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+  throw new Error(`The server never answered on ${base}.\n${log()}`);
+}
+
+async function stopServer(child: ChildProcess): Promise<void> {
+  if (child.exitCode !== null || child.pid === undefined) {
+    return;
+  }
+  child.kill('SIGTERM');
+  const exited = await new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => resolve(false), 5000);
+    child.once('exit', () => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+  if (!exited) {
+    child.kill('SIGKILL');
+    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
+  }
+}
+
+/* ------------------------------------------------------------------ the run */
+
+interface ShopDto {
+  name: string;
+  branchLabel: string | null;
+  taxId: string | null;
+  isVatRegistered: boolean;
+  vatRate: number;
+  receiptPrefix: string;
+  receiptRunningNumber: number | string;
+}
+
+interface ProductDto {
+  id: string;
+  name: string;
+  salePrice: number;
+  stockQty: number;
+  availableQty: number;
+}
+
+interface OrderDto {
+  orderId: string;
+  receiptNumber: string | null;
+  status: string;
+  finalAmountThb: number;
+  netThb: number;
+  vatThb: number;
+  vatRatePercent: number | null;
+  isVatInvoice: boolean;
+}
+
+interface ImportPreviewDto {
+  mode: string;
+  preview?: { createCount: number; updateCount: number; invalidCount: number; stockAddedTotal: number };
+  summary?: { created: number; updated: number; skipped: number; stockAddedTotal: number };
+}
+
+interface StockLogDto {
+  productId: string;
+  movementType: string;
+  reason: string | null;
+  qtyChanged: number;
+  balanceAfter: number;
+}
+
+async function runChecks(seedGuardUrl: string | null): Promise<number> {
+  let passed = 0;
+  let failed = 0;
+
+  const check = (label: string, condition: boolean, detail?: unknown): void => {
+    if (condition) {
+      passed += 1;
+      console.log(`  ✓ ${label}`);
+      return;
+    }
+    failed += 1;
+    console.error(
+      `  ✗ ${label}${detail === undefined ? '' : `  → ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`}`,
+    );
+  };
+  const section = (title: string): void => console.log(`\n${title}`);
+
+  /* ---------------------------------------------------------- 1. virgin */
+  section('1. A deployment nobody has set up yet');
+
+  const anonymous = new Session();
+  const initial = await anonymous.request<{ initialized: boolean }>('/api/v1/setup');
+  check('setup reports initialized: false', initial.data?.initialized === false, initial.data);
+
+  const wizard = await anonymous.raw('/setup');
+  const wizardHtml = await wizard.text();
+  check(
+    '/setup serves the wizard',
+    wizard.status === 200 && wizardHtml.includes('ตั้งค่าระบบครั้งแรก'),
+    wizard.status,
+  );
+
+  const loginRedirect = await anonymous.raw('/login');
+  const location = loginRedirect.headers.get('location') ?? '';
+  check(
+    '/login sends an unconfigured deployment to the wizard',
+    [302, 307, 308].includes(loginRedirect.status) && location.includes('/setup'),
+    `${loginRedirect.status} ${location}`,
+  );
+
+  /* -------------------------------------------------------- 2. the wizard */
+  section('2. The wizard creates the shop and its first administrator');
+
+  const setupBody = {
+    shop: {
+      name: SHOP.name,
+      branchLabel: SHOP.branchLabel,
+      taxId: SHOP.taxId,
+      isVatRegistered: SHOP.isVatRegistered,
+      vatRate: SHOP.vatRate,
+      receiptPrefix: SHOP.receiptPrefix,
+    },
+    admin: { fullName: ADMIN.fullName, phone: ADMIN.phone, password: ADMIN.password },
+  };
+
+  const created = await anonymous.request<{ initialized: boolean }>('/api/v1/setup', {
+    method: 'POST',
+    body: setupBody,
+  });
+  check('the shop and its first administrator are created', created.data?.initialized === true, created.error ?? created.data);
+
+  const afterSetup = await anonymous.request<{ initialized: boolean }>('/api/v1/setup');
+  check('the wizard closes behind itself', afterSetup.data?.initialized === true, afterSetup.data);
+
+  const secondSetup = await anonymous.request('/api/v1/setup', {
+    method: 'POST',
+    body: { ...setupBody, admin: { ...setupBody.admin, phone: '0800000399' } },
+  });
+  check('a second setup attempt is refused with 409', secondSetup.status === 409, secondSetup.status);
+
+  /* ------------------------------------------------- 3. the renter's shop */
+  section('3. The renter signs in and reads their own settings back');
+
+  const admin = new Session();
+  await admin.login({ identifier: ADMIN.phone, password: ADMIN.password });
+
+  const me = await admin.call<{ role: string; fullName: string }>('/api/v1/auth/me');
+  check('the wizard administrator signs in as an admin', me.role === 'admin', me.role);
+  check(
+    'their name survives the round trip byte for byte (Thai and a space)',
+    me.fullName === ADMIN.fullName,
+    me.fullName,
+  );
+
+  const shop = await admin.call<ShopDto>('/api/v1/shop');
+  check(
+    'the shop name survives the round trip — the check the old harness could never make',
+    shop.name === SHOP.name,
+    shop.name,
+  );
+  check(
+    'the branch label and tax id are stored',
+    shop.branchLabel === SHOP.branchLabel && shop.taxId === SHOP.taxId,
+    `${shop.branchLabel} / ${shop.taxId}`,
+  );
+  check(
+    'VAT registration and rate are recorded',
+    shop.isVatRegistered === true && shop.vatRate === 7,
+    `${shop.isVatRegistered} @ ${shop.vatRate}`,
+  );
+  check(
+    'the receipt series has not been used yet',
+    Number(shop.receiptRunningNumber) === 0,
+    shop.receiptRunningNumber,
+  );
+
+  /* -------------------------------------------------------- 4. the staff */
+  section('4. Staff accounts are created from the app, not from SQL');
+
+  const staff = await admin.call<{ id: string }>('/api/v1/staff', {
+    method: 'POST',
+    body: { fullName: CASHIER.fullName, phone: CASHIER.phone, role: 'employee', password: CASHIER.password },
+  });
+  check('the administrator creates a cashier', typeof staff.id === 'string', staff);
+
+  const weakPassword = await admin.request('/api/v1/staff', {
+    method: 'POST',
+    body: { fullName: 'ทดสอบ', phone: '0800000398', role: 'employee', password: 'short' },
+  });
+  check('a 5-character password is refused with 422', weakPassword.status === 422, weakPassword.status);
+
+  const cashier = new Session();
+  await cashier.login({ identifier: CASHIER.phone, password: CASHIER.password });
+  const cashierMe = await cashier.call<{ role: string }>('/api/v1/auth/me');
+  check('the new cashier can sign in', cashierMe.role === 'employee', cashierMe.role);
+
+  const staffAsCashier = await cashier.request('/api/v1/staff', {
+    method: 'POST',
+    body: { fullName: 'ทดสอบ', phone: '0800000397', role: 'admin', password: 'accept-real-1' },
+  });
+  check('the cashier cannot create accounts (403)', staffAsCashier.status === 403, staffAsCashier.status);
+
+  const exportAsCashier = await cashier.raw('/api/v1/reports/export?type=sales_summary');
+  check('the cashier cannot export reports (403)', exportAsCashier.status === 403, exportAsCashier.status);
+
+  /* ------------------------------------------------------ 5. the catalogue */
+  section('5. The catalogue arrives as a spreadsheet');
+
+  const preview = await admin.postForm<ImportPreviewDto>(
+    '/api/v1/products/import',
+    csvForm(CATALOGUE_CSV, 'preview'),
+  );
+  check('preview answers in preview mode', preview.data?.mode === 'preview', preview.data?.mode);
+  check(
+    'preview plans two creates',
+    preview.data?.preview?.createCount === 2,
+    preview.data?.preview,
+  );
+  check(
+    'preview totals the opening stock (12 + 24)',
+    preview.data?.preview?.stockAddedTotal === 36,
+    preview.data?.preview?.stockAddedTotal,
+  );
+  check(
+    'preview rejects no rows of a well-formed sheet',
+    preview.data?.preview?.invalidCount === 0,
+    preview.data?.preview?.invalidCount,
+  );
+
+  const beforeImport = await admin.call<ProductDto[]>('/api/v1/products');
+  check('a preview writes nothing', beforeImport.length === 0, beforeImport.length);
+
+  const commit = await admin.postForm<ImportPreviewDto>(
+    '/api/v1/products/import',
+    csvForm(CATALOGUE_CSV, 'commit'),
+  );
+  check('commit creates both products', commit.data?.summary?.created === 2, commit.data?.summary);
+  check(
+    'commit adds the opening stock',
+    commit.data?.summary?.stockAddedTotal === 36,
+    commit.data?.summary?.stockAddedTotal,
+  );
+  check('commit skips nothing', commit.data?.summary?.skipped === 0, commit.data?.summary?.skipped);
+
+  const coffee = (await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`))[0];
+  check(
+    'the imported product is sellable at the sheet price',
+    coffee?.name === COFFEE.name && coffee.salePrice === COFFEE.price && coffee.availableQty === COFFEE.stock,
+    coffee,
+  );
+
+  const categories = await admin.call<{ name: string }[]>('/api/v1/categories');
+  check(
+    'the category the sheet named was created rather than demanded first',
+    categories.some((entry) => entry.name === 'เครื่องดื่ม'),
+    categories.map((entry) => entry.name),
+  );
+
+  const logs = await admin.call<StockLogDto[]>(`/api/v1/inventory/logs?productId=${coffee?.id ?? ''}`);
+  check(
+    'the opening stock left an audit trail',
+    logs[0]?.qtyChanged === COFFEE.stock && logs[0]?.balanceAfter === COFFEE.stock,
+    logs[0],
+  );
+  check(
+    'and the trail says why (REASON_IMPORT)',
+    logs[0]?.reason === 'REASON_IMPORT',
+    logs[0]?.reason,
+  );
+
+  const partial = await admin.postForm<ImportPreviewDto>(
+    '/api/v1/products/import',
+    csvForm(PARTIAL_CSV, 'commit'),
+  );
+  check(
+    'a row with no name is skipped instead of failing the whole file',
+    partial.data?.summary?.created === 1 && partial.data?.summary?.skipped === 1,
+    partial.data?.summary,
+  );
+
+  /* ------------------------------------------------------------ 6. the sale */
+  section('6. A sale, with the tax derived out of the shelf price');
+
+  const shift = await cashier.call<{ id: number; initialCashThb: number }>('/api/v1/shifts/current', {
+    method: 'POST',
+    body: { initialCash: 500 },
+  });
+  check('the cashier opens a drawer with a 500 THB float', shift.initialCashThb === 500, shift);
+
+  const sale = await cashier.call<OrderDto>('/api/v1/orders', {
+    method: 'POST',
+    body: {
+      type: 'pos_walkin',
+      shiftId: shift.id,
+      lines: [{ productId: coffee?.id, quantity: 1 }],
+      settlement: { cash: COFFEE.price },
+    },
+  });
+  check('the sale completes', sale.status === 'completed', sale.status);
+  check(
+    `the customer pays the shelf price (${COFFEE.price})`,
+    sale.finalAmountThb === COFFEE.price,
+    sale.finalAmountThb,
+  );
+  check(
+    'the tax is taken out of it: 100.00 net + 7.00 VAT',
+    sale.netThb === 100 && sale.vatThb === 7,
+    `${sale.netThb} / ${sale.vatThb}`,
+  );
+  check(
+    'the net and the tax reconstruct the total exactly',
+    sale.netThb + sale.vatThb === sale.finalAmountThb,
+    `${sale.netThb} + ${sale.vatThb} vs ${sale.finalAmountThb}`,
+  );
+  check('the order records the rate it used (7%)', sale.vatRatePercent === 7, sale.vatRatePercent);
+  check('the sale is issued as a VAT invoice', sale.isVatInvoice === true, sale.isVatInvoice);
+  check(
+    "the first receipt takes the renter's own series (FR-<year>-000001)",
+    /^FR-\d{4}-000001$/.test(sale.receiptNumber ?? ''),
+    sale.receiptNumber,
+  );
+
+  const receipt = await cashier.call<{
+    shop: { name: string; taxId: string | null };
+    receipt: { netThb: number; vatThb: number; receiptNumber: string | null };
+  }>(`/api/v1/orders/${sale.orderId}/receipt`);
+  check(
+    'the reprint matches the sale exactly',
+    receipt.receipt.netThb === sale.netThb &&
+      receipt.receipt.vatThb === sale.vatThb &&
+      receipt.receipt.receiptNumber === sale.receiptNumber,
+    receipt.receipt,
+  );
+  check(
+    "the reprint carries the renter's shop name, not ours",
+    receipt.shop.name === SHOP.name,
+    receipt.shop.name,
+  );
+  check("and the renter's tax id", receipt.shop.taxId === SHOP.taxId, receipt.shop.taxId);
+
+  const shopAfterSale = await admin.call<ShopDto>('/api/v1/shop');
+  check(
+    'the receipt series advanced to 1',
+    Number(shopAfterSale.receiptRunningNumber) === 1,
+    shopAfterSale.receiptRunningNumber,
+  );
+
+  const soldCoffee = (await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`))[0];
+  check(
+    'stock fell by exactly the one unit sold',
+    soldCoffee?.stockQty === COFFEE.stock - 1 && soldCoffee?.availableQty === COFFEE.stock - 1,
+    soldCoffee,
+  );
+
+  /* --------------------------------------------------------- 7. the drawer */
+  section('7. The drawer reconciles to the sale');
+
+  const drawer = await cashier.call<{ shift: { id: number; expectedCashThb: number } | null }>(
+    '/api/v1/shifts/current',
+  );
+  check(
+    'the drawer expects the float plus the cash sale (500 + 107 = 607)',
+    drawer.shift?.expectedCashThb === 607,
+    drawer.shift?.expectedCashThb,
+  );
+
+  const closed = drawer.shift
+    ? await cashier.call<{ discrepancyThb: number; discrepancyKind: string }>(
+        `/api/v1/shifts/${drawer.shift.id}/close`,
+        { method: 'POST', body: { actualCash: 607 } },
+      )
+    : null;
+  check(
+    'an exact count reconciles to zero',
+    closed?.discrepancyThb === 0 && closed?.discrepancyKind === 'balanced',
+    closed,
+  );
+
+  /* --------------------------------------------------------- 8. the guards */
+  section('8. Guards that protect a live shop');
+
+  if (seedGuardUrl === null) {
+    console.log('  • skipped: the demo-seed guard needs the scratch database (not available with --base-url)');
+  } else {
+    const seed = spawnSync('npx tsx prisma/seed.ts', {
+      shell: true,
+      encoding: 'utf8',
+      env: { ...process.env, DATABASE_URL: seedGuardUrl },
+    });
+    const output = `${seed.stdout ?? ''}${seed.stderr ?? ''}`;
+    check('the demo seed refuses to touch a configured shop', seed.status !== 0, seed.status);
+    check(
+      'and explains why rather than failing silently',
+      output.includes('already been set up'),
+      output.trim().split('\n').slice(-4).join(' '),
+    );
+  }
+
+  const anonymousShop = await new Session().raw('/api/v1/shop');
+  check('an anonymous request for the settings is refused (401)', anonymousShop.status === 401, anonymousShop.status);
+
+  console.log(
+    failed === 0
+      ? `\nacceptance: ${passed} passed, 0 failed`
+      : `\nacceptance: ${passed} passed, ${failed} FAILED`,
+  );
+  return failed;
+}
+
+/* ------------------------------------------------------------------ driver */
+
+async function main(): Promise<void> {
+  const argv = process.argv.slice(2);
+  const skipBuild = argv.includes('--skip-build');
+  const keep = argv.includes('--keep');
+  const baseUrlOption = argv.indexOf('--base-url');
+  const providedBase = baseUrlOption === -1 ? null : argv[baseUrlOption + 1] ?? null;
+
+  let child: ChildProcess | null = null;
+  let scratch: string | null = null;
+
+  const sourceUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? null;
+
+  console.log('');
+  console.log('POS — virgin deployment acceptance run');
+  console.log('=====================================');
+
+  try {
+    if (providedBase !== null) {
+      base = providedBase.replace(/\/$/, '');
+      console.log(`\nChecking the server already running at ${base}`);
+    } else {
+      if (sourceUrl === null) {
+        throw new Error('Neither TEST_DATABASE_URL nor DATABASE_URL is set. Run `npm run setup` first.');
+      }
+      scratch = scratchUrl(sourceUrl);
+
+      console.log(`\nScratch schema: ${SCRATCH_SCHEMA} (in ${new URL(sourceUrl).pathname.replace(/^\//, '')})`);
+      console.log('\n1. Resetting the scratch schema');
+      await resetScratchSchema(sourceUrl, true);
+      console.log('  • dropped and recreated, so this starts from empty');
+
+      console.log('\n2. Applying migrations to the empty schema');
+      shell('prisma migrate deploy', 'npx prisma migrate deploy', { ...process.env, DATABASE_URL: scratch });
+
+      if (skipBuild) {
+        console.log('\n3. Build: skipped (--skip-build); reusing the existing .next output');
+        if (!existsSync('.next/BUILD_ID')) {
+          throw new Error('There is no .next build to reuse. Run without --skip-build.');
+        }
+      } else {
+        console.log('\n3. Building (this also type-checks every route)');
+        shell('next build', 'npx next build');
+      }
+
+      const port = await freePort(FIRST_PORT);
+      base = `http://127.0.0.1:${port}`;
+      console.log(`\n4. Serving the build on ${base}`);
+      const started = startServer(scratch, port);
+      child = started.child;
+      await waitForServer(child, started.log);
+      console.log(`  • up (${new Date().toISOString()})`);
+    }
+
+    const failures = await runChecks(scratch);
+
+    if (child !== null) {
+      console.log('\n5. Shutting the acceptance server down');
+      await stopServer(child);
+      child = null;
+      console.log('  • stopped');
+    }
+
+    if (scratch !== null && !keep) {
+      await resetScratchSchema(sourceUrl as string, false);
+      console.log('\n6. Scratch schema dropped');
+    } else if (scratch !== null) {
+      console.log(`\n6. Scratch schema kept: ${scratch}`);
+    }
+
+    console.log('');
+    process.exit(failures === 0 ? 0 : 1);
+  } catch (error) {
+    if (child !== null) {
+      await stopServer(child);
+    }
+    console.error(`\nAcceptance run could not complete:\n${error instanceof Error ? error.message : error}`);
+    process.exit(1);
+  }
+}
+
+void main();

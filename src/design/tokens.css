@@ -1,0 +1,407 @@
+/*
+ * เหลี่ยมนอก design tokens.
+ *
+ * Two layers, deliberately:
+ *
+ *   1. the generated ramps between the ramp markers, owned by
+ *      `scripts/brand-palette.ts` and derived from one seed colour;
+ *   2. the semantic tokens below them, written by hand, which are the only
+ *      names components are allowed to use.
+ *
+ * Components never reference a ramp step directly. `--ln-brand-600` is a colour;
+ * `--ln-brand` is a *decision* — "this is the colour of an action" — and it is
+ * what lets dark mode change the answer without touching a component. This is
+ * the split that makes a design system survive its first redesign.
+ *
+ * CASCADE NOTE. Next injects this file before the `<link>`ed Hope UI sheets in
+ * <head>, so a bare `:root` block loses to Hope UI's own `:root`. Everything here
+ * is therefore scoped to `html:root` (specificity 0,1,1 rather than 0,1,0) and
+ * dark mode to `html body.dark` (0,1,2). That is why the extra `html` is there —
+ * it is not decoration, and it is what lets the brand land on screens that have
+ * not been migrated yet. When Hope UI is finally removed in phase 5 these
+ * selectors can be simplified, and until then they cost nothing.
+ */
+
+/* ramp:start */
+/*
+ * GENERATED — do not edit by hand. `npm run brand:palette` rewrites
+ * everything between the ramp markers from the seed in src/brand/brand.ts.
+ * The semantic layer below this block is hand-written on purpose.
+ */
+:root {
+  /* brand — 600 is the seed itself */
+  --ln-brand-50: #f2f3fd;
+  --ln-brand-100: #e6e7fa;
+  --ln-brand-200: #c9ccf5;
+  --ln-brand-300: #a7adef;
+  --ln-brand-400: #7d85e7;
+  --ln-brand-500: #545edf;
+  --ln-brand-600: #2e3bd8;
+  --ln-brand-700: #2833ba;
+  --ln-brand-800: #202997;
+  --ln-brand-900: #192075;
+
+  /* neutrals — anchored surface values, carrying a small cast of the brand hue */
+  --ln-neutral-0: #ffffff;
+  --ln-neutral-25: #f8f9fc;
+  --ln-neutral-50: #f2f4f7;
+  --ln-neutral-100: #e9ebf1;
+  --ln-neutral-200: #dee3e9;
+  --ln-neutral-300: #ced4dd;
+  --ln-neutral-400: #a3aabb;
+  --ln-neutral-500: #5c6477;
+  --ln-neutral-600: #4a5163;
+  --ln-neutral-700: #3a404f;
+  --ln-neutral-800: #292d3a;
+  --ln-neutral-900: #1d1f2c;
+  --ln-neutral-950: #0b0d14;
+
+  /* Legible text on a brand fill, chosen by contrast rather than by taste. */
+  --ln-on-brand: #ffffff;
+
+  /* The seed as bare channels. Bootstrap-era code needs `r, g, b` for its
+     `rgba(var(--x), 0.2)` form, and hardcoding the triple here is how a
+     rebrand ends up half-applied. */
+  --ln-brand-rgb: 46, 59, 216;
+}
+
+/*
+ * Category hues, emitted for both schemes so the same HTML is colour-coded
+ * on a light till and a dark one without a client-side theme read.
+ */
+:root {
+  --ln-cat-slate: #44546b;
+  --ln-cat-blue: #1d4ed8;
+  --ln-cat-teal: #0f6f68;
+  --ln-cat-green: #15733a;
+  --ln-cat-amber: #8a5f05;
+  --ln-cat-orange: #a8480a;
+  --ln-cat-red: #b3261e;
+  --ln-cat-rose: #9d174d;
+  --ln-cat-violet: #6326cc;
+}
+
+html body.dark,
+html:has(body.dark) {
+  --ln-cat-slate: #aab7cc;
+  --ln-cat-blue: #93b4ff;
+  --ln-cat-teal: #7fd8cf;
+  --ln-cat-green: #86e0a5;
+  --ln-cat-amber: #f3cd7a;
+  --ln-cat-orange: #f6b27f;
+  --ln-cat-red: #ffa39a;
+  --ln-cat-rose: #f7a6c4;
+  --ln-cat-violet: #c3abff;
+}
+/* ramp:end */
+
+/* ---------------------------------------------------------------- semantics */
+
+html:root {
+  /* typeface — the variables come from `next/font` in the root layout, so the
+     fonts are self-hosted and there is no request to a font CDN at runtime */
+  --ln-font: var(--font-inter), var(--font-thai), 'Noto Sans Thai', 'IBM Plex Sans Thai',
+    system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ln-font-mono: 'SFMono-Regular', 'Menlo', 'Consolas', monospace;
+
+  /*
+   * Thai needs more leading than Latin: tone marks sit above the line and vowel
+   * tails below it, so a copy set at 1.4 that looks airy in English clips
+   * วรรณยุกต์ in Thai. 1.65 is the floor, not a preference.
+   */
+  --ln-leading: 1.65;
+  --ln-leading-tight: 1.35;
+
+  --ln-size-xs: 0.75rem;
+  --ln-size-sm: 0.875rem;
+  --ln-size-base: 1rem;
+  --ln-size-lg: 1.125rem;
+  --ln-size-xl: 1.375rem;
+  --ln-size-2xl: 1.75rem;
+  --ln-size-3xl: 2.25rem;
+
+  /* spacing — a 4px base, because a till is used with a thumb and the smallest
+     step has to be big enough to be a real gap on a tablet */
+  --ln-space-1: 0.25rem;
+  --ln-space-2: 0.5rem;
+  --ln-space-3: 0.75rem;
+  --ln-space-4: 1rem;
+  --ln-space-5: 1.5rem;
+  --ln-space-6: 2rem;
+  --ln-space-7: 3rem;
+  --ln-space-8: 4rem;
+
+  /*
+   * Radii stay small. "เหลี่ยมนอก" is about edges, and the rounded-Bootstrap
+   * look is precisely what the mark is drawn against. --ln-cut is the brand
+   * signature: a 45° chamfer on the top-right corner, used on a *few* large
+   * surfaces (the login card, the wizard header, the receipt) rather than on
+   * every box, because a chamfer on everything is noise, and it cannot be
+   * printed cleanly on a 58mm receipt.
+   */
+  --ln-radius-sm: 3px;
+  --ln-radius-md: 4px;
+  --ln-radius-lg: 6px;
+  --ln-radius-pill: 999px;
+  --ln-cut: 14px;
+
+  /*
+   * elevation — a card is separated from the canvas by its border and by being
+   * white, not by a shadow. Shadows are reserved for surfaces that genuinely
+   * float *over* the page (modal, menu, drawer), where the shadow is the only
+   * thing telling the eye the element is not part of the document. The previous
+   * scale put a shadow on every card, which on a light canvas read as haze.
+   */
+  --ln-shadow-sm: 0 1px 2px rgba(16, 18, 28, 0.05);
+  --ln-shadow-md: 0 2px 6px rgba(16, 18, 28, 0.06), 0 8px 20px rgba(16, 18, 28, 0.06);
+  --ln-shadow-lg: 0 12px 32px rgba(16, 18, 28, 0.16);
+  --ln-ring: 0 0 0 3px var(--ln-brand-ring);
+
+  /* motion — one duration per intent, so nothing animates "a bit" */
+  --ln-duration-fast: 120ms;
+  --ln-duration: 180ms;
+  --ln-duration-slow: 280ms;
+  --ln-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  --ln-z-sticky: 100;
+  --ln-z-drawer: 200;
+  --ln-z-modal: 300;
+  --ln-z-toast: 400;
+
+  /*
+   * Minimum interactive size. A tablet on a counter is used with a thumb, often
+   * in a hurry, often while looking at the customer. 44px is the floor for
+   * anything tappable and the number the POS layout is designed around.
+   */
+  --ln-tap: 44px;
+
+  /*
+   * semantic colour — light
+   *
+   * Four surface levels, and they are all in use: `canvas` is the page, `surface`
+   * is a card on it, `surface-2` is a hover or a pressed state of that card, and
+   * `surface-inset` is a table header or a well that should read as *below* the
+   * card. Without `surface-inset` a table header has to borrow a border, and a
+   * table of striped rows starts looking like a form.
+   */
+  --ln-canvas: var(--ln-neutral-50);
+  --ln-bg: var(--ln-canvas);
+  --ln-surface: var(--ln-neutral-0);
+  --ln-surface-2: var(--ln-neutral-100);
+  --ln-surface-inset: var(--ln-neutral-25);
+  --ln-border-subtle: var(--ln-neutral-100);
+  --ln-border: var(--ln-neutral-200);
+  --ln-border-strong: var(--ln-neutral-300);
+
+  --ln-text: var(--ln-neutral-900);
+  --ln-text-muted: var(--ln-neutral-600);
+  --ln-text-subtle: var(--ln-neutral-500);
+  --ln-text-on-surface: var(--ln-neutral-900);
+
+  --ln-brand: var(--ln-brand-600);
+  --ln-brand-hover: var(--ln-brand-700);
+  --ln-brand-active: var(--ln-brand-800);
+  --ln-brand-soft: var(--ln-brand-50);
+  --ln-brand-soft-border: var(--ln-brand-200);
+  --ln-brand-ring: color-mix(in srgb, var(--ln-brand-600) 35%, transparent);
+
+  --ln-success: #19794a;
+  --ln-success-soft: #e7f5ee;
+  --ln-warning: #9a5b06;
+  --ln-warning-soft: #fdf3e3;
+  --ln-danger: #b3261e;
+  --ln-danger-soft: #fdecea;
+  --ln-info: #12616f;
+  --ln-info-soft: #e6f4f6;
+
+  /* money — green in, red out, used only for figures that are money */
+  --ln-money-in: var(--ln-success);
+  --ln-money-out: var(--ln-danger);
+}
+
+/*
+ * Density.
+ *
+ * Two speeds, and they are a property of *where the screen is*, not of the
+ * screen itself: a back office is driven with a mouse from a keyboard-adjacent
+ * position and wants density (more rows, less scrolling, smaller targets), while
+ * a till is driven with a thumb, often wet, often in a hurry, and wants 44px and
+ * up. Making that a token block rather than a prop per component is what keeps
+ * one Button working at both speeds without a `dense` boolean threaded through
+ * twenty call sites.
+ *
+ * `compact` is the default and is declared on `html:root` for the same cascade
+ * reason as the rest of this file. `touch` is selected by the shell putting
+ * `data-density="touch"` on the app frame, so it applies to the till and to
+ * nothing else. Both blocks are written out in full rather than as an override of
+ * one or two values: a density that only changes the font size produces a screen
+ * with 14px text in 44px boxes, which is a worse result than either end.
+ *
+ * Line height is the one value that does **not** go below 1.5 on `compact`. The
+ * reference design sets Thai copy at 1.43, which clips วรรณยุกต์ above and vowel
+ * tails below the line; density here is bought in padding and in control height,
+ * never in leading.
+ */
+/*
+ * These two selectors are unprefixed, unlike everything else in this file. The
+ * `html` prefix elsewhere exists to beat Hope UI on selectors Hope UI also
+ * writes; Hope UI has never heard of `--ln-*`, so there is nothing to beat, and an
+ * unprefixed attribute selector is what lets a *nested* area choose its own
+ * density (a compact admin drawer opened over a touch till, or the reverse) — an
+ * element that carries the attribute wins against the value it inherited, which a
+ * `html `-descendant selector could not express.
+ */
+html:root,
+[data-density='compact'] {
+  --ln-size-xs: 0.6875rem;
+  --ln-size-sm: 0.8125rem;
+  --ln-size-base: 0.875rem;
+  --ln-size-lg: 1rem;
+  --ln-size-xl: 1.25rem;
+  --ln-size-2xl: 1.5rem;
+  --ln-size-3xl: 1.875rem;
+
+  --ln-control-h: 34px;
+  --ln-control-h-sm: 28px;
+  --ln-control-h-lg: 44px;
+  --ln-tap: 32px;
+
+  --ln-row-h: 36px;
+
+  /*
+   * 1.55, not the reference design's 1.43. Thai stacks a tone mark above a vowel
+   * above the consonant and hangs a vowel tail below it, so the leading that is
+   * comfortable for Latin clips Thai — 1.5 is the floor and the test suite
+   * enforces it, which is what stops a future "density" change from quietly
+   * making every label illegible.
+   */
+  --ln-leading: 1.55;
+  --ln-leading-tight: 1.3;
+
+  --ln-space-1: 3px;
+  --ln-space-2: 6px;
+  --ln-space-3: 10px;
+  --ln-space-4: 12px;
+  --ln-space-5: 16px;
+  --ln-space-6: 24px;
+  --ln-space-7: 32px;
+  --ln-space-8: 48px;
+}
+
+/* Declared after `compact`: equal specificity, later rule wins. */
+[data-density='touch'] {
+  --ln-size-xs: 0.75rem;
+  --ln-size-sm: 0.875rem;
+  --ln-size-base: 1rem;
+  --ln-size-lg: 1.125rem;
+  --ln-size-xl: 1.375rem;
+  --ln-size-2xl: 1.75rem;
+  --ln-size-3xl: 2.25rem;
+
+  --ln-control-h: 48px;
+  --ln-control-h-sm: 40px;
+  --ln-control-h-lg: 56px;
+  --ln-tap: 48px;
+
+  --ln-row-h: 48px;
+
+  --ln-leading: 1.65;
+  --ln-leading-tight: 1.35;
+
+  --ln-space-1: 4px;
+  --ln-space-2: 8px;
+  --ln-space-3: 12px;
+  --ln-space-4: 16px;
+  --ln-space-5: 24px;
+  --ln-space-6: 32px;
+  --ln-space-7: 48px;
+  --ln-space-8: 64px;
+}
+
+/*
+ * Dark mode, keyed off the class the server already renders from the theme
+ * cookie — the same `.dark` that Hope UI scopes its own dark rules under, so the
+ * two systems agree while both are loaded.
+ *
+ * Depth is carried by borders rather than shadows here: a shadow on a dark
+ * surface is invisible at best and muddy at worst, which is why the shadows are
+ * redefined rather than reused.
+ *
+ * Two selectors, one rule. `html body.dark` is what actually applies, because
+ * custom properties inherit *down* — a token declared on `body` is invisible to
+ * `html` itself, which is fine for everything rendered inside the app but means
+ * anything reading a token off the root element (a test, an extension, a future
+ * `color-scheme` rule) would still see the light values. `html:has(body.dark)`
+ * puts the same block on the root as well, and degrades harmlessly in a browser
+ * without `:has()` because the first selector still does the work.
+ */
+html body.dark,
+html:has(body.dark) {
+  --ln-canvas: #0e1020;
+  --ln-bg: var(--ln-canvas);
+  --ln-surface: #171a2b;
+  --ln-surface-2: #1e2235;
+  --ln-surface-inset: #0c0e18;
+  --ln-border-subtle: #232840;
+  --ln-border: #2a2f47;
+  --ln-border-strong: #3a4060;
+
+  --ln-text: #eef0f8;
+  --ln-text-muted: #a3aac4;
+  --ln-text-subtle: #8b93b0;
+  --ln-text-on-surface: #eef0f8;
+
+  /*
+   * 300, not 400, and the reason is measurable rather than aesthetic: at 400 the
+   * brand colour reaches only 4.18:1 on its own soft fill, so a brand pill in dark
+   * mode was below AA. 300 also carries the *fill* case, which is why `on-brand`
+   * flips to ink here — a pale fill with dark text is the only way a dark theme can
+   * keep a filled primary button legible without inventing a second brand colour.
+   */
+  --ln-brand: var(--ln-brand-300);
+  --ln-brand-hover: var(--ln-brand-200);
+  --ln-brand-active: var(--ln-brand-100);
+  --ln-on-brand: var(--ln-neutral-950);
+  --ln-brand-soft: color-mix(in srgb, var(--ln-brand-300) 16%, transparent);
+  --ln-brand-soft-border: color-mix(in srgb, var(--ln-brand-300) 40%, transparent);
+  --ln-brand-ring: color-mix(in srgb, var(--ln-brand-300) 45%, transparent);
+
+  --ln-success: #6fd3a2;
+  --ln-success-soft: rgba(25, 121, 74, 0.22);
+  --ln-warning: #f2ba6b;
+  --ln-warning-soft: rgba(154, 91, 6, 0.24);
+  --ln-danger: #ff9a92;
+  --ln-danger-soft: rgba(179, 38, 30, 0.24);
+  --ln-info: #7fd0dc;
+  --ln-info-soft: rgba(18, 97, 111, 0.24);
+
+  --ln-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --ln-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --ln-shadow-lg: 0 14px 36px rgba(0, 0, 0, 0.55);
+}
+
+/* -------------------------------------------------------------- hope bridge */
+
+/*
+ * The transitional bridge (removed in phase 5). Hope UI reads its colour from
+ * `--bs-primary`, `--bs-primary-rgb` and exactly two tint steps, so overriding
+ * four variables re-skins every screen that has not been migrated to the design
+ * system yet. That is what lets the brand land across the whole app in one commit
+ * instead of leaving it half-recoloured for the length of the migration.
+ */
+html:root {
+  --bs-primary: var(--ln-brand);
+  --bs-primary-rgb: var(--ln-brand-rgb);
+  --bs-primary-tint-20: var(--ln-brand-400);
+  --bs-primary-tint-90: var(--ln-brand-100);
+
+  /*
+   * Links are the one place the bridge cannot be lazy: Hope UI declares
+   * `--bs-link-color: #3a57e8` on `:root` and every bare `<a>` in the app reads
+   * it, so a link left unbridged is a visible seam between the migrated and
+   * unmigrated halves of the same page. `--ln-brand` rather than the 600 step, so
+   * dark mode flips it along with everything else.
+   */
+  --bs-link-color: var(--ln-brand);
+  --bs-link-hover-color: var(--ln-brand-hover);
+}

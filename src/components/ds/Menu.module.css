@@ -1,0 +1,97 @@
+/* Menus: a surface that floats, so it is one of the few that carries a shadow. */
+
+.root {
+  position: relative;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  min-height: var(--ln-control-h);
+  padding: 0 var(--ln-space-3);
+  border: 1px solid transparent;
+  border-radius: var(--ln-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--ln-surface-2);
+}
+
+.trigger:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+.list {
+  position: absolute;
+  top: calc(100% + var(--ln-space-1));
+  left: 0;
+  z-index: var(--ln-z-drawer);
+  min-width: 12rem;
+  padding: var(--ln-space-1);
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  box-shadow: var(--ln-shadow-md);
+}
+
+.alignEnd {
+  left: auto;
+  right: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  width: 100%;
+  min-height: var(--ln-control-h);
+  padding: 0 var(--ln-space-3);
+  border: 0;
+  border-radius: var(--ln-radius-sm);
+  background: transparent;
+  color: var(--ln-text);
+  font: inherit;
+  font-size: var(--ln-size-base);
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled) {
+  background: var(--ln-surface-2);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: -2px;
+}
+
+.item:disabled {
+  color: var(--ln-text-subtle);
+  cursor: not-allowed;
+}
+
+.itemDanger {
+  color: var(--ln-danger);
+}
+
+.itemDanger:hover:not(:disabled) {
+  background: var(--ln-danger-soft);
+}
+
+.menuLabel {
+  padding: var(--ln-space-2) var(--ln-space-3);
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+}
+
+.separator {
+  height: 1px;
+  margin: var(--ln-space-1) 0;
+  background: var(--ln-border);
+}

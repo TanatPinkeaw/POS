@@ -1,0 +1,80 @@
+/*
+ * Toasts.
+ *
+ * Bottom-centre, not top-right: the top-right corner of this application is where
+ * the connection indicator and the account menu live, and a message that covers
+ * the one control telling the operator whether the till is online is worse than no
+ * message. Bottom-centre is also within a thumb's reach if it ever grows a dismiss
+ * button.
+ */
+
+.region {
+  position: fixed;
+  left: 50%;
+  bottom: var(--ln-space-5);
+  transform: translateX(-50%);
+  z-index: var(--ln-z-toast);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  width: min(28rem, calc(100vw - 2 * var(--ln-space-5)));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-left: 3px solid var(--ln-brand);
+  border-radius: var(--ln-radius-md);
+  box-shadow: var(--ln-shadow-lg);
+}
+
+.icon {
+  display: flex;
+  color: var(--ln-brand);
+  flex: none;
+}
+
+.text {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--ln-size-base);
+  font-weight: 650;
+}
+
+.body {
+  margin: var(--ln-space-1) 0 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.tone_success {
+  border-left-color: var(--ln-success);
+}
+
+.tone_success .icon {
+  color: var(--ln-success);
+}
+
+.tone_warning {
+  border-left-color: var(--ln-warning);
+}
+
+.tone_warning .icon {
+  color: var(--ln-warning);
+}
+
+.tone_danger {
+  border-left-color: var(--ln-danger);
+}
+
+.tone_danger .icon {
+  color: var(--ln-danger);
+}

@@ -1,0 +1,133 @@
+import type { ReactNode } from 'react';
+
+import { Icon } from './Icon';
+import type { IconName } from './icons';
+import styles from './Feedback.module.css';
+
+type Tone = 'info' | 'success' | 'warning' | 'danger' | 'brand';
+
+const TONE_ICON: Record<Tone, IconName> = {
+  info: 'info',
+  success: 'check',
+  warning: 'warning',
+  danger: 'warning',
+  brand: 'info',
+};
+
+export function Spinner({ label = 'กำลังโหลด…' }: { label?: string }) {
+  return (
+    <span className={styles.spinnerRow} role="status">
+      <span className={styles.spinner} aria-hidden="true" />
+      <span className={styles.spinnerLabel}>{label}</span>
+    </span>
+  );
+}
+
+/**
+ * A message that belongs to the page rather than to a field.
+ *
+ * The tone picks the live region, which is the part that matters: a failure
+ * interrupts (`role="alert"`, assertive) while a confirmation waits for a pause
+ * (`role="status"`, polite). A "saved" toast that interrupts an operator
+ * mid-instruction is a bug, not a courtesy.
+ */
+export function InlineNotice({
+  tone = 'info',
+  title,
+  children,
+  actions,
+}: {
+  tone?: Tone;
+  title?: ReactNode;
+  children?: ReactNode;
+  actions?: ReactNode;
+}) {
+  const assertive = tone === 'danger' || tone === 'warning';
+
+  return (
+    <div
+      className={`${styles.notice} ${styles[`notice_${tone}`]}`}
+      role={assertive ? 'alert' : 'status'}
+      aria-live={assertive ? 'assertive' : 'polite'}
+    >
+      <span className={styles.noticeIcon} aria-hidden="true">
+        <Icon name={TONE_ICON[tone]} size={18} />
+      </span>
+      <div className={styles.noticeBody}>
+        {title ? <p className={styles.noticeTitle}>{title}</p> : null}
+        {children ? <div className={styles.noticeText}>{children}</div> : null}
+        {actions ? <div className={styles.noticeActions}>{actions}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What a screen shows when there is nothing to show.
+ *
+ * Always offers a way out when there is one: an empty catalogue without an
+ * "import" button is a dead end, and the empty state is the only place a new
+ * renter sees that button before they have any data.
+ */
+export function EmptyState({
+  icon = 'box',
+  title,
+  description,
+  action,
+}: {
+  icon?: IconName;
+  title: string;
+  description?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className={styles.empty}>
+      <span className={styles.emptyIcon} aria-hidden="true">
+        <Icon name={icon} size={28} strokeWidth={1.5} />
+      </span>
+      <p className={styles.emptyTitle}>{title}</p>
+      {description ? <p className={styles.emptyText}>{description}</p> : null}
+      {action ? <div className={styles.emptyAction}>{action}</div> : null}
+    </div>
+  );
+}
+
+/**
+ * A placeholder that holds the shape of what is loading.
+ *
+ * Preferred over a spinner where the layout is known, because the page does not
+ * jump when the data lands and the operator can start reading the structure
+ * before the numbers arrive.
+ */
+export function Skeleton({
+  width = '100%',
+  height = 16,
+  radius = 'var(--ln-radius-sm)',
+}: {
+  width?: string | number;
+  height?: string | number;
+  radius?: string;
+}) {
+  return (
+    <span
+      className={styles.skeleton}
+      style={{ width, height, borderRadius: radius }}
+      aria-hidden="true"
+    />
+  );
+}
+
+/** A stack of skeleton lines, for a table or list that is still loading. */
+export function SkeletonRows({ rows = 4, columns = 4 }: { rows?: number; columns?: number }) {
+  return (
+    <div className={styles.skeletonBlock} aria-hidden="true">
+      {Array.from({ length: rows }, (_, rowIndex) => (
+        <div className={styles.skeletonRow} key={rowIndex}>
+          {Array.from({ length: columns }, (_, columnIndex) => (
+            <Skeleton key={columnIndex} width={columnIndex === 0 ? '30%' : 'auto'} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}

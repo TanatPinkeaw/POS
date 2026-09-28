@@ -57,9 +57,25 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 export const config = {
   matcher: [
     /*
-     * Skip static assets and the API. API routes enforce their own permissions
-     * and must answer with 401/403 JSON rather than a redirect to a login page.
+     * Skip the API, the websocket, and static assets.
+     *
+     * API routes enforce their own permissions and must answer with 401/403
+     * JSON rather than a redirect to a login page.
+     *
+     * Assets are skipped by *shape* — a dotted name in the last segment — rather
+     * than by filename. The previous list named `favicon.ico` on its own, which
+     * meant the moment a browser needed something else from the root of
+     * `public/` it was redirected to `/login` instead of served: exactly what
+     * happened to `/manifest.webmanifest` and `/icon-192.png`, which an installing
+     * browser fetches *before* anybody has signed in, and which therefore looked
+     * like a broken PWA rather than a broken guard.
+     *
+     * This is safe: no page route in this app contains a dot, so a dotted path can
+     * only ever be a missing file (a 404) or a real one from `public/`. The data
+     * itself is still protected by `requireRole` in every route handler and by
+     * `requireShellUser` in every layout — the point of this file is only to decide
+     * which *area* an unauthenticated visitor is allowed to look at.
      */
-    '/((?!_next/static|_next/image|api|realtime|hope-ui|uploads|favicon.ico).*)',
+    '/((?!_next/static|_next/image|api|realtime|hope-ui|uploads|.*\\.[A-Za-z0-9]+$).*)',
   ],
 };

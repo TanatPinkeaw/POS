@@ -1,0 +1,45 @@
+{
+  "name": "เหลี่ยมนอก — ระบบขายหน้าร้าน",
+  "short_name": "เหลี่ยมนอก",
+  "description": "ระบบขายหน้าร้าน สต็อก พรีออเดอร์ และพนักงาน แบบเรียลไทม์ ที่ร้านเป็นเจ้าของเอง",
+  "lang": "th",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0c0d15",
+  "theme_color": "#2E3BD8",
+  "categories": ["business", "productivity", "shopping"],
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "ขายหน้าร้าน",
+      "short_name": "ขาย",
+      "url": "/pos",
+      "description": "เปิดจอขายหน้าร้าน"
+    },
+    {
+      "name": "พรีออเดอร์",
+      "short_name": "พรีออเดอร์",
+      "url": "/pos/preorders",
+      "description": "ดูกระดานพรีออเดอร์ทั้ง 4 ขั้นตอน"
+    },
+    {
+      "name": "ลงเวลาเข้า-ออกงาน",
+      "short_name": "ลงเวลา",
+      "url": "/pos/attendance",
+      "description": "บันทึกเวลาเข้าและออกงาน"
+    }
+  ]
+}

@@ -1,15 +1,26 @@
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
+import { BrandMark } from '@/brand/BrandMark';
+import { BRAND } from '@/brand/brand';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { getSessionUser } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { homePathForRole } from '@/lib/roles';
+import { hasShop, loadShop } from '@/lib/shop';
+import { shopDisplayName } from '@/lib/shop-view';
+
+import styles from './login.module.css';
+
+export const metadata: Metadata = { title: 'เข้าสู่ระบบ' };
 
 /**
  * Demo accounts seeded by `npm run db:seed`.
  *
- * Listed on the sign-in card on purpose: this is a local development build, and
- * having the three roles one tap away is what makes the RBAC behaviour easy to
- * check. Remove this block before any real deployment.
+ * Listed on the sign-in card on purpose: having the three roles one tap away is
+ * what makes the RBAC behaviour easy to check. The block renders only while the
+ * seeded manager account still exists, so it disappears on its own when a renter
+ * sets the system up for real instead of having to remember to delete it.
  */
 const DEMO_ACCOUNTS = [
   { role: 'ผู้จัดการ (Admin)', phone: '0800000001' },
@@ -24,48 +35,66 @@ export default async function LoginPage() {
     redirect(homePathForRole(session.role));
   }
 
+  /*
+   * Before setup there are no accounts at all, so signing in is impossible and
+   * this page is a dead end. Sending the visitor to the wizard is the whole
+   * difference between "a fresh deployment" and "a broken one".
+   */
+  if (!(await hasShop())) {
+    redirect('/setup');
+  }
+
+  const shop = await loadShop();
+
+  /*
+   * The demo accounts are a development aid, not a feature. They are listed only
+   * while the seeded manager account still exists, so a renter who never ran the
+   * seed never sees them advertised on their own sign-in page.
+   */
+  const seedAccountExists =
+    (await prisma.users.count({ where: { phone: DEMO_ACCOUNTS[0]?.phone ?? '0800000001' } })) > 0;
+
   return (
-    <div className="container-fluid">
-      <div className="row justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
-        <div className="col-12 col-md-8 col-lg-5 col-xl-4">
-          <div className="card">
-            <div className="card-body p-4">
-              <div className="text-center mb-4">
-                <div className="logo-main d-flex justify-content-center mb-2">
-                  <svg className="text-primary" width="40" height="40" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="-0.76" y="19.24" width="28" height="4" rx="2" transform="rotate(-45 -0.76 19.24)" fill="currentColor" />
-                    <rect x="7.73" y="27.73" width="28" height="4" rx="2" transform="rotate(-45 7.73 27.73)" fill="currentColor" />
-                    <rect x="10.54" y="16.39" width="16" height="4" rx="2" transform="rotate(45 10.54 16.39)" fill="currentColor" />
-                    <rect x="10.56" y="-0.56" width="28" height="4" rx="2" transform="rotate(45 10.56 -0.56)" fill="currentColor" />
-                  </svg>
-                </div>
-                <h4 className="mb-1">POS Realtime</h4>
-                <p className="text-muted mb-0 small">
-                  ระบบขายหน้าร้าน สต็อกเรียลไทม์ และพรีออเดอร์ 4 ขั้นตอน
-                </p>
-              </div>
-
-              <LoginForm />
-
-              <hr className="my-4" />
-
-              <div className="small">
-                <p className="text-muted mb-2">
-                  บัญชีทดลอง — รหัสผ่านทั้งหมดคือ <code>password123</code>
-                </p>
-                <ul className="list-unstyled mb-0">
-                  {DEMO_ACCOUNTS.map((account) => (
-                    <li key={account.phone} className="d-flex justify-content-between py-1">
-                      <span className="text-muted">{account.role}</span>
-                      <code>{account.phone}</code>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
+    <main className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.head}>
+          {/*
+           * Two identities, in order: the platform, then the shop. The person
+           * signing in works at the shop — but the software they are looking at
+           * is ours, and this is the screen where that is most visible.
+           */}
+          <BrandMark size={46} title={BRAND.nameTh} />
+          <p className={styles.brand}>
+            {BRAND.nameTh} · {BRAND.nameEn}
+          </p>
+          {/*
+           * `<h1>` is the shop's name, not the brand's: a screen reader user
+           * arriving here should hear which shop they are signing in to.
+           */}
+          <h1 className={styles.shop}>{shopDisplayName(shop)}</h1>
+          <p className={styles.tagline}>{BRAND.taglineTh}</p>
         </div>
+
+        <LoginForm />
+
+        {seedAccountExists ? (
+          <div className={styles.demo}>
+            <p className={styles.demoTitle}>
+              บัญชีทดลอง — รหัสผ่านทั้งหมดคือ <code className={styles.code}>password123</code>
+            </p>
+            <ul className={styles.demoList}>
+              {DEMO_ACCOUNTS.map((account) => (
+                <li key={account.phone} className={styles.demoRow}>
+                  <span>{account.role}</span>
+                  <code className={styles.demoPhone}>{account.phone}</code>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
-    </div>
+
+      <p className={styles.footer}>{BRAND.taglineEn}</p>
+    </main>
   );
 }

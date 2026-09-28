@@ -1,0 +1,393 @@
+/*
+ * The application frame.
+ *
+ * Replaces Hope UI's sidebar and navbar, and the reason is not that they were
+ * ugly — it is that they were *not ours to fix*. Their dark rules, their
+ * breakpoints and their `!important`s set the frame's rhythm, and every screen
+ * migrated to the design system had to be designed around a skeleton it could not
+ * change. This file is that skeleton, in the same token vocabulary as everything
+ * else, so a change here reaches all thirteen screens.
+ *
+ * Layout is a two-column grid: a fixed sidebar and a content column that scrolls.
+ * The sidebar is `position: sticky` rather than fixed so that the page keeps a
+ * normal document flow — which is what lets `position: fixed` overlays and the
+ * print stylesheet behave without either of them knowing about the frame.
+ */
+
+.frame {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  background: var(--ln-canvas);
+}
+
+@media (min-width: 1024px) {
+  .frame {
+    grid-template-columns: var(--shell-sidebar) minmax(0, 1fr);
+  }
+}
+
+.frame {
+  --shell-sidebar: 238px;
+}
+
+.frameMini {
+  --shell-sidebar: 68px;
+}
+
+/*
+ * The till fills the viewport exactly, and nothing about it scrolls the page —
+ * the panes inside scroll themselves.
+ *
+ * The reason this has to be an explicit frame rule rather than a height on the
+ * content: in a flex column, `flex: 1` gives the item a flex base of 0 and the
+ * used size comes from flexing to fit its *content*, so a `height` on the content
+ * element is ignored and a long bill drags the whole page down. Measured at
+ * 2060px against a 1003px viewport before this rule existed.
+ */
+.frameTill {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.frameTill .main {
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---------------------------------------------------------------- sidebar */
+
+.sidebar {
+  display: none;
+  flex-direction: column;
+  background: var(--ln-surface);
+  border-right: 1px solid var(--ln-border);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  .sidebar {
+    display: flex;
+  }
+}
+
+/* The drawer variant, for a phone: the same list, slid over the content. */
+.drawer {
+  display: flex;
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: var(--ln-z-drawer);
+  width: 16rem;
+  box-shadow: var(--ln-shadow-lg);
+}
+
+.drawerScrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ln-z-drawer);
+  background: rgba(12, 13, 21, 0.4);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-4);
+  min-height: 56px;
+  border-bottom: 1px solid var(--ln-border);
+  color: var(--ln-text);
+  text-decoration: none;
+}
+
+.brand:hover {
+  text-decoration: none;
+  color: var(--ln-text);
+}
+
+/*
+ * Two names in one lockup, which is the point: the mark is the product the shop
+ * runs on, and the bold name beside it is the shop. The platform's own name is
+ * kept for the account menu, where someone has deliberately gone looking for it.
+ */
+.brandText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.brandShop {
+  font-weight: 650;
+  font-size: var(--ln-size-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brandRole {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--ln-space-3);
+  flex: 1;
+}
+
+.navSectionLabel {
+  padding: var(--ln-space-3) var(--ln-space-3) var(--ln-space-1);
+  font-size: var(--ln-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ln-text-subtle);
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  min-height: 38px;
+  padding: 0 var(--ln-space-3);
+  border-radius: var(--ln-radius-md);
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-base);
+  font-weight: 550;
+  text-decoration: none;
+  position: relative;
+}
+
+.link:hover {
+  background: var(--ln-surface-2);
+  color: var(--ln-text);
+  text-decoration: none;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: -2px;
+}
+
+/*
+ * The active row is a soft brand fill plus a brand bar on the leading edge. Both,
+ * not one: the fill survives being read in greyscale as a shape, and the bar is
+ * what makes the row findable in peripheral vision when the sidebar is scanned
+ * rather than read.
+ */
+.linkActive,
+.linkActive:hover {
+  background: var(--ln-brand-soft);
+  color: var(--ln-brand);
+  font-weight: 650;
+}
+
+.linkActive::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--ln-brand);
+}
+
+.linkIcon {
+  display: flex;
+  flex: none;
+}
+
+.linkLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.linkBadge {
+  margin-left: auto;
+  flex: none;
+}
+
+/* Mini mode: icons only, and the label is kept for assistive technology. */
+.frameMini .link {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.frameMini .linkLabel,
+.frameMini .brandText,
+.frameMini .navSectionLabel {
+  display: none;
+}
+
+.frameMini .linkBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  margin: 0;
+}
+
+.frameMini .brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.sidebarFooter {
+  padding: var(--ln-space-3);
+  border-top: 1px solid var(--ln-border);
+}
+
+/* ----------------------------------------------------------------- topbar */
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  min-height: 52px;
+  padding: 0 var(--ln-space-4);
+  background: var(--ln-surface);
+  border-bottom: 1px solid var(--ln-border);
+  position: sticky;
+  top: 0;
+  z-index: var(--ln-z-sticky);
+}
+
+.topbarStart {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  min-width: 0;
+}
+
+.topbarEnd {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  margin-left: auto;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--ln-control-h);
+  min-height: var(--ln-control-h);
+  border: 1px solid transparent;
+  border-radius: var(--ln-radius-md);
+  background: transparent;
+  color: var(--ln-text-muted);
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--ln-surface-2);
+  color: var(--ln-text);
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+/* The two toggles are chosen by the viewport, not by a JavaScript width test. */
+.drawerToggle {
+  display: inline-flex;
+}
+
+.miniToggle {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .drawerToggle {
+    display: none;
+  }
+
+  .miniToggle {
+    display: inline-flex;
+  }
+}
+
+/* A count in a circle: the one place this system keeps a full pill, because a
+   rounded shape reads as "quantity" rather than as "label". */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: var(--ln-radius-pill);
+  background: var(--ln-danger);
+  color: #ffffff;
+  font-size: var(--ln-size-xs);
+  font-weight: 700;
+}
+
+.socket {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+  white-space: nowrap;
+}
+
+.content {
+  flex: 1;
+  padding: var(--ln-space-5);
+  min-width: 0;
+}
+
+/*
+ * The till is the one screen that gets the whole viewport: an operator selling to a
+ * queue does not need padded breathing room, they need every pixel of the product
+ * grid. The density attribute is also set on this element, which is what carries
+ * 48px controls and 16px type into every component inside it.
+ */
+.contentTill {
+  padding: var(--ln-space-3);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+}
+
+.accountText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.accountName {
+  font-size: var(--ln-size-base);
+  font-weight: 600;
+}
+
+.accountRole {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+}
+
+@media (max-width: 767px) {
+  .accountText {
+    display: none;
+  }
+}

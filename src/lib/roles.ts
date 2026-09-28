@@ -82,11 +82,20 @@ export function requiredRolesForPath(pathname: string): Role[] | null {
   return match ? match.roles : null;
 }
 
-/** True when `pathname` is one of the public routes. */
+/**
+ * True when `pathname` is one of the public routes.
+ *
+ * `/setup` is listed here because the proxy runs on the edge runtime and cannot
+ * query the database to ask whether this deployment has been configured — the
+ * check that matters ("refuse once a shop exists") is made by the page and the
+ * route handler, which do run on the Node runtime, with the singleton primary
+ * key as the final backstop.
+ */
 export function isPublicPath(pathname: string): boolean {
   return (
     pathname === '/login' ||
     pathname === '/' ||
+    pathname === '/setup' ||
     pathname.startsWith('/hope-ui/') ||
     pathname.startsWith('/uploads/')
   );

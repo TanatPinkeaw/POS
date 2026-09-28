@@ -84,6 +84,17 @@ class Session {
   async login(credentials: { identifier: string; password: string }): Promise<void> {
     await this.call('/api/v1/auth/login', { method: 'POST', body: credentials });
   }
+
+  /**
+   * A raw fetch that keeps the session cookie but does not assume a JSON body.
+   * Used for the report export, which answers with a binary workbook.
+   */
+  raw(path: string): Promise<Response> {
+    return fetch(`${BASE}${path}`, {
+      headers: this.cookie ? { cookie: this.cookie } : {},
+      redirect: 'manual',
+    });
+  }
 }
 
 interface ProductDto {
@@ -264,6 +275,111 @@ async function main(): Promise<void> {
     closed.data?.discrepancyThb === 0 && closed.data?.discrepancyKind === 'balanced',
     closed.data,
   );
+
+  console.log('\n11. The admin exports every SRS §8 workbook as a real xlsx');
+  const reportTypes = [
+    'sales_summary',
+    'product_performance',
+    'employee_attendance',
+    'stock_audit',
+  ] as const;
+  for (const type of reportTypes) {
+    const response = await admin.raw(
+      `/api/v1/reports/export?type=${type}&from=2000-01-01&to=2099-12-31`,
+    );
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type') ?? '';
+    // A real .xlsx is a ZIP container, so it must start with the PK\x03\x04 signature.
+    const isZip =
+      bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04;
+    check(`${type}: 200 with the xlsx content type`, response.status === 200 && contentType.includes('spreadsheetml'), contentType);
+    check(`${type}: workbook bytes are a ZIP container`, isZip, [...bytes.slice(0, 4)]);
+    check(`${type}: non-trivial payload (${bytes.byteLength} bytes)`, bytes.byteLength > 2000);
+  }
+
+  console.log('\n12. Exports are admin-only');
+  const forbiddenExport = await cashier.raw('/api/v1/reports/export?type=sales_summary');
+  check('a cashier is refused with 403', forbiddenExport.status === 403, forbiddenExport.status);
+
+  console.log('\n13. Attendance: the cashier clocks in and out');
+  // Leave the clock clean first, so the smoke test is re-runnable.
+  const clock = await cashier.call<{ openLog: { logId: number } | null }>(
+    '/api/v1/attendance/current',
+  );
+  if (clock.data?.openLog) {
+    check(`closing a log left open by an earlier run (#${clock.data.openLog.logId})`, true);
+    await cashier.call('/api/v1/attendance/check-out', { method: 'POST', body: {} });
+  }
+
+  const checkedIn = await cashier.call<{
+    logId: number;
+    checkOut: string | null;
+    scheduledStart: string | null;
+    workHours: number | null;
+  }>('/api/v1/attendance/check-in', { method: 'POST', body: { note: 'smoke' } });
+  check('clocking in opens a log', checkedIn.data?.checkOut === null, checkedIn.data);
+  check('work_hours is empty while the log is open', checkedIn.data?.workHours === null, checkedIn.data);
+  check('the day is matched to the roster for that day', checkedIn.data?.scheduledStart !== undefined, checkedIn.data?.scheduledStart);
+
+  const doubleClockIn = await cashier
+    .call('/api/v1/attendance/check-in', { method: 'POST', body: {} })
+    .then(() => 200)
+    .catch((error: Error) => Number(/\b(409)\b/.exec(error.message)?.[1] ?? 0));
+  check('a second clock-in is refused with 409', doubleClockIn === 409, doubleClockIn);
+
+  const checkedOut = await cashier.call<{ workHours: number | null }>(
+    '/api/v1/attendance/check-out',
+    { method: 'POST', body: {} },
+  );
+  check(
+    'clocking out computes work_hours in the database',
+    typeof checkedOut.data?.workHours === 'number',
+    checkedOut.data,
+  );
+
+  console.log('\n14. The timesheet is admin-only and shows the clock-in');
+  const bangkokToday = new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const timesheet = await admin.call<{
+    rows: { employeePhone: string; employeeId: string; scheduledStart: string | null }[];
+  }>(`/api/v1/attendance?from=${bangkokToday}&to=${bangkokToday}`);
+  const cashierRow = timesheet.data?.rows.find((row) => row.employeePhone === CASHIER.identifier);
+  check('the cashier\u2019s log appears on the admin timesheet', cashierRow !== undefined, timesheet.data?.rows.length);
+
+  const memberTimesheet = await member.raw('/api/v1/attendance');
+  check('a member cannot read the timesheet (403)', memberTimesheet.status === 403, memberTimesheet.status);
+
+  console.log('\n15. The roster upserts for the day');
+  const savedSchedule = await admin.call<{ id: number; shiftDate: string; startTime: string }>(
+    '/api/v1/schedules',
+    {
+      method: 'POST',
+      body: {
+        employeeId: cashierRow?.employeeId,
+        shiftDate: bangkokToday,
+        startTime: '09:00',
+        endTime: '17:30',
+      },
+    },
+  );
+  check(
+    'saving a roster shift round-trips its date and time',
+    savedSchedule.data?.shiftDate === bangkokToday && savedSchedule.data?.startTime === '09:00',
+    savedSchedule.data,
+  );
+
+  const reversedSchedule = await admin
+    .call('/api/v1/schedules', {
+      method: 'POST',
+      body: {
+        employeeId: cashierRow?.employeeId,
+        shiftDate: bangkokToday,
+        startTime: '18:00',
+        endTime: '09:00',
+      },
+    })
+    .then(() => 200)
+    .catch((error: Error) => Number(/\b(422)\b/.exec(error.message)?.[1] ?? 0));
+  check('a shift that ends before it starts is refused with 422', reversedSchedule === 422, reversedSchedule);
 
   console.log(
     failures === 0

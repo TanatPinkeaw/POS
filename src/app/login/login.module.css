@@ -1,0 +1,113 @@
+/*
+ * Sign-in.
+ *
+ * Its own module rather than sharing the brand-page one with the 404 and the 500:
+ * those two are pure brand surfaces with no interactive content, and this one is
+ * a form. Sharing a module would mean every change to the error pages reorganising
+ * the login card, which is how two screens become one tangled one.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ln-space-5);
+  min-height: 100dvh;
+  padding: var(--ln-space-5);
+  background:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      color-mix(in srgb, var(--ln-brand) 12%, transparent),
+      transparent 62%
+    ),
+    var(--ln-bg);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-5);
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--ln-space-6);
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-lg);
+  box-shadow: var(--ln-shadow-md);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ln-space-2);
+  text-align: center;
+}
+
+.brand {
+  font-size: var(--ln-size-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ln-text-subtle);
+}
+
+.shop {
+  font-size: var(--ln-size-xl);
+}
+
+.tagline {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-4);
+}
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  padding-top: var(--ln-space-5);
+  border-top: 1px solid var(--ln-border);
+}
+
+.demoTitle {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.demoList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-1);
+}
+
+.demoRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.demoPhone {
+  font-family: var(--ln-font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ln-text);
+}
+
+.code {
+  font-family: var(--ln-font-mono);
+  font-size: 0.9em;
+  color: var(--ln-text);
+}
+
+.footer {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+}

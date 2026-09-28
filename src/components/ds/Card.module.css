@@ -1,0 +1,140 @@
+/*
+ * Surfaces: cards, page headers, card grids.
+ *
+ * A card is separated from the canvas by being *white on a light grey*, plus a
+ * hairline border — there is no shadow. That is a deliberate subtraction: a
+ * shadow on every card, on a canvas that is already grey, is what makes a dense
+ * back office look hazy and makes it impossible to tell which surface is
+ * genuinely floating. Shadows now mean one thing only ("this is above the page"),
+ * and are used by Modal, Menu, Sheet and Toast.
+ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-lg);
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-4);
+  padding: var(--ln-space-4) var(--ln-space-5);
+  border-bottom: 1px solid var(--ln-border);
+  flex-wrap: wrap;
+  min-height: 48px;
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--ln-size-lg);
+  font-weight: 650;
+  color: var(--ln-text);
+}
+
+.subtitle {
+  margin-top: var(--ln-space-1);
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ln-space-2);
+  margin-left: auto;
+}
+
+.body {
+  padding: var(--ln-space-5);
+  min-width: 0;
+}
+
+/* For a card whose content is a table: the table owns its own padding. */
+.bodyFlush {
+  min-width: 0;
+}
+
+/*
+ * A toolbar is the row of filters and search that sits between a card's header and
+ * its content. It is separated by a border rather than by whitespace, because a
+ * filter that has scrolled is indistinguishable from content without it.
+ */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  flex-wrap: wrap;
+  padding: var(--ln-space-3) var(--ln-space-5);
+  border-bottom: 1px solid var(--ln-border);
+  background: var(--ln-surface);
+}
+
+.toolbar > :first-child {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.footer {
+  padding: var(--ln-space-4) var(--ln-space-5);
+  border-top: 1px solid var(--ln-border);
+  background: var(--ln-surface-inset);
+  border-radius: 0 0 var(--ln-radius-lg) var(--ln-radius-lg);
+}
+
+.grid {
+  display: grid;
+  gap: var(--ln-space-4);
+}
+
+/* -------------------------------------------------------- page header */
+
+/*
+ * The page header is a bar on the canvas, not a floating card: it shares the
+ * page's own background so the eye reads the first card below it as content
+ * rather than as the second of two boxes.
+ */
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ln-space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--ln-space-5);
+}
+
+.pageHeaderText {
+  min-width: 0;
+}
+
+.breadcrumb {
+  margin-bottom: var(--ln-space-2);
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+.pageTitle {
+  font-size: var(--ln-size-2xl);
+  font-weight: 650;
+}
+
+.pageSubtitle {
+  margin-top: var(--ln-space-2);
+  color: var(--ln-text-muted);
+  max-width: 48rem;
+}
+
+.pageActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ln-space-2);
+}

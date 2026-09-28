@@ -532,32 +532,8 @@ export type UsersNullableScalarRelationFilter = {
   isNot?: Prisma.usersWhereInput | null
 }
 
-export type StringFieldUpdateOperationsInput = {
-  set?: string
-}
-
-export type NullableStringFieldUpdateOperationsInput = {
-  set?: string | null
-}
-
 export type Enumuser_roleFieldUpdateOperationsInput = {
   set?: $Enums.user_role
-}
-
-export type IntFieldUpdateOperationsInput = {
-  set?: number
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
-export type DateTimeFieldUpdateOperationsInput = {
-  set?: Date | string
 }
 
 export type usersCreateNestedOneWithoutStock_logsInput = {

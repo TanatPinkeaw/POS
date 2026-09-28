@@ -1,0 +1,297 @@
+/*
+ * Base layer: reset, typography, focus, print.
+ *
+ * This replaces Bootstrap's Reboot as the foundation of the UI. It is written to
+ * coexist with Hope UI during the screen-by-screen migration, which means two
+ * rules of engagement:
+ *
+ *   1. **Element selectors are prefixed with `html`.** Next injects this file
+ *      before the linked Hope UI sheets, so `h1 { … }` loses to Hope UI's `h1`,
+ *      while `html h1 { … }` (specificity 0,0,2) wins deterministically without
+ *      `!important`. Later, when Hope UI is gone, the prefix is harmless.
+ *   2. **Nothing here sets a font size in px on a component.** Components own
+ *      their own type; this file only sets the document defaults.
+ */
+
+/* ------------------------------------------------------------------- reset */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html body {
+  margin: 0;
+  font-family: var(--ln-font);
+  font-size: var(--ln-size-base);
+  line-height: var(--ln-leading);
+  color: var(--ln-text);
+  background-color: var(--ln-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html h1,
+html h2,
+html h3,
+html h4,
+html h5,
+html h6 {
+  margin: 0;
+  line-height: var(--ln-leading-tight);
+  font-weight: 650;
+  /* Avoids a single orphaned Thai word on a heading's last line. */
+  text-wrap: pretty;
+}
+
+html p {
+  margin: 0;
+}
+
+html h1 { font-size: var(--ln-size-3xl); }
+html h2 { font-size: var(--ln-size-2xl); }
+html h3 { font-size: var(--ln-size-xl); }
+html h4 { font-size: var(--ln-size-lg); }
+html h5 { font-size: var(--ln-size-base); }
+html h6 { font-size: var(--ln-size-sm); }
+
+html a {
+  color: var(--ln-brand);
+  text-decoration: none;
+}
+
+html a:hover {
+  color: var(--ln-brand-hover);
+  text-decoration: underline;
+}
+
+/*
+ * Thai does not put spaces between words, so a long shop name or product name
+ * cannot be broken by a word boundary. Without this it overflows its container
+ * and paints over whatever is beside it — the failure mode is a layout that
+ * looks fine in English and breaks in Thai.
+ */
+html .ln-break {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+html img,
+html svg,
+html video {
+  max-width: 100%;
+  height: auto;
+}
+
+html ul,
+html ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ------------------------------------------------------------------ figures */
+
+/* Money and quantities align in columns only if the digits do. */
+html .ln-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/*
+ * Monospace, so a phone number, a barcode or a receipt number can be read aloud
+ * and typed back without ambiguity — 0/O and 1/l are the same width but not the
+ * same character.
+ */
+html code,
+html kbd,
+html samp,
+html pre {
+  font-family: var(--ln-font-mono);
+  font-size: 0.9375em;
+}
+
+html .ln-mono {
+  font-family: var(--ln-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------------------------------------------------------- focus */
+
+/*
+ * Focus is only ever drawn for keyboard users: a tablet operator tapping a
+ * product must not see a ring flash on every tile. `:focus-visible` already
+ * encodes that, so there is no `outline: none` anywhere in this codebase.
+ */
+html :focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+  border-radius: var(--ln-radius-sm);
+}
+
+/* A tap target can never be smaller than a thumb. */
+html .ln-tap {
+  min-height: var(--ln-tap);
+  min-width: var(--ln-tap);
+}
+
+/* ---------------------------------------------------------------- utilities */
+
+html .ln-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * Skip link: the first tab stop on every page, so a keyboard user can jump the
+ * navigation. Hidden until focused, at which point it must be a real target.
+ */
+html .ln-skip-link {
+  position: absolute;
+  left: var(--ln-space-3);
+  top: -100px;
+  z-index: var(--ln-z-toast);
+  padding: var(--ln-space-2) var(--ln-space-4);
+  background: var(--ln-surface);
+  color: var(--ln-brand);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+  box-shadow: var(--ln-shadow-md);
+  transition: top var(--ln-duration) var(--ln-ease);
+}
+
+html .ln-skip-link:focus {
+  top: var(--ln-space-3);
+}
+
+/* The brand signature: a cut corner. Applied to a few large surfaces only. */
+html .ln-cut {
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--ln-cut)) 0,
+    100% var(--ln-cut),
+    100% 100%,
+    0 100%
+  );
+}
+
+/* ------------------------------------------------------------------- motion */
+
+@media (prefers-reduced-motion: reduce) {
+  html *,
+  html *::before,
+  html *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -------------------------------------------------------------------- print */
+
+/*
+ * A Thai retail receipt is printed on 58 mm or 80 mm thermal paper, and a
+ * browser's default page box is A4 — so a receipt printed with no print CSS comes
+ * out as a small table in the corner of a sheet, which is not a receipt.
+ *
+ * `.ln-receipt-sheet` is applied to the printable root; the two named sizes are
+ * selected by the caller. `@page` cannot be scoped by selector, so the margin is
+ * zeroed globally and the sheet carries its own padding.
+ */
+/*
+ * The paper, not the theme.
+ *
+ * A receipt is the only printable document this application produces — every other
+ * screen is marked `ln-no-print` — so the page box is stated once, here, at 80mm with
+ * no margin, which is what makes the printer advance the roll by the receipt's own
+ * height instead of feeding an A4 sheet. A 58mm roll is the one alternative, and it
+ * is a single value for a shop that has one; `ln-receipt-58` in the rules below
+ * already narrows the sheet for it.
+ */
+@page {
+  size: 80mm auto;
+  margin: 0;
+}
+
+@media print {
+  html body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  html .ln-no-print,
+  html .ln-no-print * {
+    display: none !important;
+  }
+
+  html .ln-receipt-sheet {
+    /* 80 mm is the default; 58 mm overrides it below. */
+    width: 80mm;
+    padding: 4mm;
+    margin: 0;
+    font-family: var(--ln-font-mono);
+    font-size: 11pt;
+    line-height: 1.35;
+    color: #000000;
+    background: #ffffff;
+  }
+
+  html .ln-receipt-sheet.ln-receipt-58 {
+    width: 58mm;
+    padding: 2.5mm;
+    font-size: 9.5pt;
+  }
+
+  /*
+   * A receipt is printed once, on a thermal roll, next to the till. It needs no
+   * page number, no URL and no timestamp from the browser — and on 80mm paper the
+   * header the browser adds is wider than the paper.
+   */
+  html .ln-receipt-sheet a[href]::after {
+    content: none;
+  }
+
+  /* Thermal printers clip anything wider than the paper, so nothing may bleed. */
+  html .ln-receipt-sheet,
+  html .ln-receipt-sheet * {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  /* Every receipt is laid out to the paper, never to the screen's page box. */
+  html .ln-receipt-sheet table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  html .ln-receipt-sheet th,
+  html .ln-receipt-sheet td {
+    padding: 0.5mm 0;
+    text-align: left;
+  }
+
+  html .ln-receipt-sheet .ln-receipt-amount {
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* Backgrounds are not printed by default, and a receipt needs no ink anyway. */
+  html .ln-receipt-sheet * {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+}

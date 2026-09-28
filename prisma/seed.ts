@@ -1,11 +1,16 @@
 /**
- * Seed data.
+ * Demo seed data.
  *
  * Idempotent: every write is an upsert keyed on a natural unique column, so
  * running it twice neither duplicates the catalogue nor resets a password that
  * someone changed.
  *
- * Run with: npm run db:seed
+ * This is **demo** data — a fake shop, fake staff and 30 fake products — which
+ * is why it refuses to run once the system has been set up for real. Run it
+ * with:
+ *
+ *   npm run db:seed          refuses if a shop exists
+ *   npm run db:seed:demo     seeds regardless (fresh development database)
  */
 // Populates process.env and installs the BigInt JSON serialiser before Prisma
 // is constructed at module scope.
@@ -16,6 +21,12 @@ import { hash } from 'bcryptjs';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../src/generated/prisma/client';
+import {
+  addBangkokDays,
+  bangkokDateString,
+  dateColumnFromDay,
+  timeColumnFromClock,
+} from '../src/lib/bangkok-time';
 import { SYSTEM_USER_ID, SYSTEM_USER_NAME, SYSTEM_USER_PHONE } from '../src/lib/system-user';
 
 const BCRYPT_ROUNDS = 10;
@@ -117,11 +128,51 @@ const PRODUCTS: SeedProduct[] = [
   { barcode: '8850000000302', name: 'ไข่ต้ม 2 ฟอง', category: 'อาหารพร้อมทาน', costPrice: 12, salePrice: 20, stockQty: 36 },
 ];
 
+/**
+ * Refuses to pour demo data into a shop somebody is actually using.
+ *
+ * Adding 30 invented products, four staff accounts and a fabricated roster to a
+ * live shop is not a mistake you can clean up by re-running something — the
+ * only real fix is restoring a backup. The check is cheap and the alternative
+ * is unrecoverable, so it is not left to a warning in the documentation.
+ */
+async function assertSafeToSeed(prisma: PrismaClient): Promise<void> {
+  if (process.argv.includes('--force')) {
+    console.log('Seeding demo data as requested (--force).');
+    return;
+  }
+
+  if ((await prisma.shops.count()) === 0) {
+    return;
+  }
+
+  console.error(
+    [
+      '',
+      'This deployment has already been set up, so the demo seed will not run.',
+      '',
+      'The seed adds a fictional shop, 4 staff accounts and 30 products. Adding',
+      'those to a shop in use is not something you can undo by re-seeding.',
+      '',
+      'To add your own catalogue, sign in as an administrator and use',
+      'สินค้าและสต็อก → นำเข้าสินค้าจากไฟล์, or start the setup wizard again on a',
+      'fresh database.',
+      '',
+      'If this really is a throwaway development database:',
+      '  npm run db:seed:demo',
+      '',
+    ].join('\n'),
+  );
+  process.exit(1);
+}
+
 async function main(): Promise<void> {
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
 
   try {
+    await assertSafeToSeed(prisma);
+
     // ---- automated actor -------------------------------------------------
     // stock_logs.changed_by is NOT NULL, so system-driven expiries need a user
     // to attribute the movement to.
@@ -189,6 +240,77 @@ async function main(): Promise<void> {
       });
     }
 
+    // ---- roster, plus one day of attendance history ----------------------
+    // The SRS §8 `employee_attendance` export joins `work_schedules` to
+    // `time_logs`, so a demo with neither would export headers only. Rosters
+    // upsert on (employee, day); a day that already has a log is left alone, so
+    // re-seeding never doubles someone's hours.
+    const admin = await prisma.users.findUnique({
+      where: { phone: '0800000001' },
+      select: { id: true },
+    });
+    if (!admin) {
+      throw new Error('Seed expected the admin account to exist');
+    }
+
+    const today = bangkokDateString(new Date());
+    const staff = await prisma.users.findMany({
+      where: { phone: { in: ['0800000002', '0800000003'] } },
+      select: { id: true },
+    });
+
+    let rosterCount = 0;
+    let logCount = 0;
+
+    // Yesterday is included so the seeded attendance log below has a roster to
+    // be measured against; without it the demo timesheet shows blank scheduled
+    // columns and no lateness figure.
+    const rosterDays = 8;
+
+    for (const member of staff) {
+      for (let offset = -1; offset < rosterDays - 1; offset += 1) {
+        const day = addBangkokDays(today, offset);
+        await prisma.work_schedules.upsert({
+          where: {
+            employee_id_shift_date: {
+              employee_id: member.id,
+              shift_date: dateColumnFromDay(day),
+            },
+          },
+          update: {},
+          create: {
+            employee_id: member.id,
+            shift_date: dateColumnFromDay(day),
+            start_time: timeColumnFromClock('09:00'),
+            end_time: timeColumnFromClock('17:30'),
+            note: 'กะเช้า',
+            created_by: admin.id,
+          },
+        });
+        rosterCount += 1;
+      }
+
+      // One completed shift yesterday: 08:55–17:35 against a 09:00–17:30 roster,
+      // which the timesheet reads as five minutes early and five minutes over.
+      const yesterday = addBangkokDays(today, -1);
+      const dayStart = new Date(`${yesterday}T00:00:00+07:00`);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      const existingLogs = await prisma.time_logs.count({
+        where: { employee_id: member.id, check_in: { gte: dayStart, lt: dayEnd } },
+      });
+      if (existingLogs === 0) {
+        await prisma.time_logs.create({
+          data: {
+            employee_id: member.id,
+            check_in: new Date(`${yesterday}T08:55:00+07:00`),
+            check_out: new Date(`${yesterday}T17:35:00+07:00`),
+            note: 'กะเช้า',
+          },
+        });
+        logCount += 1;
+      }
+    }
+
     const productCount = await prisma.products.count();
     const userCount = await prisma.users.count();
 
@@ -200,6 +322,8 @@ async function main(): Promise<void> {
           .join(', ')})`,
         `  categories ${categoryIds.size}`,
         `  products   ${productCount}`,
+        `  schedules  ${rosterCount} (${rosterDays} days × ${staff.length} staff)`,
+        `  time logs  ${logCount} (yesterday, one per staff member)`,
         '',
         `Sign in with any phone below and the password "${DEMO_PASSWORD}":`,
         ...USERS.map((user) => `  ${user.role.padEnd(8)} ${user.phone}  ${user.fullName}`),

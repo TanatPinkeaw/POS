@@ -154,7 +154,8 @@ export function AdminProducts({
     <div className="d-flex flex-column gap-3">
       <div className="d-flex justify-content-between align-items-end flex-wrap gap-2">
         <div>
-          <h4 className="mb-1">สินค้าและสต็อก</h4>
+          {/* The page's only `<h1>`; `.h4` keeps the original size exactly. */}
+          <h1 className="h4 mb-1">สินค้าและสต็อก</h1>
           <p className="text-muted mb-0 small">
             การปรับสต็อกทุกครั้งต้องระบุเหตุผล และจะถูกบันทึกไว้ตรวจสอบย้อนหลังได้
           </p>

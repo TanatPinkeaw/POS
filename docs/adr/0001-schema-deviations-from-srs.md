@@ -138,3 +138,15 @@ Two partial indexes were added beyond §7, both for paths the SRS introduces:
 - `idx_orders_pending_created_at` — the 15-minute sweeper scans only pending
   orders. A partial index keeps that scan proportional to the backlog rather
   than to the order history.
+
+A third partial index arrived with the attendance feature, in its own migration
+(`20260102000000_attendance_open_log_unique`) so it applies cleanly to databases
+that already have the initial one:
+
+- `ux_time_logs_open_per_employee` — **UNIQUE** on
+  `time_logs(employee_id) WHERE check_out IS NULL`. Attendance is a clock you are
+  either on or off: two open rows would make `work_hours` meaningless and
+  double-count the timesheet, and a double-tapped “clock in” is the obvious way
+  to get there. The application returns a readable 409 first, but the index is
+  what makes the invariant true for every caller, including a retry racing
+  another.

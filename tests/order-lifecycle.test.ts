@@ -15,6 +15,7 @@ import {
   markOrderReady,
   placePreOrder,
 } from '@/lib/orders';
+import { tenderedAmount } from '@/lib/tender';
 
 import {
   prisma,
@@ -350,5 +351,88 @@ describe('loyalty on a walk-in sale', () => {
     });
     expect(ledger.map((row) => row.points_change)).toEqual([-200, 32]);
     expect(ledger.map((row) => row.balance_after)).toEqual([300, 332]);
+  });
+});
+
+describe('the tender lines a receipt is printed from', () => {
+  it('prints the notes handed over, so the tender and the change subtract to the bill', async () => {
+    const productId = await withProduct(1, 35);
+    const shift = await openShift({ userId: people.employeeId, initialCash: 2000 });
+
+    const sale = await createPosSale({
+      cashierId: people.employeeId,
+      shiftId: shift.id,
+      lines: [{ productId, quantity: 1 }],
+      customerId: null,
+      settlement: { cash: 35, receivedCash: 100 },
+    });
+
+    expect(sale.finalAmountThb).toBe(35);
+    expect(sale.tenders).toEqual([{ method: 'cash', amountThb: 35, receivedThb: 100 }]);
+    expect(sale.changeThb).toBe(65);
+
+    // The document's own arithmetic: 100 received − 65 change = the 35 bill.
+    expect(tenderedAmount(sale.tenders[0]) - sale.changeThb).toBe(sale.finalAmountThb);
+  });
+
+  it('names a transfer as a transfer rather than as cash nobody handled', async () => {
+    const productId = await withProduct(1, 100);
+    const shift = await openShift({ userId: people.employeeId, initialCash: 500 });
+
+    const sale = await createPosSale({
+      cashierId: people.employeeId,
+      shiftId: shift.id,
+      lines: [{ productId, quantity: 1 }],
+      customerId: null,
+      settlement: { promptpay: 100 },
+    });
+
+    expect(sale.tenders).toEqual([{ method: 'promptpay', amountThb: 100, receivedThb: null }]);
+    expect(sale.changeThb).toBe(0);
+  });
+
+  it('never prints redeemed points as money', async () => {
+    const productId = await withProduct(1, 100);
+    await prisma.users.update({
+      where: { id: people.memberId },
+      data: { points_balance: 200 },
+    });
+    const shift = await openShift({ userId: people.employeeId, initialCash: 500 });
+
+    const sale = await createPosSale({
+      cashierId: people.employeeId,
+      shiftId: shift.id,
+      lines: [{ productId, quantity: 1 }],
+      customerId: people.memberId,
+      // 200 points = 2 THB off, so 98 THB is handed over in cash.
+      settlement: { points: 200, cash: 98, receivedCash: 100 },
+    });
+
+    expect(sale.tenders).toEqual([{ method: 'cash', amountThb: 98, receivedThb: 100 }]);
+    expect(sale.changeThb).toBe(2);
+  });
+
+  it('prints both legs of a split payment, with the cash leg showing what was handed over', async () => {
+    const productId = await withProduct(1, 155);
+    const shift = await openShift({ userId: people.employeeId, initialCash: 500 });
+
+    const sale = await createPosSale({
+      cashierId: people.employeeId,
+      shiftId: shift.id,
+      lines: [{ productId, quantity: 1 }],
+      customerId: null,
+      settlement: { promptpay: 55, cash: 100, receivedCash: 150 },
+    });
+
+    // One line per money leg, in the order the settlement applied them.
+    expect(sale.tenders).toEqual([
+      { method: 'cash', amountThb: 100, receivedThb: 150 },
+      { method: 'promptpay', amountThb: 55, receivedThb: null },
+    ]);
+    expect(sale.changeThb).toBe(50);
+    // Only the cash leg carries change, so the two lines still foot to the bill.
+    expect(sale.tenders.reduce((total, tender) => total + tenderedAmount(tender), 0)).toBe(
+      sale.finalAmountThb + sale.changeThb,
+    );
   });
 });

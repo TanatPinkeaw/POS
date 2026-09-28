@@ -547,14 +547,6 @@ export type stock_logsUncheckedUpdateManyWithoutProductNestedInput = {
   deleteMany?: Prisma.stock_logsScalarWhereInput | Prisma.stock_logsScalarWhereInput[]
 }
 
-export type BigIntFieldUpdateOperationsInput = {
-  set?: bigint | number
-  increment?: bigint | number
-  decrement?: bigint | number
-  multiply?: bigint | number
-  divide?: bigint | number
-}
-
 export type Enumstock_movement_typeFieldUpdateOperationsInput = {
   set?: $Enums.stock_movement_type
 }

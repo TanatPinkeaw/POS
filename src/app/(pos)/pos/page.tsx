@@ -1,34 +1,54 @@
-import type { PosProduct } from '@/components/pos/PosTerminal';
 import { PosScreen } from '@/components/pos/PosScreen';
+import type { CatalogueCategory } from '@/components/pos/TillCatalog';
 import { prisma } from '@/lib/db';
-import { availableQty } from '@/lib/inventory';
-import { fromDecimal } from '@/lib/money';
+import { listProducts, PRODUCT_PAGE_SIZE } from '@/lib/product-query';
+import { categoryColorKey } from '@/lib/palette';
+import { loadShop } from '@/lib/shop';
+import { UNCONFIGURED_SHOP } from '@/lib/shop-view';
 
 /**
- * Products are loaded on the server and handed to the client as initial state,
- * so the till paints with a sellable catalogue instead of an empty grid, and
- * realtime stock events take over from there.
+ * The till's first paint.
+ *
+ * It used to load *every* active product server-side and hand the whole catalogue
+ * to the browser, which is the same defect the products route had, one layer up: a
+ * shop with a few thousand SKUs would ship all of them in the page payload on every
+ * navigation. Now it ships one page, and the counts the category rail needs — a
+ * number per aisle, not the products themselves.
+ *
+ * `force-dynamic` because a till is never a cached document: its stock counts are
+ * only correct for the second they were read.
  */
-export default async function PosPage() {
-  const products = await prisma.products.findMany({
-    where: { is_active: true },
-    include: { category: { select: { name: true } } },
-    orderBy: { name: 'asc' },
-  });
+export const dynamic = 'force-dynamic';
 
-  const initialProducts: PosProduct[] = products.map((product) => ({
-    id: product.id,
-    name: product.name,
-    barcode: product.barcode,
-    salePrice: fromDecimal(product.sale_price),
-    stockQty: product.stock_qty,
-    reservedQty: product.reserved_qty,
-    availableQty: availableQty({
-      stock_qty: product.stock_qty,
-      reserved_qty: product.reserved_qty,
+export default async function PosPage() {
+  const [page, categories, shop] = await Promise.all([
+    listProducts({ limit: PRODUCT_PAGE_SIZE }),
+    prisma.categories.findMany({
+      select: { id: true, name: true, _count: { select: { products: true } } },
+      orderBy: { name: 'asc' },
     }),
-    categoryName: product.category?.name ?? null,
+    loadShop(),
+  ]);
+
+  const catalogue: CatalogueCategory[] = categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    productCount: category._count.products,
   }));
 
-  return <PosScreen initialProducts={initialProducts} />;
+  // The aisle colour is derived here as well as in the browser, so a server-rendered
+  // tile and a client-rendered one cannot disagree about which colour an aisle is.
+  const initialProducts = page.items.map((item) => ({
+    ...item,
+    categoryKey: categoryColorKey(item.categoryId),
+  }));
+
+  return (
+    <PosScreen
+      initialProducts={initialProducts}
+      initialTotal={page.total}
+      categories={catalogue}
+      shop={shop ?? UNCONFIGURED_SHOP}
+    />
+  );
 }

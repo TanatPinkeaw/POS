@@ -1,0 +1,124 @@
+/*
+ * Overlays: modal, sheet, confirm.
+ *
+ * These are the only surfaces in the system that carry a shadow, and the reason is
+ * structural rather than decorative — a shadow is what tells the eye that a
+ * surface is *above* the document instead of part of it. Everything else earns
+ * separation from a border on a light canvas.
+ *
+ * Nothing here is rendered into a React portal. A portal to `document.body` would
+ * escape the app frame's `data-density`, so a modal opened over the till would
+ * silently drop to the back office's 34px controls — the checkout confirm button
+ * would be the one control on the screen sized for a mouse. Rendered in place with
+ * `position: fixed`, the density comes along and there is one fewer moving piece.
+ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--ln-z-modal);
+  display: flex;
+  background: rgba(12, 13, 21, 0.42);
+  animation: ln-fade var(--ln-duration) var(--ln-ease);
+}
+
+.scrimCentered {
+  align-items: center;
+  justify-content: center;
+  padding: var(--ln-space-4);
+}
+
+.scrimBottom {
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: var(--ln-surface);
+  box-shadow: var(--ln-shadow-lg);
+  border: 1px solid var(--ln-border);
+  max-height: calc(100vh - 2 * var(--ln-space-4));
+  animation: ln-rise var(--ln-duration) var(--ln-ease);
+  min-width: 0;
+}
+
+.modal {
+  max-width: 34rem;
+  border-radius: var(--ln-radius-lg);
+}
+
+.wide {
+  max-width: 52rem;
+}
+
+.sheet {
+  max-width: 30rem;
+  border-radius: var(--ln-radius-lg) var(--ln-radius-lg) 0 0;
+  max-height: 85vh;
+}
+
+@media (min-width: 768px) {
+  .sheet {
+    margin: 0 auto var(--ln-space-4);
+    border-radius: var(--ln-radius-lg);
+    max-height: 70vh;
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-4);
+  padding: var(--ln-space-4) var(--ln-space-5);
+  border-bottom: 1px solid var(--ln-border);
+}
+
+.title {
+  font-size: var(--ln-size-lg);
+  font-weight: 650;
+}
+
+.description {
+  margin-top: var(--ln-space-2);
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.body {
+  padding: var(--ln-space-5);
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-4) var(--ln-space-5);
+  border-top: 1px solid var(--ln-border);
+  background: var(--ln-surface-inset);
+  border-radius: 0 0 var(--ln-radius-lg) var(--ln-radius-lg);
+  flex-wrap: wrap;
+}
+
+.footerStart {
+  margin-right: auto;
+}
+
+@keyframes ln-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ln-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}

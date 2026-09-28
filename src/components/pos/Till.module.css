@@ -1,0 +1,467 @@
+/*
+ * The till.
+ *
+ * The shape follows the reference design's split view, corrected to the side it
+ * actually uses: the bill on the **left**, the catalogue on the **right**. Two
+ * consequences are deliberate.
+ *
+ * The bill holds its width. A bill that grows as items are added would move the
+ * product grid under the operator's finger between the tap they aimed and the tap
+ * that landed.
+ *
+ * The tiles are sized from the density tokens, so this same file draws a
+ * comfortable till on a 15-inch counter screen and a compact one on a laptop. The
+ * till runs at `touch`: 48px controls, 16px type, and tiles tall enough to hit with
+ * a thumb while looking at the customer rather than at the screen.
+ */
+
+.till {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+  height: 100%;
+  min-height: 0;
+}
+
+.tillBar {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  flex-wrap: wrap;
+}
+
+.tillTitle {
+  font-size: var(--ln-size-lg);
+  font-weight: 650;
+}
+
+.tillSubtitle {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.tillBarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------------- panes */
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-lg);
+  height: 100%;
+}
+
+.paneHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border-bottom: 1px solid var(--ln-border);
+  min-height: 52px;
+}
+
+.paneTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  font-size: var(--ln-size-base);
+  font-weight: 650;
+}
+
+.paneBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--ln-space-3);
+}
+
+/* --------------------------------------------------------------- catalogue */
+
+.catalogControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-3);
+  border-bottom: 1px solid var(--ln-border);
+}
+
+/*
+ * The scan field is the first thing on the screen for a keyboard, and it is
+ * monospace because it receives a barcode: a mis-keyed code has to be visible at a
+ * glance rather than read character by character.
+ */
+.scanHint {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: var(--ln-space-2);
+}
+
+/*
+ * A product tile. Colour is carried by a bar on the leading edge — the reference
+ * design distinguishes a category by colour, and this puts it where a row of tiles
+ * reads as a colour-banded block rather than as a wall of identical cards. The
+ * colour is derived from the category, so no renter ever has to pick one.
+ */
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-1);
+  min-height: 76px;
+  padding: var(--ln-space-3);
+  padding-left: calc(var(--ln-space-3) + 3px);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.tile::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--ln-cat-slate);
+}
+
+.tile[data-cat='blue']::before {
+  background: var(--ln-cat-blue);
+}
+.tile[data-cat='teal']::before {
+  background: var(--ln-cat-teal);
+}
+.tile[data-cat='green']::before {
+  background: var(--ln-cat-green);
+}
+.tile[data-cat='amber']::before {
+  background: var(--ln-cat-amber);
+}
+.tile[data-cat='orange']::before {
+  background: var(--ln-cat-orange);
+}
+.tile[data-cat='red']::before {
+  background: var(--ln-cat-red);
+}
+.tile[data-cat='rose']::before {
+  background: var(--ln-cat-rose);
+}
+.tile[data-cat='violet']::before {
+  background: var(--ln-cat-violet);
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--ln-brand);
+  background: var(--ln-brand-soft);
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+.tile:disabled {
+  cursor: not-allowed;
+  background: var(--ln-surface-2);
+  color: var(--ln-text-subtle);
+}
+
+.tileName {
+  font-size: var(--ln-size-base);
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tileFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+  margin-top: auto;
+}
+
+.tilePrice {
+  font-size: var(--ln-size-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tileStock {
+  font-size: var(--ln-size-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ln-text-subtle);
+}
+
+/* Three states, and each is a word as well as a colour. */
+.stockOk {
+  color: var(--ln-success);
+}
+
+.stockLow {
+  color: var(--ln-warning);
+}
+
+.stockOut {
+  color: var(--ln-danger);
+  font-weight: 600;
+}
+
+.catalogFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-2) var(--ln-space-3);
+  border-top: 1px solid var(--ln-border);
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+/* -------------------------------------------------------------------- bill */
+
+.billLines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-1);
+}
+
+.line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-2);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface-2);
+}
+
+.line:hover {
+  background: var(--ln-surface-inset);
+}
+
+.lineName {
+  min-width: 0;
+  font-size: var(--ln-size-base);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.lineUnit {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-1);
+}
+
+/*
+ * The stepper is the most-tapped control on the screen after the tiles, so its
+ * buttons are square and at least `--ln-control-h-sm` — on a till, 40px — with the
+ * count between them in tabular figures so it does not jitter as it changes.
+ */
+.stepperButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ln-control-h-sm);
+  height: var(--ln-control-h-sm);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  font: inherit;
+  font-size: var(--ln-size-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepperButton:hover:not(:disabled) {
+  background: var(--ln-surface-2);
+}
+
+.stepperButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stepperValue {
+  min-width: 2.5rem;
+  text-align: center;
+  font-size: var(--ln-size-lg);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.lineTotal {
+  min-width: 5rem;
+  text-align: right;
+  font-size: var(--ln-size-base);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-6) var(--ln-space-4);
+  text-align: center;
+  color: var(--ln-text-muted);
+}
+
+/* ------------------------------------------------------------------ totals */
+
+.billFooter {
+  border-top: 1px solid var(--ln-border);
+  padding: var(--ln-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+  background: var(--ln-surface);
+  border-radius: 0 0 var(--ln-radius-lg) var(--ln-radius-lg);
+}
+
+.totals {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-1);
+}
+
+.totalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  font-size: var(--ln-size-base);
+}
+
+.totalRowLabel {
+  color: var(--ln-text-muted);
+}
+
+.totalRowAmount {
+  font-variant-numeric: tabular-nums;
+}
+
+.totalDue {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding-top: var(--ln-space-2);
+  border-top: 1px dashed var(--ln-border-strong);
+  font-size: var(--ln-size-xl);
+  font-weight: 700;
+}
+
+.totalDueAmount {
+  font-variant-numeric: tabular-nums;
+}
+
+.changeDue {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-2) var(--ln-space-3);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-success-soft);
+  color: var(--ln-success);
+  font-size: var(--ln-size-lg);
+  font-weight: 700;
+}
+
+.changeZero {
+  background: var(--ln-surface-2);
+  color: var(--ln-text-muted);
+}
+
+/* ----------------------------------------------------------------- payment */
+
+.payRow {
+  display: flex;
+  gap: var(--ln-space-2);
+  align-items: stretch;
+  height: 64px;
+  padding: 0 var(--ln-space-3);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface-inset);
+}
+
+.payAmount {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: var(--ln-control-h-lg);
+  padding: 0 var(--ln-space-3);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface-inset);
+  font-size: var(--ln-size-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.payAmountInvalid {
+  border-color: var(--ln-danger);
+  color: var(--ln-danger);
+}
+
+.hint {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+}
+
+.settingsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-2) 0;
+  border-bottom: 1px solid var(--ln-border-subtle);
+}
+
+.settingsRow:last-child {
+  border-bottom: none;
+}
+
+.settingsLabel {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.settingsValue {
+  font-size: var(--ln-size-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}

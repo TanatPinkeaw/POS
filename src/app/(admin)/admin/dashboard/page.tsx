@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+import { ReceiptReprintButton } from '@/components/admin/ReceiptReprintButton';
 import { SalesChart } from '@/components/admin/SalesChart';
 import { Badge, Card, EmptyState, Money, StatCard } from '@/components/hope/ui';
 import { dashboardSnapshot } from '@/lib/analytics';
@@ -153,6 +154,9 @@ export default async function DashboardPage() {
                       <th>สถานะ</th>
                       <th>พนักงาน</th>
                       <th className="pos-numeric">ยอด</th>
+                      <th>
+                        <span className="visually-hidden">ใบเสร็จ</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -174,6 +178,16 @@ export default async function DashboardPage() {
                         <td className="small">{order.cashierName ?? '—'}</td>
                         <td className="pos-numeric">
                           <Money amount={order.finalAmountThb} />
+                        </td>
+                        <td className="text-end">
+                          {/*
+                            * Only a completed sale has a receipt; offering the
+                            * button elsewhere would promise a document that
+                            * does not exist yet.
+                            */}
+                          {order.status === 'completed' && (
+                            <ReceiptReprintButton orderId={order.id} orderNumber={order.orderNumber} />
+                          )}
                         </td>
                       </tr>
                     ))}

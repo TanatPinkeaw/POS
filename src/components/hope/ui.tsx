@@ -27,7 +27,12 @@ export function Card({
       {(title || actions) && (
         <div className="card-header d-flex justify-content-between align-items-center">
           <div>
-            {title && <h5 className="card-title mb-0">{title}</h5>}
+            {/*
+              * A real `<h2>` with Bootstrap's `.h5` size class: the pixels are
+              * identical to `<h5>`, but the document outline now runs
+              * h1 (page) → h2 (card) instead of skipping three levels.
+              */}
+            {title && <h2 className="card-title h5 mb-0">{title}</h2>}
             {subtitle && <p className="text-muted mb-0 small">{subtitle}</p>}
           </div>
           {actions && <div className="d-flex gap-2">{actions}</div>}
@@ -110,7 +115,8 @@ export function EmptyState({
 }) {
   return (
     <div className="text-center py-5">
-      <h5 className="mb-1">{title}</h5>
+      {/* An empty state always sits inside a card, so it is the card's `h3`. */}
+      <h3 className="h5 mb-1">{title}</h3>
       {description && <p className="text-muted mb-3 small">{description}</p>}
       {action}
     </div>
@@ -120,12 +126,24 @@ export function EmptyState({
 export function Alert({
   tone = 'info',
   children,
+  className = '',
 }: {
   tone?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
   children: ReactNode;
+  className?: string;
 }) {
+  // A failure should interrupt whatever the user is doing; a confirmation can
+  // wait until they pause. That is the difference between `alert`/assertive and
+  // `status`/polite, so the tone picks the live region and a screen reader hears
+  // "saved" without being cut off mid-sentence.
+  const assertive = tone === 'danger' || tone === 'warning';
+
   return (
-    <div className={`alert alert-${tone}`} role="alert">
+    <div
+      className={`alert alert-${tone} ${className}`}
+      role={assertive ? 'alert' : 'status'}
+      aria-live={assertive ? 'assertive' : 'polite'}
+    >
       {children}
     </div>
   );

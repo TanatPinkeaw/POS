@@ -5,11 +5,14 @@
  * JWT in an httpOnly cookie. That is the whole mechanism, which keeps the
  * dependency surface (and the amount of behaviour a reviewer must trust) small.
  */
-import { compare, hash } from 'bcryptjs';
 import { cookies } from 'next/headers';
 
 import { prisma } from './db';
 import { ForbiddenError, UnauthenticatedError } from './errors';
+// Hashing lives in its own module so scripts, tests and the staff-creation path
+// can use it without importing `next/headers`. Re-exported here because this is
+// where callers have always found it.
+import { hashPassword, verifyPassword } from './password';
 import type { Role } from './roles';
 import {
   SESSION_COOKIE_NAME,
@@ -19,16 +22,7 @@ import {
   verifySessionToken,
 } from './session-token';
 
-/** bcrypt cost. 10 is the conventional balance of latency and resistance. */
-const BCRYPT_ROUNDS = 10;
-
-export async function hashPassword(plaintext: string): Promise<string> {
-  return hash(plaintext, BCRYPT_ROUNDS);
-}
-
-export async function verifyPassword(plaintext: string, passwordHash: string): Promise<boolean> {
-  return compare(plaintext, passwordHash);
-}
+export { hashPassword, verifyPassword };
 
 /** Signs a user in by writing the session cookie. */
 export async function startSession(user: SessionUser): Promise<void> {

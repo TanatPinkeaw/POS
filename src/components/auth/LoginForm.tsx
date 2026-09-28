@@ -3,8 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { Button, InlineNotice, TextField } from '@/components/ds';
 import { apiPost } from '@/lib/client-api';
 import { primeAudio } from '@/lib/sound';
+
+import styles from '@/app/login/login.module.css';
 
 interface LoginResponse {
   role: 'member' | 'employee' | 'admin';
@@ -12,6 +15,19 @@ interface LoginResponse {
   redirectTo: string;
 }
 
+/**
+ * The sign-in form.
+ *
+ * Rebuilt on the design system rather than on Bootstrap's `form-control` and
+ * `alert` classes, which is what the rest of the migration will look like:
+ * the same behaviour, the same request, and the same error string — with the
+ * field's label, help text and error wired together by `TextField` instead of by
+ * hand, so the error is announced and not merely drawn.
+ *
+ * `noValidate` stays: the browser's own validation bubbles are untranslated and
+ * unstyleable, and this form has exactly two required fields whose emptiness the
+ * server already reports in Thai.
+ */
 export function LoginForm() {
   const router = useRouter();
   const [identifier, setIdentifier] = useState('');
@@ -40,46 +56,38 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={submit} onPointerDown={() => primeAudio()} noValidate>
-      {error && (
-        <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
-      )}
+    <form className={styles.form} onSubmit={submit} onPointerDown={() => primeAudio()} noValidate>
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
-      <div className="form-group mb-3">
-        <label className="form-label" htmlFor="identifier">
-          เบอร์โทรศัพท์ หรือ อีเมล
-        </label>
-        <input
-          id="identifier"
-          className="form-control"
-          autoComplete="username"
-          inputMode="text"
-          value={identifier}
-          onChange={(event) => setIdentifier(event.target.value)}
-          required
-        />
-      </div>
+      <TextField
+        id="identifier"
+        label="เบอร์โทรศัพท์ หรือ อีเมล"
+        autoComplete="username"
+        inputMode="text"
+        autoFocus
+        value={identifier}
+        onChange={(event) => setIdentifier(event.target.value)}
+        required
+      />
 
-      <div className="form-group mb-3">
-        <label className="form-label" htmlFor="password">
-          รหัสผ่าน
-        </label>
-        <input
-          id="password"
-          type="password"
-          className="form-control"
-          autoComplete="current-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          required
-        />
-      </div>
+      <TextField
+        id="password"
+        label="รหัสผ่าน"
+        type="password"
+        autoComplete="current-password"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        required
+      />
 
-      <button type="submit" className="btn btn-primary w-100" disabled={busy}>
-        {busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
-      </button>
+      {/*
+       * The label does not change while the request is in flight. `loading` adds
+       * the spinner and `aria-busy`, and a control whose name changes mid-action
+       * is a control a screen reader has to re-read.
+       */}
+      <Button type="submit" variant="primary" size="lg" block loading={busy}>
+        เข้าสู่ระบบ
+      </Button>
     </form>
   );
 }

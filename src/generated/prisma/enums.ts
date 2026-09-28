@@ -62,7 +62,8 @@ export const stock_adjustment_reason = {
   REASON_RESTOCK: 'REASON_RESTOCK',
   REASON_DAMAGED: 'REASON_DAMAGED',
   REASON_EXPIRED: 'REASON_EXPIRED',
-  REASON_CORRECTION: 'REASON_CORRECTION'
+  REASON_CORRECTION: 'REASON_CORRECTION',
+  REASON_IMPORT: 'REASON_IMPORT'
 } as const
 
 export type stock_adjustment_reason = (typeof stock_adjustment_reason)[keyof typeof stock_adjustment_reason]

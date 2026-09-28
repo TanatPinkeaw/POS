@@ -7,6 +7,9 @@
  */
 import { z } from 'zod';
 
+import { isClock, isLocalDateTime, isValidCalendarDay } from './bangkok-time';
+import { REPORT_TYPES } from './report-spec';
+
 export const loginSchema = z.object({
   /** Either a phone number or an email address. */
   identifier: z.string().trim().min(1, 'Enter your phone number or email'),
@@ -15,6 +18,120 @@ export const loginSchema = z.object({
 
 export const categoryCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
+});
+
+export const categoryRenameSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+});
+
+// ------------------------------------------------------ shop & staff (ADR 0002)
+
+const optionalEmail = z
+  .string()
+  .trim()
+  .max(255)
+  .nullable()
+  .optional()
+  .refine(
+    (value) =>
+      value === undefined || value === null || value === '' || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value),
+    'That does not look like an email address',
+  );
+
+/**
+ * Shop identity and tax settings.
+ *
+ * `pricesIncludeVat` is accepted only so it can be *refused* explicitly: the
+ * sale path cannot yet derive the tax from an exclusive price without changing
+ * what the customer owes (see ADR 0002), and silently storing the mode would put
+ * a wrong figure on a tax document. A clear 422 beats that.
+ */
+export const shopSettingsSchema = z
+  .object({
+    name: z.string().trim().min(1, 'Enter the shop name').max(150),
+    legalName: z.string().trim().max(200).nullable().optional(),
+    branchLabel: z.string().trim().max(100).nullable().optional(),
+    taxId: z.string().trim().max(13).nullable().optional(),
+    address: z.string().trim().max(500).nullable().optional(),
+    phone: z.string().trim().max(20).nullable().optional(),
+    isVatRegistered: z.boolean(),
+    vatRate: z.number().min(0).max(100),
+    receiptPrefix: z.string().trim().min(1).max(10),
+    receiptFooter: z.string().trim().max(500).nullable().optional(),
+    logoUrl: z.string().trim().max(2048).nullable().optional(),
+    pricesIncludeVat: z.boolean().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.pricesIncludeVat === false) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['pricesIncludeVat'],
+        message:
+          'VAT-exclusive pricing is not supported yet — set prices to include VAT',
+      });
+    }
+
+    const taxId = value.taxId?.trim() ?? '';
+    if (taxId !== '' && !/^\d{13}$/.test(taxId)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['taxId'],
+        message: 'A Thai tax ID is exactly 13 digits',
+      });
+    }
+    if (value.isVatRegistered && taxId === '') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['taxId'],
+        message: 'A VAT-registered shop must record its 13-digit tax ID on every receipt',
+      });
+    }
+
+    if (value.vatRate === 0 && value.isVatRegistered) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['vatRate'],
+        message: 'A VAT-registered shop cannot charge a 0% rate',
+      });
+    }
+  });
+
+/**
+ * A staff account. The password ceiling is 72 because bcrypt silently ignores
+ * anything past 72 bytes, and a password that is only half-checked is a trap.
+ */
+export const staffCreateSchema = z.object({
+  fullName: z.string().trim().min(1, 'Enter a name').max(100),
+  phone: z.string().trim().min(1, 'Enter a phone number').max(20),
+  email: optionalEmail,
+  role: z.enum(['employee', 'admin']),
+  password: z.string().min(8, 'A password must be at least 8 characters').max(72),
+});
+
+export const staffUpdateSchema = z.object({
+  fullName: z.string().trim().min(1).max(100).optional(),
+  phone: z.string().trim().min(1).max(20).optional(),
+  email: optionalEmail,
+  role: z.enum(['employee', 'admin']).optional(),
+  isActive: z.boolean().optional(),
+  password: z.string().min(8, 'A password must be at least 8 characters').max(72).optional(),
+});
+
+/**
+ * First-run setup.
+ *
+ * The wizard writes the shop and its first administrator in one request, because
+ * a shop with nobody able to sign in is not a usable state and two requests
+ * would create a window where it exists.
+ */
+export const setupSchema = z.object({
+  shop: shopSettingsSchema,
+  admin: z.object({
+    fullName: z.string().trim().min(1, 'Enter a name').max(100),
+    phone: z.string().trim().min(1, 'Enter a phone number').max(20),
+    email: optionalEmail,
+    password: z.string().min(8, 'A password must be at least 8 characters').max(72),
+  }),
 });
 
 export const productCreateSchema = z.object({
@@ -99,6 +216,71 @@ export const openShiftSchema = z.object({
 
 export const closeShiftSchema = z.object({
   actualCash: z.number().min(0),
+});
+
+// ---------------------------------------------------- attendance & roster
+
+const calendarDay = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD')
+  .refine(isValidCalendarDay, 'That calendar day does not exist');
+
+const clockTime = z.string().refine(isClock, 'Use the format HH:MM (24-hour)');
+
+/**
+ * The 4-digit-ish time an employee gives when they arrive or leave. The note is
+ * free text because reality is: "came back from delivery", "covered the till".
+ */
+export const attendanceClockSchema = z.object({
+  note: z.string().trim().max(500).nullable().optional(),
+});
+
+/** Shared filter for the attendance and roster lists. */
+export const attendanceQuerySchema = z.object({
+  from: calendarDay.optional(),
+  to: calendarDay.optional(),
+  employeeId: z.string().uuid().optional(),
+});
+
+/**
+ * A roster entry. `startTime`/`endTime` are wall-clock `HH:MM` strings rather
+ * than instants, because a shift is a statement about the clock on the wall —
+ * storing it as a timestamp would make the same roster shift mean different
+ * things in different timezones.
+ */
+export const scheduleUpsertSchema = z.object({
+  employeeId: z.string().uuid(),
+  shiftDate: calendarDay,
+  startTime: clockTime,
+  endTime: clockTime,
+  note: z.string().trim().max(500).nullable().optional(),
+});
+
+/**
+ * An admin back-filled timesheet row. `checkIn` is an `<input
+ * type="datetime-local">` value, read as Bangkok time — see
+ * `parseBangkokLocalDateTime`, because the browser sends no timezone.
+ */
+export const manualLogSchema = z.object({
+  employeeId: z.string().uuid(),
+  checkIn: z.string().refine(isLocalDateTime, 'Use the format YYYY-MM-DDTHH:MM'),
+  checkOut: z
+    .string()
+    .refine(isLocalDateTime, 'Use the format YYYY-MM-DDTHH:MM')
+    .nullable()
+    .optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+
+/**
+ * SRS §8: the export endpoint is addressed by report type plus an inclusive
+ * `from`/`to` calendar range. Both dates are optional so the admin screen can
+ * open on a sensible default (the trailing 30 days) without special-casing.
+ */
+export const reportQuerySchema = z.object({
+  type: z.enum(REPORT_TYPES),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD').optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use the format YYYY-MM-DD').optional(),
 });
 
 export const orderListQuerySchema = z.object({

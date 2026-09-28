@@ -51,6 +51,7 @@ export const AnyNull = runtime.AnyNull
 
 
 export const ModelName = {
+  shops: 'shops',
   users: 'users',
   categories: 'categories',
   products: 'products',
@@ -78,6 +79,28 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 } as const)
 
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
+
+
+export const ShopsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  legal_name: 'legal_name',
+  branch_label: 'branch_label',
+  tax_id: 'tax_id',
+  address: 'address',
+  phone: 'phone',
+  is_vat_registered: 'is_vat_registered',
+  vat_rate: 'vat_rate',
+  prices_include_vat: 'prices_include_vat',
+  receipt_prefix: 'receipt_prefix',
+  receipt_running_number: 'receipt_running_number',
+  receipt_footer: 'receipt_footer',
+  logo_url: 'logo_url',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ShopsScalarFieldEnum = (typeof ShopsScalarFieldEnum)[keyof typeof ShopsScalarFieldEnum]
 
 
 export const UsersScalarFieldEnum = {
@@ -191,6 +214,11 @@ export const OrdersScalarFieldEnum = {
   subtotal_amount: 'subtotal_amount',
   discount_amount: 'discount_amount',
   final_amount: 'final_amount',
+  net_amount: 'net_amount',
+  vat_amount: 'vat_amount',
+  vat_rate_used: 'vat_rate_used',
+  is_vat_invoice: 'is_vat_invoice',
+  receipt_number: 'receipt_number',
   points_earned: 'points_earned',
   points_redeemed: 'points_redeemed',
   cancel_reason: 'cancel_reason',

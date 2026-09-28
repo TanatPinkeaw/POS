@@ -397,6 +397,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 
 export const ModelName = {
+  shops: 'shops',
   users: 'users',
   categories: 'categories',
   products: 'products',
@@ -423,10 +424,84 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "orders" | "order_items" | "payments" | "point_transactions"
+    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "orders" | "order_items" | "payments" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
+    shops: {
+      payload: Prisma.$shopsPayload<ExtArgs>
+      fields: Prisma.shopsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.shopsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.shopsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>
+        }
+        findFirst: {
+          args: Prisma.shopsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.shopsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>
+        }
+        findMany: {
+          args: Prisma.shopsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>[]
+        }
+        create: {
+          args: Prisma.shopsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>
+        }
+        createMany: {
+          args: Prisma.shopsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.shopsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>[]
+        }
+        delete: {
+          args: Prisma.shopsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>
+        }
+        update: {
+          args: Prisma.shopsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>
+        }
+        deleteMany: {
+          args: Prisma.shopsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.shopsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.shopsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>[]
+        }
+        upsert: {
+          args: Prisma.shopsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$shopsPayload>
+        }
+        aggregate: {
+          args: Prisma.ShopsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateShops>
+        }
+        groupBy: {
+          args: Prisma.shopsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.shopsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ShopsCountAggregateOutputType> | number
+        }
+      }
+    }
     users: {
       payload: Prisma.$usersPayload<ExtArgs>
       fields: Prisma.usersFieldRefs
@@ -1280,6 +1355,28 @@ export const TransactionIsolationLevel = runtime.makeStrictEnum({
 export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof typeof TransactionIsolationLevel]
 
 
+export const ShopsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  legal_name: 'legal_name',
+  branch_label: 'branch_label',
+  tax_id: 'tax_id',
+  address: 'address',
+  phone: 'phone',
+  is_vat_registered: 'is_vat_registered',
+  vat_rate: 'vat_rate',
+  prices_include_vat: 'prices_include_vat',
+  receipt_prefix: 'receipt_prefix',
+  receipt_running_number: 'receipt_running_number',
+  receipt_footer: 'receipt_footer',
+  logo_url: 'logo_url',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+} as const
+
+export type ShopsScalarFieldEnum = (typeof ShopsScalarFieldEnum)[keyof typeof ShopsScalarFieldEnum]
+
+
 export const UsersScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -1391,6 +1488,11 @@ export const OrdersScalarFieldEnum = {
   subtotal_amount: 'subtotal_amount',
   discount_amount: 'discount_amount',
   final_amount: 'final_amount',
+  net_amount: 'net_amount',
+  vat_amount: 'vat_amount',
+  vat_rate_used: 'vat_rate_used',
+  is_vat_invoice: 'is_vat_invoice',
+  receipt_number: 'receipt_number',
   points_earned: 'points_earned',
   points_redeemed: 'points_redeemed',
   cancel_reason: 'cancel_reason',
@@ -1476,34 +1578,6 @@ export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
 
 
 /**
- * Reference to a field of type 'String'
- */
-export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
-    
-
-
-/**
- * Reference to a field of type 'String[]'
- */
-export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
-    
-
-
-/**
- * Reference to a field of type 'user_role'
- */
-export type Enumuser_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'user_role'>
-    
-
-
-/**
- * Reference to a field of type 'user_role[]'
- */
-export type ListEnumuser_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'user_role[]'>
-    
-
-
-/**
  * Reference to a field of type 'Int'
  */
 export type IntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Int'>
@@ -1518,23 +1592,23 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
+ * Reference to a field of type 'String'
+ */
+export type StringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String'>
+    
+
+
+/**
+ * Reference to a field of type 'String[]'
+ */
+export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'String[]'>
+    
+
+
+/**
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime'
- */
-export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
-    
-
-
-/**
- * Reference to a field of type 'DateTime[]'
- */
-export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
     
 
 
@@ -1563,6 +1637,34 @@ export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
  * Reference to a field of type 'BigInt[]'
  */
 export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime'
+ */
+export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
+    
+
+
+/**
+ * Reference to a field of type 'DateTime[]'
+ */
+export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'user_role'
+ */
+export type Enumuser_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'user_role'>
+    
+
+
+/**
+ * Reference to a field of type 'user_role[]'
+ */
+export type ListEnumuser_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'user_role[]'>
     
 
 
@@ -1814,6 +1916,7 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
  */
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
+  shops?: Prisma.shopsOmit
   users?: Prisma.usersOmit
   categories?: Prisma.categoriesOmit
   products?: Prisma.productsOmit

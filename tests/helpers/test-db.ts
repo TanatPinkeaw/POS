@@ -23,6 +23,9 @@ const TABLES = [
   'products',
   'categories',
   'users',
+  // The shop is a singleton with no dependants, but it must be cleared between
+  // tests: a leftover row would make the next test's deployment look configured.
+  'shops',
 ];
 
 export { prisma };
@@ -103,6 +106,31 @@ export async function seedOpenShift(employeeId: string, initialCash = 2000): Pro
     data: { opened_by: employeeId, initial_cash: initialCash, status: 'open' },
   });
   return shift.id;
+}
+
+/**
+ * Creates the one shop row, VAT-registered at the standard rate by default.
+ *
+ * Returns nothing: tests that care about the values read them back through the
+ * same accessor the application uses, which is the point of loading them.
+ */
+export async function seedShop(
+  input: {
+    isVatRegistered?: boolean;
+    vatRate?: number;
+    receiptPrefix?: string;
+  } = {},
+): Promise<void> {
+  await prisma.shops.create({
+    data: {
+      id: 1,
+      name: 'ร้านทดสอบ',
+      is_vat_registered: input.isVatRegistered ?? true,
+      vat_rate: input.vatRate ?? 7,
+      prices_include_vat: true,
+      receipt_prefix: input.receiptPrefix ?? 'RC',
+    },
+  });
 }
 
 /** Reads the raw counters for a product, bypassing every domain helper. */

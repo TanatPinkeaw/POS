@@ -1,0 +1,224 @@
+/* Structural primitives. Nothing here sets a colour a semantic token owns. */
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--ln-space-4);
+  align-items: start;
+}
+
+/*
+ * The pane that holds its width is `--split-panel`; on a till that is the bill,
+ * and it must not resize as lines are added or the product grid moves under the
+ * operator's finger mid-tap.
+ */
+@media (min-width: 1100px) {
+  .split {
+    grid-template-columns: var(--split-panel) minmax(0, 1fr);
+  }
+
+  .split[data-side='end'] {
+    grid-template-columns: minmax(0, 1fr) var(--split-panel);
+  }
+
+  .split[data-side='end'] .splitPanel {
+    order: 2;
+  }
+
+  .split[data-side='end'] .splitContent {
+    order: 1;
+  }
+}
+
+/*
+ * Stacked: which half comes first is a property of the screen, not of the split.
+ *
+ * This is scoped to the stacked range on purpose. `order` is honoured inside a
+ * grid too, so an unscoped rule would reorder the *two-column* layout as well — the
+ * bill would sit in the right-hand cell while the markup claimed the left, which is
+ * exactly the bug this comment exists to keep from coming back.
+ */
+@media (max-width: 1099px) {
+  .split[data-stack='content-first'] .splitContent {
+    order: 1;
+  }
+
+  .split[data-stack='content-first'] .splitPanel {
+    order: 2;
+  }
+}
+
+/*
+ * A split that fills its parent, for a screen laid out to the viewport (the till)
+ * rather than to the document (a back-office page). `align-items: start` is right
+ * for a page whose panes are as tall as their content; it is wrong for two panes
+ * that both have to scroll internally.
+ */
+@media (min-width: 1100px) {
+  .split[data-fill='true'] {
+    align-items: stretch;
+    height: 100%;
+  }
+}
+
+.splitPanel,
+.splitContent {
+  min-width: 0;
+  min-height: 0;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap_sm {
+  gap: var(--ln-space-2);
+}
+
+.gap_md {
+  gap: var(--ln-space-4);
+}
+
+.gap_lg {
+  gap: var(--ln-space-6);
+}
+
+/* ------------------------------------------------------------------ toolbar */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  flex-wrap: wrap;
+}
+
+.toolbarMain {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  flex: 1 1 16rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.toolbarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  flex-wrap: wrap;
+}
+
+/* ------------------------------------------------------------------- search */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--ln-space-3);
+  display: flex;
+  color: var(--ln-text-subtle);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: var(--ln-control-h);
+  padding: 0 var(--ln-space-8) 0 var(--ln-space-6);
+  font-family: inherit;
+  font-size: var(--ln-size-base);
+  color: var(--ln-text);
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+}
+
+[data-density='touch'] .searchInput {
+  font-size: 16px;
+  min-height: var(--ln-control-h-lg);
+  /* A scan target gets a wider tracking, so a mis-keyed code is visible. */
+  letter-spacing: 0.02em;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--ln-brand);
+  box-shadow: var(--ln-ring);
+}
+
+.searchClear {
+  position: absolute;
+  right: var(--ln-space-1);
+}
+
+/* ------------------------------------------------------------------ avatar */
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: var(--ln-radius-pill);
+  background: var(--ln-brand-soft);
+  color: var(--ln-brand);
+  font-weight: 700;
+}
+
+/* -------------------------------------------------------------- breadcrumb */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ln-space-1);
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-1);
+}
+
+.crumbSep {
+  display: inline-flex;
+  color: var(--ln-text-subtle);
+}
+
+/* -------------------------------------------------------------- pagination */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-4);
+  flex-wrap: wrap;
+}
+
+.paginationTotal {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.paginationButtons {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  margin-left: auto;
+}
+
+.paginationPage {
+  font-size: var(--ln-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ln-text-muted);
+  white-space: nowrap;
+}

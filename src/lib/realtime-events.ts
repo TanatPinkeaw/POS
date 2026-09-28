@@ -20,6 +20,8 @@ export const REALTIME_EVENTS = {
   pointsUpdated: 'points:updated',
   /** A closed drawer did not reconcile; admins need to review it. */
   shiftDiscrepancy: 'shift:discrepancy',
+  /** Someone clocked in or out, or a roster row changed. */
+  attendanceUpdated: 'attendance:updated',
 } as const;
 
 export type RealtimeEventName = (typeof REALTIME_EVENTS)[keyof typeof REALTIME_EVENTS];

@@ -18,6 +18,20 @@ export { Prisma }
 export * as $Enums from './enums'
 export * from './enums';
 /**
+ * Model shops
+ * *
+ *  * The shop this deployment belongs to.
+ *  *
+ *  * The SRS is silent on shop identity — receipts, page titles and the tax rate
+ *  * were hardcoded — so this is an addition on top of §7 (see ADR 0002).
+ *  *
+ *  * Exactly one row is allowed, which the migration enforces with
+ *  * `CHECK (id = 1)`. That is what makes double-initialisation impossible when two
+ *  * requests race through the setup wizard: the second INSERT collides on the
+ *  * primary key rather than winning a read-then-write check.
+ */
+export type shops = Prisma.shopsModel
+/**
  * Model users
  * 
  */

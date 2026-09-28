@@ -21,8 +21,11 @@ import { pointsEarned as computePointsEarned } from './loyalty';
 import { fromDecimal, roundThb, sumThb } from './money';
 import { canTransition, type OrderStatus } from './order-state';
 import { applyPointChange } from './points';
-import { buildSettlement, type SettlementRequest } from './settlement';
+import { buildSettlement, type SettlementBreakdown, type SettlementRequest } from './settlement';
+import { allocateReceiptNumber, loadVatSettings } from './shop';
 import { SYSTEM_USER_ID } from './system-user';
+import type { TenderLine } from './tender';
+import { computeVat, type VatBreakdown } from './vat';
 
 /** Long enough for 50 concurrent settlements to queue on one product's row lock. */
 const TRANSACTION_OPTIONS = { timeout: 30_000, maxWait: 30_000 } as const;
@@ -58,9 +61,18 @@ export interface OrderSummary {
   finalAmountThb: number;
   paidThb: number;
   changeThb: number;
+  /** What was handed over, per method — the figures `รับเงิน` prints. */
+  tenders: TenderLine[];
   pointsEarned: number;
   pointsRedeemed: number;
   lines: OrderLineSummary[];
+  /** Null when the shop is not VAT-registered, or has not been set up. */
+  receiptNumber: string | null;
+  isVatInvoice: boolean;
+  vatRatePercent: number | null;
+  /** The taxable base and the tax itself, as snapshotted on the order. */
+  netThb: number;
+  vatThb: number;
 }
 
 /** SRS §3 Phase 1: how long an unconfirmed pre-order may live. */
@@ -184,6 +196,105 @@ async function customerPointsBalance(db: Db, customerId: string | null): Promise
   return user?.points_balance ?? 0;
 }
 
+/**
+ * The tax facts frozen onto one sale, plus the receipt number it consumes.
+ */
+interface SaleTax {
+  breakdown: VatBreakdown;
+  receiptNumber: string | null;
+  vatRateUsed: number | null;
+}
+
+/**
+ * Snapshots the shop's tax settings onto a sale.
+ *
+ * Called from inside the sale transaction and read through `db`, so the rate the
+ * order records is the one the receipt prints, even if an admin edits the VAT
+ * rate in the next room while this sale is in flight.
+ *
+ * Note the arithmetic this deliberately does *not* change: with inclusive
+ * pricing — the Thai retail norm and the only mode supported — `amountThb` is
+ * already the amount the customer pays, so only the breakdown is new. The
+ * pre-existing sale totals are untouched, which is why introducing VAT did not
+ * move a single figure in the sale path's tests.
+ */
+async function resolveSaleTax(db: Db, amountThb: number, at: Date): Promise<SaleTax> {
+  const settings = await loadVatSettings(db);
+
+  /*
+   * VAT-exclusive pricing is refused rather than approximated. Deriving the tax
+   * the other way round changes what the customer owes, which changes what the
+   * settlement is built on, which changes the points discount — and getting that
+   * circular dependency subtly wrong would put a wrong tax figure on a legal
+   * document. The settings API already refuses to store this mode; this guard
+   * catches a value edited directly into the database.
+   */
+  if (settings.configured && !settings.pricesIncludeVat) {
+    throw new ConflictError(
+      'This shop is set to VAT-exclusive pricing, which this version does not support yet',
+      'VAT_MODE_UNSUPPORTED',
+    );
+  }
+
+  const breakdown = computeVat({
+    amountThb,
+    ratePercent: settings.vatRate,
+    pricesIncludeVat: settings.pricesIncludeVat,
+    isVatRegistered: settings.isVatRegistered,
+  });
+
+  // Only a sale that may issue a tax invoice consumes a number from the series.
+  const allocation = breakdown.isVatInvoice ? await allocateReceiptNumber(db, at) : null;
+
+  return {
+    breakdown,
+    receiptNumber: allocation?.receiptNumber ?? null,
+    vatRateUsed: breakdown.isVatInvoice ? breakdown.ratePercent : null,
+  };
+}
+
+/** The order columns a `SaleTax` maps onto. */
+function taxColumns(tax: SaleTax) {
+  return {
+    net_amount: tax.breakdown.netThb,
+    vat_amount: tax.breakdown.vatThb,
+    vat_rate_used: tax.vatRateUsed,
+    is_vat_invoice: tax.breakdown.isVatInvoice,
+    receipt_number: tax.receiptNumber,
+  };
+}
+
+/** The summary fields a `SaleTax` maps onto. */
+function taxSummary(tax: SaleTax) {
+  return {
+    receiptNumber: tax.receiptNumber,
+    isVatInvoice: tax.breakdown.isVatInvoice,
+    vatRatePercent: tax.vatRateUsed,
+    netThb: tax.breakdown.netThb,
+    vatThb: tax.breakdown.vatThb,
+  };
+}
+
+/**
+ * The money legs of a settlement, restated as tender lines.
+ *
+ * Points are dropped — they are a discount, not money in anyone's hand — and the
+ * cash leg carries the notes handed over rather than the amount applied, so that
+ * `รับเงิน − เงินทอน` on the printed document equals the cash in the drawer.
+ */
+function tenderLines(
+  settlement: SettlementBreakdown,
+  receivedCash?: number,
+): TenderLine[] {
+  return settlement.legs
+    .filter((leg) => leg.method !== 'points')
+    .map((leg) => ({
+      method: leg.method,
+      amountThb: leg.amount,
+      receivedThb: leg.method === 'cash' ? (receivedCash ?? leg.amount) : null,
+    }));
+}
+
 function lineSummaries(priced: PricedLine[]): OrderLineSummary[] {
   return priced.map((line) => ({
     productId: line.productId,
@@ -232,6 +343,14 @@ export async function createPosSale(input: {
     // SRS §5.1: points are earned on the net cash/PromptPay actually collected.
     const earned = input.customerId ? computePointsEarned(settlement.paidAmountThb) : 0;
     const orderNumber = await nextOrderNumber(tx);
+    /*
+     * Tax is resolved before any stock moves. Allocating the receipt number
+     * takes the shop row's lock, and taking it before the product rows gives
+     * every sale the same lock order — so two registers cannot deadlock against
+     * each other, one holding the shop row while it waits for a product the
+     * other holds.
+     */
+    const tax = await resolveSaleTax(tx, finalAmount, new Date());
 
     const order = await tx.orders.create({
       data: {
@@ -243,6 +362,7 @@ export async function createPosSale(input: {
         subtotal_amount: subtotal,
         discount_amount: discountTotal,
         final_amount: finalAmount,
+        ...taxColumns(tax),
         points_earned: earned,
         points_redeemed: settlement.pointsRedeemed,
         completed_at: new Date(),
@@ -315,9 +435,11 @@ export async function createPosSale(input: {
       finalAmountThb: finalAmount,
       paidThb: settlement.paidAmountThb,
       changeThb: settlement.changeThb,
+      tenders: tenderLines(settlement, input.settlement.receivedCash),
       pointsEarned: earned,
       pointsRedeemed: settlement.pointsRedeemed,
       lines: lineSummaries(priced),
+      ...taxSummary(tax),
     };
   }, TRANSACTION_OPTIONS);
 }
@@ -355,6 +477,14 @@ export async function placePreOrder(input: {
         subtotal_amount: subtotal,
         discount_amount: 0,
         final_amount: subtotal,
+        /*
+         * Nothing is taxed until the order is actually paid for at handover, so
+         * the taxable base equals the total and the VAT line is zero for now.
+         * Stating both explicitly is also what satisfies the order's VAT
+         * reconstruction constraint while the order sits in Phase 1.
+         */
+        net_amount: subtotal,
+        vat_amount: 0,
       },
     });
 
@@ -475,6 +605,11 @@ export async function confirmOrder(input: {
         cashier_id: input.employeeId,
         subtotal_amount: subtotal,
         final_amount: finalAmount,
+        // Partial confirmation removes lines, so the total — and therefore the
+        // taxable base — has to move with it. Still no tax line: the sale has
+        // not happened yet.
+        net_amount: finalAmount,
+        vat_amount: 0,
       },
     });
 
@@ -557,6 +692,7 @@ export async function completeOrder(input: {
     const discountTotal = roundThb(fromDecimal(order.discount_amount) + settlement.discountThb);
     const finalAmount = roundThb(amountDue - settlement.discountThb);
     const earned = order.customer_id ? computePointsEarned(settlement.paidAmountThb) : 0;
+    const tax = await resolveSaleTax(tx, finalAmount, new Date());
 
     for (const item of order.items) {
       const balanceAfter = await commitReservedStock(tx, {
@@ -611,6 +747,7 @@ export async function completeOrder(input: {
         cashier_id: input.employeeId,
         discount_amount: discountTotal,
         final_amount: finalAmount,
+        ...taxColumns(tax),
         points_earned: earned,
         points_redeemed: settlement.pointsRedeemed,
       },
@@ -625,6 +762,7 @@ export async function completeOrder(input: {
       finalAmountThb: finalAmount,
       paidThb: settlement.paidAmountThb,
       changeThb: settlement.changeThb,
+      tenders: tenderLines(settlement, input.settlement.receivedCash),
       pointsEarned: earned,
       pointsRedeemed: settlement.pointsRedeemed,
       lines: order.items.map((item) => ({
@@ -634,6 +772,7 @@ export async function completeOrder(input: {
         unitPrice: fromDecimal(item.unit_price),
         totalPrice: fromDecimal(item.total_price),
       })),
+      ...taxSummary(tax),
     };
   }, TRANSACTION_OPTIONS);
 }

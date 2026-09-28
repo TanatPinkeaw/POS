@@ -6,6 +6,7 @@
  * insufficient stock is a 409.
  */
 import { NextResponse } from 'next/server';
+
 import { ZodError } from 'zod';
 
 import { DomainError, ValidationError } from './errors';
@@ -49,10 +50,24 @@ export function errorResponse(error: unknown): NextResponse {
   return fail('Something went wrong on our side', 'INTERNAL_ERROR', 500);
 }
 
-/** Runs a handler body, normalising success and failure. */
-export async function withApi<T>(fn: () => Promise<T>): Promise<NextResponse> {
+/**
+ * Runs a handler body, normalising success and failure.
+ *
+ * A handler that builds its own response is passed through untouched. That escape
+ * hatch exists for exactly one reason: a response header. The products route has to
+ * publish how many items the filter matched (`X-Total-Count`) so that a paged
+ * client can say "ยังมีอีก 140 รายการ" instead of looking like the list simply
+ * ended — and a header cannot be expressed through the `{ data }` envelope.
+ *
+ * Every existing handler returns a plain value and is unchanged by this.
+ */
+export async function withApi<T>(fn: () => Promise<T | Response>): Promise<NextResponse> {
   try {
-    return ok(await fn());
+    const result = await fn();
+    if (result instanceof Response) {
+      return result as NextResponse;
+    }
+    return ok(result);
   } catch (error) {
     return errorResponse(error);
   }

@@ -31,8 +31,8 @@ export * from "./enums"
  * const prisma = new PrismaClient({
  *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
  * })
- * // Fetch zero or more Users
- * const users = await prisma.users.findMany()
+ * // Fetch zero or more Shops
+ * const shops = await prisma.shops.findMany()
  * ```
  * 
  * Read more in our [docs](https://pris.ly/d/client).
@@ -41,6 +41,20 @@ export const PrismaClient = $Class.getPrismaClientClass()
 export type PrismaClient<LogOpts extends Prisma.LogLevel = never, OmitOpts extends Prisma.PrismaClientOptions["omit"] = Prisma.PrismaClientOptions["omit"], ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = $Class.PrismaClient<LogOpts, OmitOpts, ExtArgs>
 export { Prisma }
 
+/**
+ * Model shops
+ * *
+ *  * The shop this deployment belongs to.
+ *  *
+ *  * The SRS is silent on shop identity — receipts, page titles and the tax rate
+ *  * were hardcoded — so this is an addition on top of §7 (see ADR 0002).
+ *  *
+ *  * Exactly one row is allowed, which the migration enforces with
+ *  * `CHECK (id = 1)`. That is what makes double-initialisation impossible when two
+ *  * requests race through the setup wizard: the second INSERT collides on the
+ *  * primary key rather than winning a read-then-write check.
+ */
+export type shops = Prisma.shopsModel
 /**
  * Model users
  * 

@@ -1,0 +1,96 @@
+/*
+ * Numpad and quick-cash keys.
+ *
+ * Both are sized from `--ln-control-h-lg` and grow again on a touch density,
+ * because these are the controls the plan's tap budget is spent on: a square
+ * centimetre of mis-tap here is a wrong amount of change handed to a customer.
+ */
+
+.pad {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ln-space-2);
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--ln-control-h-lg);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  font: inherit;
+  font-size: var(--ln-size-lg);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+[data-density='touch'] .key {
+  min-height: 60px;
+  font-size: var(--ln-size-xl);
+}
+
+.key:hover {
+  background: var(--ln-surface-2);
+}
+
+.key:active {
+  background: var(--ln-surface-inset);
+}
+
+.key:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+.keyWide {
+  font-size: var(--ln-size-lg);
+}
+
+.keyClear {
+  font-size: var(--ln-size-base);
+  color: var(--ln-danger);
+}
+
+.quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-2);
+}
+
+.note {
+  flex: 1 1 auto;
+  min-width: 3.5rem;
+  min-height: var(--ln-control-h);
+  padding: 0 var(--ln-space-3);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  font: inherit;
+  font-size: var(--ln-size-base);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+[data-density='touch'] .note {
+  min-height: var(--ln-control-h-lg);
+}
+
+.note:hover {
+  background: var(--ln-surface-2);
+}
+
+.note:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+.noteExact {
+  border-color: var(--ln-brand);
+  color: var(--ln-brand);
+}

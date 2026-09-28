@@ -1,0 +1,180 @@
+/* Spinners, notices, empty states and skeletons. */
+
+/*
+ * The spin keyframes are declared here as well as in Button.module.css on
+ * purpose: CSS Modules rewrites `animation` identifiers to a file-scoped name,
+ * so a module that animates has to own the keyframes it names. Sharing them would
+ * mean sharing a `:global()` escape hatch, which is the thing the scoping exists
+ * to avoid.
+ */
+@keyframes ln-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinnerRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-4) 0;
+  color: var(--ln-text-muted);
+}
+
+.spinner {
+  width: 1.1em;
+  height: 1.1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: var(--ln-radius-pill);
+  animation: ln-spin 640ms linear infinite;
+}
+
+.spinnerLabel {
+  font-size: var(--ln-size-sm);
+}
+
+/* ---------------------------------------------------------------- notice */
+
+.notice {
+  display: flex;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+}
+
+.noticeIcon {
+  flex: none;
+  display: flex;
+  margin-top: 2px;
+}
+
+.noticeBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-1);
+  min-width: 0;
+}
+
+.noticeTitle {
+  font-weight: 650;
+}
+
+.noticeText {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.noticeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-2);
+  margin-top: var(--ln-space-2);
+}
+
+.notice_info {
+  background: var(--ln-info-soft);
+  border-color: color-mix(in srgb, var(--ln-info) 30%, transparent);
+  color: var(--ln-info);
+}
+
+.notice_success {
+  background: var(--ln-success-soft);
+  border-color: color-mix(in srgb, var(--ln-success) 30%, transparent);
+  color: var(--ln-success);
+}
+
+.notice_warning {
+  background: var(--ln-warning-soft);
+  border-color: color-mix(in srgb, var(--ln-warning) 35%, transparent);
+  color: var(--ln-warning);
+}
+
+.notice_danger {
+  background: var(--ln-danger-soft);
+  border-color: color-mix(in srgb, var(--ln-danger) 35%, transparent);
+  color: var(--ln-danger);
+}
+
+.notice_brand {
+  background: var(--ln-brand-soft);
+  border-color: var(--ln-brand-soft-border);
+  color: var(--ln-brand);
+}
+
+/* ------------------------------------------------------------ empty state */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-7) var(--ln-space-4);
+  text-align: center;
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  color: var(--ln-brand);
+  background: var(--ln-brand-soft);
+  border-radius: var(--ln-radius-lg);
+}
+
+.emptyTitle {
+  font-size: var(--ln-size-lg);
+  font-weight: 650;
+}
+
+.emptyText {
+  max-width: 32rem;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.emptyAction {
+  margin-top: var(--ln-space-2);
+}
+
+/* -------------------------------------------------------------- skeleton */
+
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--ln-surface-2) 25%,
+    color-mix(in srgb, var(--ln-surface-2) 60%, var(--ln-border)) 37%,
+    var(--ln-surface-2) 63%
+  );
+  background-size: 400% 100%;
+  animation: ln-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeletonBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-4);
+  padding: var(--ln-space-4) 0;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--ln-space-4);
+}
+
+@keyframes ln-shimmer {
+  from {
+    background-position: 100% 50%;
+  }
+  to {
+    background-position: 0 50%;
+  }
+}

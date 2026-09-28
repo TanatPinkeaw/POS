@@ -22,12 +22,13 @@ import { ConflictError, InsufficientStockError, NotFoundError, ValidationError }
  */
 export type Db = Prisma.TransactionClient;
 
-/** SRS §4.3 adjustment reasons. */
+/** SRS §4.3 adjustment reasons, plus the import addition (ADR 0002). */
 export type StockAdjustmentReason =
   | 'REASON_RESTOCK'
   | 'REASON_DAMAGED'
   | 'REASON_EXPIRED'
-  | 'REASON_CORRECTION';
+  | 'REASON_CORRECTION'
+  | 'REASON_IMPORT';
 
 /** SRS §7 `stock_movement_type`. */
 export type StockMovementType =
@@ -47,9 +48,14 @@ export function availableQty(balance: { stock_qty: number; reserved_qty: number 
   return balance.stock_qty - balance.reserved_qty;
 }
 
-/** A restock is an inbound delivery; every other reason is a human correction. */
+/**
+ * A restock — including an imported opening balance — is inbound stock; every
+ * other reason is a human correction. Imports deliberately share the `restock`
+ * movement type so they land in the same audit trail as a delivery, and only the
+ * `reason` distinguishes them.
+ */
 export function movementTypeForReason(reason: StockAdjustmentReason): StockMovementType {
-  return reason === 'REASON_RESTOCK' ? 'restock' : 'manual_adjust';
+  return reason === 'REASON_RESTOCK' || reason === 'REASON_IMPORT' ? 'restock' : 'manual_adjust';
 }
 
 function assertPositiveQty(qty: number, label = 'quantity'): void {

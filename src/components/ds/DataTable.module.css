@@ -1,0 +1,182 @@
+/*
+ * Data tables.
+ *
+ * Row height comes from `--ln-row-h` (36px compact, 48px touch). A back office
+ * wants the most rows on screen per scroll; a till wants the row a thumb can hit.
+ *
+ * Two layouts in one DOM: a real table above the breakpoint, and one card per row
+ * below it. The switch is a media query on the same markup, so there is no second
+ * render of the data and no `useMediaQuery` hook to get wrong on the server.
+ *
+ * Figures are tabular and right-aligned by the caller. A column of amounts whose
+ * decimal points do not line up is the most common way a money table loses its
+ * reader, and it costs one class to prevent.
+ */
+
+.scroller {
+  overflow-x: auto;
+  /* Keeps the rounded corner of the card it usually sits inside. */
+  border-radius: var(--ln-radius-lg);
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--ln-size-sm);
+}
+
+.table th {
+  padding: var(--ln-space-2) var(--ln-space-4);
+  height: 34px;
+  text-align: left;
+  font-weight: 600;
+  font-size: var(--ln-size-xs);
+  letter-spacing: 0.03em;
+  color: var(--ln-text-subtle);
+  background: var(--ln-surface-inset);
+  border-bottom: 1px solid var(--ln-border);
+  white-space: nowrap;
+  /* A shop scrolling a year of orders should keep the column names in view. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.table td {
+  padding: var(--ln-space-2) var(--ln-space-4);
+  height: var(--ln-row-h);
+  border-bottom: 1px solid var(--ln-border-subtle);
+  /* Thai words do not break at spaces, so a long product name must be told to. */
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.dense td {
+  padding-block: 0;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table tbody tr:hover td {
+  background: var(--ln-surface-inset);
+}
+
+.alignEnd {
+  text-align: right;
+}
+
+/*
+ * A row that needs attention. A left bar plus a soft tint, rather than a filled
+ * red row: the operator is scanning the whole table, and a full-bleed red block
+ * next to a red badge next to a red button makes three things shout at once.
+ */
+.highlight td {
+  background: var(--ln-danger-soft);
+}
+
+.highlight td:first-child {
+  box-shadow: inset 3px 0 0 var(--ln-danger);
+}
+
+.primaryCell {
+  font-weight: 600;
+}
+
+.rowLink {
+  color: var(--ln-brand);
+  text-decoration: none;
+}
+
+.rowLink:hover {
+  text-decoration: underline;
+}
+
+.table tfoot td {
+  padding: var(--ln-space-3) var(--ln-space-4);
+  font-weight: 700;
+  background: var(--ln-surface-inset);
+  border-top: 1px solid var(--ln-border-strong);
+}
+
+/* ------------------------------------------------------- the card layout */
+
+@media (max-width: 900px) {
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table thead {
+    /* Visually gone, still read by a screen reader as column headers. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .table tr {
+    margin-bottom: var(--ln-space-3);
+    border: 1px solid var(--ln-border);
+    border-radius: var(--ln-radius-md);
+    background: var(--ln-surface);
+    overflow: hidden;
+  }
+
+  .table td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--ln-space-4);
+    height: auto;
+    padding: var(--ln-space-2) var(--ln-space-4);
+    border-bottom: 1px solid var(--ln-border-subtle);
+    text-align: right;
+  }
+
+  .table td:last-child {
+    border-bottom: none;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    flex: none;
+    font-size: var(--ln-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--ln-text-subtle);
+    text-align: left;
+  }
+
+  /* An unlabelled cell spans the card: it is the row's identity or its actions. */
+  .table td[data-label='']::before {
+    display: none;
+  }
+
+  .table td[data-label=''] {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .primaryCell {
+    font-size: var(--ln-size-base);
+    background: var(--ln-surface-inset);
+  }
+
+  .table tfoot {
+    display: block;
+  }
+
+  .table tfoot td {
+    display: flex;
+    justify-content: space-between;
+    border-top: none;
+  }
+}

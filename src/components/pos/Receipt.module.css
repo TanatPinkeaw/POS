@@ -1,0 +1,98 @@
+/*
+ * The receipt on screen.
+ *
+ * Deliberately narrow and monospaced, because it is the same document that comes
+ * out of the printer: an operator checking a printed receipt against what the till
+ * showed should not be comparing two different layouts. The print rules live in
+ * `base.css` under `.ln-receipt-sheet`, which this element also carries, so paper
+ * layout (80mm, no backgrounds, no shadows) is applied at print time and none of it
+ * leaks into the modal.
+ */
+
+.receipt {
+  width: 100%;
+  max-width: 20rem;
+  margin: 0 auto;
+  font-family: var(--ln-font-mono);
+  font-size: var(--ln-size-sm);
+  line-height: 1.5;
+  color: var(--ln-text);
+}
+
+.head {
+  text-align: center;
+  padding-bottom: var(--ln-space-2);
+}
+
+.shopName {
+  font-size: var(--ln-size-base);
+  font-weight: 700;
+}
+
+.small {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+}
+
+.title {
+  margin-top: var(--ln-space-2);
+  font-weight: 700;
+  text-align: center;
+}
+
+.rule {
+  border: 0;
+  border-top: 1px dashed var(--ln-border-strong);
+  margin: var(--ln-space-2) 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+.rowLabel {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.amount {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.totalRow {
+  font-weight: 700;
+}
+
+.grand {
+  font-size: var(--ln-size-base);
+  font-weight: 700;
+}
+
+.foot {
+  margin-top: var(--ln-space-3);
+  text-align: center;
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+}
+
+/*
+ * On paper the receipt is the only thing on the page, so the modal chrome and the
+ * muted colour (which prints as a light grey nobody can read) are removed — the
+ * print sheet in base.css handles the geometry, this removes what surrounds it.
+ */
+@media print {
+  .receipt {
+    max-width: none;
+    color: #000000;
+  }
+
+  .small,
+  .foot {
+    color: #000000;
+  }
+}

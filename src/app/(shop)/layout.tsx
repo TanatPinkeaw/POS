@@ -1,10 +1,10 @@
-import { AreaLayout } from '@/components/hope/AreaLayout';
-import type { NavItem } from '@/components/hope/AppShell';
+import { AreaLayout } from '@/components/shell/AreaLayout';
+import type { NavItem } from '@/components/shell/AppShell';
 import { requireShellUser } from '@/lib/shell';
 
 const SHOP_NAV: NavItem[] = [
-  { href: '/shop/products', label: 'สินค้า', glyph: '▤' },
-  { href: '/shop/orders', label: 'ออเดอร์ของฉัน', glyph: '▦' },
+  { href: '/shop/products', label: 'สินค้า', icon: 'box' },
+  { href: '/shop/orders', label: 'ออเดอร์ของฉัน', icon: 'receipt' },
 ];
 
 /** SRS §2: members browse, reserve, and track their own orders. */
