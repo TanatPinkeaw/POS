@@ -189,7 +189,7 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 512 tests across 35 files: unit + integration
+npm test                # 529 tests across 37 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 82 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
@@ -249,6 +249,33 @@ three roles, placing a pre-order, confirming it, collecting it with a PIN,
 reconciling the drawer, downloading all four SRS §8 workbooks (asserting the
 xlsx content type, the ZIP magic bytes, and that a cashier is refused), and then
 clocking the cashier in and out against the roster.
+
+### Collecting a pre-order (SRS §3)
+
+The customer's order screen shows two credentials the moment staff pack the bag: a
+**QR** and the four-digit **PIN** underneath it. They fail differently — the QR is
+faster and cannot be mistyped, the PIN survives a flat battery and can be read
+down a phone — so both are offered rather than one being chosen for the customer.
+
+The QR is a signed token (`src/lib/pickup-token.ts`), not a stored secret. It names
+exactly one order, it expires when the hold does, and its own audience means a
+signed-in member's session cannot be presented as a pickup code (asserted in
+`tests/pickup-token.test.ts`). Nothing is written to the database to make the code
+work, so a shop that rotates its signing secret invalidates codes on the shelf —
+reprint them rather than leaving a customer holding a dead one.
+
+The till has one box at the counter, and the *shape* of what arrives decides where
+it goes: three dot-separated segments is a scanned code, four digits is a PIN,
+anything else is a phone number (`src/lib/pickup-scan.ts`, pure and unit-tested —
+it used to be a ternary inside a screen, where the only way to test it was to
+render the screen). All three roads end at the same `ready_for_pickup` filter, so a
+code for a parcel that has already been collected finds nothing, exactly as its PIN
+would.
+
+A bad or expired code is a **422** with a readable message, not a 500 — a stale QR
+is not something "going wrong on our side". The board the queue looks at carries
+neither the PIN nor the code, and that is pinned by a test over the serialised
+payload rather than field by field (ADR 0006 §6).
 
 ### Reports and exports (SRS §8)
 
@@ -319,11 +346,13 @@ endpoint that says so.
 | §8 Excel exports | `src/lib/reports.ts` (queries) + `src/lib/report-spec.ts` (columns/formatting) + `src/lib/excel.ts` (rendering) |
 | §2 RBAC | `src/lib/roles.ts`, enforced in `src/proxy.ts` **and** every route handler |
 | Reversal of a paid sale (beyond the SRS) | `src/lib/credit-notes.ts` (the transaction) + `src/lib/order-state.ts` (the `refund` edge) — ADR 0004 |
+| §3 pickup QR | `src/lib/pickup-token.ts` (the signed code), `pickup-scan.ts` (what the counter typed), rendered on the customer's order — ADR 0006 |
 
-The domain rules are split into **pure functions** (loyalty, settlement, the
-state machine, the discrepancy formula) and **persistence** modules. That split
-is why 319 of the 512 tests need no database at all, and why the money rules can
-be checked without a running server.
+The domain rules are split into **pure functions** (loyalty, settlement, the state
+machine, the discrepancy formula, what the counter just scanned) and
+**persistence** modules. That split is why the money rules can be checked without
+a running server, and why a refusal is a typed value the tests can assert on
+rather than a message somebody has to read.
 
 ---
 
@@ -512,6 +541,7 @@ goes through them.
 | `docs/adr/0002-shop-identity-and-vat.md` | Shop identity, VAT and gapless receipt numbering — a requirement the SRS never states. |
 | `docs/adr/0004-credit-notes-and-refunds.md` | Reversing a paid sale: the credit-note series, the refund leg, and why money is signed by direction. |
 | `docs/adr/0005-automatic-transfer-confirmation.md` | Closing a bill from the shop's own bank notification, and why the matcher refuses when it is not certain. |
+| `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
@@ -525,8 +555,10 @@ Deferred deliberately, and listed here rather than discovered during service:
   part it reverses.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
-- **Pickup QR codes.** SRS §3 asks for a PIN *and* a QR; only the PIN exists, and
-  the `qrcode` dependency is installed and unused.
+- **A shop cannot create a customer.** `/api/v1/members` is read-only and the
+  staff screen only makes employees and admins, so nobody can be added as a
+  member — and a pre-order requires one. Found while testing the pickup code, and
+  now the first thing standing between a new shop and its pre-order screen.
 - **Outbound notifications.** Alerts are in-app and Web Notifications only, so a
   customer who closes the page hears nothing.
 - **Multi-branch and a second register.** One shop per deployment, and receipt

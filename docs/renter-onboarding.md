@@ -111,7 +111,7 @@ email in this system; recovery is a SQL statement (see §8).
 | Start the day | `/pos` → เปิดลิ้นชัก | Enter the float (starting cash). A sale is refused without an open drawer, because cash that belongs to no drawer cannot be reconciled. |
 | Sell | `/pos` | Scan or tap, choose the payment method, take the money, hand over change. |
 | Pre-orders | `/pos/preorders` | Four columns: new → confirmed → ready → collected. A pre-order **reserves stock when it is placed**, so the stock is gone even before the customer arrives. |
-| Handover | `/pos` → รับสินค้า | The customer's 4-digit PIN finds their order. |
+| Handover | `/pos/preorders` → ค้นหา | **Scan the customer's QR**, or type their 4-digit PIN, or their phone number — one box takes all three. The QR is on the customer's own order screen, under that order. |
 | Clock in / out | `/pos/attendance` | One button. Hours are computed by the database. |
 | Close the drawer | `/pos` → ปิดลิ้นชัก | Count the cash and type it in. The screen shows the expected amount and names any discrepancy as short, over, or balanced. |
 | Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Hands the whole bill back and issues a credit note. Always needs a supervisor PIN, even for the owner. |
@@ -223,6 +223,10 @@ Recorded here so nobody discovers it during service:
 - No partial refunds or per-line returns: a refund reverses the whole bill.
 - No way to *send* a refund automatically — cash goes back out of an open drawer,
   or you transfer it yourself from your banking app.
+- **You cannot add a customer.** Staff accounts are created in `/admin/staff`, but
+  there is no screen that creates a *member* — so a new shop has nobody who can
+  place a pre-order until members are created for it. Ask us to do it directly, or
+  wait for the member sign-up screen.
 - No customer-facing online ordering — members can pre-order from inside the app.
 - No outbound SMS/LINE notifications; alerts are in-app and on-screen only.
 - No product image upload, no shop logo upload (yet).

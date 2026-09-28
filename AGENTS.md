@@ -88,7 +88,8 @@ tried and hurt, and several are enforced by a test or a check.
 7. **Pure logic and persistence stay in separate modules.** State machines,
    pricing and the loyalty/discount maths are pure functions in `src/lib/*-rules`
    or alongside their domain; the database lives in a separate module. That split
-   is why 319 of the 512 tests need no database at all.
+   is why the money rules can be checked without a running server — do not quote a
+   test count here, it drifts; `npm test` prints it.
 8. **Every route handler funnels through `withApi` and stamps its own
    authorisation.** The role always comes from the signed session token, never
    from a request body. `src/proxy.ts` decides which *area* an unauthenticated
@@ -242,21 +243,36 @@ both halves SSH again.
 ## Where to pick up
 
 The design-system migration is **finished**, and so is the money work that followed
-it: a paid bill can be reversed with a credit note behind it (ADR 0004), and an
+it: a paid bill can be reversed with a credit note behind it (ADR 0004), an
 incoming transfer can close its own bill from the shop's own bank notification with
-no payment provider (ADR 0005). All sixteen routes are on `src/components/ds/`, the
-vendored Hope UI theme is deleted, `ui:audit` keeps it that way, 497 tests across 34
-files pass, `route:audit` walks all sixteen screens, and `acceptance` drives the
-renter journey **including a refund and a machine-confirmed transfer** — all four
-green, all four in CI.
+no payment provider (ADR 0005), and a pre-order is handed over with either a scanned
+QR or the PIN beside it (ADR 0006). All sixteen routes are on `src/components/ds/`,
+the vendored Hope UI theme is deleted, `ui:audit` keeps it that way, `route:audit`
+walks all sixteen screens, and `acceptance` drives the renter journey **including a
+refund, a machine-confirmed transfer and a pre-order collected by code** — all in
+CI. The test count lives in `README.md` and in the `verify` output; do not quote it
+from here, it drifts.
 
 Two shapes to copy when adding to either path, because both are the reason the
 money logic is trustworthy: the *decision* is a pure module with typed refusals
-(`order-state.ts`, `inbound-match.ts`) and the *record* is a persistence module
-tested against real Postgres (`credit-notes.ts`, `inbound-payments.ts`).
+(`order-state.ts`, `inbound-match.ts`, `pickup-scan.ts`) and the *record* is a
+persistence module tested against real Postgres (`credit-notes.ts`,
+`inbound-payments.ts`).
+
+One trap worth knowing before you write a refusal: **an error that is not a
+`DomainError` becomes a 500.** `withApi` maps `DomainError` onto HTTP and flattens
+everything else to "something went wrong on our side" — so a stale QR reached the
+cashier as an alarm until `InvalidPickupTokenError` was given the base class. Both
+versions type-check and both refuse the request; only one is readable at a counter.
 
 Open threads, roughly in the order worth doing:
 
+0. **Nothing can create a member.** `/api/v1/members` is a read-only lookup and
+   the staff screen makes only employees and admins, so a freshly installed shop
+   has nobody who can place a pre-order — the one flow that `requireRole(['member'])`
+   gates, and the one the pickup code above exists to collect. Found by writing the
+   acceptance leg, which has to insert the customer with SQL to get started
+   (gap analysis §4.3a). Small, and everything member-facing is behind it.
 1. **Partial and per-line refunds.** A refund reverses the whole bill today, which
    is what a tax invoice needs but not what a customer returning one item out of
    three asks for. The shape is a credit note that itemises the part it reverses
@@ -271,6 +287,6 @@ Open threads, roughly in the order worth doing:
 4. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
-Known product gaps are listed at the end of `README.md` (partial refunds, overtime
-approval, pickup QR, outbound notifications, multiple branches, product images,
-production hardening).
+Known product gaps are listed at the end of `README.md` (no way to create a member,
+partial refunds, overtime approval, outbound notifications, multiple branches,
+product images, production hardening).

@@ -65,7 +65,7 @@ that does not want its sales data in somebody else's cloud).
 | Four-phase lifecycle with auto-expiry | ✅ | ❌ | ours only |
 | Partial confirmation (drop a line, release its stock) | ✅ | ❌ | ours only |
 | 4-digit pickup PIN + hold deadline | ✅ | `[U]` | |
-| **Pickup QR code** | ❌ | ✅ `[C]` | SRS asks for PIN **and** QR; only the PIN exists (the `qrcode` dependency is installed and unused) |
+| **Pickup QR code** | ✅ | ✅ `[C]` | SRS asks for PIN **and** QR; both now, side by side on the customer's order (ADR 0006) |
 | **Outbound customer notification** | ❌ | ✅ `[C]` | ours is in-app + Web Notifications only |
 
 ### Back office
@@ -162,10 +162,24 @@ knowing their order is ready and a customer standing outside. Shape: a
 notification outbox table with a pluggable channel (LINE Notify / SMS), retried,
 with the in-app path staying as the fallback.
 
-### 4.3 Pickup QR — already specified, not built
+### 4.3 Pickup QR — done
 
-SRS §3 asks for PIN *and* QR; `qrcode` is already a dependency and unused. Small,
-self-contained, and it shortens handover.
+SRS §3 asks for PIN *and* QR. Both are now on the customer's order screen: a
+signed code that expires with the hold and names exactly one parcel, plus the PIN
+underneath it for the phone that has died. The till's one handover box takes
+either — it routes on the shape of what arrives (`src/lib/pickup-scan.ts`) — and
+the collection board seen by the queue deliberately carries neither.
+
+### 4.3a A shop cannot create a customer
+
+Found while wiring the acceptance run against §4.3, and worth stating plainly:
+`/api/v1/members` is read-only and `/api/v1/staff` only makes employees and
+admins, so a freshly installed shop has **no way to create a member** — and a
+pre-order requires `requireRole(['member'])`. SRS §2 is a member-facing ordering
+path, so this blocks the feature it is built for. Shape: member self-registration
+(phone + OTP or PIN) or a till-side "add customer" form, plus the loyalty points
+already stored on `users`. Small, and it is now the first thing standing between a
+new renter and their own pre-order screen.
 
 ### 4.4 A till that survives a flaky connection — operational risk
 
@@ -215,7 +229,9 @@ Stated here rather than implied anywhere above:
    **Partial and per-line refunds** are now the top of the correctness list.
 2. **Notification outbox with a real channel** (§4.2). Half of the pre-order
    feature is "the customer finds out", and today they do not.
-3. **Pickup QR** (§4.3). Already in the SRS, already a dependency, small.
+3. ~~**Pickup QR** (§4.3)~~ — **done**, ADR 0006. What it surfaced is now the
+   urgent item: **a shop cannot create a member** (§4.3a), and without one there
+   is nobody who can place the pre-order the QR collects.
 
 **Then the things that keep a growing shop:**
 
