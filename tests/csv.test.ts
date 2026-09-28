@@ -149,6 +149,28 @@ describe('parseImportGrid', () => {
     expect(parsed.invalidRows[2]?.issues[0]?.field).toBe('stockQty');
   });
 
+  it('refuses a row whose ราคาขาย is blank instead of importing it at zero', () => {
+    const parsed = parseImportGrid([
+      HEADER,
+      ['1', 'กาแฟ', '', '', '', '10'],
+      ['2', 'ชา', '', '', '20', '5'],
+    ]);
+
+    expect(parsed.validRows.map((row) => row.name)).toEqual(['ชา']);
+    expect(parsed.invalidRows).toHaveLength(1);
+    expect(parsed.invalidRows[0]?.issues[0]).toEqual({
+      field: 'salePrice',
+      message: 'ต้องระบุราคาขาย',
+    });
+  });
+
+  it('still treats a blank ราคาทุน as zero, because only the price is required', () => {
+    const parsed = parseImportGrid([HEADER, ['1', 'กาแฟ', '', '', '20', '5']]);
+
+    expect(parsed.invalidRows).toEqual([]);
+    expect(parsed.validRows[0]?.costPrice).toBe(0);
+  });
+
   it('flags a barcode repeated inside the same file', () => {
     const parsed = parseImportGrid([
       HEADER,

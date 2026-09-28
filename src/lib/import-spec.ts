@@ -216,11 +216,23 @@ export function parseImportGrid(grid: string[][]): ParsedImport {
       }
     }
 
-    const salePrice = parseAmount(value('salePrice'));
-    if (salePrice === null) {
+    /*
+     * A blank cell is an issue here, where a blank `ราคาทุน` is not.
+     *
+     * `parseAmount('')` is 0 so that an absent cost, stock count or description
+     * means "none", but `ราคาขาย` is the one value a row cannot do without: a
+     * silent 0 would put a free product in the catalogue, and the preview would
+     * report the row as importable. The column is marked required, so a cell with
+     * nothing in it has to be reported the way the template promises.
+     */
+    const salePriceText = value('salePrice');
+    const salePrice = parseAmount(salePriceText);
+    if (salePriceText === '') {
+      rowIssues.push({ field: 'salePrice', message: 'ต้องระบุราคาขาย' });
+    } else if (salePrice === null) {
       rowIssues.push({
         field: 'salePrice',
-        message: `ราคาขาย "${value('salePrice')}" ไม่ใช่ตัวเลข`,
+        message: `ราคาขาย "${salePriceText}" ไม่ใช่ตัวเลข`,
       });
     } else if (salePrice < 0) {
       rowIssues.push({ field: 'salePrice', message: 'ราคาขายติดลบไม่ได้' });
