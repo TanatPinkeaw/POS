@@ -10,6 +10,7 @@ import { prisma } from './db';
 import { NotFoundError } from './errors';
 import { fromDecimal } from './money';
 import type { OrderStatus } from './order-state';
+import { createPickupToken } from './pickup-token';
 
 export interface OrderItemView {
   id: string;
@@ -73,6 +74,16 @@ export interface OrderListView {
   customerName: string | null;
   customerPhone: string | null;
   pickupPin: string | null;
+  /**
+   * The signed code behind the handover QR — SRS §3.
+   *
+   * Minted here rather than stored: it is derivable from the order id and the
+   * hold's own deadline (`src/lib/pickup-token.ts`), so there is no column to keep
+   * in step and no secret at rest to leak. Null unless the order is actually
+   * waiting to be collected, because a code for anything else is a code that can
+   * collect nothing.
+   */
+  pickupToken: string | null;
   createdAt: Date;
   readyAt: Date | null;
 }
@@ -164,17 +175,31 @@ export async function listOrderViews(filter: {
     take: filter.limit,
   });
 
-  return orders.map((order) => ({
-    id: order.id,
-    orderNumber: order.order_number,
-    orderType: order.order_type,
-    status: order.status as OrderStatus,
-    finalAmountThb: fromDecimal(order.final_amount),
-    itemCount: order._count.items,
-    customerName: order.customer?.full_name ?? null,
-    customerPhone: order.customer?.phone ?? null,
-    pickupPin: order.pickup_pin,
-    createdAt: order.created_at,
-    readyAt: order.ready_at,
-  }));
+  return Promise.all(
+    orders.map(async (order) => ({
+      id: order.id,
+      orderNumber: order.order_number,
+      orderType: order.order_type,
+      status: order.status as OrderStatus,
+      finalAmountThb: fromDecimal(order.final_amount),
+      itemCount: order._count.items,
+      customerName: order.customer?.full_name ?? null,
+      customerPhone: order.customer?.phone ?? null,
+      pickupPin: order.pickup_pin,
+      /*
+       * Signing is the only cost of a list read, and it is paid once per order that
+       * is actually waiting — normally none of them, and never more than the shop
+       * has parcels on the shelf.
+       */
+      pickupToken:
+        order.status === 'ready_for_pickup' && order.pickup_expires_at
+          ? await createPickupToken({
+              orderId: order.id,
+              expiresAt: order.pickup_expires_at,
+            })
+          : null,
+      createdAt: order.created_at,
+      readyAt: order.ready_at,
+    })),
+  );
 }

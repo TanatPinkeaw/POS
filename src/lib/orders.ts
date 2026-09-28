@@ -22,6 +22,7 @@ import { pointsEarned as computePointsEarned } from './loyalty';
 import { consumeIntent } from './payment-intents';
 import { fromDecimal, roundThb, sumThb } from './money';
 import { canTransition, type OrderStatus } from './order-state';
+import { verifyPickupToken } from './pickup-token';
 import { applyPointChange } from './points';
 import { buildSettlement, type SettlementBreakdown, type SettlementRequest } from './settlement';
 import { allocateReceiptNumber, loadVatSettings } from './shop';
@@ -1007,16 +1008,29 @@ export async function findOrderForHandover(input: {
   pin?: string;
   orderId?: string;
   phone?: string;
+  /** A scanned handover code; resolves to the order it was issued for. */
+  pickupToken?: string;
 }) {
-  if (!input.pin && !input.orderId && !input.phone) {
+  if (!input.pin && !input.orderId && !input.phone && !input.pickupToken) {
     throw new ValidationError(
-      'Look up a pre-order by its pickup PIN, order id, or the registered phone number',
+      'Look up a pre-order by its pickup PIN, QR code, order id, or the registered phone number',
     );
   }
 
-  if (input.orderId) {
+  /*
+   * A scanned code becomes an order id and then takes exactly the same road as one
+   * typed in by hand — including the `ready_for_pickup` filter below. That is the
+   * point: the code decides *which* parcel, and the status decides whether there is
+   * a parcel to hand over at all. A code for an order already collected finds
+   * nothing here, just as its PIN would.
+   */
+  const orderId =
+    input.orderId ??
+    (input.pickupToken ? (await verifyPickupToken(input.pickupToken)).orderId : undefined);
+
+  if (orderId) {
     const byId = await prisma.orders.findFirst({
-      where: { id: input.orderId, status: 'ready_for_pickup' },
+      where: { id: orderId, status: 'ready_for_pickup' },
       include: { items: { include: { product: { select: { name: true } } } }, customer: true },
     });
     if (byId) {

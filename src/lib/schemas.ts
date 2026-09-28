@@ -280,10 +280,19 @@ export const refundOrderSchema = z.object({
   shiftId: z.number().int().positive().nullable().optional(),
 });
 
+/**
+ * Finding the parcel a customer is standing in front of.
+ *
+ * Four ways in, and each exists for a reason: the four-digit PIN (read aloud, typed
+ * by hand), the QR the customer shows (SRS §3, scanned — see `pickup-token.ts`),
+ * the order id (the staff board, which already has it), and the registered phone
+ * number (the customer who lost the slip entirely).
+ */
 export const handoverLookupSchema = z.object({
   pin: z.string().trim().regex(/^\d{4}$/, 'A pickup PIN is 4 digits').optional(),
   orderId: z.string().uuid().optional(),
   phone: z.string().trim().min(1).optional(),
+  pickupToken: z.string().trim().min(20).max(2000).optional(),
 });
 
 export const openShiftSchema = z.object({
