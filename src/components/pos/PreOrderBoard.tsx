@@ -22,6 +22,7 @@ import {
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
+import { handoverLookupBody } from '@/lib/pickup-scan';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import { playWarningChime } from '@/lib/sound';
 
@@ -197,10 +198,16 @@ export function PreOrderBoard() {
     }
     setError(null);
     try {
-      const isPin = /^\d{4}$/.test(term);
-      const found = await apiPost<OrderDetail>('/api/v1/orders/lookup', {
-        ...(isPin ? { pin: term } : { phone: term }),
-      });
+      /*
+       * One box, three shapes. A scanner types a JWS, the customer reads out four
+       * digits, and the customer who lost the slip gives a phone number — and the
+       * screen cannot ask which one it is, because at a counter that question is
+       * already answered by what just arrived. See `looksLikePickupToken`.
+       */
+      const found = await apiPost<OrderDetail>(
+        '/api/v1/orders/lookup',
+        handoverLookupBody(term),
+      );
       setHandover(found);
       setSettlement({ cash: String(found.finalAmountThb), receivedCash: '', usePoints: false });
       setLookup('');
@@ -372,8 +379,8 @@ export function PreOrderBoard() {
       >
         <SearchField
           id="preorder-lookup"
-          label="ค้นหาออเดอร์ด้วย PIN 4 หลัก หรือเบอร์โทรลูกค้า"
-          placeholder="PIN 4 หลัก หรือเบอร์โทร"
+          label="สแกนคิวอาร์ หรือค้นหาด้วย PIN 4 หลัก / เบอร์โทรลูกค้า"
+          placeholder="สแกนคิวอาร์, PIN 4 หลัก, หรือเบอร์โทร"
           value={lookup}
           onChange={setLookup}
           onSubmit={() => void lookupOrder()}

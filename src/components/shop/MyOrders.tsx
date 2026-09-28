@@ -10,10 +10,13 @@ import {
   InlineNotice,
   Money,
   Pill,
+  QrCode,
   Spinner,
   Stack,
   StatusPill,
 } from '@/components/ds';
+
+import styles from './MyOrders.module.css';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
@@ -25,6 +28,8 @@ interface OrderRow {
   finalAmountThb: number;
   itemCount: number;
   pickupPin: string | null;
+  /** The signed handover code behind the QR — see `src/lib/pickup-token.ts`. */
+  pickupToken: string | null;
   createdAt: string;
   readyAt: string | null;
 }
@@ -73,10 +78,11 @@ function Stepper({ status }: { status: OrderRow['status'] }) {
 /**
  * The member's own order list — SRS §2.
  *
- * The pickup PIN appears the moment staff pack the order, at a size meant to be
- * read off a phone held up at a counter. It refreshes on realtime events rather
- * than polling, so "พร้อมรับ" appears on the customer's phone the instant the
- * shelf staff tag the bag.
+ * The handover credentials appear the moment staff pack the order: a QR to hold
+ * up and be scanned (SRS §3), and the PIN underneath it for the phone whose screen
+ * has died or whose battery is at 2%. It refreshes on realtime events rather than
+ * polling, so "พร้อมรับ" appears on the customer's phone the instant the shelf
+ * staff tag the bag.
  *
  * Cancelling asks first. It releases reserved stock and cannot be undone, and the
  * customer is the one person who cannot be asked to fix it at the counter — which
@@ -161,9 +167,28 @@ export function MyOrders() {
               )}
 
               {order.status === 'ready_for_pickup' && order.pickupPin ? (
-                <InlineNotice tone="success" title="แสดง PIN นี้ที่เคาน์เตอร์เพื่อรับสินค้า">
-                  <strong className="ln-figure ln-mono">{order.pickupPin}</strong>
-                </InlineNotice>
+                /*
+                 * Both credentials, side by side, because they fail differently: the
+                 * QR is faster and cannot be mistyped, while the PIN survives a flat
+                 * phone, a cracked screen and a customer reading it down the phone.
+                 * Offering only one of them strands somebody eventually.
+                 */
+                <Stack gap="md">
+                  {order.pickupToken ? (
+                    <div className={styles.code}>
+                      <QrCode
+                        value={order.pickupToken}
+                        size={200}
+                        alt={`คิวอาร์รับสินค้า ${order.orderNumber}`}
+                      />
+                      <p className="ln-muted">สแกนคิวอาร์นี้ที่เคาน์เตอร์เพื่อรับสินค้า</p>
+                    </div>
+                  ) : null}
+
+                  <InlineNotice tone="success" title="หรืออ่าน PIN นี้ให้พนักงานก็ได้">
+                    <strong className="ln-figure ln-mono">{order.pickupPin}</strong>
+                  </InlineNotice>
+                </Stack>
               ) : null}
 
               {order.status === 'pending' ? (

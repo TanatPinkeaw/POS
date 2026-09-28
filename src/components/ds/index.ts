@@ -30,6 +30,7 @@ export {
 export { Menu, MenuItem, MenuLabel, MenuSeparator } from './Menu';
 export { Numpad, QuickCash } from './Numpad';
 export { PinPad } from './PinPad';
+export { QrCode } from './QrCode';
 export { QrPanel } from './QrPanel';
 export { ConfirmDialog, Overlay } from './Overlay';
 export { Tabs, type TabItem } from './Tabs';

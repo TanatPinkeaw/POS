@@ -1,0 +1,27 @@
+/*
+ * The customer's handover code.
+ *
+ * White behind the QR whatever the theme does, for the same reason the till's
+ * payment panel is: the encoder draws dark modules on light, and a dark surface
+ * around it produces a code that scans only if the customer's camera copes with
+ * the polarity.
+ */
+
+.code {
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-2);
+  text-align: center;
+}
+
+.code > img {
+  padding: var(--ln-space-2);
+  border: 1px solid var(--ln-border-subtle);
+  border-radius: var(--ln-radius-md);
+  background: #ffffff;
+}
+
+.code p {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+}

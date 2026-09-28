@@ -140,6 +140,29 @@ describe('the collection board', () => {
     const board = await buildReadyPayload();
     expect(board.orders[0]?.customerInitial).toBeNull();
   });
+
+  it('carries no credential at all', async () => {
+    /*
+     * This board faces a queue. Both things that release a parcel — the 4-digit PIN
+     * and the signed code behind the QR — are read off the *customer's* screen, so
+     * a shopper with a phone camera must be able to look at this display and learn
+     * nothing they could use to walk out with somebody else's bag.
+     *
+     * Asserted as a shape over the serialised payload rather than field by field,
+     * because the failure this guards against is a future field being added: a
+     * `pickupToken` on `OrderListView` was exactly that, one line away from being
+     * spread wholesale into this payload.
+     */
+    await seedShop();
+    await preOrder('ready_for_pickup', true);
+
+    const serialised = JSON.stringify(await buildReadyPayload());
+
+    expect(serialised).not.toContain('pickupToken');
+    expect(serialised).not.toContain('pickupPin');
+    // The order id is a UUID; the signed code is three dot-separated segments.
+    expect(serialised).not.toMatch(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/);
+  });
 });
 
 describe('the state a screen fetches on arrival', () => {
