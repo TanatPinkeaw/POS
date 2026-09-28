@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import { Alert, Badge, Card, EmptyState, Money, Spinner } from '@/components/hope/ui';
+import {
+  Button,
+  Card,
+  ConfirmDialog,
+  EmptyState,
+  InlineNotice,
+  Money,
+  Pill,
+  Spinner,
+  Stack,
+  StatusPill,
+} from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
@@ -29,17 +40,54 @@ const STEP_LABEL: Record<string, string> = {
 };
 
 /**
+ * The four phases, as chips.
+ *
+ * The chips carry the states the order has *passed* as well as the one it is in,
+ * because the customer's question is never "what phase is it" — it is "how much
+ * longer". A reached phase gets a tick; the current one is the only solid chip on
+ * the screen. A cancelled order shows no stepper at all: a progress bar that has
+ * stopped forever tells the customer nothing.
+ */
+function Stepper({ status }: { status: OrderRow['status'] }) {
+  const current = STEPS.indexOf(status as (typeof STEPS)[number]);
+
+  return (
+    <div className="ln-row">
+      {STEPS.map((step, index) => {
+        const reached = index <= current;
+        return (
+          <Pill
+            key={step}
+            tone={index === current ? 'brand' : reached ? 'success' : 'neutral'}
+            solid={index === current}
+            icon={reached ? 'check' : undefined}
+          >
+            {STEP_LABEL[step]}
+          </Pill>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * The member's own order list — SRS §2.
  *
- * The stepper is the four-phase lifecycle made legible to the customer, and the
- * pickup PIN appears the moment staff pack the order. It refreshes on realtime
- * events rather than polling, so "พร้อมรับ" appears on the customer's phone the
- * instant the shelf staff tag the bag.
+ * The pickup PIN appears the moment staff pack the order, at a size meant to be
+ * read off a phone held up at a counter. It refreshes on realtime events rather
+ * than polling, so "พร้อมรับ" appears on the customer's phone the instant the
+ * shelf staff tag the bag.
+ *
+ * Cancelling asks first. It releases reserved stock and cannot be undone, and the
+ * customer is the one person who cannot be asked to fix it at the counter — which
+ * is the whole reason `ConfirmDialog` exists rather than a plain button.
  */
 export function MyOrders() {
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState<OrderRow | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -60,108 +108,98 @@ export function MyOrders() {
   useRealtimeEvent(REALTIME_EVENTS.orderUpdated, useCallback(() => void load(), [load]));
   useRealtimeEvent(REALTIME_EVENTS.pointsUpdated, useCallback(() => void load(), [load]));
 
-  const cancel = async (orderId: string): Promise<void> => {
+  async function cancel(order: OrderRow): Promise<void> {
+    setError(null);
+    setBusy(true);
     try {
-      await apiPost(`/api/v1/orders/${orderId}/cancel`, { reason: 'ลูกค้ายกเลิกเอง' });
+      await apiPost(`/api/v1/orders/${order.id}/cancel`, { reason: 'ลูกค้ายกเลิกเอง' });
+      setCancelling(null);
       await load();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'ยกเลิกไม่สำเร็จ');
+    } finally {
+      setBusy(false);
     }
-  };
+  }
 
   if (loading) {
     return <Spinner />;
   }
 
   return (
-    <div className="d-flex flex-column gap-3">
-      <div>
-        <h4 className="mb-1">ออเดอร์ของฉัน</h4>
-        <p className="text-muted mb-0 small">ติดตามสถานะพรีออเดอร์แบบเรียลไทม์</p>
-      </div>
-
-      {error && <Alert tone="danger">{error}</Alert>}
+    <Stack gap="md">
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
       {orders.length === 0 ? (
-        <Card title="ยังไม่มีออเดอร์">
-          <EmptyState title="ยังไม่มีออเดอร์" description="เลือกสินค้าและกดจองเพื่อเริ่มต้น" />
+        <Card>
+          <EmptyState
+            icon="receipt"
+            title="ยังไม่มีออเดอร์"
+            description="เลือกสินค้าและกดจองเพื่อเริ่มต้น"
+          />
         </Card>
       ) : (
-        orders.map((order) => {
-          const stepIndex = STEPS.indexOf(order.status as (typeof STEPS)[number]);
-
-          return (
-            <Card
-              key={order.id}
-              title={<code className="small">{order.orderNumber}</code>}
-              subtitle={`${order.itemCount} รายการ · ${new Date(order.createdAt).toLocaleString('th-TH')}`}
-              actions={
-                <>
-                  <Badge
-                    tone={
-                      order.status === 'completed'
-                        ? 'success'
-                        : order.status === 'cancelled'
-                          ? 'danger'
-                          : order.status === 'ready_for_pickup'
-                            ? 'primary'
-                            : 'warning'
-                    }
-                  >
-                    {STEP_LABEL[order.status]}
-                  </Badge>
-                  <Money amount={order.finalAmountThb} className="fw-bold" />
-                </>
-              }
-            >
+        orders.map((order) => (
+          <Card
+            key={order.id}
+            title={<span className="ln-mono">{order.orderNumber}</span>}
+            subtitle={`${order.itemCount} รายการ · ${new Date(order.createdAt).toLocaleString('th-TH')}`}
+            actions={
+              <>
+                <StatusPill status={order.status} label={STEP_LABEL[order.status] ?? order.status} />
+                <Money amount={order.finalAmountThb} size="lg" />
+              </>
+            }
+          >
+            <Stack gap="md">
               {order.status === 'cancelled' ? (
-                <p className="text-muted small mb-0">
+                <p className="ln-muted">
                   ออเดอร์นี้ถูกยกเลิกแล้ว สต็อกถูกคืนเข้าระบบเรียบร้อย
                 </p>
               ) : (
-                <div className="d-flex align-items-center gap-2 mb-0">
-                  {STEPS.map((step, index) => (
-                    <div className="d-flex align-items-center gap-2 flex-grow-1" key={step}>
-                      <span
-                        className={`badge rounded-pill ${
-                          index <= stepIndex ? 'bg-primary' : 'bg-soft-secondary text-secondary'
-                        }`}
-                      >
-                        {index + 1}
-                      </span>
-                      <span
-                        className={`small ${index <= stepIndex ? 'text-body' : 'text-muted'}`}
-                      >
-                        {STEP_LABEL[step]}
-                      </span>
-                      {index < STEPS.length - 1 && (
-                        <span className={`flex-grow-1 border-top ${index < stepIndex ? 'border-primary' : ''}`} />
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <Stepper status={order.status} />
               )}
 
-              {order.status === 'ready_for_pickup' && order.pickupPin && (
-                <div className="alert alert-success mt-3 mb-0 py-2">
-                  <span className="small d-block">แสดง PIN นี้ที่เคาน์เตอร์เพื่อรับสินค้า</span>
-                  <span className="fs-3 fw-bold pos-receipt">{order.pickupPin}</span>
-                </div>
-              )}
+              {order.status === 'ready_for_pickup' && order.pickupPin ? (
+                <InlineNotice tone="success" title="แสดง PIN นี้ที่เคาน์เตอร์เพื่อรับสินค้า">
+                  <strong className="ln-figure ln-mono">{order.pickupPin}</strong>
+                </InlineNotice>
+              ) : null}
 
-              {order.status === 'pending' && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-soft-danger mt-3"
-                  onClick={() => void cancel(order.id)}
-                >
-                  ยกเลิกออเดอร์
-                </button>
-              )}
-            </Card>
-          );
-        })
+              {order.status === 'pending' ? (
+                <div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon="close"
+                    onClick={() => setCancelling(order)}
+                  >
+                    ยกเลิกออเดอร์
+                  </Button>
+                </div>
+              ) : null}
+            </Stack>
+          </Card>
+        ))
       )}
-    </div>
+
+      <ConfirmDialog
+        open={cancelling !== null}
+        title="ยกเลิกออเดอร์นี้?"
+        description={
+          cancelling
+            ? `ออเดอร์ ${cancelling.orderNumber} จะถูกยกเลิก และสต็อกที่จองไว้จะคืนเข้าระบบ — ย้อนกลับไม่ได้`
+            : undefined
+        }
+        confirmLabel="ยกเลิกออเดอร์"
+        busy={busy}
+        onConfirm={() => {
+          if (cancelling) {
+            void cancel(cancelling);
+          }
+        }}
+        onCancel={() => setCancelling(null)}
+      />
+    </Stack>
   );
 }

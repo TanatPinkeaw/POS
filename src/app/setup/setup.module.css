@@ -1,0 +1,22 @@
+/*
+ * The wizard is the one screen outside the shell: there is no session yet, so
+ * there is no navigation to sit beside. Centred and narrow like the sign-in card,
+ * with room underneath for the tallest step (the administrator's four fields) so
+ * the page does not jump as the steps change height.
+ */
+
+.page {
+  display: flex;
+  justify-content: center;
+  padding: var(--ln-space-8) var(--ln-space-4);
+}
+
+.inner {
+  width: 100%;
+  max-width: 46rem;
+}
+
+.head {
+  margin-bottom: var(--ln-space-6);
+  text-align: center;
+}

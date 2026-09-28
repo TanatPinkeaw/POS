@@ -1,0 +1,77 @@
+/*
+ * The board's own two shapes: the four columns, and one order card inside them.
+ *
+ * `auto-fit` rather than a fixed three-up grid: a shop with one order on the board
+ * still gets readable columns instead of three empty thirds, and the completed
+ * strip below spans whatever width is left.
+ */
+
+.board {
+  display: grid;
+  gap: var(--ln-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+}
+
+.order {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-border);
+  border-left: 3px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+}
+
+/*
+ * An order about to time out. Tinted and barred rather than red text alone: the
+ * operator is watching three columns at once, and the one thing that must be
+ * findable at a glance is the order that is about to cancel itself.
+ */
+.order[data-urgent='true'] {
+  border-left-color: var(--ln-danger);
+  background: var(--ln-danger-soft);
+}
+
+.orderHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+.meta {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+.countdown {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+.urgent {
+  font-size: var(--ln-size-sm);
+  font-weight: 650;
+  color: var(--ln-danger);
+}
+
+.lines {
+  display: grid;
+  gap: var(--ln-space-2);
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+/* A native checkbox with its label, so the tap target is the whole sentence. */
+.pick {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ln-space-2);
+  cursor: pointer;
+}

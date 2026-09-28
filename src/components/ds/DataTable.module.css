@@ -85,6 +85,16 @@
   font-weight: 600;
 }
 
+/*
+ * A primary cell usually holds an identity *and* a detail — a product and its
+ * barcode, an order and its number. Stacking them is what makes the cell read as a
+ * title with a subtitle; inline, they run together into one long label. The
+ * detail is expected to carry `ln-muted` and/or `ln-mono` itself.
+ */
+.primaryCell > * {
+  display: block;
+}
+
 .rowLink {
   color: var(--ln-brand);
   text-decoration: none;

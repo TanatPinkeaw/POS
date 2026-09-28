@@ -1,5 +1,6 @@
 import { AttendanceBoard } from '@/components/admin/AttendanceBoard';
 import { ScheduleManager } from '@/components/admin/ScheduleManager';
+import { PageHeader, Stack } from '@/components/ds';
 import { listAttendanceRows, listSchedules, listStaff } from '@/lib/attendance';
 import { toAttendanceRowView } from '@/lib/attendance-view';
 import { addBangkokDays, bangkokDateString, resolveBangkokRange } from '@/lib/bangkok-time';
@@ -28,18 +29,19 @@ export default async function SchedulesPage() {
   ]);
 
   return (
-    <div className="d-flex flex-column gap-4">
-      <div>
-        {/* The page's own `h1`: `.h4` keeps the visual size, the element fixes
-            the document outline, which previously started at h4. */}
-        <h1 className="h4 mb-1">ตารางงานและเวลาทำงาน</h1>
-        <p className="text-muted mb-0 small">
-          วางตารางกะให้พนักงาน แล้วระบบจะคำนวณสาย/ล่วงเวลาและชั่วโมงทำงานให้เอง
-          — ข้อมูลชุดเดียวกับรายงานส่งออก SRS §8
-        </p>
-      </div>
+    <Stack gap="lg">
+      <PageHeader
+        title="ตารางงานและเวลาทำงาน"
+        subtitle="วางตารางกะให้พนักงาน แล้วระบบจะคำนวณสาย/ล่วงเวลาและชั่วโมงทำงานให้เอง — ข้อมูลชุดเดียวกับรายงานส่งออก SRS §8"
+      />
 
-      <ScheduleManager staff={staff} initialSchedules={schedules} today={today} />
+      <ScheduleManager
+        staff={staff}
+        initialSchedules={schedules}
+        initialFrom={rosterFrom}
+        initialTo={rosterTo}
+        today={today}
+      />
 
       <AttendanceBoard
         staff={staff}
@@ -48,6 +50,6 @@ export default async function SchedulesPage() {
         initialTo={today}
         today={today}
       />
-    </div>
+    </Stack>
   );
 }

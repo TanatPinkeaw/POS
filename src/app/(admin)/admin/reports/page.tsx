@@ -1,4 +1,5 @@
 import { ReportExportPanel, type ReportMeta } from '@/components/admin/ReportExportPanel';
+import { PageHeader, Stack } from '@/components/ds';
 import { REPORT_TITLES, REPORT_TYPES, reportColumns } from '@/lib/report-spec';
 import { resolveReportRange } from '@/lib/reports';
 
@@ -15,15 +16,13 @@ export default function ReportsPage() {
   }));
 
   return (
-    <div className="d-flex flex-column gap-4">
-      <div>
-        <h4 className="mb-1">รายงานและส่งออกข้อมูล</h4>
-        <p className="text-muted mb-0 small">
-          ดาวน์โหลดเป็นไฟล์ Excel (.xlsx) ตามข้อกำหนด SRS §8 — หนึ่งไฟล์ต่อหนึ่งรายงาน
-        </p>
-      </div>
+    <Stack gap="lg">
+      <PageHeader
+        title="รายงานและส่งออกข้อมูล"
+        subtitle="ดาวน์โหลดเป็นไฟล์ Excel (.xlsx) ตามข้อกำหนด SRS §8 — หนึ่งไฟล์ต่อหนึ่งรายงาน"
+      />
 
       <ReportExportPanel reports={reports} defaultFrom={range.from} defaultTo={range.to} />
-    </div>
+    </Stack>
   );
 }

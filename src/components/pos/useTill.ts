@@ -23,8 +23,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
+import { firstName } from '@/lib/display-view';
+import { formatThb } from '@/lib/money';
+import type { PaymentIntentView } from '@/lib/payment-intents-view';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import type { ProductView } from '@/lib/product-view';
+import { APPROVAL_HEADER, discountApprovalTarget } from '@/lib/supervisor-view';
 import type { TenderLine } from '@/lib/tender';
 
 import { useRealtimeEvent } from '../realtime/RealtimeProvider';
@@ -78,25 +82,71 @@ export interface SaleResult {
 /** How the customer is paying. Cash is always the last leg, whichever this is. */
 export type TenderMode = 'cash' | 'promptpay' | 'split';
 
+/** Money to two decimal places, the same rounding the settlement layer uses. */
+function round2(amount: number): number {
+  return Math.round(amount * 100) / 100;
+}
+
 const PAGE_SIZE = 60;
+
+/**
+ * What the till asks for when an action is not the cashier's to take alone.
+ *
+ * Resolves to the approval token, or null when the supervisor walked away — in
+ * which case the action is abandoned rather than attempted, because a refused
+ * request that still goes through is worse than no gate at all.
+ */
+export type RequestTillApproval = (request: {
+  action: 'over_discount' | 'manual_payment_confirm';
+  targetId: string;
+  summary?: string;
+}) => Promise<string | null>;
 
 export function useTill({
   initialProducts,
   initialTotal,
   shift,
   onSold,
+  discountLimitThb,
+  requestApproval,
 }: {
   initialProducts: ProductView[];
   initialTotal: number;
   shift: Shift | null;
   /** Lets the drawer's totals refresh after a sale. */
   onSold: () => Promise<void> | void;
+  /** Past this discount the cashier needs a supervisor's PIN. */
+  discountLimitThb?: number;
+  requestApproval?: RequestTillApproval;
 }) {
   const [products, setProducts] = useState<ProductView[]>(initialProducts);
   const [total, setTotal] = useState(initialTotal);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [loadingCatalogue, setLoadingCatalogue] = useState(false);
+
+  /*
+   * The live PromptPay QR, if one is on screen.
+   *
+   * `consumedRef` guards the one dangerous case in this file: a payment can be
+   * reported twice — once by the socket and once by the poll — and two calls to
+   * `checkout` would be two sales for one transfer. The intent's own state
+   * machine refuses the second consumption too, but refusing here means the
+   * customer never sees a spurious error for money they did pay.
+   */
+  const [intent, setIntent] = useState<PaymentIntentView | null>(null);
+  const [intentBusy, setIntentBusy] = useState(false);
+  const [intentError, setIntentError] = useState<string | null>(null);
+  const consumedRef = useRef<string | null>(null);
+
+  /*
+   * A ref to `checkout`, because `settlePaidIntent` above it has to call it and a
+   * `useCallback` cannot reference a function declared later without becoming a
+   * dependency of itself. The ref is assigned immediately after `checkout` is
+   * built, so the only window in which it is null is before the first render
+   * finishes — during which no payment can have arrived.
+   */
+  const checkoutRef = useRef<((intentRef?: string) => Promise<SaleResult | null>) | null>(null);
 
   const [lines, setLines] = useState<CartLine[]>([]);
   const [member, setMember] = useState<TillMember | null>(null);
@@ -359,7 +409,149 @@ export function useTill({
     }
   }, [memberQuery]);
 
-  const checkout = useCallback(async (): Promise<SaleResult | null> => {
+  /**
+   * Issues a QR for the amount that will be transferred.
+   *
+   * Called when the cashier chooses พร้อมเพย์, not when they confirm: the customer
+   * needs the code on their own screen while the cashier is still finishing the
+   * basket, and the intent is what the eventual sale is settled against.
+   */
+  const startIntent = useCallback(async (): Promise<void> => {
+    if (!shift) {
+      setIntentError('ต้องเปิดลิ้นชักก่อนออก QR');
+      return;
+    }
+
+    setIntentBusy(true);
+    setIntentError(null);
+    try {
+      const amountThb = round2(promptpayDue > 0 ? promptpayDue : due);
+      const created = await apiPost<PaymentIntentView>('/api/v1/payments/intents', {
+        shiftId: shift.id,
+        amountThb,
+      });
+      consumedRef.current = null;
+      setIntent(created);
+    } catch (caught) {
+      setIntentError(
+        caught instanceof ApiError ? caught.message : 'ออก QR พร้อมเพย์ไม่สำเร็จ',
+      );
+    } finally {
+      setIntentBusy(false);
+    }
+  }, [due, promptpayDue, shift]);
+
+  /** Drops the QR: the cashier is taking cash after all. */
+  const dropIntent = useCallback(async (): Promise<void> => {
+    const current = intent;
+    setIntent(null);
+    consumedRef.current = null;
+    if (!current || current.status !== 'pending') {
+      return;
+    }
+    // Best-effort: a QR that cannot be cancelled still expires on its own, and the
+    // customer must not be kept waiting while the till retries a housekeeping call.
+    try {
+      await apiPost(`/api/v1/payments/intents/${current.ref}/cancel`, {});
+    } catch {
+      // Ignored on purpose. See above.
+    }
+  }, [intent]);
+
+  /**
+   * Settles the sale against a paid intent, once.
+   *
+   * The reference is what makes this safe: the server re-reads the intent's own
+   * amount rather than trusting anything the client says about the payment, so a
+   * tampered request cannot claim a small transfer paid a large bill.
+   */
+  const settlePaidIntent = useCallback(
+    async (paidRef: string): Promise<SaleResult | null> => {
+      if (consumedRef.current === paidRef) {
+        return null;
+      }
+      consumedRef.current = paidRef;
+      setIntent(null);
+      return checkoutRef.current?.(paidRef) ?? null;
+    },
+    [],
+  );
+
+  /**
+   * The money arrived — from the socket, or from the poll.
+   *
+   * Both paths end here rather than one closing the bill and the other noticing:
+   * the socket is fast and the poll is reliable, and a till that trusted only the
+   * socket would stop selling the moment the shop's wifi blinked.
+   */
+  const onIntentPaid = useCallback(
+    (paid: PaymentIntentView): void => {
+      if (intent === null || paid.ref !== intent.ref || paid.status !== 'paid') {
+        return;
+      }
+      void settlePaidIntent(paid.ref);
+    },
+    [intent, settlePaidIntent],
+  );
+
+  useRealtimeEvent(REALTIME_EVENTS.paymentPaid, onIntentPaid);
+
+  /*
+   * The safety net under the socket. Three seconds is a compromise: often enough
+   * that a customer does not stand waiting after paying, rare enough that a shop
+   * with no bridge and a sleeping tablet is not making a request a second all day.
+   */
+  useEffect(() => {
+    if (!intent || intent.status !== 'pending') {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      void apiFetch<PaymentIntentView>(`/api/v1/payments/intents/${intent.ref}`)
+        .then((latest) => {
+          if (latest.status === 'paid') {
+            void settlePaidIntent(latest.ref);
+          } else if (latest.status === 'expired') {
+            setIntent(latest);
+          }
+        })
+        .catch(() => {
+          // A failed poll is not worth reporting: the QR is still on screen, and
+          // the next tick tries again.
+        });
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [intent, settlePaidIntent]);
+
+  /*
+   * Every basket change is pushed to the customer display, debounced.
+   *
+   * Fire-and-forget: a display that misses a snapshot gets the next one, and the
+   * till must never refuse a sale because a screen in the corner is unplugged.
+   */
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void apiPost('/api/v1/pos/display/cart', {
+        lines: lines.map((line) => ({
+          name: line.name,
+          quantity: line.quantity,
+          // The line total, not the unit price: the customer reads what the line
+          // costs, and the subtotal below is the sum of these.
+          totalPrice: round2(line.unitPrice * line.quantity),
+        })),
+        subtotalThb: subtotal,
+        discountThb: round2(discountValue + pointsValue),
+        totalThb: due,
+        receivedThb: intent ? null : received > 0 ? received : null,
+        changeThb: intent ? null : change > 0 ? change : null,
+        memberFirstName: member ? firstName(member.fullName) : null,
+      }).catch(() => {
+        // Ignored: see above.
+      });
+    }, 200);
+    return () => window.clearTimeout(timer);
+  }, [lines, subtotal, discountValue, pointsValue, due, received, change, member, intent]);
+
+  const checkout = useCallback(async (intentRef?: string): Promise<SaleResult | null> => {
     if (!shift) {
       setError('ต้องเปิดลิ้นชักก่อนรับชำระเงิน');
       return null;
@@ -371,6 +563,30 @@ export function useTill({
 
     setBusy(true);
     setError(null);
+
+    /*
+     * The discount is judged before the sale is attempted, not after it is
+     * refused. The server enforces the same limit — this is the prompt, and the
+     * server is the rule — but asking first means the cashier hears "ต้องให้
+     * ผู้ดูแลอนุมัติ" instead of pricing a basket, being rejected, and then being
+     * asked for a PIN with the customer still waiting.
+     */
+    let approvalToken: string | null = null;
+    if (
+      requestApproval &&
+      discountLimitThb !== undefined &&
+      discountValue > discountLimitThb
+    ) {
+      approvalToken = await requestApproval({
+        action: 'over_discount',
+        targetId: discountApprovalTarget(discountValue),
+        summary: `ส่วนลด ${formatThb(discountValue)} (เกินวงเงิน ${formatThb(discountLimitThb)})`,
+      });
+      if (approvalToken === null) {
+        setBusy(false);
+        return null;
+      }
+    }
 
     try {
       const pointsToRedeem =
@@ -388,13 +604,18 @@ export function useTill({
         points: pointsToRedeem,
       };
 
-      const result = await apiPost<SaleResult>('/api/v1/orders', {
-        type: 'pos_walkin',
-        shiftId: shift.id,
-        lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
-        customerId: member?.id ?? null,
-        discountThb: discountValue,
-        settlement,
+      const result = await apiFetch<SaleResult>('/api/v1/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'pos_walkin',
+          shiftId: shift.id,
+          lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+          customerId: member?.id ?? null,
+          discountThb: discountValue,
+          settlement,
+          ...(intentRef ? { intentRef } : {}),
+        }),
+        headers: approvalToken ? { [APPROVAL_HEADER]: approvalToken } : undefined,
       });
 
       // Stamped once, here: `Receipt` defaults to "now", and a re-render while the
@@ -404,6 +625,7 @@ export function useTill({
       setReceivedCash('');
       setSplitPromptpay('');
       setTenderMode('cash');
+      consumedRef.current = null;
       await onSold();
       await reload();
       scanInput.current?.focus();
@@ -430,6 +652,9 @@ export function useTill({
     usePoints,
   ]);
 
+  // Assigned after the fact for the reason given where the ref is declared.
+  checkoutRef.current = checkout;
+
   return {
     // catalogue
     products,
@@ -442,6 +667,12 @@ export function useTill({
     loadMore,
     /** True while more pages exist behind the one on screen. */
     hasMore: products.length < total,
+    // PromptPay
+    intent,
+    intentBusy,
+    intentError,
+    startIntent,
+    dropIntent,
     // cart
     lines,
     addProduct,

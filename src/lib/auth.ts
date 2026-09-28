@@ -13,7 +13,7 @@ import { ForbiddenError, UnauthenticatedError } from './errors';
 // can use it without importing `next/headers`. Re-exported here because this is
 // where callers have always found it.
 import { hashPassword, verifyPassword } from './password';
-import type { Role } from './roles';
+import { ROLE_LABEL, type Role } from './roles';
 import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_SECONDS,
@@ -78,8 +78,13 @@ export async function requireUser(): Promise<SessionUser> {
 export async function requireRole(roles: Role[]): Promise<SessionUser> {
   const session = await requireUser();
   if (!roles.includes(session.role)) {
+    /*
+     * Thai, because this message is printed verbatim in the alert a signed-in
+     * user sees when they reach for a button their role does not have. It is the
+     * one refusal in the API that is not a programming mistake.
+     */
     throw new ForbiddenError(
-      `This action requires one of: ${roles.join(', ')}. You are signed in as ${session.role}.`,
+      `การทำรายการนี้สำหรับ${roles.map((role) => ROLE_LABEL[role]).join(' หรือ ')}เท่านั้น — คุณเข้าสู่ระบบในฐานะ${ROLE_LABEL[session.role]}`,
     );
   }
   return session;

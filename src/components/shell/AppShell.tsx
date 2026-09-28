@@ -14,9 +14,10 @@
  *      is what lets one `Button` be a 48px till target and a 34px back-office
  *      control without a single prop being threaded anywhere.
  *
- * The sidebar collapse is a class on the frame, not a library: Hope UI's bundled
- * `hope-ui.js` is jQuery-based and initialises on `DOMContentLoaded`, which Next
- * cannot promise for a client-rendered page.
+ * The sidebar collapse is a class on the frame, not a library. The vendored
+ * theme's `hope-ui.js` was jQuery-based and initialised on `DOMContentLoaded`,
+ * which Next cannot promise for a client-rendered page — and it is gone now
+ * anyway (ADR 0003), so nothing here may reintroduce a dependency on it.
  */
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -27,6 +28,7 @@ import { BrandMark } from '@/brand/BrandMark';
 import { Avatar, Icon, Menu, MenuItem, MenuLabel, MenuSeparator } from '@/components/ds';
 import type { IconName } from '@/components/ds';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
+import { ROLE_LABEL } from '@/lib/roles';
 import { playPreOrderChime, primeAudio } from '@/lib/sound';
 import { THEME_COOKIE_MAX_AGE, THEME_COOKIE_NAME, parseTheme, type Theme } from '@/lib/theme';
 
@@ -51,12 +53,6 @@ export interface ShellUser {
   /** The shop this session belongs to, printed in the sidebar. */
   shopName: string;
 }
-
-const ROLE_LABEL: Record<ShellUser['role'], string> = {
-  admin: 'ผู้จัดการ',
-  employee: 'พนักงาน',
-  member: 'สมาชิก',
-};
 
 const MINI_KEY = 'ln.sidebar.mini';
 

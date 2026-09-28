@@ -1,203 +1,241 @@
-import Link from 'next/link';
-
 import { ReceiptReprintButton } from '@/components/admin/ReceiptReprintButton';
-import { SalesChart } from '@/components/admin/SalesChart';
-import { Badge, Card, EmptyState, Money, StatCard } from '@/components/hope/ui';
+import {
+  Card,
+  CardGrid,
+  DataTable,
+  EmptyState,
+  Money,
+  PageHeader,
+  Pill,
+  Stack,
+  Stat,
+  StatusPill,
+  TrendChart,
+  type Column,
+} from '@/components/ds';
 import { dashboardSnapshot } from '@/lib/analytics';
+import { shortThaiDay, type TrendPoint } from '@/lib/chart';
+import { formatThb } from '@/lib/money';
 
-/** SRS §2: sales dashboard and financial analytics are admin-only. */
+/**
+ * Sales dashboard and financial analytics — SRS §2, admin-only.
+ *
+ * The chart is rendered here, on the server, and ships as SVG: a figure made of
+ * data the page already has is not worth a charting library in the browser, and
+ * the axis maths it used to delegate lives in `src/lib/chart.ts` where it is
+ * tested.
+ */
+
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'รอยืนยัน',
+  confirmed: 'กำลังเตรียม',
+  ready_for_pickup: 'พร้อมรับ',
+  completed: 'สำเร็จ',
+  cancelled: 'ยกเลิก',
+};
+
+const PREORDER_STAGES = [
+  { status: 'pending', label: '1. รอยืนยัน', key: 'pending' },
+  { status: 'confirmed', label: '2. กำลังเตรียม', key: 'confirmed' },
+  { status: 'ready_for_pickup', label: '3. พร้อมรับ', key: 'readyForPickup' },
+  { status: 'completed', label: '4. ปิดการขายวันนี้', key: 'completedToday' },
+  { status: 'cancelled', label: 'ยกเลิก/หมดอายุวันนี้', key: 'cancelledToday' },
+] as const;
+
 export default async function DashboardPage() {
   const snapshot = await dashboardSnapshot();
 
-  type Tone = 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info';
+  const points: TrendPoint[] = snapshot.salesByDay.map((day) => ({
+    label: shortThaiDay(day.day),
+    value: day.salesThb,
+    secondary: day.orderCount,
+    caption: `${shortThaiDay(day.day)} · ${formatThb(day.salesThb)} · ${day.orderCount} ออเดอร์`,
+  }));
 
-  const statusTone: Record<string, Tone> = {
-    pending: 'warning',
-    confirmed: 'info',
-    ready_for_pickup: 'primary',
-    completed: 'success',
-    cancelled: 'danger',
-  };
+  type StockRow = (typeof snapshot.lowStock)[number];
+  type OrderRow = (typeof snapshot.recentOrders)[number];
 
-  const statusLabel: Record<string, string> = {
-    pending: 'รอยืนยัน',
-    confirmed: 'กำลังเตรียม',
-    ready_for_pickup: 'พร้อมรับ',
-    completed: 'สำเร็จ',
-    cancelled: 'ยกเลิก',
-  };
+  const lowStockColumns: Column<StockRow>[] = [
+    {
+      key: 'name',
+      header: 'สินค้า',
+      cardLabel: 'สินค้า',
+      render: (row) => (
+        <>
+          <span>{row.name}</span>
+          {row.barcode ? <span className="ln-mono">{row.barcode}</span> : null}
+        </>
+      ),
+    },
+    {
+      key: 'stock',
+      header: 'คงเหลือ',
+      align: 'end',
+      render: (row) => row.stockQty,
+    },
+    {
+      key: 'reserved',
+      header: 'จองไว้',
+      align: 'end',
+      render: (row) => row.reservedQty,
+    },
+    {
+      key: 'available',
+      header: 'ขายได้',
+      align: 'end',
+      render: (row) => (
+        <Pill tone={row.availableQty <= 0 ? 'danger' : 'warning'}>{row.availableQty}</Pill>
+      ),
+    },
+  ];
+
+  const recentOrderColumns: Column<OrderRow>[] = [
+    {
+      key: 'number',
+      header: 'เลขที่',
+      cardLabel: 'เลขที่',
+      render: (row) => <span className="ln-mono">{row.orderNumber}</span>,
+    },
+    {
+      key: 'type',
+      header: 'ประเภท',
+      render: (row) => (
+        <Pill tone={row.orderType === 'preorder' ? 'brand' : 'neutral'}>
+          {row.orderType === 'preorder' ? 'ออนไลน์' : 'หน้าร้าน'}
+        </Pill>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'สถานะ',
+      render: (row) => (
+        <StatusPill status={row.status} label={STATUS_LABEL[row.status] ?? row.status} />
+      ),
+    },
+    {
+      key: 'cashier',
+      header: 'พนักงาน',
+      render: (row) => row.cashierName ?? '—',
+    },
+    {
+      key: 'amount',
+      header: 'ยอด',
+      align: 'end',
+      render: (row) => <Money amount={row.finalAmountThb} />,
+    },
+    {
+      key: 'receipt',
+      header: '',
+      cardLabel: 'ใบเสร็จ',
+      align: 'end',
+      render: (row) =>
+        /*
+         * Only a completed sale has a receipt; offering the button elsewhere would
+         * promise a document that does not exist yet.
+         */
+        row.status === 'completed' ? (
+          <ReceiptReprintButton orderId={row.id} orderNumber={row.orderNumber} />
+        ) : null,
+    },
+  ];
 
   return (
-    <div className="d-flex flex-column gap-4">
-      <div>
-        <h4 className="mb-1">ภาพรวมวันนี้</h4>
-        <p className="text-muted mb-0 small">
-          ข้อมูลสดจากฐานข้อมูล — ยอดขายนับเฉพาะออเดอร์ที่ปิดการขายแล้ว
-        </p>
-      </div>
+    <Stack gap="lg">
+      <PageHeader
+        title="ภาพรวมวันนี้"
+        subtitle="ข้อมูลสดจากฐานข้อมูล — ยอดขายนับเฉพาะออเดอร์ที่ปิดการขายแล้ว"
+      />
 
-      <div className="row g-3">
-        <div className="col-12 col-md-6 col-xl-3">
-          <StatCard label="ยอดขายวันนี้" value={<Money amount={snapshot.today.salesThb} />} hint={`${snapshot.today.orderCount} ออเดอร์`} />
-        </div>
-        <div className="col-12 col-md-6 col-xl-3">
-          <StatCard
+      <CardGrid min="15rem">
+        <Card>
+          <Stat label="ยอดขายวันนี้" value={<Money amount={snapshot.today.salesThb} />} hint={`${snapshot.today.orderCount} ออเดอร์`} icon="chart" />
+        </Card>
+        <Card>
+          <Stat
             label="เงินสดในลิ้นชัก"
             value={<Money amount={snapshot.today.cashThb} />}
             hint="เฉพาะที่ชำระด้วยเงินสด"
             tone="success"
+            icon="cash"
           />
-        </div>
-        <div className="col-12 col-md-6 col-xl-3">
-          <StatCard
+        </Card>
+        <Card>
+          <Stat
             label="พร้อมเพย์"
             value={<Money amount={snapshot.today.promptpayThb} />}
             hint="ไม่นับเป็นเงินสดตอนปิดกะ"
             tone="info"
+            icon="qr"
           />
-        </div>
-        <div className="col-12 col-md-6 col-xl-3">
-          <StatCard
+        </Card>
+        <Card>
+          <Stat
             label="มูลค่าสต็อก (ทุน)"
             value={<Money amount={snapshot.catalogue.stockValueAtCostThb} />}
             hint={`${snapshot.catalogue.activeProducts} รายการ · จองไว้ ${snapshot.catalogue.reservedUnits} ชิ้น`}
             tone="warning"
+            icon="box"
           />
-        </div>
-      </div>
+        </Card>
+      </CardGrid>
 
-      <div className="row g-3">
-        <div className="col-12 col-xl-8">
-          <Card title="ยอดขาย 7 วันย้อนหลัง" subtitle="รวมออเดอร์ที่ปิดการขายแล้ว">
-            <SalesChart data={snapshot.salesByDay} />
-          </Card>
-        </div>
+      <Card title="ยอดขาย 7 วันย้อนหลัง" subtitle="แท่งคือยอดขาย (บาท) · เส้นคือจำนวนออเดอร์">
+        <TrendChart points={points} primaryLabel="ยอดขาย (บาท)" secondaryLabel="จำนวนออเดอร์" />
+      </Card>
 
-        <div className="col-12 col-xl-4">
-          <Card title="พรีออเดอร์ตามขั้นตอน" subtitle="SRS §3 — วงจร 4 ขั้นตอน">
-            <ul className="list-group list-group-flush">
-              {(
-                [
-                  ['1. รอยืนยัน', snapshot.preOrders.pending, 'warning'],
-                  ['2. กำลังเตรียม', snapshot.preOrders.confirmed, 'info'],
-                  ['3. พร้อมรับ', snapshot.preOrders.readyForPickup, 'primary'],
-                  ['4. ปิดการขายวันนี้', snapshot.preOrders.completedToday, 'success'],
-                  ['ยกเลิก/หมดอายุวันนี้', snapshot.preOrders.cancelledToday, 'danger'],
-                ] as const
-              ).map(([label, count, tone]) => (
-                <li key={label} className="list-group-item d-flex justify-content-between align-items-center px-0">
-                  <span>{label}</span>
-                  <Badge tone={tone}>{count}</Badge>
-                </li>
-              ))}
-            </ul>
+      <CardGrid min="22rem">
+        <Card title="พรีออเดอร์ตามขั้นตอน" subtitle="SRS §3 — วงจร 4 ขั้นตอน" flush>
+          <DataTable
+            columns={[
+              {
+                key: 'stage',
+                header: 'ขั้นตอน',
+                render: (row: (typeof PREORDER_STAGES)[number]) => (
+                  <StatusPill status={row.status} label={row.label} />
+                ),
+              },
+              {
+                key: 'count',
+                header: 'จำนวน',
+                align: 'end',
+                render: (row) => <strong className="ln-num">{snapshot.preOrders[row.key]}</strong>,
+              },
+            ]}
+            rows={[...PREORDER_STAGES]}
+            getRowKey={(row) => row.status}
+            caption="จำนวนออเดอร์พรีออเดอร์ในแต่ละขั้นตอน"
+          />
+        </Card>
 
-            <Link href="/pos/preorders" className="btn btn-sm btn-primary w-100 mt-3">
-              เปิดกระดานพรีออเดอร์
-            </Link>
-          </Card>
-        </div>
-      </div>
+        <Card
+          title="สินค้าใกล้หมด"
+          subtitle="นับจากจำนวนที่ขายได้จริง (คงเหลือ − จองไว้)"
+          flush
+        >
+          <DataTable
+            columns={lowStockColumns}
+            rows={snapshot.lowStock}
+            getRowKey={(row) => String(row.id)}
+            caption="สินค้าที่เหลือขายได้ไม่เกินห้าชิ้น"
+            empty={<EmptyState icon="check" title="สต็อกทุกรายการเพียงพอ" />}
+          />
+        </Card>
+      </CardGrid>
 
-      <div className="row g-3">
-        <div className="col-12 col-xl-6">
-          <Card title="สินค้าใกล้หมด" subtitle="นับจากจำนวนที่ขายได้จริง (คงเหลือ − จองไว้)">
-            {snapshot.lowStock.length === 0 ? (
-              <EmptyState title="สต็อกทุกรายการเพียงพอ" />
-            ) : (
-              <div className="table-responsive">
-                <table className="table table-sm mb-0">
-                  <thead>
-                    <tr>
-                      <th>สินค้า</th>
-                      <th className="pos-numeric">คงเหลือ</th>
-                      <th className="pos-numeric">จองไว้</th>
-                      <th className="pos-numeric">ขายได้</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.lowStock.map((row) => (
-                      <tr key={row.id}>
-                        <td>
-                          <span className="d-block">{row.name}</span>
-                          {row.barcode && (
-                            <span className="text-muted small">{row.barcode}</span>
-                          )}
-                        </td>
-                        <td className="pos-numeric">{row.stockQty}</td>
-                        <td className="pos-numeric text-muted">{row.reservedQty}</td>
-                        <td className="pos-numeric">
-                          <Badge tone={row.availableQty <= 0 ? 'danger' : 'warning'}>
-                            {row.availableQty}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        <div className="col-12 col-xl-6">
-          <Card title="ออเดอร์ล่าสุด" subtitle="ทุกช่องทาง ทั้งหน้าร้านและออนไลน์">
-            {snapshot.recentOrders.length === 0 ? (
-              <EmptyState title="ยังไม่มีออเดอร์" description="เริ่มขายที่หน้าร้านเพื่อดูข้อมูลที่นี่" />
-            ) : (
-              <div className="table-responsive">
-                <table className="table table-sm mb-0">
-                  <thead>
-                    <tr>
-                      <th>เลขที่</th>
-                      <th>ประเภท</th>
-                      <th>สถานะ</th>
-                      <th>พนักงาน</th>
-                      <th className="pos-numeric">ยอด</th>
-                      <th>
-                        <span className="visually-hidden">ใบเสร็จ</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.recentOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td>
-                          <code className="small">{order.orderNumber}</code>
-                        </td>
-                        <td>
-                          <Badge tone={order.orderType === 'preorder' ? 'info' : 'secondary'}>
-                            {order.orderType === 'preorder' ? 'ออนไลน์' : 'หน้าร้าน'}
-                          </Badge>
-                        </td>
-                        <td>
-                          <Badge tone={statusTone[order.status] ?? 'secondary'}>
-                            {statusLabel[order.status] ?? order.status}
-                          </Badge>
-                        </td>
-                        <td className="small">{order.cashierName ?? '—'}</td>
-                        <td className="pos-numeric">
-                          <Money amount={order.finalAmountThb} />
-                        </td>
-                        <td className="text-end">
-                          {/*
-                            * Only a completed sale has a receipt; offering the
-                            * button elsewhere would promise a document that
-                            * does not exist yet.
-                            */}
-                          {order.status === 'completed' && (
-                            <ReceiptReprintButton orderId={order.id} orderNumber={order.orderNumber} />
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
-    </div>
+      <Card title="ออเดอร์ล่าสุด" subtitle="ทุกช่องทาง ทั้งหน้าร้านและออนไลน์" flush>
+        <DataTable
+          columns={recentOrderColumns}
+          rows={snapshot.recentOrders}
+          getRowKey={(row) => String(row.id)}
+          caption="ออเดอร์ล่าสุดสิบรายการ"
+          empty={
+            <EmptyState
+              title="ยังไม่มีออเดอร์"
+              description="เริ่มขายที่หน้าร้านเพื่อดูข้อมูลที่นี่"
+            />
+          }
+        />
+      </Card>
+    </Stack>
   );
 }

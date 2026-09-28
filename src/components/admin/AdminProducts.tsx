@@ -1,8 +1,23 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Badge, Card, Money } from '@/components/hope/ui';
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  FieldRow,
+  InlineNotice,
+  Money,
+  Overlay,
+  Pill,
+  SearchField,
+  SelectField,
+  Stack,
+  TextField,
+  type Column,
+} from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPatch, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
@@ -33,12 +48,28 @@ const REASONS = [
   { value: 'REASON_CORRECTION', label: 'ปรับปรุงยอด' },
 ] as const;
 
+const EMPTY_PRODUCT = {
+  name: '',
+  barcode: '',
+  categoryId: '',
+  costPrice: '',
+  salePrice: '',
+  stockQty: '',
+};
+
 /**
  * Catalogue and stock administration — SRS §4.3.
  *
  * Adjustments are signed (negative for damage, positive for a delivery) and the
  * reason is mandatory, because the audit trail is only useful if every row can
  * answer "who changed this, by how much, and why".
+ *
+ * The adjustment is a dialog rather than the inline form it used to be. An inline
+ * form inside a table cell is the worst of both worlds: it makes the row taller than
+ * the table can reflow, it has nowhere to put an error message, and on a narrow
+ * screen — where `DataTable` has already turned the row into a card — it lands in
+ * the middle of the card's fields. In a dialog the three inputs have room, Escape
+ * closes it, and the reason selector cannot be missed.
  */
 export function AdminProducts({
   initialProducts,
@@ -51,17 +82,25 @@ export function AdminProducts({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [adjustingId, setAdjustingId] = useState<string | null>(null);
+  const [adjusting, setAdjusting] = useState<AdminProduct | null>(null);
+  const [saving, setSaving] = useState(false);
   const [adjustment, setAdjustment] = useState({ delta: '', reason: 'REASON_RESTOCK', note: '' });
+  const [newProduct, setNewProduct] = useState(EMPTY_PRODUCT);
 
-  const [newProduct, setNewProduct] = useState({
-    name: '',
-    barcode: '',
-    categoryId: '',
-    costPrice: '',
-    salePrice: '',
-    stockQty: '',
-  });
+  /*
+   * Server props win on every re-render of the page.
+   *
+   * Local state exists because this table also changes without a navigation — a
+   * realtime stock event, or a write it made itself. But `router.refresh()`, which
+   * the import panel calls once a file is committed, produces *new props*, and a
+   * `useState` initialiser only reads them on mount. Without this line the table
+   * kept rendering the list from the first render, so importing a catalogue of 300
+   * products looked like nothing had happened. The refreshed props are the result
+   * of the write that just finished, so taking them cannot lose anything.
+   */
+  useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts]);
 
   useRealtimeEvent<{ productId: string; stockQty: number; reservedQty: number; availableQty: number }>(
     REALTIME_EVENTS.stockUpdated,
@@ -97,7 +136,10 @@ export function AdminProducts({
     );
   }, [products, search]);
 
-  const submitAdjustment = async (productId: string): Promise<void> => {
+  async function submitAdjustment(): Promise<void> {
+    if (!adjusting) {
+      return;
+    }
     const delta = Number(adjustment.delta);
     if (!Number.isInteger(delta) || delta === 0) {
       setError('จำนวนที่ปรับต้องเป็นจำนวนเต็มและไม่เป็นศูนย์');
@@ -105,23 +147,26 @@ export function AdminProducts({
     }
 
     setError(null);
+    setSaving(true);
     try {
       await apiPost('/api/v1/inventory/adjust', {
-        productId,
+        productId: adjusting.id,
         delta,
         reason: adjustment.reason,
         note: adjustment.note || null,
       });
-      setNotice('บันทึกการปรับสต็อกแล้ว (มีบันทึกใน stock_logs)');
-      setAdjustingId(null);
+      setNotice(`บันทึกการปรับสต็อกของ "${adjusting.name}" แล้ว (มีบันทึกใน stock_logs)`);
+      setAdjusting(null);
       setAdjustment({ delta: '', reason: 'REASON_RESTOCK', note: '' });
       await reload();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'ปรับสต็อกไม่สำเร็จ');
+    } finally {
+      setSaving(false);
     }
-  };
+  }
 
-  const createProduct = async (): Promise<void> => {
+  async function createProduct(): Promise<void> {
     setError(null);
     try {
       await apiPost('/api/v1/products', {
@@ -133,14 +178,14 @@ export function AdminProducts({
         stockQty: Number(newProduct.stockQty || 0),
       });
       setNotice(`เพิ่มสินค้า "${newProduct.name}" แล้ว`);
-      setNewProduct({ name: '', barcode: '', categoryId: '', costPrice: '', salePrice: '', stockQty: '' });
+      setNewProduct(EMPTY_PRODUCT);
       await reload();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'เพิ่มสินค้าไม่สำเร็จ');
     }
-  };
+  }
 
-  const toggleActive = async (product: AdminProduct): Promise<void> => {
+  async function toggleActive(product: AdminProduct): Promise<void> {
     setError(null);
     try {
       await apiPatch(`/api/v1/products/${product.id}`, { isActive: !product.isActive });
@@ -148,168 +193,256 @@ export function AdminProducts({
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'อัปเดตสินค้าไม่สำเร็จ');
     }
-  };
+  }
+
+  const columns: Column<AdminProduct>[] = [
+    {
+      key: 'name',
+      header: 'สินค้า',
+      cardLabel: 'สินค้า',
+      render: (product) => (
+        <>
+          <span>{product.name}</span>
+          {product.barcode ? (
+            <span className="ln-mono ln-muted">{product.barcode}</span>
+          ) : null}
+        </>
+      ),
+    },
+    {
+      key: 'category',
+      header: 'หมวดหมู่',
+      render: (product) => product.categoryName ?? '—',
+    },
+    {
+      key: 'cost',
+      header: 'ทุน',
+      align: 'end',
+      render: (product) => <Money amount={product.costPrice} />,
+    },
+    {
+      key: 'price',
+      header: 'ราคา',
+      align: 'end',
+      render: (product) => <Money amount={product.salePrice} />,
+    },
+    {
+      key: 'stock',
+      header: 'คงเหลือ',
+      align: 'end',
+      render: (product) => <span className="ln-num">{product.stockQty}</span>,
+    },
+    {
+      key: 'reserved',
+      header: 'จองไว้',
+      align: 'end',
+      render: (product) => <span className="ln-num">{product.reservedQty}</span>,
+    },
+    {
+      key: 'available',
+      header: 'ขายได้',
+      align: 'end',
+      render: (product) => (
+        <Pill
+          tone={
+            product.availableQty <= 0 ? 'danger' : product.availableQty <= 5 ? 'warning' : 'success'
+          }
+        >
+          {product.availableQty}
+        </Pill>
+      ),
+    },
+    {
+      key: 'active',
+      header: 'สถานะ',
+      render: (product) => (
+        <Pill tone={product.isActive ? 'success' : 'neutral'}>
+          {product.isActive ? 'ใช้งาน' : 'ปิด'}
+        </Pill>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      cardLabel: 'จัดการ',
+      align: 'end',
+      render: (product) => (
+        <span className="ln-row">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setError(null);
+              setAdjustment({ delta: '', reason: 'REASON_RESTOCK', note: '' });
+              setAdjusting(product);
+            }}
+          >
+            ปรับสต็อก
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => void toggleActive(product)}>
+            {product.isActive ? 'ปิด' : 'เปิด'}
+          </Button>
+        </span>
+      ),
+    },
+  ];
 
   return (
-    <div className="d-flex flex-column gap-3">
-      <div className="d-flex justify-content-between align-items-end flex-wrap gap-2">
-        <div>
-          {/* The page's only `<h1>`; `.h4` keeps the original size exactly. */}
-          <h1 className="h4 mb-1">สินค้าและสต็อก</h1>
-          <p className="text-muted mb-0 small">
-            การปรับสต็อกทุกครั้งต้องระบุเหตุผล และจะถูกบันทึกไว้ตรวจสอบย้อนหลังได้
-          </p>
-        </div>
-        <input
-          className="form-control form-control-sm"
-          style={{ maxWidth: 260 }}
-          placeholder="ค้นหาชื่อหรือบาร์โค้ด"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-        />
-      </div>
+    <Stack gap="lg">
+      {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
+      {error && !adjusting ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
-      {notice && <div className="alert alert-success py-2 small">{notice}</div>}
-      {error && <div className="alert alert-danger py-2 small">{error}</div>}
-
-      <Card title="เพิ่มสินค้าใหม่">
-        <div className="row g-2 align-items-end">
-          <div className="col-12 col-md-3">
-            <label className="form-label small" htmlFor="np-name">ชื่อสินค้า</label>
-            <input id="np-name" className="form-control form-control-sm" value={newProduct.name}
-              onChange={(event) => setNewProduct({ ...newProduct, name: event.target.value })} />
-          </div>
-          <div className="col-6 col-md-2">
-            <label className="form-label small" htmlFor="np-barcode">บาร์โค้ด</label>
-            <input id="np-barcode" className="form-control form-control-sm" value={newProduct.barcode}
-              onChange={(event) => setNewProduct({ ...newProduct, barcode: event.target.value })} />
-          </div>
-          <div className="col-6 col-md-2">
-            <label className="form-label small" htmlFor="np-category">หมวดหมู่</label>
-            <select id="np-category" className="form-select form-select-sm" value={newProduct.categoryId}
-              onChange={(event) => setNewProduct({ ...newProduct, categoryId: event.target.value })}>
-              <option value="">—</option>
+      <Card title="เพิ่มสินค้าใหม่" subtitle="กรอกเท่าที่มี ที่เหลือแก้ทีหลังได้">
+        <Stack gap="md">
+          <FieldRow columns={3}>
+            <TextField
+              id="np-name"
+              label="ชื่อสินค้า"
+              value={newProduct.name}
+              onChange={(event) => setNewProduct({ ...newProduct, name: event.target.value })}
+            />
+            <TextField
+              id="np-barcode"
+              label="บาร์โค้ด"
+              className="ln-mono"
+              value={newProduct.barcode}
+              onChange={(event) => setNewProduct({ ...newProduct, barcode: event.target.value })}
+            />
+            <SelectField
+              id="np-category"
+              label="หมวดหมู่"
+              value={newProduct.categoryId}
+              onChange={(event) => setNewProduct({ ...newProduct, categoryId: event.target.value })}
+            >
+              <option value="">— ไม่ระบุ —</option>
               {categories.map((category) => (
-                <option key={category.id} value={category.id}>{category.name}</option>
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
               ))}
-            </select>
-          </div>
-          <div className="col-4 col-md-1">
-            <label className="form-label small" htmlFor="np-cost">ทุน</label>
-            <input id="np-cost" className="form-control form-control-sm pos-numeric" inputMode="decimal"
+            </SelectField>
+          </FieldRow>
+
+          <FieldRow columns={3}>
+            <TextField
+              id="np-cost"
+              label="ราคาทุน"
+              inputMode="decimal"
+              className="ln-num"
               value={newProduct.costPrice}
-              onChange={(event) => setNewProduct({ ...newProduct, costPrice: event.target.value })} />
-          </div>
-          <div className="col-4 col-md-1">
-            <label className="form-label small" htmlFor="np-price">ราคา</label>
-            <input id="np-price" className="form-control form-control-sm pos-numeric" inputMode="decimal"
+              onChange={(event) => setNewProduct({ ...newProduct, costPrice: event.target.value })}
+            />
+            <TextField
+              id="np-price"
+              label="ราคาขาย"
+              inputMode="decimal"
+              className="ln-num"
               value={newProduct.salePrice}
-              onChange={(event) => setNewProduct({ ...newProduct, salePrice: event.target.value })} />
-          </div>
-          <div className="col-4 col-md-1">
-            <label className="form-label small" htmlFor="np-stock">สต็อก</label>
-            <input id="np-stock" className="form-control form-control-sm pos-numeric" inputMode="numeric"
+              onChange={(event) => setNewProduct({ ...newProduct, salePrice: event.target.value })}
+            />
+            <TextField
+              id="np-stock"
+              label="สต็อกเริ่มต้น"
+              inputMode="numeric"
+              className="ln-num"
               value={newProduct.stockQty}
-              onChange={(event) => setNewProduct({ ...newProduct, stockQty: event.target.value })} />
-          </div>
-          <div className="col-12 col-md-2">
-            <button type="button" className="btn btn-primary btn-sm w-100"
+              onChange={(event) => setNewProduct({ ...newProduct, stockQty: event.target.value })}
+            />
+          </FieldRow>
+
+          <div>
+            <Button
               disabled={!newProduct.name || !newProduct.salePrice}
-              onClick={() => void createProduct()}>
+              onClick={() => void createProduct()}
+            >
               เพิ่มสินค้า
-            </button>
+            </Button>
           </div>
-        </div>
+        </Stack>
       </Card>
 
-      <Card title={`รายการสินค้า (${filtered.length})`}>
-        <div className="table-responsive">
-          <table className="table table-hover align-middle mb-0">
-            <thead>
-              <tr>
-                <th>สินค้า</th>
-                <th>หมวดหมู่</th>
-                <th className="pos-numeric">ทุน</th>
-                <th className="pos-numeric">ราคา</th>
-                <th className="pos-numeric">คงเหลือ</th>
-                <th className="pos-numeric">จองไว้</th>
-                <th className="pos-numeric">ขายได้</th>
-                <th>สถานะ</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((product) => (
-                <tr key={product.id} className={product.isActive ? '' : 'opacity-50'}>
-                  <td>
-                    <span className="d-block small fw-medium">{product.name}</span>
-                    {product.barcode && <code className="text-muted small">{product.barcode}</code>}
-                  </td>
-                  <td className="small text-muted">{product.categoryName ?? '—'}</td>
-                  <td className="pos-numeric"><Money amount={product.costPrice} /></td>
-                  <td className="pos-numeric"><Money amount={product.salePrice} /></td>
-                  <td className="pos-numeric">{product.stockQty}</td>
-                  <td className="pos-numeric text-muted">{product.reservedQty}</td>
-                  <td className="pos-numeric">
-                    <Badge tone={product.availableQty <= 0 ? 'danger' : product.availableQty <= 5 ? 'warning' : 'success'}>
-                      {product.availableQty}
-                    </Badge>
-                  </td>
-                  <td>
-                    <Badge tone={product.isActive ? 'success' : 'secondary'}>
-                      {product.isActive ? 'ใช้งาน' : 'ปิด'}
-                    </Badge>
-                  </td>
-                  <td className="text-nowrap">
-                    <button type="button" className="btn btn-sm btn-soft-primary"
-                      onClick={() => {
-                        setAdjustingId(adjustingId === product.id ? null : product.id);
-                        setAdjustment({ delta: '', reason: 'REASON_RESTOCK', note: '' });
-                      }}>
-                      ปรับสต็อก
-                    </button>{' '}
-                    <button type="button" className="btn btn-sm btn-soft-secondary"
-                      onClick={() => void toggleActive(product)}>
-                      {product.isActive ? 'ปิด' : 'เปิด'}
-                    </button>
+      <Card
+        title={`รายการสินค้า (${filtered.length})`}
+        subtitle="การปรับสต็อกทุกครั้งต้องระบุเหตุผล และถูกบันทึกไว้ตรวจสอบย้อนหลังได้"
+        toolbar={
+          <SearchField
+            id="product-search"
+            label="ค้นหาสินค้า"
+            placeholder="ค้นหาชื่อหรือบาร์โค้ด"
+            value={search}
+            onChange={setSearch}
+          />
+        }
+        flush
+      >
+        <DataTable
+          columns={columns}
+          rows={filtered}
+          getRowKey={(product) => product.id}
+          caption="รายการสินค้าทั้งหมดในร้าน"
+          empty={
+            <EmptyState
+              icon="box"
+              title={search ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้า'}
+              description={
+                search ? 'ลองคำอื่น หรือล้างคำค้นหา' : 'เพิ่มสินค้าทีละรายการ หรือนำเข้าจากไฟล์ด้านล่าง'
+              }
+            />
+          }
+        />
+      </Card>
 
-                    {adjustingId === product.id && (
-                      <div className="mt-2 border rounded p-2" style={{ minWidth: 260 }}>
-                        <div className="row g-1">
-                          <div className="col-4">
-                            <input className="form-control form-control-sm pos-numeric" inputMode="numeric"
-                              placeholder="±จำนวน" value={adjustment.delta}
-                              onChange={(event) => setAdjustment({ ...adjustment, delta: event.target.value })} />
-                          </div>
-                          <div className="col-8">
-                            <select className="form-select form-select-sm" value={adjustment.reason}
-                              onChange={(event) => setAdjustment({ ...adjustment, reason: event.target.value })}>
-                              {REASONS.map((reason) => (
-                                <option key={reason.value} value={reason.value}>{reason.label}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="col-12">
-                            <input className="form-control form-control-sm" placeholder="หมายเหตุ"
-                              value={adjustment.note}
-                              onChange={(event) => setAdjustment({ ...adjustment, note: event.target.value })} />
-                          </div>
-                          <div className="col-12">
-                            <button type="button" className="btn btn-sm btn-primary w-100"
-                              onClick={() => void submitAdjustment(product.id)}>
-                              บันทึก
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </td>
-                </tr>
+      <Overlay
+        open={adjusting !== null}
+        onClose={() => setAdjusting(null)}
+        title={adjusting ? `ปรับสต็อก · ${adjusting.name}` : ''}
+        description={
+          adjusting ? `คงเหลือ ${adjusting.stockQty} · จองไว้ ${adjusting.reservedQty}` : undefined
+        }
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setAdjusting(null)} disabled={saving}>
+              ยกเลิก
+            </Button>
+            <Button loading={saving} onClick={() => void submitAdjustment()}>
+              บันทึก
+            </Button>
+          </>
+        }
+      >
+        <Stack gap="md">
+          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+          <FieldRow columns={2}>
+            <TextField
+              id="adjust-delta"
+              label="จำนวนที่ปรับ"
+              help="ใส่ค่าลบเมื่อของเสียหายหรือหายไป"
+              inputMode="numeric"
+              className="ln-num"
+              value={adjustment.delta}
+              onChange={(event) => setAdjustment({ ...adjustment, delta: event.target.value })}
+            />
+            <SelectField
+              id="adjust-reason"
+              label="เหตุผล"
+              value={adjustment.reason}
+              onChange={(event) => setAdjustment({ ...adjustment, reason: event.target.value })}
+            >
+              {REASONS.map((reason) => (
+                <option key={reason.value} value={reason.value}>
+                  {reason.label}
+                </option>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </div>
+            </SelectField>
+          </FieldRow>
+          <TextField
+            id="adjust-note"
+            label="หมายเหตุ"
+            value={adjustment.note}
+            onChange={(event) => setAdjustment({ ...adjustment, note: event.target.value })}
+          />
+        </Stack>
+      </Overlay>
+    </Stack>
   );
 }

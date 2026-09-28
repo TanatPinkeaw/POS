@@ -1,7 +1,8 @@
 'use client';
 
-import { Button, Numpad, Overlay, QuickCash, Tabs } from '@/components/ds';
+import { Button, Numpad, Overlay, QrPanel, QuickCash, Tabs } from '@/components/ds';
 import { formatThb } from '@/lib/money';
+import { PAYMENT_INTENT_STATUS_LABELS } from '@/lib/payment-intents-view';
 
 import type { TenderMode, Till } from './useTill';
 import styles from './Till.module.css';
@@ -52,6 +53,37 @@ export function PaySheet({
 
   const short = till.receivedCash !== '' && till.change < 0;
 
+  /**
+   * A live QR is on screen, so the money is in flight and the bill closes itself.
+   *
+   * The confirm button is disabled rather than hidden in this state: an operator
+   * who cannot see the button they expect will press something else, and
+   * "ยืนยันรับเงิน" on a bill nobody has confirmed receiving is the one mistake
+   * this screen must not invite.
+   */
+  const waitingForTransfer = till.intent !== null && till.intent.status === 'pending';
+
+  /**
+   * Switches tender, and manages the QR that goes with it.
+   *
+   * Picking พร้อมเพย์ issues a code immediately: the customer needs it on their
+   * own screen while the cashier is still finishing, and asking for a second tap
+   * to "create" something that is about to be needed anyway is a tap spent for
+   * nothing. Leaving the mode cancels it, because a live QR for a bill being paid
+   * another way is a QR the next customer can pay.
+   */
+  const chooseMode = (mode: TenderMode): void => {
+    till.setTenderMode(mode);
+    till.setReceivedCash(mode === 'promptpay' ? '' : String(till.cashDue || ''));
+
+    if (mode === 'promptpay' && till.intent === null) {
+      void till.startIntent();
+    }
+    if (mode !== 'promptpay' && till.intent !== null) {
+      void till.dropIntent();
+    }
+  };
+
   return (
     <Overlay
       open={open}
@@ -60,20 +92,35 @@ export function PaySheet({
       title="รับชำระเงิน"
       description={`ยอดที่ต้องเก็บ ${formatThb(till.due)}`}
       footer={
-        <>
-          <Button variant="secondary" onClick={onClose} disabled={till.busy}>
-            ยกเลิก
-          </Button>
-          <Button
-            size="lg"
-            icon="check"
-            loading={till.busy}
-            disabled={!till.canPay}
-            onClick={() => void till.checkout()}
-          >
-            ยืนยันรับเงิน
-          </Button>
-        </>
+        waitingForTransfer ? (
+          <>
+            <Button
+              variant="secondary"
+              disabled={till.busy}
+              onClick={() => void till.dropIntent()}
+            >
+              ยกเลิก QR
+            </Button>
+            <Button size="lg" icon="qr" loading disabled>
+              รอเงินเข้า…
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" onClick={onClose} disabled={till.busy}>
+              ยกเลิก
+            </Button>
+            <Button
+              size="lg"
+              icon="check"
+              loading={till.busy}
+              disabled={!till.canPay}
+              onClick={() => void till.checkout()}
+            >
+              ยืนยันรับเงิน
+            </Button>
+          </>
+        )
       }
     >
       <div style={{ display: 'grid', gap: 'var(--ln-space-4)' }}>
@@ -82,14 +129,12 @@ export function PaySheet({
           variant="segmented"
           items={modes}
           value={till.tenderMode}
-          onChange={(key) => {
-            const mode = key as TenderMode;
-            till.setTenderMode(mode);
-            // Moving to cash puts the exact amount in the field: the most common
-            // cash sale in a grocery is exact, and pre-filling removes the taps
-            // that used to be spent typing it.
-            till.setReceivedCash(mode === 'promptpay' ? '' : String(till.cashDue || ''));
-          }}
+          /*
+           * Moving to cash puts the exact amount in the field: the most common
+           * cash sale in a grocery is exact, and pre-filling removes the taps that
+           * used to be spent typing it.
+           */
+          onChange={(key) => chooseMode(key as TenderMode)}
         />
 
         {till.tenderMode === 'split' ? (
@@ -112,9 +157,39 @@ export function PaySheet({
         ) : null}
 
         {till.tenderMode === 'promptpay' ? (
-          <div className={styles.settingsRow}>
-            <span className={styles.settingsLabel}>โอนเข้าพร้อมเพย์ร้าน</span>
-            <span className={styles.settingsValue}>{formatThb(till.due)}</span>
+          <div className={styles.qrArea}>
+            {till.intent ? (
+              <>
+                <QrPanel intent={till.intent} size={200} />
+                <p className={styles.hint}>
+                  {till.intent.status === 'pending'
+                    ? 'ให้ลูกค้าสแกนที่จอนี้หรือที่จอลูกค้า — เมื่อเงินเข้าบิลจะปิดเอง'
+                    : PAYMENT_INTENT_STATUS_LABELS[till.intent.status]}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className={styles.settingsRow}>
+                  <span className={styles.settingsLabel}>โอนเข้าพร้อมเพย์ร้าน</span>
+                  <span className={styles.settingsValue}>{formatThb(till.due)}</span>
+                </div>
+                <Button
+                  icon="qr"
+                  loading={till.intentBusy}
+                  onClick={() => void till.startIntent()}
+                >
+                  ออก QR พร้อมเพย์
+                </Button>
+                {till.intentError ? (
+                  <p className={styles.hint} role="alert">
+                    {till.intentError}
+                  </p>
+                ) : null}
+                <p className={styles.hint}>
+                  ถ้ายังไม่ได้ตั้งพร้อมเพย์ของร้าน จะออก QR ไม่ได้ — ยืนยันรับเงินสดแทนได้เลย
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <>

@@ -1,0 +1,116 @@
+/*
+ * The storefront's own tile set.
+ *
+ * Not `Till.module.css`, although the tokens and the shape are deliberately the
+ * same: the till's tile is a tap-to-add target for an operator standing at a
+ * counter, and this one carries a quantity stepper, because a customer decides
+ * how many they want *before* reserving rather than adding one and correcting it
+ * in a bill. Two interactions, one vocabulary — the customer and the operator see
+ * the same tiles on either side of the same sale.
+ */
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+.name {
+  font-weight: 600;
+  /* Thai product names are long and unbreakable; two lines is the budget. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--ln-space-3);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+}
+
+.tile[data-sold-out='true'] .name,
+.tile[data-sold-out='true'] .head {
+  color: var(--ln-text-subtle);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+  margin-top: auto;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-1);
+}
+
+/* Sized from the control token, so the same pair of buttons is thumb-sized on the
+ * till's touch density and compact on a back office mouse. */
+.stepperButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ln-control-h-sm);
+  height: var(--ln-control-h-sm);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  font: inherit;
+  font-size: var(--ln-size-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepperButton:hover:not(:disabled) {
+  background: var(--ln-surface-2);
+}
+
+.stepperButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.stepperValue {
+  min-width: 2.25rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.lines {
+  display: grid;
+  gap: var(--ln-space-2);
+}
+
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--ln-space-2);
+  border-top: 1px solid var(--ln-border);
+  font-weight: 650;
+}

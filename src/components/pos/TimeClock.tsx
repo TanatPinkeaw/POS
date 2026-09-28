@@ -7,10 +7,26 @@
  * or off it. The roster is shown next to the button so an employee can see the
  * shift they are being measured against, and the day's total is shown so nobody
  * has to add it up themselves before going home.
+ *
+ * The clock is a `SplitPane` rather than two Bootstrap columns: the button keeps
+ * its width while the log beside it grows, and below the breakpoint the pane the
+ * employee came for — the button — comes first, with the timesheet underneath.
  */
 import { useCallback, useState } from 'react';
 
-import { Alert, Badge, Card, EmptyState } from '@/components/hope/ui';
+import {
+  Button,
+  Card,
+  DataTable,
+  EmptyState,
+  InlineNotice,
+  Pill,
+  SplitPane,
+  Stack,
+  Stat,
+  TextField,
+  type Column,
+} from '@/components/ds';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
 import {
   durationLabel,
@@ -71,131 +87,136 @@ export function TimeClock({
 
   const onClock = snapshot.openLog !== null;
 
+  const columns: Column<AttendanceRowView>[] = [
+    {
+      key: 'in',
+      header: 'เข้า',
+      cardLabel: 'เข้า',
+      render: (row) => <span className="ln-num">{timeLabel(row.checkIn)}</span>,
+    },
+    {
+      key: 'out',
+      header: 'ออก',
+      cardLabel: 'ออก',
+      render: (row) =>
+        row.checkOut ? (
+          <span className="ln-num">{timeLabel(row.checkOut)}</span>
+        ) : (
+          <Pill tone="success" icon="clock">
+            กำลังทำงาน
+          </Pill>
+        ),
+    },
+    {
+      key: 'hours',
+      header: 'ชั่วโมง',
+      cardLabel: 'ชั่วโมง',
+      align: 'end',
+      render: (row) => <span className="ln-num">{durationLabel(row.workHours)}</span>,
+    },
+    {
+      key: 'lateness',
+      header: 'สาย/ล่วงเวลา',
+      cardLabel: 'สาย/ล่วงเวลา',
+      render: (row) => {
+        const label = latenessLabel(row);
+        return <Pill tone={latenessTone(label)}>{label}</Pill>;
+      },
+    },
+  ];
+
   return (
-    <div className="row g-3">
-      <div className="col-12 col-xl-5">
+    <SplitPane
+      side="start"
+      panelWidth="24rem"
+      stackOrder="panel-first"
+      label="ลงเวลาทำงาน"
+      panel={
         <Card title="ลงเวลาทำงาน" subtitle={`วันนี้ ${today} (เวลาประเทศไทย)`}>
-          {notice && (
-            <Alert tone="success" className="py-2 small">
-              {notice}
-            </Alert>
-          )}
-          {error && (
-            <Alert tone="danger" className="py-2 small">
-              {error}
-            </Alert>
-          )}
+          <Stack gap="md">
+            {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
+            {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
-          <div className="d-flex align-items-center gap-3 mb-3">
-            <div
-              className={`rounded-circle d-flex align-items-center justify-content-center ${onClock ? 'bg-soft-success text-success' : 'bg-soft-secondary text-secondary'}`}
-              style={{ width: 56, height: 56 }}
-              aria-hidden="true"
-            >
-              <span className="fs-4">{onClock ? '●' : '○'}</span>
-            </div>
-            <div>
-              {/* `.h5` keeps the size; `h3` is the right level inside a card body. */}
-              <h3 className="h5 mb-0">{onClock ? 'กำลังทำงานอยู่' : 'ยังไม่ลงเวลาเข้า'}</h3>
-              <span className="text-muted small">
-                {onClock && snapshot.openLog
+            <Stat
+              label="สถานะ"
+              value={onClock ? 'กำลังทำงานอยู่' : 'ยังไม่ลงเวลาเข้า'}
+              hint={
+                onClock && snapshot.openLog
                   ? `ลงเวลาเข้าเมื่อ ${timeLabel(snapshot.openLog.checkIn)}`
-                  : 'กดปุ่มด้านล่างเมื่อมาถึงร้าน'}
-              </span>
-            </div>
-          </div>
+                  : 'กดปุ่มด้านล่างเมื่อมาถึงร้าน'
+              }
+              tone={onClock ? 'success' : 'neutral'}
+              icon="clock"
+            />
 
-          <label className="form-label small" htmlFor="clock-note">
-            หมายเหตุ (ไม่บังคับ)
-          </label>
-          <input
-            id="clock-note"
-            name="note"
-            autoComplete="off"
-            className="form-control form-control-sm mb-2"
-            placeholder="เช่น ออกไปส่งของ"
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-          />
+            <TextField
+              id="clock-note"
+              label="หมายเหตุ (ไม่บังคับ)"
+              placeholder="เช่น ออกไปส่งของ"
+              autoComplete="off"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+            />
 
-          <button
-            type="button"
-            className={`btn w-100 ${onClock ? 'btn-outline-danger' : 'btn-primary'}`}
-            disabled={busy}
-            onClick={() => void toggle()}
-          >
-            {busy ? 'กำลังบันทึก…' : onClock ? 'ลงเวลาออก' : 'ลงเวลาเข้า'}
-          </button>
+            <Button
+              block
+              variant={onClock ? 'danger' : 'primary'}
+              icon={onClock ? 'logOut' : 'check'}
+              loading={busy}
+              onClick={() => void toggle()}
+            >
+              {onClock ? 'ลงเวลาออก' : 'ลงเวลาเข้า'}
+            </Button>
+          </Stack>
         </Card>
-      </div>
+      }
+    >
+      <Stack gap="lg">
+        <Card title="ตารางงานวันนี้" subtitle="กะที่ผู้จัดการจัดไว้">
+          {snapshot.schedule ? (
+            <dl>
+              <Stack gap="sm">
+                <div className="ln-row">
+                  <dt className="ln-muted">เวลาเข้า–ออกตามตาราง</dt>
+                  <dd className="ln-num">
+                    {snapshot.schedule.startTime}–{snapshot.schedule.endTime}
+                  </dd>
+                </div>
+                <div className="ln-row">
+                  <dt className="ln-muted">หมายเหตุ</dt>
+                  <dd className="ln-break">{snapshot.schedule.note ?? '—'}</dd>
+                </div>
+                <div className="ln-row">
+                  <dt className="ln-muted">ชั่วโมงที่ทำไปแล้ววันนี้</dt>
+                  <dd className="ln-num">{durationLabel(snapshot.hoursToday)}</dd>
+                </div>
+              </Stack>
+            </dl>
+          ) : (
+            <Stack gap="sm">
+              <p className="ln-muted">วันนี้ยังไม่มีตารางงาน</p>
+              <p className="ln-num">ชั่วโมงที่ทำไปแล้ว {durationLabel(snapshot.hoursToday)}</p>
+            </Stack>
+          )}
+        </Card>
 
-      <div className="col-12 col-xl-7">
-        <div className="d-flex flex-column gap-3">
-          <Card title="ตารางงานวันนี้" subtitle="กะที่ผู้จัดการจัดไว้">
-            {snapshot.schedule ? (
-              <dl className="row mb-0 small">
-                <dt className="col-5 fw-normal text-muted">เวลาเข้า–ออกตามตาราง</dt>
-                <dd className="col-7 pos-numeric mb-1">
-                  {snapshot.schedule.startTime}–{snapshot.schedule.endTime}
-                </dd>
-                <dt className="col-5 fw-normal text-muted">หมายเหตุ</dt>
-                <dd className="col-7 mb-1">{snapshot.schedule.note ?? '—'}</dd>
-                <dt className="col-5 fw-normal text-muted">ชั่วโมงที่ทำไปแล้ววันนี้</dt>
-                <dd className="col-7 mb-0 fw-bold pos-numeric">
-                  {durationLabel(snapshot.hoursToday)}
-                </dd>
-              </dl>
-            ) : (
-              <div className="d-flex justify-content-between align-items-center">
-                <span className="text-muted small">วันนี้ยังไม่มีตารางงาน</span>
-                <span className="pos-numeric small">
-                  ชั่วโมงที่ทำไปแล้ว {durationLabel(snapshot.hoursToday)}
-                </span>
-              </div>
-            )}
-          </Card>
-
-          <Card title={`บันทึกของวันนี้ (${snapshot.logs.length})`}>
-            {snapshot.logs.length === 0 ? (
-              <EmptyState title="ยังไม่มีบันทึกเวลาในวันนี้" />
-            ) : (
-              <div className="table-responsive">
-                <table className="table table-sm align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>เข้า</th>
-                      <th>ออก</th>
-                      <th className="pos-numeric">ชั่วโมง</th>
-                      <th>สาย/ล่วงเวลา</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {snapshot.logs.map((row) => {
-                      const label = latenessLabel(row);
-                      return (
-                        <tr key={row.logId}>
-                          <td className="pos-numeric small">{timeLabel(row.checkIn)}</td>
-                          <td className="small pos-numeric">
-                            {row.checkOut ? (
-                              timeLabel(row.checkOut)
-                            ) : (
-                              <Badge tone="success">กำลังทำงาน</Badge>
-                            )}
-                          </td>
-                          <td className="pos-numeric small">{durationLabel(row.workHours)}</td>
-                          <td>
-                            <Badge tone={latenessTone(label)}>{label}</Badge>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </Card>
-        </div>
-      </div>
-    </div>
+        <Card title={`บันทึกของวันนี้ (${snapshot.logs.length})`} flush>
+          <DataTable
+            columns={columns}
+            rows={snapshot.logs}
+            getRowKey={(row) => String(row.logId)}
+            caption="บันทึกการลงเวลาของวันนี้"
+            dense
+            empty={
+              <EmptyState
+                icon="clock"
+                title="ยังไม่มีบันทึกเวลาในวันนี้"
+                description="กดลงเวลาเข้าเพื่อเริ่มกะแรก"
+              />
+            }
+          />
+        </Card>
+      </Stack>
+    </SplitPane>
   );
 }

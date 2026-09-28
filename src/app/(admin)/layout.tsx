@@ -8,6 +8,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/staff', label: 'พนักงาน', icon: 'users' },
   { href: '/admin/schedules', label: 'ตารางงาน & เวลา', icon: 'calendar' },
   { href: '/admin/reports', label: 'รายงาน & ส่งออก', icon: 'chart' },
+  { href: '/admin/audit', label: 'ประวัติการใช้งาน', icon: 'eye' },
   { href: '/admin/settings', label: 'ตั้งค่าร้าน', icon: 'sliders' },
   { href: '/pos', label: 'หน้าร้าน (POS)', icon: 'cart' },
   { href: '/pos/preorders', label: 'พรีออเดอร์', icon: 'receipt', badgedByPreOrders: true },

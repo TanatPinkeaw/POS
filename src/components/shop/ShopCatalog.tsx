@@ -2,10 +2,23 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-import { Badge, Card, Money } from '@/components/hope/ui';
+import {
+  Button,
+  Card,
+  CategoryChip,
+  EmptyState,
+  InlineNotice,
+  Money,
+  Pill,
+  SearchField,
+  SplitPane,
+  Stack,
+} from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
+
+import styles from './ShopCatalog.module.css';
 
 export interface ShopProduct {
   id: string;
@@ -15,6 +28,7 @@ export interface ShopProduct {
   stockQty: number;
   reservedQty: number;
   availableQty: number;
+  categoryId: number | null;
   categoryName: string | null;
 }
 
@@ -30,14 +44,13 @@ interface Placed {
  * server guards on, so a customer cannot add something the shop has already
  * promised to someone else. If two customers race for the last unit, the loser
  * gets the server's 409 and a plain explanation rather than a silent failure.
+ *
+ * The basket holds its width on the right rather than growing with its contents,
+ * for the same reason the till's bill does: the products must not move under the
+ * customer's thumb as the list they are building gets longer. Grouped by aisle,
+ * with the aisle's own colour, so a market with twenty categories is browsable.
  */
-export function ShopCatalog({
-  initialProducts,
-  pointsBalance,
-}: {
-  initialProducts: ShopProduct[];
-  pointsBalance: number;
-}) {
+export function ShopCatalog({ initialProducts }: { initialProducts: ShopProduct[] }) {
   const [products, setProducts] = useState(initialProducts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +95,10 @@ export function ShopCatalog({
     return sum + (product ? product.salePrice * quantity : 0);
   }, 0);
 
+  function setQuantity(productId: string, quantity: number): void {
+    setQuantities((current) => ({ ...current, [productId]: Math.max(0, quantity) }));
+  }
+
   const place = async (): Promise<void> => {
     if (selected.length === 0) {
       return;
@@ -113,146 +130,152 @@ export function ShopCatalog({
   };
 
   return (
-    <div className="d-flex flex-column gap-3">
-      <div className="d-flex justify-content-between align-items-end flex-wrap gap-2">
-        <div>
-          <h4 className="mb-1">สินค้าทั้งหมด</h4>
-          <p className="text-muted mb-0 small">
-            จำนวนที่แสดงคือจำนวนที่ขายได้จริง หลังหักสินค้าที่ถูกจองไว้แล้ว
-          </p>
-        </div>
-        <Badge tone="warning">{pointsBalance.toLocaleString('en-US')} คะแนน</Badge>
-      </div>
+    <Stack gap="md">
+      {placed ? (
+        <InlineNotice tone="success" title="จองสำเร็จ!">
+          เลขที่ออเดอร์ <strong className="ln-mono">{placed.orderNumber}</strong> —{' '}
+          ร้านจะยืนยันภายใน 15 นาที มิฉะนั้นออเดอร์จะถูกยกเลิกและคืนสต็อกอัตโนมัติ
+        </InlineNotice>
+      ) : null}
 
-      {placed && (
-        <div className="alert alert-success">
-          <strong>จองสำเร็จ!</strong> เลขที่ออเดอร์ <code>{placed.orderNumber}</code>
-          <span className="d-block small">
-            ร้านจะยืนยันภายใน 15 นาที มิฉะนั้นออเดอร์จะถูกยกเลิกและคืนสต็อกอัตโนมัติ
-          </span>
-        </div>
-      )}
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
-      {error && <div className="alert alert-danger">{error}</div>}
+      <SplitPane
+        side="end"
+        panelWidth="22rem"
+        label="รายการจอง"
+        panel={
+          <Card title="รายการจอง">
+            <Stack gap="md">
+              {selected.length === 0 ? (
+                <p className="ln-muted">ยังไม่ได้เลือกสินค้า</p>
+              ) : (
+                <>
+                  <ul className={styles.lines}>
+                    {selected.map(([productId, quantity]) => {
+                      const product = products.find((item) => item.id === productId);
+                      if (!product) {
+                        return null;
+                      }
+                      return (
+                        <li key={productId} className={styles.line}>
+                          <span className="ln-break">
+                            {product.name} × {quantity}
+                          </span>
+                          <Money amount={product.salePrice * quantity} />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className={styles.total}>
+                    <span>รวม</span>
+                    <Money amount={total} size="lg" />
+                  </div>
+                </>
+              )}
 
-      <div className="row g-3">
-        <div className="col-12 col-xl-8">
-          <Card
-            title="เลือกสินค้า"
-            actions={
-              <input
-                className="form-control form-control-sm"
-                placeholder="ค้นหาสินค้า"
-                value={filter}
-                onChange={(event) => setFilter(event.target.value)}
-              />
-            }
-          >
-            {grouped.map(([category, items]) => (
-              <div className="mb-3" key={category}>
-                <h6 className="text-muted small mb-2">{category}</h6>
-                <div className="row g-2">
-                  {items.map((product) => {
-                    const quantity = quantities[product.id] ?? 0;
-                    const soldOut = product.availableQty <= 0;
+              <Button
+                size="lg"
+                block
+                icon="cart"
+                loading={busy}
+                disabled={selected.length === 0}
+                onClick={() => void place()}
+              >
+                จองสินค้า (พรีออเดอร์)
+              </Button>
+              <p className="ln-muted">ยังไม่ต้องชำระเงิน — ชำระตอนมารับสินค้าที่ร้าน</p>
+            </Stack>
+          </Card>
+        }
+      >
+        <Card
+          title="เลือกสินค้า"
+          toolbar={
+            <SearchField
+              id="shop-search"
+              label="ค้นหาสินค้า"
+              placeholder="ค้นหาชื่อสินค้า"
+              value={filter}
+              onChange={setFilter}
+            />
+          }
+        >
+          {grouped.length === 0 ? (
+            <EmptyState
+              icon="box"
+              title={filter ? 'ไม่พบสินค้าที่ค้นหา' : 'ยังไม่มีสินค้าให้จอง'}
+              description={filter ? 'ลองคำอื่น หรือล้างคำค้นหา' : 'ร้านยังไม่ได้เพิ่มสินค้าเข้าระบบ'}
+            />
+          ) : (
+            <Stack gap="lg">
+              {grouped.map(([category, items]) => (
+                <Stack gap="sm" key={category}>
+                  <CategoryChip categoryId={items[0]?.categoryId} name={category} />
+                  <div className={styles.grid}>
+                    {items.map((product) => {
+                      const quantity = quantities[product.id] ?? 0;
+                      const soldOut = product.availableQty <= 0;
 
-                    return (
-                      <div className="col-12 col-md-6" key={product.id}>
-                        <div className={`border rounded p-2 h-100 ${soldOut ? 'opacity-50' : ''}`}>
-                          <div className="d-flex justify-content-between">
-                            <span className="small fw-medium">{product.name}</span>
-                            <Money amount={product.salePrice} className="small fw-bold" />
+                      return (
+                        <div className={styles.tile} key={product.id} data-sold-out={soldOut}>
+                          <div className={styles.head}>
+                            <span className={styles.name}>{product.name}</span>
+                            <Money amount={product.salePrice} />
                           </div>
-                          <div className="d-flex justify-content-between align-items-center mt-2">
-                            <Badge tone={soldOut ? 'danger' : product.availableQty <= 5 ? 'warning' : 'success'}>
+
+                          <div className={styles.foot}>
+                            <Pill
+                              tone={
+                                soldOut
+                                  ? 'danger'
+                                  : product.availableQty <= 5
+                                    ? 'warning'
+                                    : 'success'
+                              }
+                            >
                               {soldOut ? 'สินค้าหมด' : `ขายได้ ${product.availableQty}`}
-                            </Badge>
-                            <div className="input-group input-group-sm" style={{ width: 110 }}>
+                            </Pill>
+
+                            <span className={styles.stepper}>
+                              {/*
+                               * `ln-tap` on both: these two are tapped over and
+                               * over by a thumb, so they hold the touch minimum
+                               * whatever the area's density is.
+                               */}
                               <button
                                 type="button"
-                                className="btn btn-outline-secondary"
+                                className={`${styles.stepperButton} ln-tap`}
+                                aria-label={`ลดจำนวน ${product.name}`}
                                 disabled={soldOut || quantity <= 0}
-                                onClick={() =>
-                                  setQuantities((current) => ({
-                                    ...current,
-                                    [product.id]: Math.max(0, (current[product.id] ?? 0) - 1),
-                                  }))
-                                }
+                                onClick={() => setQuantity(product.id, quantity - 1)}
                               >
                                 −
                               </button>
-                              <input className="form-control text-center" value={quantity} readOnly aria-label="จำนวน" />
+                              <span className={styles.stepperValue} aria-live="polite">
+                                {quantity}
+                              </span>
                               <button
                                 type="button"
-                                className="btn btn-outline-secondary"
+                                className={`${styles.stepperButton} ln-tap`}
+                                aria-label={`เพิ่มจำนวน ${product.name}`}
                                 disabled={soldOut || quantity >= product.availableQty}
-                                onClick={() =>
-                                  setQuantities((current) => ({
-                                    ...current,
-                                    [product.id]: Math.min(
-                                      product.availableQty,
-                                      (current[product.id] ?? 0) + 1,
-                                    ),
-                                  }))
-                                }
+                                onClick={() => setQuantity(product.id, quantity + 1)}
                               >
                                 +
                               </button>
-                            </div>
+                            </span>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </Card>
-        </div>
-
-        <div className="col-12 col-xl-4">
-          <Card title="รายการจอง">
-            {selected.length === 0 ? (
-              <p className="text-muted small mb-0">ยังไม่ได้เลือกสินค้า</p>
-            ) : (
-              <>
-                <ul className="list-group list-group-flush mb-3">
-                  {selected.map(([productId, quantity]) => {
-                    const product = products.find((item) => item.id === productId);
-                    if (!product) {
-                      return null;
-                    }
-                    return (
-                      <li className="list-group-item d-flex justify-content-between px-0 small" key={productId}>
-                        <span>
-                          {product.name} × {quantity}
-                        </span>
-                        <Money amount={product.salePrice * quantity} />
-                      </li>
-                    );
-                  })}
-                </ul>
-                <div className="d-flex justify-content-between fw-bold mb-3">
-                  <span>รวม</span>
-                  <Money amount={total} />
-                </div>
-              </>
-            )}
-
-            <button
-              type="button"
-              className="btn btn-primary w-100"
-              disabled={busy || selected.length === 0}
-              onClick={() => void place()}
-            >
-              {busy ? 'กำลังจอง…' : 'จองสินค้า (พรีออเดอร์)'}
-            </button>
-            <p className="text-muted small mt-2 mb-0">
-              ยังไม่ต้องชำระเงิน — ชำระตอนมารับสินค้าที่ร้าน
-            </p>
-          </Card>
-        </div>
-      </div>
-    </div>
+                      );
+                    })}
+                  </div>
+                </Stack>
+              ))}
+            </Stack>
+          )}
+        </Card>
+      </SplitPane>
+    </Stack>
   );
 }

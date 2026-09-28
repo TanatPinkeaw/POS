@@ -2,12 +2,30 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Badge, Card, EmptyState, Money, Spinner } from '@/components/hope/ui';
+import {
+  Button,
+  Card,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  InlineNotice,
+  Money,
+  Overlay,
+  Pill,
+  SearchField,
+  Spinner,
+  Stack,
+  StatusPill,
+  TextField,
+  Toolbar,
+  type Column,
+} from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import { playWarningChime } from '@/lib/sound';
 
+import styles from './PreOrderBoard.module.css';
 import { useOpenShift } from './useOpenShift';
 
 interface OrderRow {
@@ -38,9 +56,9 @@ const CONFIRM_TIMEOUT_MINUTES = 15;
 
 /** Column definitions, in lifecycle order. */
 const COLUMNS = [
-  { status: 'pending', title: '1 · รอยืนยัน', tone: 'warning' },
-  { status: 'confirmed', title: '2 · กำลังเตรียม', tone: 'info' },
-  { status: 'ready_for_pickup', title: '3 · พร้อมรับ', tone: 'primary' },
+  { status: 'pending', title: '1 · รอยืนยัน' },
+  { status: 'confirmed', title: '2 · กำลังเตรียม' },
+  { status: 'ready_for_pickup', title: '3 · พร้อมรับ' },
 ] as const;
 
 function minutesLeft(createdAt: string, now: number): number {
@@ -51,11 +69,17 @@ function minutesLeft(createdAt: string, now: number): number {
 /**
  * The pre-order board.
  *
- * Staff see all four phases at once and drive each order forward. Two things
+ * Staff see all four phases at once and drive each order forward. Three things
  * make it usable on a busy counter: pending orders carry a live countdown so the
- * 15-minute timeout is visible before it fires, and every action re-reads the
- * server rather than mutating local state — the server is the only thing that
- * knows whether the stock guard actually passed.
+ * 15-minute timeout is visible before it fires; every action re-reads the server
+ * rather than mutating local state, because the server is the only thing that
+ * knows whether the stock guard actually passed; and the two writes that decide an
+ * order's fate — confirming (possibly dropping a damaged item) and handing over
+ * (taking money) — happen in dialogs, where the line items and the amounts have
+ * room to be checked before anything is committed.
+ *
+ * Cancelling asks first. It releases reserved stock and texts a customer who is
+ * already on their way, and it is one tap away from "ยืนยัน" on the same card.
  */
 export function PreOrderBoard() {
   const { shift } = useOpenShift();
@@ -70,12 +94,11 @@ export function PreOrderBoard() {
   const [settlement, setSettlement] = useState({ cash: '', receivedCash: '', usePoints: false });
   const [removeIds, setRemoveIds] = useState<string[]>([]);
   const [confirming, setConfirming] = useState<OrderDetail | null>(null);
+  const [cancelling, setCancelling] = useState<{ order: OrderRow; reason: string } | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const rows = await apiFetch<OrderRow[]>(
-        '/api/v1/orders?type=preorder&limit=100',
-      );
+      const rows = await apiFetch<OrderRow[]>('/api/v1/orders?type=preorder&limit=100');
       setOrders(rows);
       setError(null);
     } catch (caught) {
@@ -98,10 +121,13 @@ export function PreOrderBoard() {
   // Any change from any terminal re-reads the list.
   useRealtimeEvent(REALTIME_EVENTS.orderCreated, useCallback(() => void load(), [load]));
   useRealtimeEvent(REALTIME_EVENTS.orderUpdated, useCallback(() => void load(), [load]));
-  useRealtimeEvent(REALTIME_EVENTS.orderExpired, useCallback(() => {
-    playWarningChime();
-    void load();
-  }, [load]));
+  useRealtimeEvent(
+    REALTIME_EVENTS.orderExpired,
+    useCallback(() => {
+      playWarningChime();
+      void load();
+    }, [load]),
+  );
 
   const grouped = useMemo(() => {
     const map = new Map<string, OrderRow[]>([
@@ -193,9 +219,10 @@ export function PreOrderBoard() {
     }
 
     const cash = Number(settlement.cash || 0);
-    const points = settlement.usePoints && handover.customer
-      ? Math.floor(handover.customer.pointsBalance / 100) * 100
-      : 0;
+    const points =
+      settlement.usePoints && handover.customer
+        ? Math.floor(handover.customer.pointsBalance / 100) * 100
+        : 0;
 
     setBusyId(handover.id);
     setError(null);
@@ -217,351 +244,341 @@ export function PreOrderBoard() {
     }
   };
 
-  const renderCard = (order: OrderRow) => {
+  const completedColumns: Column<OrderRow>[] = [
+    {
+      key: 'number',
+      header: 'เลขที่',
+      cardLabel: 'เลขที่',
+      render: (order) => <span className="ln-mono">{order.orderNumber}</span>,
+    },
+    {
+      key: 'customer',
+      header: 'ลูกค้า',
+      cardLabel: 'ลูกค้า',
+      render: (order) => order.customerName ?? '—',
+    },
+    {
+      key: 'amount',
+      header: 'ยอด',
+      cardLabel: 'ยอด',
+      align: 'end',
+      render: (order) => <Money amount={order.finalAmountThb} />,
+    },
+  ];
+
+  const renderOrder = (order: OrderRow) => {
     const left = minutesLeft(order.createdAt, now);
     const urgent = order.status === 'pending' && left <= 5;
     const busy = busyId === order.id;
 
     return (
-      <div className={`card mb-2 ${urgent ? 'pos-urgent' : ''}`} key={order.id}>
-        <div className="card-body p-3">
-          <div className="d-flex justify-content-between align-items-start mb-1">
-            <code className="small">{order.orderNumber}</code>
-            <Money amount={order.finalAmountThb} className="small fw-bold" />
-          </div>
-
-          <p className="mb-1 small">{order.customerName ?? 'ลูกค้าทั่วไป'}</p>
-          <p className="text-muted mb-2 small">
-            {order.customerPhone} · {order.itemCount} รายการ
-          </p>
-
-          {order.status === 'pending' && (
-            <p className={`small mb-2 ${urgent ? 'text-danger fw-bold' : 'text-muted'}`}>
-              เหลือเวลา {left} นาที ก่อนหมดอายุอัตโนมัติ
-            </p>
-          )}
-
-          {order.status === 'ready_for_pickup' && order.pickupPin && (
-            <p className="small mb-2">
-              PIN: <span className="badge bg-soft-primary text-primary fs-6">{order.pickupPin}</span>
-            </p>
-          )}
-
-          <div className="d-flex flex-wrap gap-1">
-            {order.status === 'pending' && (
-              <>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
-                  disabled={busy}
-                  onClick={() => void openConfirm(order.id)}
-                >
-                  ยืนยัน
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-soft-danger"
-                  disabled={busy}
-                  onClick={() =>
-                    void act(order.id, 'cancel', { reason: 'พนักงานยกเลิก' })
-                  }
-                >
-                  ยกเลิก
-                </button>
-              </>
-            )}
-
-            {order.status === 'confirmed' && (
-              <>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary"
-                  disabled={busy}
-                  onClick={() => void act(order.id, 'ready', {})}
-                >
-                  แพ็คเสร็จ / พร้อมรับ
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-soft-danger"
-                  disabled={busy}
-                  onClick={() => void act(order.id, 'cancel', { reason: 'สินค้าไม่พร้อม' })}
-                >
-                  ยกเลิก
-                </button>
-              </>
-            )}
-
-            {order.status === 'ready_for_pickup' && (
-              <>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-success"
-                  disabled={busy}
-                  onClick={() => void openHandover(order)}
-                >
-                  รับสินค้า + ชำระ
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-soft-danger"
-                  disabled={busy}
-                  onClick={() => void act(order.id, 'cancel', { reason: 'ลูกค้าไม่มารับ' })}
-                >
-                  ไม่มารับ
-                </button>
-              </>
-            )}
-
-            {order.status === 'completed' && <Badge tone="success">ปิดการขายแล้ว</Badge>}
-          </div>
+      <article className={styles.order} data-urgent={urgent} key={order.id}>
+        <div className={styles.orderHead}>
+          <span className="ln-mono">{order.orderNumber}</span>
+          <Money amount={order.finalAmountThb} />
         </div>
-      </div>
+
+        <span className={styles.meta}>
+          {order.customerName ?? 'ลูกค้าทั่วไป'} · {order.customerPhone ?? '—'} · {order.itemCount}{' '}
+          รายการ
+        </span>
+
+        {order.status === 'pending' ? (
+          <p className={urgent ? styles.urgent : styles.countdown}>
+            เหลือเวลา {left} นาที ก่อนหมดอายุอัตโนมัติ
+          </p>
+        ) : null}
+
+        {order.status === 'ready_for_pickup' && order.pickupPin ? (
+          <p className="ln-row">
+            <span className={styles.meta}>PIN</span>
+            <strong className="ln-figure ln-mono">{order.pickupPin}</strong>
+          </p>
+        ) : null}
+
+        <div className="ln-row">
+          {order.status === 'pending' ? (
+            <>
+              <Button size="sm" disabled={busy} onClick={() => void openConfirm(order.id)}>
+                ยืนยัน
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => setCancelling({ order, reason: 'พนักงานยกเลิก' })}
+              >
+                ยกเลิก
+              </Button>
+            </>
+          ) : null}
+
+          {order.status === 'confirmed' ? (
+            <>
+              <Button
+                size="sm"
+                disabled={busy}
+                onClick={() => void act(order.id, 'ready', {})}
+              >
+                แพ็คเสร็จ / พร้อมรับ
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => setCancelling({ order, reason: 'สินค้าไม่พร้อม' })}
+              >
+                ยกเลิก
+              </Button>
+            </>
+          ) : null}
+
+          {order.status === 'ready_for_pickup' ? (
+            <>
+              <Button
+                variant="success"
+                size="sm"
+                icon="cash"
+                disabled={busy}
+                onClick={() => void openHandover(order)}
+              >
+                รับสินค้า + ชำระ
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => setCancelling({ order, reason: 'ลูกค้าไม่มารับ' })}
+              >
+                ไม่มารับ
+              </Button>
+            </>
+          ) : null}
+
+          {order.status === 'completed' ? <Pill tone="success">ปิดการขายแล้ว</Pill> : null}
+        </div>
+      </article>
     );
   };
 
   return (
-    <div className="d-flex flex-column gap-3">
-      <div className="d-flex justify-content-between align-items-end flex-wrap gap-2">
-        <div>
-          <h4 className="mb-1">กระดานพรีออเดอร์</h4>
-          <p className="text-muted mb-0 small">
-            ออเดอร์ที่ไม่ได้ยืนยันภายใน {CONFIRM_TIMEOUT_MINUTES} นาที จะถูกยกเลิกและคืนสต็อกอัตโนมัติ
-          </p>
-        </div>
-        <div className="d-flex gap-2">
-          <input
-            className="form-control form-control-sm"
-            style={{ minWidth: 200 }}
-            placeholder="ค้นหาด้วย PIN 4 หลัก หรือเบอร์โทร"
-            value={lookup}
-            onChange={(event) => setLookup(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                void lookupOrder();
-              }
-            }}
-          />
-          <button type="button" className="btn btn-sm btn-primary text-nowrap" onClick={() => void lookupOrder()}>
+    <Stack gap="md">
+      <Toolbar
+        actions={
+          <Button variant="secondary" icon="search" onClick={() => void lookupOrder()}>
             ค้นหา
-          </button>
-        </div>
-      </div>
+          </Button>
+        }
+      >
+        <SearchField
+          id="preorder-lookup"
+          label="ค้นหาออเดอร์ด้วย PIN 4 หลัก หรือเบอร์โทรลูกค้า"
+          placeholder="PIN 4 หลัก หรือเบอร์โทร"
+          value={lookup}
+          onChange={setLookup}
+          onSubmit={() => void lookupOrder()}
+          mono
+        />
+      </Toolbar>
 
-      {error && <div className="alert alert-danger py-2 small">{error}</div>}
-      {loading && <Spinner />}
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+      {loading ? <Spinner /> : null}
 
-      <div className="row g-3">
-        {COLUMNS.map((column) => (
-          <div className="col-12 col-xl-4" key={column.status}>
+      <div className={styles.board}>
+        {COLUMNS.map((column) => {
+          const rows = grouped.get(column.status) ?? [];
+          return (
             <Card
+              key={column.status}
               title={column.title}
-              actions={<Badge tone={column.tone}>{grouped.get(column.status)?.length ?? 0}</Badge>}
-              bodyClassName="pos-board-column"
+              actions={<StatusPill status={column.status} label={String(rows.length)} />}
             >
-              {grouped.get(column.status)?.length === 0 ? (
-                <p className="text-muted small mb-0">ว่าง</p>
+              {rows.length === 0 ? (
+                <p className="ln-muted">ว่าง</p>
               ) : (
-                grouped.get(column.status)?.map(renderCard)
+                <Stack gap="sm">{rows.map(renderOrder)}</Stack>
               )}
             </Card>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
+      {/*
+       * The day's takings, full width under the board rather than a fourth
+       * column: it is a table of three fields, and a 280px column would crush
+       * every row of it.
+       */}
       <Card
         title="ปิดการขายวันนี้"
-        actions={<Badge tone="success">{grouped.get('completed')?.length ?? 0}</Badge>}
+        actions={<Pill tone="success">{grouped.get('completed')?.length ?? 0}</Pill>}
+        flush
       >
-        {grouped.get('completed')?.length === 0 ? (
-          <EmptyState title="ยังไม่มีออเดอร์ที่ปิดการขายวันนี้" />
-        ) : (
-          <div className="table-responsive">
-            <table className="table table-sm mb-0">
-              <thead>
-                <tr>
-                  <th>เลขที่</th>
-                  <th>ลูกค้า</th>
-                  <th className="pos-numeric">ยอด</th>
-                </tr>
-              </thead>
-              <tbody>
-                {grouped.get('completed')?.map((order) => (
-                  <tr key={order.id}>
-                    <td>
-                      <code className="small">{order.orderNumber}</code>
-                    </td>
-                    <td className="small">{order.customerName ?? '—'}</td>
-                    <td className="pos-numeric">
-                      <Money amount={order.finalAmountThb} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <DataTable
+          columns={completedColumns}
+          rows={grouped.get('completed') ?? []}
+          getRowKey={(order) => order.id}
+          caption="ออเดอร์พรีออเดอร์ที่ปิดการขายแล้ววันนี้"
+          dense
+          empty={<EmptyState icon="receipt" title="ยังไม่มีออเดอร์ที่ปิดการขายวันนี้" />}
+        />
       </Card>
 
       {/* Phase 2: confirm, with the partial-confirmation item remover. */}
-      {confirming && (
-        <div className="modal fade show d-block" role="dialog" aria-modal="true">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">ยืนยันออเดอร์ {confirming.orderNumber}</h5>
-                <button type="button" className="btn-close" onClick={() => setConfirming(null)} />
-              </div>
-              <div className="modal-body">
-                <p className="text-muted small">
-                  ถ้าสินค้าชิ้นใดเสียหายหรือไม่พร้อม ให้ติ๊กเพื่อตัดออก ระบบจะคืนสต็อกที่จองไว้ให้ทันที
-                </p>
-                <ul className="list-group">
-                  {confirming.items.map((item) => (
-                    <li className="list-group-item d-flex justify-content-between align-items-center" key={item.id}>
-                      <div className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="checkbox"
-                          id={`remove-${item.id}`}
-                          checked={removeIds.includes(item.id)}
-                          onChange={(event) =>
-                            setRemoveIds((current) =>
-                              event.target.checked
-                                ? [...current, item.id]
-                                : current.filter((id) => id !== item.id),
-                            )
-                          }
-                        />
-                        <label className="form-check-label small" htmlFor={`remove-${item.id}`}>
-                          ตัดออก: {item.name} × {item.quantity}
-                        </label>
-                      </div>
-                      <Money amount={item.totalPrice} className="small" />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-soft-secondary" onClick={() => setConfirming(null)}>
-                  ยกเลิก
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  disabled={busyId === confirming.id}
-                  onClick={() => {
-                    const id = confirming.id;
-                    setConfirming(null);
-                    void act(id, 'confirm', { removeItemIds: removeIds });
-                  }}
-                >
-                  ยืนยันออเดอร์
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <Overlay
+        open={confirming !== null}
+        onClose={() => setConfirming(null)}
+        title={confirming ? `ยืนยันออเดอร์ ${confirming.orderNumber}` : ''}
+        description="ถ้าสินค้าชิ้นใดเสียหายหรือไม่พร้อม ให้ติ๊กเพื่อตัดออก ระบบจะคืนสต็อกที่จองไว้ให้ทันที"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirming(null)}>
+              ยกเลิก
+            </Button>
+            <Button
+              icon="check"
+              disabled={busyId === confirming?.id}
+              onClick={() => {
+                if (!confirming) {
+                  return;
+                }
+                const id = confirming.id;
+                setConfirming(null);
+                void act(id, 'confirm', { removeItemIds: removeIds });
+              }}
+            >
+              ยืนยันออเดอร์
+            </Button>
+          </>
+        }
+      >
+        <ul className={styles.lines}>
+          {confirming?.items.map((item) => (
+            <li className={styles.line} key={item.id}>
+              <label className={styles.pick}>
+                <input
+                  type="checkbox"
+                  checked={removeIds.includes(item.id)}
+                  onChange={(event) =>
+                    setRemoveIds((current) =>
+                      event.target.checked
+                        ? [...current, item.id]
+                        : current.filter((id) => id !== item.id),
+                    )
+                  }
+                />
+                <span>
+                  ตัดออก: {item.name} × {item.quantity}
+                </span>
+              </label>
+              <Money amount={item.totalPrice} />
+            </li>
+          ))}
+        </ul>
+      </Overlay>
 
       {/* Phase 4: handover and settlement. */}
-      {handover && (
-        <div className="modal fade show d-block" role="dialog" aria-modal="true">
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">รับสินค้า {handover.orderNumber}</h5>
-                <button type="button" className="btn-close" onClick={() => setHandover(null)} />
-              </div>
-              <div className="modal-body">
-                {!shift && (
-                  <div className="alert alert-warning py-2 small">
-                    ต้องเปิดลิ้นชักก่อน จึงจะรับชำระเงินได้
-                  </div>
-                )}
+      <Overlay
+        open={handover !== null}
+        onClose={() => setHandover(null)}
+        title={handover ? `รับสินค้า ${handover.orderNumber}` : ''}
+        description={handover?.customer ? `สมาชิก ${handover.customer.fullName}` : 'ลูกค้าทั่วไป'}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setHandover(null)}>
+              ปิด
+            </Button>
+            <Button
+              variant="success"
+              icon="cash"
+              disabled={busyId === handover?.id || !shift}
+              onClick={() => void complete()}
+            >
+              ยืนยันการชำระเงิน
+            </Button>
+          </>
+        }
+      >
+        <Stack gap="md">
+          {!shift ? (
+            <InlineNotice tone="warning">ต้องเปิดลิ้นชักก่อน จึงจะรับชำระเงินได้</InlineNotice>
+          ) : null}
 
-                <ul className="list-group mb-3">
-                  {handover.items.map((item) => (
-                    <li className="list-group-item d-flex justify-content-between small" key={item.id}>
-                      <span>
-                        {item.name} × {item.quantity}
-                      </span>
-                      <Money amount={item.totalPrice} />
-                    </li>
-                  ))}
-                </ul>
+          <ul className={styles.lines}>
+            {handover?.items.map((item) => (
+              <li className={styles.line} key={item.id}>
+                <span className="ln-break">
+                  {item.name} × {item.quantity}
+                </span>
+                <Money amount={item.totalPrice} />
+              </li>
+            ))}
+          </ul>
 
-                <div className="d-flex justify-content-between fw-bold mb-3">
-                  <span>ยอดที่ต้องชำระ</span>
-                  <Money amount={handover.finalAmountThb} />
-                </div>
-
-                {handover.customer && handover.customer.pointsBalance >= 100 && (
-                  <div className="form-check mb-2">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="handover-points"
-                      checked={settlement.usePoints}
-                      onChange={(event) =>
-                        setSettlement((current) => ({ ...current, usePoints: event.target.checked }))
-                      }
-                    />
-                    <label className="form-check-label small" htmlFor="handover-points">
-                      ใช้คะแนน {handover.customer.pointsBalance} คะแนน ของ {handover.customer.fullName}
-                    </label>
-                  </div>
-                )}
-
-                <div className="row g-2">
-                  <div className="col-6">
-                    <label className="form-label small" htmlFor="handover-cash">
-                      เงินสดที่รับ (บาท)
-                    </label>
-                    <input
-                      id="handover-cash"
-                      className="form-control form-control-sm pos-numeric"
-                      inputMode="decimal"
-                      value={settlement.cash}
-                      onChange={(event) =>
-                        setSettlement((current) => ({ ...current, cash: event.target.value }))
-                      }
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label small" htmlFor="handover-received">
-                      ลูกค้ายื่นมา (บาท)
-                    </label>
-                    <input
-                      id="handover-received"
-                      className="form-control form-control-sm pos-numeric"
-                      inputMode="decimal"
-                      value={settlement.receivedCash}
-                      onChange={(event) =>
-                        setSettlement((current) => ({ ...current, receivedCash: event.target.value }))
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-soft-secondary" onClick={() => setHandover(null)}>
-                  ปิด
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  disabled={busyId === handover.id || !shift}
-                  onClick={() => void complete()}
-                >
-                  ยืนยันการชำระเงิน
-                </button>
-              </div>
-            </div>
+          <div className={styles.line}>
+            <span>ยอดที่ต้องชำระ</span>
+            <Money amount={handover?.finalAmountThb ?? 0} size="lg" />
           </div>
-        </div>
-      )}
-    </div>
+
+          {handover?.customer && handover.customer.pointsBalance >= 100 ? (
+            <label className={styles.pick}>
+              <input
+                type="checkbox"
+                checked={settlement.usePoints}
+                onChange={(event) =>
+                  setSettlement((current) => ({ ...current, usePoints: event.target.checked }))
+                }
+              />
+              <span>
+                ใช้คะแนน {handover.customer.pointsBalance} คะแนน ของ {handover.customer.fullName}
+              </span>
+            </label>
+          ) : null}
+
+          <div className="ln-row">
+            <TextField
+              id="handover-cash"
+              label="เงินสดที่รับ (บาท)"
+              inputMode="decimal"
+              className="ln-num"
+              value={settlement.cash}
+              onChange={(event) =>
+                setSettlement((current) => ({ ...current, cash: event.target.value }))
+              }
+            />
+            <TextField
+              id="handover-received"
+              label="ลูกค้ายื่นมา (บาท)"
+              inputMode="decimal"
+              className="ln-num"
+              value={settlement.receivedCash}
+              onChange={(event) =>
+                setSettlement((current) => ({ ...current, receivedCash: event.target.value }))
+              }
+            />
+          </div>
+        </Stack>
+      </Overlay>
+
+      <ConfirmDialog
+        open={cancelling !== null}
+        title="ยกเลิกออเดอร์นี้?"
+        description={
+          cancelling
+            ? `ออเดอร์ ${cancelling.order.orderNumber} จะถูกยกเลิก และสต็อกที่จองไว้จะคืนเข้าระบบทันที`
+            : undefined
+        }
+        confirmLabel="ยกเลิกออเดอร์"
+        busy={busyId === cancelling?.order.id}
+        onConfirm={() => {
+          if (!cancelling) {
+            return;
+          }
+          const { order, reason } = cancelling;
+          setCancelling(null);
+          void act(order.id, 'cancel', { reason });
+        }}
+        onCancel={() => setCancelling(null)}
+      />
+    </Stack>
   );
 }

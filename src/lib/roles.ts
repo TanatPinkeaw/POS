@@ -9,6 +9,20 @@ export type Role = 'member' | 'employee' | 'admin';
 
 export const ROLES: readonly Role[] = ['member', 'employee', 'admin'];
 
+/**
+ * The one Thai spelling of each role.
+ *
+ * Kept here rather than repeated per screen: this vocabulary gets printed in the
+ * sidebar, on the roster and inside a refusal message, and three copies of a
+ * word is how one screen ends up calling an admin a "ผู้ดูแลระบบ" and another a
+ * "ผู้จัดการ" for the same account.
+ */
+export const ROLE_LABEL: Record<Role, string> = {
+  member: 'สมาชิก',
+  employee: 'พนักงาน',
+  admin: 'ผู้จัดการ',
+};
+
 /** Cashiers, floor staff, inventory clerks. */
 export function isStaff(role: Role): boolean {
   return role === 'employee' || role === 'admin';
@@ -90,13 +104,20 @@ export function requiredRolesForPath(pathname: string): Role[] | null {
  * check that matters ("refuse once a shop exists") is made by the page and the
  * route handler, which do run on the Node runtime, with the singleton primary
  * key as the final backstop.
+ *
+ * `/display` is listed for the same reason as `/login`: the screen standing at
+ * the counter has no account to sign into. Guarding it here would send a shop's
+ * customer display to a login page it can never satisfy. What actually protects
+ * it is not this list — it is that the page shows nothing until it has a device
+ * token an admin issued minutes earlier, and that every fact it receives comes
+ * from the whitelist in `display-view.ts`.
  */
 export function isPublicPath(pathname: string): boolean {
   return (
     pathname === '/login' ||
     pathname === '/' ||
     pathname === '/setup' ||
-    pathname.startsWith('/hope-ui/') ||
+    pathname === '/display' ||
     pathname.startsWith('/uploads/')
   );
 }

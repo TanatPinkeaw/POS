@@ -11,6 +11,19 @@
  */
 import { useState } from 'react';
 
+import {
+  Button,
+  Card,
+  DataTable,
+  FieldRow,
+  InlineNotice,
+  SelectField,
+  SplitPane,
+  Stack,
+  TextField,
+  type Column,
+} from '@/components/ds';
+
 export interface ReportMeta {
   type: string;
   title: string;
@@ -80,125 +93,96 @@ export function ReportExportPanel({
     }
   };
 
+  /*
+   * The preview is a `DataTable` over numbered rows rather than a bare table, so
+   * a long column list reflows into cards on a tablet instead of scrolling
+   * sideways — the same treatment every other list on these screens gets.
+   */
+  const columnRows = (selected?.columns ?? []).map((name, index) => ({ n: index + 1, name }));
+
+  const columnTable: Column<{ n: number; name: string }>[] = [
+    { key: 'n', header: '#', cardLabel: 'ลำดับ', width: '3rem', render: (row) => row.n },
+    { key: 'name', header: 'หัวคอลัมน์', render: (row) => row.name },
+  ];
+
   return (
-    <div className="row g-3">
-      <div className="col-12 col-xl-5">
-        <div className="card">
-          <div className="card-header">
-            <h5 className="card-title mb-0">เลือกช่วงข้อมูล</h5>
-          </div>
-          <div className="card-body d-flex flex-column gap-3">
-            <div>
-              <label htmlFor="report-type" className="form-label">
-                ประเภทรายงาน
-              </label>
-              <select
-                id="report-type"
-                className="form-select"
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-              >
-                {reports.map((report) => (
-                  <option key={report.type} value={report.type}>
-                    {report.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+    /*
+     * The form is the pane that holds its width and the preview takes the rest,
+     * because the two are read differently: the controls are aimed at, the column
+     * list is scanned. On a narrow screen the form comes first — it is the thing
+     * you came here to do.
+     */
+    <SplitPane
+      panelWidth="21rem"
+      stackOrder="panel-first"
+      panel={
+        <Card
+          title="เลือกช่วงข้อมูล"
+          subtitle="เลือกประเภทรายงานและช่วงวันที่ แล้วดาวน์โหลดเป็นไฟล์ Excel"
+        >
+          <Stack gap="md">
+            <SelectField
+              id="report-type"
+              label="ประเภทรายงาน"
+              value={type}
+              onChange={(event) => setType(event.target.value)}
+            >
+              {reports.map((report) => (
+                <option key={report.type} value={report.type}>
+                  {report.title}
+                </option>
+              ))}
+            </SelectField>
 
-            <div className="row g-2">
-              <div className="col-6">
-                <label htmlFor="report-from" className="form-label">
-                  ตั้งแต่วันที่
-                </label>
-                <input
-                  id="report-from"
-                  type="date"
-                  className="form-control"
-                  value={from}
-                  onChange={(event) => setFrom(event.target.value)}
-                />
-              </div>
-              <div className="col-6">
-                <label htmlFor="report-to" className="form-label">
-                  ถึงวันที่
-                </label>
-                <input
-                  id="report-to"
-                  type="date"
-                  className="form-control"
-                  value={to}
-                  onChange={(event) => setTo(event.target.value)}
-                />
-              </div>
-            </div>
+            <FieldRow columns={2}>
+              <TextField
+                id="report-from"
+                type="date"
+                label="ตั้งแต่วันที่"
+                value={from}
+                onChange={(event) => setFrom(event.target.value)}
+              />
+              <TextField
+                id="report-to"
+                type="date"
+                label="ถึงวันที่"
+                value={to}
+                onChange={(event) => setTo(event.target.value)}
+              />
+            </FieldRow>
 
-            <p className="text-muted small mb-0">
+            <p className="ln-muted">
               วันที่นับตามเวลาประเทศไทย (UTC+7) และรวมวันสิ้นสุดทั้งวัน
             </p>
 
-            {error && (
-              <div className="alert alert-danger mb-0" role="alert">
-                {error}
-              </div>
-            )}
+            {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
-            {lastFile && !error && (
-              <div className="alert alert-success mb-0" role="alert">
-                ดาวน์โหลดแล้ว: <code className="small">{lastFile}</code>
-              </div>
-            )}
+            {lastFile && !error ? (
+              <InlineNotice tone="success">
+                ดาวน์โหลดแล้ว: <code className="ln-mono">{lastFile}</code>
+              </InlineNotice>
+            ) : null}
 
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => void download()}
-              disabled={busy}
-            >
-              {busy ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
-                  กำลังสร้างไฟล์…
-                </>
-              ) : (
-                'ดาวน์โหลด Excel (.xlsx)'
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="col-12 col-xl-7">
-        <div className="card h-100">
-          <div className="card-header">
-            <h5 className="card-title mb-0">คอลัมน์ในไฟล์</h5>
-            <p className="text-muted mb-0 small">
-              {selected?.title ?? ''} — ตรงตามข้อกำหนด SRS §8
-            </p>
-          </div>
-          <div className="card-body">
-            <div className="table-responsive">
-              <table className="table table-sm mb-0">
-                <thead>
-                  <tr>
-                    <th style={{ width: '3rem' }}>#</th>
-                    <th>หัวคอลัมน์</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(selected?.columns ?? []).map((column, index) => (
-                    <tr key={column}>
-                      <td className="text-muted">{index + 1}</td>
-                      <td>{column}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            <Button block loading={busy} onClick={() => void download()}>
+              ดาวน์โหลด Excel (.xlsx)
+            </Button>
+          </Stack>
+        </Card>
+      }
+    >
+      <Card
+        title="คอลัมน์ในไฟล์"
+        subtitle={`${selected?.title ?? ''} — ตรงตามข้อกำหนด SRS §8`}
+        flush
+      >
+        <DataTable
+          columns={columnTable}
+          rows={columnRows}
+          getRowKey={(row) => String(row.n)}
+          caption="คอลัมน์ที่จะอยู่ในไฟล์ที่ดาวน์โหลด"
+        />
+      </Card>
+    </SplitPane>
   );
 }
 

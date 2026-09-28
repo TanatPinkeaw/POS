@@ -6,12 +6,29 @@
  * Categories used to be readable but not creatable, so a renter's only choices
  * were the four the seed happened to insert. Deleting is refused while products
  * still point at a category — the database refuses it too, but the useful answer
- * is "this still has 14 products", which is why the count is loaded up front.
+ * is "this still has 14 products", which is why the count is loaded up front and
+ * why the delete button is disabled rather than failing on click.
+ *
+ * Deleting asks through `ConfirmDialog` rather than `window.confirm`: a browser
+ * dialog blocks the whole tab, cannot be styled, and is not translated — and the
+ * one thing it must do here is name the category being removed.
  */
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-import { Alert, Badge, Card, EmptyState } from '@/components/hope/ui';
+import {
+  Button,
+  Card,
+  ConfirmDialog,
+  DataTable,
+  EmptyState,
+  InlineNotice,
+  Pill,
+  Stack,
+  TextField,
+  Toolbar,
+  type Column,
+} from '@/components/ds';
 import { apiFetch, apiPatch, apiPost } from '@/lib/client-api';
 
 export interface CategoryRow {
@@ -23,9 +40,20 @@ export interface CategoryRow {
 export function CategoryManager({ initialCategories }: { initialCategories: CategoryRow[] }) {
   const router = useRouter();
   const [categories, setCategories] = useState(initialCategories);
+
+  /*
+   * Same contract as the product table next door: the row edits below are local
+   * for a moment, and the refreshed props take over afterwards. It matters most
+   * after an import, which can create a category the operator never typed in — the
+   * count then has to arrive from the server, because nothing here made it.
+   */
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
   const [newName, setNewName] = useState('');
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [removing, setRemoving] = useState<CategoryRow | null>(null);
   const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -72,132 +100,159 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
 
   function remove(row: CategoryRow): Promise<void> {
     return run(async () => {
-      if (!window.confirm(`ลบหมวด "${row.name}"?`)) {
-        return;
-      }
       await apiFetch(`/api/v1/categories/${row.id}`, { method: 'DELETE' });
       setCategories((current) => current.filter((entry) => entry.id !== row.id));
+      setRemoving(null);
       setNotice({ tone: 'success', text: `ลบหมวด "${row.name}" แล้ว` });
     });
   }
 
-  return (
-    <Card title="หมวดหมู่สินค้า" subtitle={`${categories.length} หมวด`}>
-      <div className="d-flex gap-2 mb-3">
-        <div className="flex-grow-1">
-          <label className="visually-hidden" htmlFor="new-category">
-            ชื่อหมวดใหม่
-          </label>
-          <input
-            id="new-category"
-            name="categoryName"
-            autoComplete="off"
-            className="form-control form-control-sm"
-            placeholder="ชื่อหมวดใหม่"
-            value={newName}
-            onChange={(event) => setNewName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && newName.trim() !== '') {
-                event.preventDefault();
-                void create();
-              }
-            }}
-          />
-        </div>
-        <button
-          type="button"
-          className="btn btn-sm btn-primary"
-          disabled={busy || newName.trim() === ''}
-          onClick={() => void create()}
-        >
-          เพิ่มหมวด
-        </button>
-      </div>
-
-      {notice && (
-        <Alert tone={notice.tone} className="mb-3">
-          {notice.text}
-        </Alert>
-      )}
-
-      {categories.length === 0 ? (
-        <EmptyState title="ยังไม่มีหมวดหมู่" description="เพิ่มหมวดแรกเพื่อจัดกลุ่มสินค้า" />
-      ) : (
-        <ul className="list-group list-group-flush">
-          {categories.map((row) => (
-            <li
-              key={row.id}
-              className="list-group-item d-flex justify-content-between align-items-center px-0"
+  const columns: Column<CategoryRow>[] = [
+    {
+      key: 'name',
+      header: 'หมวด',
+      cardLabel: 'หมวด',
+      render: (row) =>
+        editingId === row.id ? (
+          <span className="ln-row">
+            <TextField
+              id={`rename-${row.id}`}
+              label={`ชื่อหมวดใหม่สำหรับ ${row.name}`}
+              hideLabel
+              autoComplete="off"
+              value={editingName}
+              onChange={(event) => setEditingName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && editingName.trim() !== '') {
+                  event.preventDefault();
+                  void rename(row);
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              disabled={busy || editingName.trim() === ''}
+              onClick={() => void rename(row)}
             >
-              {editingId === row.id ? (
-                <div className="d-flex gap-2 flex-grow-1 me-2">
-                  <label className="visually-hidden" htmlFor={`rename-${row.id}`}>
-                    ชื่อหมวดใหม่สำหรับ {row.name}
-                  </label>
-                  <input
-                    id={`rename-${row.id}`}
-                    name={`rename-${row.id}`}
-                    autoComplete="off"
-                    className="form-control form-control-sm"
-                    value={editingName}
-                    onChange={(event) => setEditingName(event.target.value)}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-primary"
-                    disabled={busy || editingName.trim() === ''}
-                    onClick={() => void rename(row)}
-                  >
-                    บันทึก
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-soft-secondary"
-                    onClick={() => setEditingId(null)}
-                  >
-                    ยกเลิก
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span>
-                    {row.name}{' '}
-                    <Badge tone={row.productCount > 0 ? 'primary' : 'secondary'}>
-                      {row.productCount} สินค้า
-                    </Badge>
-                  </span>
-                  <span className="d-flex gap-2">
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-soft-secondary"
-                      disabled={busy}
-                      onClick={() => {
-                        setEditingId(row.id);
-                        setEditingName(row.name);
-                      }}
-                    >
-                      เปลี่ยนชื่อ
-                    </button>
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-soft-danger"
-                      disabled={busy || row.productCount > 0}
-                      title={
-                        row.productCount > 0
-                          ? 'ย้ายสินค้าออกจากหมวดนี้ก่อนลบ'
-                          : 'ลบหมวดนี้'
-                      }
-                      onClick={() => void remove(row)}
-                    >
-                      ลบ
-                    </button>
-                  </span>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </Card>
+              บันทึก
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
+              ยกเลิก
+            </Button>
+          </span>
+        ) : (
+          row.name
+        ),
+    },
+    {
+      key: 'count',
+      header: 'สินค้า',
+      align: 'end',
+      render: (row) => (
+        <Pill tone={row.productCount > 0 ? 'brand' : 'neutral'}>{row.productCount} สินค้า</Pill>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      cardLabel: 'จัดการ',
+      align: 'end',
+      render: (row) => (
+        <span className="ln-row">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={busy || editingId === row.id}
+            onClick={() => {
+              setEditingId(row.id);
+              setEditingName(row.name);
+            }}
+          >
+            เปลี่ยนชื่อ
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={busy || row.productCount > 0}
+            title={row.productCount > 0 ? 'ย้ายสินค้าออกจากหมวดนี้ก่อนลบ' : 'ลบหมวดนี้'}
+            onClick={() => setRemoving(row)}
+          >
+            ลบ
+          </Button>
+        </span>
+      ),
+    },
+  ];
+
+  return (
+    <Stack gap="md">
+      {notice ? <InlineNotice tone={notice.tone}>{notice.text}</InlineNotice> : null}
+
+      <Card
+        title="หมวดหมู่สินค้า"
+        subtitle={`${categories.length} หมวด`}
+        toolbar={
+          <Toolbar
+            actions={
+              <Button
+                disabled={busy || newName.trim() === ''}
+                onClick={() => void create()}
+              >
+                เพิ่มหมวด
+              </Button>
+            }
+          >
+            <TextField
+              id="new-category"
+              label="ชื่อหมวดใหม่"
+              hideLabel
+              placeholder="ชื่อหมวดใหม่"
+              autoComplete="off"
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && newName.trim() !== '') {
+                  event.preventDefault();
+                  void create();
+                }
+              }}
+            />
+          </Toolbar>
+        }
+        flush
+      >
+        <DataTable
+          columns={columns}
+          rows={categories}
+          getRowKey={(row) => String(row.id)}
+          caption="หมวดหมู่สินค้าทั้งหมด"
+          empty={
+            <EmptyState
+              icon="tag"
+              title="ยังไม่มีหมวดหมู่"
+              description="เพิ่มหมวดแรกเพื่อจัดกลุ่มสินค้า"
+            />
+          }
+        />
+      </Card>
+
+      <ConfirmDialog
+        open={removing !== null}
+        title="ลบหมวดนี้?"
+        description={
+          removing
+            ? `หมวด "${removing.name}" จะหายไปจากตะกร้าและรายงาน — ย้อนกลับไม่ได้`
+            : undefined
+        }
+        confirmLabel="ลบหมวด"
+        busy={busy}
+        onConfirm={() => {
+          if (removing) {
+            void remove(removing);
+          }
+        }}
+        onCancel={() => setRemoving(null)}
+      />
+    </Stack>
   );
 }

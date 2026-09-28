@@ -1,3 +1,4 @@
+import { PageHeader, Pill, Stack } from '@/components/ds';
 import type { ShopProduct } from '@/components/shop/ShopCatalog';
 import { ShopCatalog } from '@/components/shop/ShopCatalog';
 import { getSessionUser } from '@/lib/auth';
@@ -5,6 +6,13 @@ import { prisma } from '@/lib/db';
 import { availableQty } from '@/lib/inventory';
 import { fromDecimal } from '@/lib/money';
 
+/**
+ * The member storefront — SRS §3 Phase 1.
+ *
+ * `category_id` is loaded alongside the name so the aisle headings can wear the
+ * category's own colour (`CategoryChip`), which is what makes a shop with twenty
+ * aisles browsable rather than one long list of product names.
+ */
 export default async function ShopProductsPage() {
   const session = await getSessionUser();
 
@@ -33,10 +41,22 @@ export default async function ShopProductsPage() {
       stock_qty: product.stock_qty,
       reserved_qty: product.reserved_qty,
     }),
+    categoryId: product.category_id,
     categoryName: product.category?.name ?? null,
   }));
 
   return (
-    <ShopCatalog initialProducts={initialProducts} pointsBalance={user?.points_balance ?? 0} />
+    <Stack gap="lg">
+      <PageHeader
+        title="สินค้าทั้งหมด"
+        subtitle="จำนวนที่แสดงคือจำนวนที่ขายได้จริง หลังหักสินค้าที่ถูกจองไว้แล้ว"
+        actions={
+          <Pill tone="warning" icon="star">
+            {(user?.points_balance ?? 0).toLocaleString('en-US')} คะแนน
+          </Pill>
+        }
+      />
+      <ShopCatalog initialProducts={initialProducts} />
+    </Stack>
   );
 }

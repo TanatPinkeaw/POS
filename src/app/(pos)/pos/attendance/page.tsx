@@ -1,3 +1,4 @@
+import { PageHeader, Stack } from '@/components/ds';
 import { TimeClock } from '@/components/pos/TimeClock';
 import { staffAttendanceSnapshot } from '@/lib/attendance';
 import { toSnapshotView } from '@/lib/attendance-view';
@@ -18,16 +19,12 @@ export default async function AttendancePage() {
   const snapshot = await staffAttendanceSnapshot({ employeeId: session.id, day: today });
 
   return (
-    <div className="d-flex flex-column gap-3">
-      <div>
-        {/* `.h4` keeps the size; the element gives the page its missing h1. */}
-        <h1 className="h4 mb-1">ลงเวลาทำงาน</h1>
-        <p className="text-muted mb-0 small">
-          ลงเวลาเข้าเมื่อมาถึง และลงเวลาออกเมื่อเลิกงาน — ชั่วโมงทำงานคำนวณให้อัตโนมัติ
-        </p>
-      </div>
-
+    <Stack gap="lg">
+      <PageHeader
+        title="ลงเวลาทำงาน"
+        subtitle="ลงเวลาเข้าเมื่อมาถึง และลงเวลาออกเมื่อเลิกงาน — ชั่วโมงทำงานคำนวณให้อัตโนมัติ"
+      />
       <TimeClock initial={toSnapshotView(snapshot)} today={today} />
-    </div>
+    </Stack>
   );
 }

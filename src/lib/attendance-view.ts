@@ -141,12 +141,12 @@ export function durationLabel(hours: number | null): string {
 }
 
 /** A tone for a lateness/label cell, so late arrivals stand out. */
-export function latenessTone(label: string): 'success' | 'warning' | 'secondary' {
+export function latenessTone(label: string): 'success' | 'warning' | 'neutral' {
   if (label.includes('สาย')) {
     return 'warning';
   }
   if (label === 'ตรงเวลา') {
     return 'success';
   }
-  return 'secondary';
+  return 'neutral';
 }

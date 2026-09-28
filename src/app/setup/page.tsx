@@ -3,6 +3,8 @@ import { redirect } from 'next/navigation';
 import { SetupWizard } from '@/components/setup/SetupWizard';
 import { hasShop } from '@/lib/shop';
 
+import styles from './setup.module.css';
+
 /**
  * First-run setup (ADR 0002).
  *
@@ -23,19 +25,17 @@ export default async function SetupPage() {
   }
 
   return (
-    <div className="container-fluid">
-      <div className="row justify-content-center py-5">
-        <div className="col-12 col-lg-8 col-xl-7">
-          <div className="text-center mb-4">
-            <h1 className="h4 mb-1">ตั้งค่าระบบครั้งแรก</h1>
-            <p className="text-muted mb-0 small">
-              ใช้เวลาประมาณ 2 นาที — ตั้งชื่อร้าน ภาษี และบัญชีผู้ดูแลระบบ
-            </p>
-          </div>
+    <main className={styles.page}>
+      <div className={styles.inner}>
+        <header className={styles.head}>
+          <h1>ตั้งค่าระบบครั้งแรก</h1>
+          <p className="ln-muted">
+            ใช้เวลาประมาณ 2 นาที — ตั้งชื่อร้าน ภาษี และบัญชีผู้ดูแลระบบ
+          </p>
+        </header>
 
-          <SetupWizard />
-        </div>
+        <SetupWizard />
       </div>
-    </div>
+    </main>
   );
 }

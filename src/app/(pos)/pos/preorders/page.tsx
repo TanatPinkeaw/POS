@@ -1,3 +1,4 @@
+import { InlineNotice, PageHeader, Stack } from '@/components/ds';
 import { PreOrderBoard } from '@/components/pos/PreOrderBoard';
 import { expireStalePendingOrders } from '@/lib/orders';
 
@@ -13,13 +14,17 @@ export default async function PreOrdersPage() {
   const swept = await expireStalePendingOrders();
 
   return (
-    <div className="d-flex flex-column gap-3">
-      {swept.expired > 0 && (
-        <div className="alert alert-warning py-2 small mb-0">
+    <Stack gap="lg">
+      <PageHeader
+        title="กระดานพรีออเดอร์"
+        subtitle="ออเดอร์ที่ไม่ได้ยืนยันภายใน 15 นาที จะถูกยกเลิกและคืนสต็อกอัตโนมัติ"
+      />
+      {swept.expired > 0 ? (
+        <InlineNotice tone="warning">
           คืนสต็อกจากออเดอร์ที่หมดอายุแล้ว {swept.expired} รายการ
-        </div>
-      )}
+        </InlineNotice>
+      ) : null}
       <PreOrderBoard />
-    </div>
+    </Stack>
   );
 }

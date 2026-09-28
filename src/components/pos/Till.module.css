@@ -437,6 +437,17 @@
   color: var(--ln-danger);
 }
 
+/*
+ * Where the PromptPay QR goes. Centred, because the customer is being asked to
+ * point a phone at it and everything else on the sheet is a control the cashier
+ * operates.
+ */
+.qrArea {
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-3);
+}
+
 .hint {
   font-size: var(--ln-size-xs);
   color: var(--ln-text-muted);
