@@ -306,6 +306,7 @@ export type payment_intentsWhereInput = {
   cashier?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   confirmed_by?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   order?: Prisma.XOR<Prisma.OrdersNullableScalarRelationFilter, Prisma.ordersWhereInput> | null
+  inbound_transfers?: Prisma.Inbound_paymentsListRelationFilter
 }
 
 export type payment_intentsOrderByWithRelationInput = {
@@ -326,6 +327,7 @@ export type payment_intentsOrderByWithRelationInput = {
   cashier?: Prisma.usersOrderByWithRelationInput
   confirmed_by?: Prisma.usersOrderByWithRelationInput
   order?: Prisma.ordersOrderByWithRelationInput
+  inbound_transfers?: Prisma.inbound_paymentsOrderByRelationAggregateInput
 }
 
 export type payment_intentsWhereUniqueInput = Prisma.AtLeast<{
@@ -349,6 +351,7 @@ export type payment_intentsWhereUniqueInput = Prisma.AtLeast<{
   cashier?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   confirmed_by?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   order?: Prisma.XOR<Prisma.OrdersNullableScalarRelationFilter, Prisma.ordersWhereInput> | null
+  inbound_transfers?: Prisma.Inbound_paymentsListRelationFilter
 }, "id" | "ref">
 
 export type payment_intentsOrderByWithAggregationInput = {
@@ -405,6 +408,7 @@ export type payment_intentsCreateInput = {
   cashier: Prisma.usersCreateNestedOneWithoutPayment_intentsInput
   confirmed_by?: Prisma.usersCreateNestedOneWithoutIntents_confirmedInput
   order?: Prisma.ordersCreateNestedOneWithoutPayment_intentsInput
+  inbound_transfers?: Prisma.inbound_paymentsCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsUncheckedCreateInput = {
@@ -421,6 +425,7 @@ export type payment_intentsUncheckedCreateInput = {
   consumed_at?: Date | string | null
   confirmed_by_user_id?: string | null
   created_at?: Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsUpdateInput = {
@@ -437,6 +442,7 @@ export type payment_intentsUpdateInput = {
   cashier?: Prisma.usersUpdateOneRequiredWithoutPayment_intentsNestedInput
   confirmed_by?: Prisma.usersUpdateOneWithoutIntents_confirmedNestedInput
   order?: Prisma.ordersUpdateOneWithoutPayment_intentsNestedInput
+  inbound_transfers?: Prisma.inbound_paymentsUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateInput = {
@@ -453,6 +459,7 @@ export type payment_intentsUncheckedUpdateInput = {
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   confirmed_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsCreateManyInput = {
@@ -567,6 +574,11 @@ export type payment_intentsSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   shift_id?: Prisma.SortOrder
   amount?: Prisma.SortOrder
+}
+
+export type Payment_intentsNullableScalarRelationFilter = {
+  is?: Prisma.payment_intentsWhereInput | null
+  isNot?: Prisma.payment_intentsWhereInput | null
 }
 
 export type payment_intentsCreateNestedManyWithoutCashierInput = {
@@ -741,6 +753,22 @@ export type Enumpayment_intent_statusFieldUpdateOperationsInput = {
   set?: $Enums.payment_intent_status
 }
 
+export type payment_intentsCreateNestedOneWithoutInbound_transfersInput = {
+  create?: Prisma.XOR<Prisma.payment_intentsCreateWithoutInbound_transfersInput, Prisma.payment_intentsUncheckedCreateWithoutInbound_transfersInput>
+  connectOrCreate?: Prisma.payment_intentsCreateOrConnectWithoutInbound_transfersInput
+  connect?: Prisma.payment_intentsWhereUniqueInput
+}
+
+export type payment_intentsUpdateOneWithoutInbound_transfersNestedInput = {
+  create?: Prisma.XOR<Prisma.payment_intentsCreateWithoutInbound_transfersInput, Prisma.payment_intentsUncheckedCreateWithoutInbound_transfersInput>
+  connectOrCreate?: Prisma.payment_intentsCreateOrConnectWithoutInbound_transfersInput
+  upsert?: Prisma.payment_intentsUpsertWithoutInbound_transfersInput
+  disconnect?: Prisma.payment_intentsWhereInput | boolean
+  delete?: Prisma.payment_intentsWhereInput | boolean
+  connect?: Prisma.payment_intentsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.payment_intentsUpdateToOneWithWhereWithoutInbound_transfersInput, Prisma.payment_intentsUpdateWithoutInbound_transfersInput>, Prisma.payment_intentsUncheckedUpdateWithoutInbound_transfersInput>
+}
+
 export type payment_intentsCreateWithoutCashierInput = {
   id?: bigint | number
   ref: string
@@ -754,6 +782,7 @@ export type payment_intentsCreateWithoutCashierInput = {
   shift: Prisma.cash_shiftsCreateNestedOneWithoutPayment_intentsInput
   confirmed_by?: Prisma.usersCreateNestedOneWithoutIntents_confirmedInput
   order?: Prisma.ordersCreateNestedOneWithoutPayment_intentsInput
+  inbound_transfers?: Prisma.inbound_paymentsCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsUncheckedCreateWithoutCashierInput = {
@@ -769,6 +798,7 @@ export type payment_intentsUncheckedCreateWithoutCashierInput = {
   consumed_at?: Date | string | null
   confirmed_by_user_id?: string | null
   created_at?: Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsCreateOrConnectWithoutCashierInput = {
@@ -794,6 +824,7 @@ export type payment_intentsCreateWithoutConfirmed_byInput = {
   shift: Prisma.cash_shiftsCreateNestedOneWithoutPayment_intentsInput
   cashier: Prisma.usersCreateNestedOneWithoutPayment_intentsInput
   order?: Prisma.ordersCreateNestedOneWithoutPayment_intentsInput
+  inbound_transfers?: Prisma.inbound_paymentsCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsUncheckedCreateWithoutConfirmed_byInput = {
@@ -809,6 +840,7 @@ export type payment_intentsUncheckedCreateWithoutConfirmed_byInput = {
   paid_at?: Date | string | null
   consumed_at?: Date | string | null
   created_at?: Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsCreateOrConnectWithoutConfirmed_byInput = {
@@ -885,6 +917,7 @@ export type payment_intentsCreateWithoutShiftInput = {
   cashier: Prisma.usersCreateNestedOneWithoutPayment_intentsInput
   confirmed_by?: Prisma.usersCreateNestedOneWithoutIntents_confirmedInput
   order?: Prisma.ordersCreateNestedOneWithoutPayment_intentsInput
+  inbound_transfers?: Prisma.inbound_paymentsCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsUncheckedCreateWithoutShiftInput = {
@@ -900,6 +933,7 @@ export type payment_intentsUncheckedCreateWithoutShiftInput = {
   consumed_at?: Date | string | null
   confirmed_by_user_id?: string | null
   created_at?: Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsCreateOrConnectWithoutShiftInput = {
@@ -941,6 +975,7 @@ export type payment_intentsCreateWithoutOrderInput = {
   shift: Prisma.cash_shiftsCreateNestedOneWithoutPayment_intentsInput
   cashier: Prisma.usersCreateNestedOneWithoutPayment_intentsInput
   confirmed_by?: Prisma.usersCreateNestedOneWithoutIntents_confirmedInput
+  inbound_transfers?: Prisma.inbound_paymentsCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsUncheckedCreateWithoutOrderInput = {
@@ -956,6 +991,7 @@ export type payment_intentsUncheckedCreateWithoutOrderInput = {
   consumed_at?: Date | string | null
   confirmed_by_user_id?: string | null
   created_at?: Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutIntentInput
 }
 
 export type payment_intentsCreateOrConnectWithoutOrderInput = {
@@ -982,6 +1018,86 @@ export type payment_intentsUpdateWithWhereUniqueWithoutOrderInput = {
 export type payment_intentsUpdateManyWithWhereWithoutOrderInput = {
   where: Prisma.payment_intentsScalarWhereInput
   data: Prisma.XOR<Prisma.payment_intentsUpdateManyMutationInput, Prisma.payment_intentsUncheckedUpdateManyWithoutOrderInput>
+}
+
+export type payment_intentsCreateWithoutInbound_transfersInput = {
+  id?: bigint | number
+  ref: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  qr_payload: string
+  status?: $Enums.payment_intent_status
+  expires_at: Date | string
+  paid_at?: Date | string | null
+  consumed_at?: Date | string | null
+  created_at?: Date | string
+  shift: Prisma.cash_shiftsCreateNestedOneWithoutPayment_intentsInput
+  cashier: Prisma.usersCreateNestedOneWithoutPayment_intentsInput
+  confirmed_by?: Prisma.usersCreateNestedOneWithoutIntents_confirmedInput
+  order?: Prisma.ordersCreateNestedOneWithoutPayment_intentsInput
+}
+
+export type payment_intentsUncheckedCreateWithoutInbound_transfersInput = {
+  id?: bigint | number
+  ref: string
+  shift_id: number
+  cashier_id: string
+  order_id?: string | null
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  qr_payload: string
+  status?: $Enums.payment_intent_status
+  expires_at: Date | string
+  paid_at?: Date | string | null
+  consumed_at?: Date | string | null
+  confirmed_by_user_id?: string | null
+  created_at?: Date | string
+}
+
+export type payment_intentsCreateOrConnectWithoutInbound_transfersInput = {
+  where: Prisma.payment_intentsWhereUniqueInput
+  create: Prisma.XOR<Prisma.payment_intentsCreateWithoutInbound_transfersInput, Prisma.payment_intentsUncheckedCreateWithoutInbound_transfersInput>
+}
+
+export type payment_intentsUpsertWithoutInbound_transfersInput = {
+  update: Prisma.XOR<Prisma.payment_intentsUpdateWithoutInbound_transfersInput, Prisma.payment_intentsUncheckedUpdateWithoutInbound_transfersInput>
+  create: Prisma.XOR<Prisma.payment_intentsCreateWithoutInbound_transfersInput, Prisma.payment_intentsUncheckedCreateWithoutInbound_transfersInput>
+  where?: Prisma.payment_intentsWhereInput
+}
+
+export type payment_intentsUpdateToOneWithWhereWithoutInbound_transfersInput = {
+  where?: Prisma.payment_intentsWhereInput
+  data: Prisma.XOR<Prisma.payment_intentsUpdateWithoutInbound_transfersInput, Prisma.payment_intentsUncheckedUpdateWithoutInbound_transfersInput>
+}
+
+export type payment_intentsUpdateWithoutInbound_transfersInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  ref?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  qr_payload?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.Enumpayment_intent_statusFieldUpdateOperationsInput | $Enums.payment_intent_status
+  expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shift?: Prisma.cash_shiftsUpdateOneRequiredWithoutPayment_intentsNestedInput
+  cashier?: Prisma.usersUpdateOneRequiredWithoutPayment_intentsNestedInput
+  confirmed_by?: Prisma.usersUpdateOneWithoutIntents_confirmedNestedInput
+  order?: Prisma.ordersUpdateOneWithoutPayment_intentsNestedInput
+}
+
+export type payment_intentsUncheckedUpdateWithoutInbound_transfersInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  ref?: Prisma.StringFieldUpdateOperationsInput | string
+  shift_id?: Prisma.IntFieldUpdateOperationsInput | number
+  cashier_id?: Prisma.StringFieldUpdateOperationsInput | string
+  order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  qr_payload?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.Enumpayment_intent_statusFieldUpdateOperationsInput | $Enums.payment_intent_status
+  expires_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirmed_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type payment_intentsCreateManyCashierInput = {
@@ -1027,6 +1143,7 @@ export type payment_intentsUpdateWithoutCashierInput = {
   shift?: Prisma.cash_shiftsUpdateOneRequiredWithoutPayment_intentsNestedInput
   confirmed_by?: Prisma.usersUpdateOneWithoutIntents_confirmedNestedInput
   order?: Prisma.ordersUpdateOneWithoutPayment_intentsNestedInput
+  inbound_transfers?: Prisma.inbound_paymentsUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateWithoutCashierInput = {
@@ -1042,6 +1159,7 @@ export type payment_intentsUncheckedUpdateWithoutCashierInput = {
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   confirmed_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateManyWithoutCashierInput = {
@@ -1072,6 +1190,7 @@ export type payment_intentsUpdateWithoutConfirmed_byInput = {
   shift?: Prisma.cash_shiftsUpdateOneRequiredWithoutPayment_intentsNestedInput
   cashier?: Prisma.usersUpdateOneRequiredWithoutPayment_intentsNestedInput
   order?: Prisma.ordersUpdateOneWithoutPayment_intentsNestedInput
+  inbound_transfers?: Prisma.inbound_paymentsUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateWithoutConfirmed_byInput = {
@@ -1087,6 +1206,7 @@ export type payment_intentsUncheckedUpdateWithoutConfirmed_byInput = {
   paid_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateManyWithoutConfirmed_byInput = {
@@ -1132,6 +1252,7 @@ export type payment_intentsUpdateWithoutShiftInput = {
   cashier?: Prisma.usersUpdateOneRequiredWithoutPayment_intentsNestedInput
   confirmed_by?: Prisma.usersUpdateOneWithoutIntents_confirmedNestedInput
   order?: Prisma.ordersUpdateOneWithoutPayment_intentsNestedInput
+  inbound_transfers?: Prisma.inbound_paymentsUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateWithoutShiftInput = {
@@ -1147,6 +1268,7 @@ export type payment_intentsUncheckedUpdateWithoutShiftInput = {
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   confirmed_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateManyWithoutShiftInput = {
@@ -1192,6 +1314,7 @@ export type payment_intentsUpdateWithoutOrderInput = {
   shift?: Prisma.cash_shiftsUpdateOneRequiredWithoutPayment_intentsNestedInput
   cashier?: Prisma.usersUpdateOneRequiredWithoutPayment_intentsNestedInput
   confirmed_by?: Prisma.usersUpdateOneWithoutIntents_confirmedNestedInput
+  inbound_transfers?: Prisma.inbound_paymentsUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateWithoutOrderInput = {
@@ -1207,6 +1330,7 @@ export type payment_intentsUncheckedUpdateWithoutOrderInput = {
   consumed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   confirmed_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  inbound_transfers?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutIntentNestedInput
 }
 
 export type payment_intentsUncheckedUpdateManyWithoutOrderInput = {
@@ -1224,6 +1348,35 @@ export type payment_intentsUncheckedUpdateManyWithoutOrderInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type Payment_intentsCountOutputType
+ */
+
+export type Payment_intentsCountOutputType = {
+  inbound_transfers: number
+}
+
+export type Payment_intentsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  inbound_transfers?: boolean | Payment_intentsCountOutputTypeCountInbound_transfersArgs
+}
+
+/**
+ * Payment_intentsCountOutputType without action
+ */
+export type Payment_intentsCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Payment_intentsCountOutputType
+   */
+  select?: Prisma.Payment_intentsCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * Payment_intentsCountOutputType without action
+ */
+export type Payment_intentsCountOutputTypeCountInbound_transfersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.inbound_paymentsWhereInput
+}
 
 
 export type payment_intentsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1244,6 +1397,8 @@ export type payment_intentsSelect<ExtArgs extends runtime.Types.Extensions.Inter
   cashier?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   confirmed_by?: boolean | Prisma.payment_intents$confirmed_byArgs<ExtArgs>
   order?: boolean | Prisma.payment_intents$orderArgs<ExtArgs>
+  inbound_transfers?: boolean | Prisma.payment_intents$inbound_transfersArgs<ExtArgs>
+  _count?: boolean | Prisma.Payment_intentsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["payment_intents"]>
 
 export type payment_intentsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1308,6 +1463,8 @@ export type payment_intentsInclude<ExtArgs extends runtime.Types.Extensions.Inte
   cashier?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   confirmed_by?: boolean | Prisma.payment_intents$confirmed_byArgs<ExtArgs>
   order?: boolean | Prisma.payment_intents$orderArgs<ExtArgs>
+  inbound_transfers?: boolean | Prisma.payment_intents$inbound_transfersArgs<ExtArgs>
+  _count?: boolean | Prisma.Payment_intentsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type payment_intentsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   shift?: boolean | Prisma.cash_shiftsDefaultArgs<ExtArgs>
@@ -1329,6 +1486,13 @@ export type $payment_intentsPayload<ExtArgs extends runtime.Types.Extensions.Int
     cashier: Prisma.$usersPayload<ExtArgs>
     confirmed_by: Prisma.$usersPayload<ExtArgs> | null
     order: Prisma.$ordersPayload<ExtArgs> | null
+    /**
+     * *
+     *    * Transfers the bank reported against this QR. The relation is what makes
+     *    * `inbound_payments.intent_ref` a fact rather than a string that used to be a
+     *    * reference: a row claiming to have closed a bill has to name a real one.
+     */
+    inbound_transfers: Prisma.$inbound_paymentsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: bigint
@@ -1754,6 +1918,7 @@ export interface Prisma__payment_intentsClient<T, Null = never, ExtArgs extends 
   cashier<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   confirmed_by<T extends Prisma.payment_intents$confirmed_byArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.payment_intents$confirmed_byArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   order<T extends Prisma.payment_intents$orderArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.payment_intents$orderArgs<ExtArgs>>): Prisma.Prisma__ordersClient<runtime.Types.Result.GetResult<Prisma.$ordersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  inbound_transfers<T extends Prisma.payment_intents$inbound_transfersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.payment_intents$inbound_transfersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$inbound_paymentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2232,6 +2397,30 @@ export type payment_intents$orderArgs<ExtArgs extends runtime.Types.Extensions.I
    */
   include?: Prisma.ordersInclude<ExtArgs> | null
   where?: Prisma.ordersWhereInput
+}
+
+/**
+ * payment_intents.inbound_transfers
+ */
+export type payment_intents$inbound_transfersArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the inbound_payments
+   */
+  select?: Prisma.inbound_paymentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the inbound_payments
+   */
+  omit?: Prisma.inbound_paymentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.inbound_paymentsInclude<ExtArgs> | null
+  where?: Prisma.inbound_paymentsWhereInput
+  orderBy?: Prisma.inbound_paymentsOrderByWithRelationInput | Prisma.inbound_paymentsOrderByWithRelationInput[]
+  cursor?: Prisma.inbound_paymentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Inbound_paymentsScalarFieldEnum | Prisma.Inbound_paymentsScalarFieldEnum[]
 }
 
 /**

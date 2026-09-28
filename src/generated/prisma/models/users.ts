@@ -300,6 +300,7 @@ export type usersWhereInput = {
   display_devices?: Prisma.Display_devicesListRelationFilter
   credit_notes_issued?: Prisma.Credit_notesListRelationFilter
   credit_notes_approved?: Prisma.Credit_notesListRelationFilter
+  inbound_dismissals?: Prisma.Inbound_paymentsListRelationFilter
 }
 
 export type usersOrderByWithRelationInput = {
@@ -332,6 +333,7 @@ export type usersOrderByWithRelationInput = {
   display_devices?: Prisma.display_devicesOrderByRelationAggregateInput
   credit_notes_issued?: Prisma.credit_notesOrderByRelationAggregateInput
   credit_notes_approved?: Prisma.credit_notesOrderByRelationAggregateInput
+  inbound_dismissals?: Prisma.inbound_paymentsOrderByRelationAggregateInput
 }
 
 export type usersWhereUniqueInput = Prisma.AtLeast<{
@@ -367,6 +369,7 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   display_devices?: Prisma.Display_devicesListRelationFilter
   credit_notes_issued?: Prisma.Credit_notesListRelationFilter
   credit_notes_approved?: Prisma.Credit_notesListRelationFilter
+  inbound_dismissals?: Prisma.Inbound_paymentsListRelationFilter
 }, "id" | "email" | "phone">
 
 export type usersOrderByWithAggregationInput = {
@@ -439,6 +442,7 @@ export type usersCreateInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateInput = {
@@ -471,6 +475,7 @@ export type usersUncheckedCreateInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUpdateInput = {
@@ -503,6 +508,7 @@ export type usersUpdateInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateInput = {
@@ -535,6 +541,7 @@ export type usersUncheckedUpdateInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateManyInput = {
@@ -871,6 +878,22 @@ export type usersUpdateOneWithoutIntents_confirmedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutIntents_confirmedInput, Prisma.usersUpdateWithoutIntents_confirmedInput>, Prisma.usersUncheckedUpdateWithoutIntents_confirmedInput>
 }
 
+export type usersCreateNestedOneWithoutInbound_dismissalsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutInbound_dismissalsInput, Prisma.usersUncheckedCreateWithoutInbound_dismissalsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutInbound_dismissalsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutInbound_dismissalsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutInbound_dismissalsInput, Prisma.usersUncheckedCreateWithoutInbound_dismissalsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutInbound_dismissalsInput
+  upsert?: Prisma.usersUpsertWithoutInbound_dismissalsInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutInbound_dismissalsInput, Prisma.usersUpdateWithoutInbound_dismissalsInput>, Prisma.usersUncheckedUpdateWithoutInbound_dismissalsInput>
+}
+
 export type usersCreateNestedOneWithoutDisplay_devicesInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutDisplay_devicesInput, Prisma.usersUncheckedCreateWithoutDisplay_devicesInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutDisplay_devicesInput
@@ -930,6 +953,7 @@ export type usersCreateWithoutStock_logsInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutStock_logsInput = {
@@ -961,6 +985,7 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutStock_logsInput = {
@@ -1008,6 +1033,7 @@ export type usersUpdateWithoutStock_logsInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutStock_logsInput = {
@@ -1039,6 +1065,7 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutSchedule_shiftsInput = {
@@ -1070,6 +1097,7 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
@@ -1101,6 +1129,7 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutSchedule_shiftsInput = {
@@ -1137,6 +1166,7 @@ export type usersCreateWithoutSchedules_authoredInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutSchedules_authoredInput = {
@@ -1168,6 +1198,7 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutSchedules_authoredInput = {
@@ -1215,6 +1246,7 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
@@ -1246,6 +1278,7 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUpsertWithoutSchedules_authoredInput = {
@@ -1288,6 +1321,7 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
@@ -1319,6 +1353,7 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutTime_logsInput = {
@@ -1350,6 +1385,7 @@ export type usersCreateWithoutTime_logsInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutTime_logsInput = {
@@ -1381,6 +1417,7 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutTime_logsInput = {
@@ -1428,6 +1465,7 @@ export type usersUpdateWithoutTime_logsInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTime_logsInput = {
@@ -1459,6 +1497,7 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutShifts_openedInput = {
@@ -1490,6 +1529,7 @@ export type usersCreateWithoutShifts_openedInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutShifts_openedInput = {
@@ -1521,6 +1561,7 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutShifts_openedInput = {
@@ -1557,6 +1598,7 @@ export type usersCreateWithoutShifts_closedInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutShifts_closedInput = {
@@ -1588,6 +1630,7 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutShifts_closedInput = {
@@ -1635,6 +1678,7 @@ export type usersUpdateWithoutShifts_openedInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShifts_openedInput = {
@@ -1666,6 +1710,7 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUpsertWithoutShifts_closedInput = {
@@ -1708,6 +1753,7 @@ export type usersUpdateWithoutShifts_closedInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShifts_closedInput = {
@@ -1739,6 +1785,7 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutAudit_logs_actedInput = {
@@ -1770,6 +1817,7 @@ export type usersCreateWithoutAudit_logs_actedInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
@@ -1801,6 +1849,7 @@ export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutAudit_logs_actedInput = {
@@ -1837,6 +1886,7 @@ export type usersCreateWithoutAudit_logs_approvedInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
@@ -1868,6 +1918,7 @@ export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutAudit_logs_approvedInput = {
@@ -1915,6 +1966,7 @@ export type usersUpdateWithoutAudit_logs_actedInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
@@ -1946,6 +1998,7 @@ export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUpsertWithoutAudit_logs_approvedInput = {
@@ -1988,6 +2041,7 @@ export type usersUpdateWithoutAudit_logs_approvedInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
@@ -2019,6 +2073,7 @@ export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutOrders_as_customerInput = {
@@ -2050,6 +2105,7 @@ export type usersCreateWithoutOrders_as_customerInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutOrders_as_customerInput = {
@@ -2081,6 +2137,7 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutOrders_as_customerInput = {
@@ -2117,6 +2174,7 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
@@ -2148,6 +2206,7 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutOrders_as_cashierInput = {
@@ -2195,6 +2254,7 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
@@ -2226,6 +2286,7 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUpsertWithoutOrders_as_cashierInput = {
@@ -2268,6 +2329,7 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
@@ -2299,6 +2361,7 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutCredit_notes_issuedInput = {
@@ -2330,6 +2393,7 @@ export type usersCreateWithoutCredit_notes_issuedInput = {
   intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
@@ -2361,6 +2425,7 @@ export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
   intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutCredit_notes_issuedInput = {
@@ -2397,6 +2462,7 @@ export type usersCreateWithoutCredit_notes_approvedInput = {
   intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
@@ -2428,6 +2494,7 @@ export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
   intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutCredit_notes_approvedInput = {
@@ -2475,6 +2542,7 @@ export type usersUpdateWithoutCredit_notes_issuedInput = {
   intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
@@ -2506,6 +2574,7 @@ export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
   intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUpsertWithoutCredit_notes_approvedInput = {
@@ -2548,6 +2617,7 @@ export type usersUpdateWithoutCredit_notes_approvedInput = {
   intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
@@ -2579,6 +2649,7 @@ export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
   intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutPayment_intentsInput = {
@@ -2610,6 +2681,7 @@ export type usersCreateWithoutPayment_intentsInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutPayment_intentsInput = {
@@ -2641,6 +2713,7 @@ export type usersUncheckedCreateWithoutPayment_intentsInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutPayment_intentsInput = {
@@ -2677,6 +2750,7 @@ export type usersCreateWithoutIntents_confirmedInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutIntents_confirmedInput = {
@@ -2708,6 +2782,7 @@ export type usersUncheckedCreateWithoutIntents_confirmedInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutIntents_confirmedInput = {
@@ -2755,6 +2830,7 @@ export type usersUpdateWithoutPayment_intentsInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPayment_intentsInput = {
@@ -2786,6 +2862,7 @@ export type usersUncheckedUpdateWithoutPayment_intentsInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUpsertWithoutIntents_confirmedInput = {
@@ -2828,6 +2905,7 @@ export type usersUpdateWithoutIntents_confirmedInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
@@ -2856,6 +2934,151 @@ export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
   audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
   audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
+}
+
+export type usersCreateWithoutInbound_dismissalsInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+}
+
+export type usersUncheckedCreateWithoutInbound_dismissalsInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+}
+
+export type usersCreateOrConnectWithoutInbound_dismissalsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutInbound_dismissalsInput, Prisma.usersUncheckedCreateWithoutInbound_dismissalsInput>
+}
+
+export type usersUpsertWithoutInbound_dismissalsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutInbound_dismissalsInput, Prisma.usersUncheckedUpdateWithoutInbound_dismissalsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutInbound_dismissalsInput, Prisma.usersUncheckedCreateWithoutInbound_dismissalsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutInbound_dismissalsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutInbound_dismissalsInput, Prisma.usersUncheckedUpdateWithoutInbound_dismissalsInput>
+}
+
+export type usersUpdateWithoutInbound_dismissalsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+}
+
+export type usersUncheckedUpdateWithoutInbound_dismissalsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
@@ -2890,6 +3113,7 @@ export type usersCreateWithoutDisplay_devicesInput = {
   intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutDisplay_devicesInput = {
@@ -2921,6 +3145,7 @@ export type usersUncheckedCreateWithoutDisplay_devicesInput = {
   intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutDisplay_devicesInput = {
@@ -2968,6 +3193,7 @@ export type usersUpdateWithoutDisplay_devicesInput = {
   intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
@@ -2999,6 +3225,7 @@ export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
   intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersCreateWithoutPoint_transactionsInput = {
@@ -3030,6 +3257,7 @@ export type usersCreateWithoutPoint_transactionsInput = {
   display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersUncheckedCreateWithoutPoint_transactionsInput = {
@@ -3061,6 +3289,7 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
   credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
   credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
 }
 
 export type usersCreateOrConnectWithoutPoint_transactionsInput = {
@@ -3108,6 +3337,7 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
@@ -3139,6 +3369,7 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
   credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
   credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
 }
 
 
@@ -3163,6 +3394,7 @@ export type UsersCountOutputType = {
   display_devices: number
   credit_notes_issued: number
   credit_notes_approved: number
+  inbound_dismissals: number
 }
 
 export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3182,6 +3414,7 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   display_devices?: boolean | UsersCountOutputTypeCountDisplay_devicesArgs
   credit_notes_issued?: boolean | UsersCountOutputTypeCountCredit_notes_issuedArgs
   credit_notes_approved?: boolean | UsersCountOutputTypeCountCredit_notes_approvedArgs
+  inbound_dismissals?: boolean | UsersCountOutputTypeCountInbound_dismissalsArgs
 }
 
 /**
@@ -3306,6 +3539,13 @@ export type UsersCountOutputTypeCountCredit_notes_approvedArgs<ExtArgs extends r
   where?: Prisma.credit_notesWhereInput
 }
 
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountInbound_dismissalsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.inbound_paymentsWhereInput
+}
+
 
 export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -3337,6 +3577,7 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   display_devices?: boolean | Prisma.users$display_devicesArgs<ExtArgs>
   credit_notes_issued?: boolean | Prisma.users$credit_notes_issuedArgs<ExtArgs>
   credit_notes_approved?: boolean | Prisma.users$credit_notes_approvedArgs<ExtArgs>
+  inbound_dismissals?: boolean | Prisma.users$inbound_dismissalsArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["users"]>
 
@@ -3406,6 +3647,7 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   display_devices?: boolean | Prisma.users$display_devicesArgs<ExtArgs>
   credit_notes_issued?: boolean | Prisma.users$credit_notes_issuedArgs<ExtArgs>
   credit_notes_approved?: boolean | Prisma.users$credit_notes_approvedArgs<ExtArgs>
+  inbound_dismissals?: boolean | Prisma.users$inbound_dismissalsArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type usersIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -3430,6 +3672,7 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     display_devices: Prisma.$display_devicesPayload<ExtArgs>[]
     credit_notes_issued: Prisma.$credit_notesPayload<ExtArgs>[]
     credit_notes_approved: Prisma.$credit_notesPayload<ExtArgs>[]
+    inbound_dismissals: Prisma.$inbound_paymentsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -3855,6 +4098,7 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   display_devices<T extends Prisma.users$display_devicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$display_devicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$display_devicesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   credit_notes_issued<T extends Prisma.users$credit_notes_issuedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$credit_notes_issuedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$credit_notesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   credit_notes_approved<T extends Prisma.users$credit_notes_approvedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$credit_notes_approvedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$credit_notesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  inbound_dismissals<T extends Prisma.users$inbound_dismissalsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$inbound_dismissalsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$inbound_paymentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4671,6 +4915,30 @@ export type users$credit_notes_approvedArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.Credit_notesScalarFieldEnum | Prisma.Credit_notesScalarFieldEnum[]
+}
+
+/**
+ * users.inbound_dismissals
+ */
+export type users$inbound_dismissalsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the inbound_payments
+   */
+  select?: Prisma.inbound_paymentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the inbound_payments
+   */
+  omit?: Prisma.inbound_paymentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.inbound_paymentsInclude<ExtArgs> | null
+  where?: Prisma.inbound_paymentsWhereInput
+  orderBy?: Prisma.inbound_paymentsOrderByWithRelationInput | Prisma.inbound_paymentsOrderByWithRelationInput[]
+  cursor?: Prisma.inbound_paymentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Inbound_paymentsScalarFieldEnum | Prisma.Inbound_paymentsScalarFieldEnum[]
 }
 
 /**

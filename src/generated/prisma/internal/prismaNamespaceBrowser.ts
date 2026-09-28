@@ -65,6 +65,7 @@ export const ModelName = {
   payments: 'payments',
   credit_notes: 'credit_notes',
   payment_intents: 'payment_intents',
+  inbound_payments: 'inbound_payments',
   display_devices: 'display_devices',
   point_transactions: 'point_transactions'
 } as const
@@ -327,6 +328,25 @@ export const Payment_intentsScalarFieldEnum = {
 } as const
 
 export type Payment_intentsScalarFieldEnum = (typeof Payment_intentsScalarFieldEnum)[keyof typeof Payment_intentsScalarFieldEnum]
+
+
+export const Inbound_paymentsScalarFieldEnum = {
+  id: 'id',
+  amount: 'amount',
+  received_at: 'received_at',
+  source: 'source',
+  external_id: 'external_id',
+  raw_text: 'raw_text',
+  status: 'status',
+  refusal_reason: 'refusal_reason',
+  intent_ref: 'intent_ref',
+  dismissed_reason: 'dismissed_reason',
+  dismissed_by_user_id: 'dismissed_by_user_id',
+  dismissed_at: 'dismissed_at',
+  created_at: 'created_at'
+} as const
+
+export type Inbound_paymentsScalarFieldEnum = (typeof Inbound_paymentsScalarFieldEnum)[keyof typeof Inbound_paymentsScalarFieldEnum]
 
 
 export const Display_devicesScalarFieldEnum = {

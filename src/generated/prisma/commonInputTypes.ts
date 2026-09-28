@@ -575,6 +575,40 @@ export type Enumpayment_intent_statusWithAggregatesFilter<$PrismaModel = never> 
   _max?: Prisma.NestedEnumpayment_intent_statusFilter<$PrismaModel>
 }
 
+export type Enuminbound_payment_statusFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_payment_status | Prisma.Enuminbound_payment_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnuminbound_payment_statusFilter<$PrismaModel> | $Enums.inbound_payment_status
+}
+
+export type Enuminbound_refusal_reasonNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_refusal_reason | Prisma.Enuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  in?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel> | $Enums.inbound_refusal_reason | null
+}
+
+export type Enuminbound_payment_statusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_payment_status | Prisma.Enuminbound_payment_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnuminbound_payment_statusWithAggregatesFilter<$PrismaModel> | $Enums.inbound_payment_status
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnuminbound_payment_statusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnuminbound_payment_statusFilter<$PrismaModel>
+}
+
+export type Enuminbound_refusal_reasonNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_refusal_reason | Prisma.Enuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  in?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnuminbound_refusal_reasonNullableWithAggregatesFilter<$PrismaModel> | $Enums.inbound_refusal_reason | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel>
+}
+
 export type NestedIntFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
@@ -1116,6 +1150,40 @@ export type NestedEnumpayment_intent_statusWithAggregatesFilter<$PrismaModel = n
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumpayment_intent_statusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumpayment_intent_statusFilter<$PrismaModel>
+}
+
+export type NestedEnuminbound_payment_statusFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_payment_status | Prisma.Enuminbound_payment_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnuminbound_payment_statusFilter<$PrismaModel> | $Enums.inbound_payment_status
+}
+
+export type NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_refusal_reason | Prisma.Enuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  in?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel> | $Enums.inbound_refusal_reason | null
+}
+
+export type NestedEnuminbound_payment_statusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_payment_status | Prisma.Enuminbound_payment_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.inbound_payment_status[] | Prisma.ListEnuminbound_payment_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnuminbound_payment_statusWithAggregatesFilter<$PrismaModel> | $Enums.inbound_payment_status
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnuminbound_payment_statusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnuminbound_payment_statusFilter<$PrismaModel>
+}
+
+export type NestedEnuminbound_refusal_reasonNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.inbound_refusal_reason | Prisma.Enuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  in?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.inbound_refusal_reason[] | Prisma.ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnuminbound_refusal_reasonNullableWithAggregatesFilter<$PrismaModel> | $Enums.inbound_refusal_reason | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnuminbound_refusal_reasonNullableFilter<$PrismaModel>
 }
 
 

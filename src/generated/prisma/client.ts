@@ -156,6 +156,28 @@ export type credit_notes = Prisma.credit_notesModel
  */
 export type payment_intents = Prisma.payment_intentsModel
 /**
+ * Model inbound_payments
+ * *
+ *  * Money the bank said arrived, whether or not we can say which bill it paid.
+ *  *
+ *  * This table exists because the alternative is silence. A notification that names
+ *  * no QR, or an amount nobody is waiting for, is still money in the shop's account:
+ *  * dropping it would leave the shop with a bank balance it cannot explain, and
+ *  * guessing at a bill would put somebody else's payment on a customer's receipt.
+ *  * So it is recorded, with the reason it was refused, and shown to an owner.
+ *  *
+ *  * Two columns carry the whole design:
+ *  *
+ *  *   * `external_id` is the bank's own identifier for the message (a mail's
+ *  *     Message-ID), unique per `source`. A bridge that retries must not record the
+ *  *     same transfer twice, and the database is what guarantees it rather than the
+ *  *     bridge's bookkeeping.
+ *  *   * `received_at` is the *bank's* instant. Payability is measured against it,
+ *  *     never against the moment the bridge got round to posting, so a notification
+ *  *     delayed in a mailbox is still judged by when the money actually moved.
+ */
+export type inbound_payments = Prisma.inbound_paymentsModel
+/**
  * Model display_devices
  * *
  *  * A customer-facing screen that has been paired with this till.

@@ -411,6 +411,7 @@ export const ModelName = {
   payments: 'payments',
   credit_notes: 'credit_notes',
   payment_intents: 'payment_intents',
+  inbound_payments: 'inbound_payments',
   display_devices: 'display_devices',
   point_transactions: 'point_transactions'
 } as const
@@ -428,7 +429,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "payment_intents" | "display_devices" | "point_transactions"
+    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "payment_intents" | "inbound_payments" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1468,6 +1469,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    inbound_payments: {
+      payload: Prisma.$inbound_paymentsPayload<ExtArgs>
+      fields: Prisma.inbound_paymentsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.inbound_paymentsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.inbound_paymentsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>
+        }
+        findFirst: {
+          args: Prisma.inbound_paymentsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.inbound_paymentsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>
+        }
+        findMany: {
+          args: Prisma.inbound_paymentsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>[]
+        }
+        create: {
+          args: Prisma.inbound_paymentsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>
+        }
+        createMany: {
+          args: Prisma.inbound_paymentsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.inbound_paymentsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>[]
+        }
+        delete: {
+          args: Prisma.inbound_paymentsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>
+        }
+        update: {
+          args: Prisma.inbound_paymentsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>
+        }
+        deleteMany: {
+          args: Prisma.inbound_paymentsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.inbound_paymentsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.inbound_paymentsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>[]
+        }
+        upsert: {
+          args: Prisma.inbound_paymentsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$inbound_paymentsPayload>
+        }
+        aggregate: {
+          args: Prisma.Inbound_paymentsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateInbound_payments>
+        }
+        groupBy: {
+          args: Prisma.inbound_paymentsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Inbound_paymentsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.inbound_paymentsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Inbound_paymentsCountAggregateOutputType> | number
+        }
+      }
+    }
     display_devices: {
       payload: Prisma.$display_devicesPayload<ExtArgs>
       fields: Prisma.display_devicesFieldRefs
@@ -1899,6 +1974,25 @@ export const Payment_intentsScalarFieldEnum = {
 export type Payment_intentsScalarFieldEnum = (typeof Payment_intentsScalarFieldEnum)[keyof typeof Payment_intentsScalarFieldEnum]
 
 
+export const Inbound_paymentsScalarFieldEnum = {
+  id: 'id',
+  amount: 'amount',
+  received_at: 'received_at',
+  source: 'source',
+  external_id: 'external_id',
+  raw_text: 'raw_text',
+  status: 'status',
+  refusal_reason: 'refusal_reason',
+  intent_ref: 'intent_ref',
+  dismissed_reason: 'dismissed_reason',
+  dismissed_by_user_id: 'dismissed_by_user_id',
+  dismissed_at: 'dismissed_at',
+  created_at: 'created_at'
+} as const
+
+export type Inbound_paymentsScalarFieldEnum = (typeof Inbound_paymentsScalarFieldEnum)[keyof typeof Inbound_paymentsScalarFieldEnum]
+
+
 export const Display_devicesScalarFieldEnum = {
   id: 'id',
   label: 'label',
@@ -2220,6 +2314,34 @@ export type ListEnumpayment_intent_statusFieldRefInput<$PrismaModel> = FieldRefI
 
 
 /**
+ * Reference to a field of type 'inbound_payment_status'
+ */
+export type Enuminbound_payment_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'inbound_payment_status'>
+    
+
+
+/**
+ * Reference to a field of type 'inbound_payment_status[]'
+ */
+export type ListEnuminbound_payment_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'inbound_payment_status[]'>
+    
+
+
+/**
+ * Reference to a field of type 'inbound_refusal_reason'
+ */
+export type Enuminbound_refusal_reasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'inbound_refusal_reason'>
+    
+
+
+/**
+ * Reference to a field of type 'inbound_refusal_reason[]'
+ */
+export type ListEnuminbound_refusal_reasonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'inbound_refusal_reason[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2397,6 +2519,7 @@ export type GlobalOmitConfig = {
   payments?: Prisma.paymentsOmit
   credit_notes?: Prisma.credit_notesOmit
   payment_intents?: Prisma.payment_intentsOmit
+  inbound_payments?: Prisma.inbound_paymentsOmit
   display_devices?: Prisma.display_devicesOmit
   point_transactions?: Prisma.point_transactionsOmit
 }

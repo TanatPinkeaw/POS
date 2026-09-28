@@ -107,12 +107,33 @@ export const payment_intent_status = {
 export type payment_intent_status = (typeof payment_intent_status)[keyof typeof payment_intent_status]
 
 
+export const inbound_payment_status = {
+  matched: 'matched',
+  unmatched: 'unmatched',
+  dismissed: 'dismissed'
+} as const
+
+export type inbound_payment_status = (typeof inbound_payment_status)[keyof typeof inbound_payment_status]
+
+
+export const inbound_refusal_reason = {
+  amount_unreadable: 'amount_unreadable',
+  no_amount_match: 'no_amount_match',
+  no_reference: 'no_reference',
+  ambiguous: 'ambiguous',
+  not_payable: 'not_payable'
+} as const
+
+export type inbound_refusal_reason = (typeof inbound_refusal_reason)[keyof typeof inbound_refusal_reason]
+
+
 export const audit_action = {
   void_order: 'void_order',
   over_discount: 'over_discount',
   drawer_open: 'drawer_open',
   manual_payment_confirm: 'manual_payment_confirm',
   refund_order: 'refund_order',
+  inbound_transfer_dismissed: 'inbound_transfer_dismissed',
   pin_set: 'pin_set',
   pin_reset: 'pin_reset',
   pin_locked: 'pin_locked',

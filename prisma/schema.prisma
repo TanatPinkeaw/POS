@@ -192,6 +192,34 @@ enum payment_intent_status {
   consumed
 }
 
+/**
+ * What became of a transfer the bank told us about.
+ *
+ * `unmatched` is not an error state and not a queue to be drained — it is money
+ * in the shop's account that this system cannot attribute, which is a fact the
+ * owner has to be able to see. `dismissed` is a person having looked at it and
+ * said it is not ours.
+ */
+enum inbound_payment_status {
+  matched
+  unmatched
+  dismissed
+}
+
+/**
+ * Why a notification could not be attributed.
+ * Mirrors `InboundRefusalReason` in `src/lib/inbound-match.ts`, which is where the
+ * decision is made; a value here is a sentence somebody has to act on, so the set
+ * stays small and closed.
+ */
+enum inbound_refusal_reason {
+  amount_unreadable
+  no_amount_match
+  no_reference
+  ambiguous
+  not_payable
+}
+
 enum audit_action {
   void_order
   over_discount
@@ -204,6 +232,14 @@ enum audit_action {
    * trail for "where did the cash go" needs to be able to tell them apart.
    */
   refund_order
+  /**
+   * A person said a transfer in the bank account is not a sale of ours.
+   * The only human decision in the inbound path, and therefore the only part of
+   * it that is audited: a machine match has the bank's own notification behind
+   * it, while a dismissal has nothing but somebody's word — which is exactly the
+   * kind of claim a trail exists to keep.
+   */
+  inbound_transfer_dismissed
   pin_set
   pin_reset
   pin_locked
@@ -253,6 +289,7 @@ model users {
   display_devices     display_devices[]
   credit_notes_issued credit_notes[]       @relation("credit_note_issuer")
   credit_notes_approved credit_notes[]     @relation("credit_note_approver")
+  inbound_dismissals  inbound_payments[]   @relation("inbound_dismisser")
 }
 
 // ---------------------------------------------------------------- catalog
@@ -600,6 +637,62 @@ model payment_intents {
 
   @@index([status, expires_at])
   @@index([order_id])
+
+  /**
+   * Transfers the bank reported against this QR. The relation is what makes
+   * `inbound_payments.intent_ref` a fact rather than a string that used to be a
+   * reference: a row claiming to have closed a bill has to name a real one.
+   */
+  inbound_transfers inbound_payments[] @relation("inbound_intent")
+}
+
+// ---------------------------------------------------- inbound bank transfers
+
+/**
+ * Money the bank said arrived, whether or not we can say which bill it paid.
+ *
+ * This table exists because the alternative is silence. A notification that names
+ * no QR, or an amount nobody is waiting for, is still money in the shop's account:
+ * dropping it would leave the shop with a bank balance it cannot explain, and
+ * guessing at a bill would put somebody else's payment on a customer's receipt.
+ * So it is recorded, with the reason it was refused, and shown to an owner.
+ *
+ * Two columns carry the whole design:
+ *
+ *   * `external_id` is the bank's own identifier for the message (a mail's
+ *     Message-ID), unique per `source`. A bridge that retries must not record the
+ *     same transfer twice, and the database is what guarantees it rather than the
+ *     bridge's bookkeeping.
+ *   * `received_at` is the *bank's* instant. Payability is measured against it,
+ *     never against the moment the bridge got round to posting, so a notification
+ *     delayed in a mailbox is still judged by when the money actually moved.
+ */
+model inbound_payments {
+  id                    BigInt                 @id @default(autoincrement())
+  /** Null only when the notification held no readable amount — see the CHECK. */
+  amount                Decimal?               @db.Decimal(10, 2)
+  received_at           DateTime               @db.Timestamptz(6)
+  /** Who told us: `bank-bridge`, `webhook`, or whatever a shop names theirs. */
+  source                String                 @db.VarChar(40)
+  external_id           String?                @db.VarChar(200)
+  /** The notification itself, kept so a disputed payment can be re-read. */
+  raw_text              String
+  status                inbound_payment_status @default(unmatched)
+  refusal_reason        inbound_refusal_reason?
+  /**
+   * The QR this closed. Null for anything a person still has to deal with.
+   */
+  intent_ref            String?                @db.VarChar(12)
+  dismissed_reason      String?
+  dismissed_by_user_id  String?                @db.Uuid
+  dismissed_at          DateTime?              @db.Timestamptz(6)
+  created_at            DateTime               @default(now()) @db.Timestamptz(6)
+
+  intent       payment_intents? @relation("inbound_intent", fields: [intent_ref], references: [ref], onDelete: Restrict)
+  dismissed_by users?           @relation("inbound_dismisser", fields: [dismissed_by_user_id], references: [id], onDelete: Restrict)
+
+  @@unique([source, external_id])
+  @@index([status, received_at])
 }
 
 // ---------------------------------------------------------------- display
