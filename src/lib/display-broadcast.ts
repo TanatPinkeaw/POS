@@ -138,7 +138,7 @@ async function bestSellers(limit = 6): Promise<string[]> {
       FROM "order_items" oi
       JOIN "products" p ON p."id" = oi."product_id"
       JOIN "orders" o ON o."id" = oi."order_id"
-     WHERE o."status" = 'completed'
+     WHERE o."status" IN ('completed', 'refunded')
      GROUP BY p."name"
      ORDER BY SUM(oi."quantity") DESC
      LIMIT ${limit}

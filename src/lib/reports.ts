@@ -80,13 +80,33 @@ async function loadRows(type: ReportType, range: ReportRange): Promise<ReportCel
 async function salesSummaryRows(range: ReportRange): Promise<ReportCell[][]> {
   const orders = await prisma.orders.findMany({
     where: {
-      status: 'completed',
+      /*
+       * Gross, so a refunded sale is still a sale here — the reversal belongs to
+       * the day it happened, and rewriting the row that recorded it would make
+       * this sheet disagree with the till's own history.
+       *
+       * The column set is fixed by SRS §8 and therefore gains nothing to hold the
+       * refund; where the reversal *is* visible is the stock-audit sheet (a
+       * `pos_refund` movement per returned line) and the audit trail, which
+       * records the credit note, the amount, the reason and both people. That is
+       * written down in ADR 0004 rather than left as a surprise in a spreadsheet.
+       */
+      status: { in: ['completed', 'refunded'] },
       completed_at: { gte: range.fromDate, lt: range.toExclusive },
     },
     orderBy: { completed_at: 'asc' },
     include: {
       cashier: { select: { full_name: true } },
-      payments: { select: { method: true }, orderBy: { id: 'asc' } },
+      /*
+       * The `Payment Method` column answers "how did this customer pay", so the
+       * refund leg is filtered out: a bill paid by transfer and refunded in cash
+       * must not read as a mixed-payment sale.
+       */
+      payments: {
+        where: { direction: 'sale' },
+        select: { method: true },
+        orderBy: { id: 'asc' },
+      },
     },
   });
 
@@ -115,7 +135,13 @@ interface ProductAggregate {
 async function productPerformanceRows(range: ReportRange): Promise<ReportCell[][]> {
   const items = await prisma.order_items.findMany({
     where: {
-      order: { status: 'completed', completed_at: { gte: range.fromDate, lt: range.toExclusive } },
+      // Gross, exactly as the sales summary is: a unit that was sold and later
+      // returned did sell. Excluding it here would make the two sheets of the
+      // same period disagree about the same transaction.
+      order: {
+        status: { in: ['completed', 'refunded'] },
+        completed_at: { gte: range.fromDate, lt: range.toExclusive },
+      },
     },
     select: {
       quantity: true,

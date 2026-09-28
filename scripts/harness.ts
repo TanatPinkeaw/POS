@@ -222,13 +222,20 @@ export class Session {
 
   async request<T>(
     path: string,
-    init: { method?: string; body?: unknown } = {},
+    init: { method?: string; body?: unknown; headers?: Record<string, string> } = {},
   ): Promise<ApiResult<T>> {
     const response = await fetch(`${this.base()}${path}`, {
       method: init.method ?? 'GET',
       headers: {
         ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
         ...(this.cookie ? { cookie: this.cookie } : {}),
+        /*
+         * Extra headers, which is how a gated action presents its supervisor
+         * approval. Without this the acceptance run could not exercise a refund
+         * at all — and a journey that skips the gate would be testing a route no
+         * till can actually reach.
+         */
+        ...(init.headers ?? {}),
       },
       body: init.body === undefined ? undefined : JSON.stringify(init.body),
       redirect: 'manual',
@@ -277,7 +284,10 @@ export class Session {
   }
 
   /** Sends a body that is expected to succeed, and explains itself when it does not. */
-  async call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  async call<T>(
+    path: string,
+    init: { method?: string; body?: unknown; headers?: Record<string, string> } = {},
+  ): Promise<T> {
     const result = await this.request<T>(path, init);
     if (result.status >= 400 || result.error !== null) {
       throw new Error(`${init.method ?? 'GET'} ${path} → ${result.status}: ${result.error}`);

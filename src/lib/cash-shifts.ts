@@ -37,14 +37,25 @@ export function defaultInitialCash(): number {
 }
 
 /**
- * Physical cash taken against a shift.
+ * Physical cash taken against a shift, net of what was handed back.
  *
  * Only `cash` rows count. PromptPay and points never enter the drawer, so
- * folding them in here would invent a discrepancy that does not exist.
+ * folding them in here would invent a discrepancy that does not exist — and the
+ * same rule is what keeps a refund made by hand from the shop's banking app out
+ * of this figure: it carries no `shift_id`, because it never touched a drawer.
+ *
+ * The sign is applied here rather than stored, because a `payments.amount` is a
+ * magnitude and its `direction` says which way it went (see the migration). A
+ * cash refund written against this shift therefore *reduces* what the drawer is
+ * expected to hold, which is precisely what the cashier counts at close: if ฿107
+ * went back to a customer, ฿107 is not in the till.
  */
 async function cashSalesForShift(db: Db, shiftId: number): Promise<number> {
   const rows = await db.$queryRaw<{ total: unknown }[]>`
-    SELECT COALESCE(SUM("amount"), 0) AS total
+    SELECT COALESCE(
+             SUM(CASE WHEN "direction" = 'refund' THEN -"amount" ELSE "amount" END),
+             0
+           ) AS total
       FROM "payments"
      WHERE "shift_id" = ${shiftId}
        AND "method"   = 'cash'
@@ -53,11 +64,20 @@ async function cashSalesForShift(db: Db, shiftId: number): Promise<number> {
   return row ? Number(row.total) : 0;
 }
 
+/**
+ * How many bills this shift closed.
+ *
+ * Refund legs are excluded, and that is not bookkeeping pedantry: a refund leg
+ * names the *refunding* shift and points at the sale it reverses, so counting it
+ * would credit this shift with an order it did not sell — and would do it again
+ * for whichever shift took the money in the first place.
+ */
 async function orderCountForShift(db: Db, shiftId: number): Promise<number> {
   const rows = await db.$queryRaw<{ order_count: unknown }[]>`
     SELECT COUNT(DISTINCT "order_id") AS order_count
       FROM "payments"
      WHERE "shift_id" = ${shiftId}
+       AND "direction" = 'sale'
   `;
   const row = rows[0];
   return row ? Number(row.order_count) : 0;

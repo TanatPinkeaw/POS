@@ -164,8 +164,13 @@ async function nextOrderNumber(db: Db): Promise<string> {
  *
  * Without this, two employees pressing "Confirm" at the same instant would both
  * read status `pending`, both pass the state check, and both proceed.
+ *
+ * Exported because the refund path in `credit-notes.ts` needs exactly this and
+ * must not grow a second copy of it: the lock is only worth taking if every
+ * writer takes it the same way, and "first lock the order, then check the
+ * transition" has to be one rule rather than a habit at each call site.
  */
-async function lockOrder(db: Db, orderId: string): Promise<{ id: string; status: OrderStatus }> {
+export async function lockOrder(db: Db, orderId: string): Promise<{ id: string; status: OrderStatus }> {
   const rows = await db.$queryRaw<{ id: string; status: OrderStatus }[]>`
     SELECT "id", "status" FROM "orders" WHERE "id" = ${orderId}::uuid FOR UPDATE
   `;

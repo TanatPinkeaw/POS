@@ -17,9 +17,10 @@ const ALL_STATUSES: OrderStatus[] = [
   'ready_for_pickup',
   'completed',
   'cancelled',
+  'refunded',
 ];
 
-const ALL_ACTIONS: OrderAction[] = ['confirm', 'mark_ready', 'complete', 'cancel'];
+const ALL_ACTIONS: OrderAction[] = ['confirm', 'mark_ready', 'complete', 'cancel', 'refund'];
 
 describe('happy path', () => {
   it('walks pending → confirmed → ready_for_pickup → completed', () => {
@@ -53,19 +54,28 @@ describe('cancellation', () => {
   });
 });
 
-describe('terminal states', () => {
-  it('accepts no further action', () => {
+describe('states with no way forward', () => {
+  it('accepts no further action once refunded or cancelled', () => {
     for (const action of ALL_ACTIONS) {
-      expect(canTransition('completed', action)).toBe(false);
       expect(canTransition('cancelled', action)).toBe(false);
+      expect(canTransition('refunded', action)).toBe(false);
     }
   });
 
-  it('leaves no allowed actions', () => {
-    expect(allowedActions('completed')).toEqual([]);
+  it('leaves no allowed actions from a refunded or cancelled order', () => {
     expect(allowedActions('cancelled')).toEqual([]);
-    expect(isTerminal('completed')).toBe(true);
+    expect(allowedActions('refunded')).toEqual([]);
     expect(isTerminal('cancelled')).toBe(true);
+    expect(isTerminal('refunded')).toBe(true);
+  });
+
+  it('leaves a completed sale exactly one way out, and it is the refund', () => {
+    // The one transition that leaves what used to be a terminal state, and the
+    // reason `isTerminal('completed')` is false: a paid bill can be reversed, so
+    // "closed" and "finished" stopped being the same thing.
+    expect(allowedActions('completed')).toEqual(['refund']);
+    expect(isTerminal('completed')).toBe(false);
+    expect(canTransition('completed', 'cancel')).toBe(false);
   });
 });
 
@@ -92,11 +102,23 @@ describe('holdsReservedStock', () => {
     expect(holdsReservedStock('ready_for_pickup')).toBe(true);
     expect(holdsReservedStock('completed')).toBe(false);
     expect(holdsReservedStock('cancelled')).toBe(false);
+    expect(holdsReservedStock('refunded')).toBe(false);
   });
 
-  it('agrees with isTerminal for every status', () => {
+  it('is stated on its own, not derived from isTerminal', () => {
+    /*
+     * These two agreed for as long as every terminal state was also a state that
+     * held nothing. Refunds broke that: `completed` stopped being terminal while
+     * still holding no reservation, so a derivation would now claim a paid sale is
+     * sitting on somebody's pre-order. The disagreement is the contract.
+     */
+    expect(isTerminal('completed')).toBe(false);
+    expect(holdsReservedStock('completed')).toBe(false);
+
     for (const status of ALL_STATUSES) {
-      expect(holdsReservedStock(status)).toBe(!isTerminal(status));
+      if (holdsReservedStock(status)) {
+        expect(isTerminal(status), `${status} holds stock and must not be terminal`).toBe(false);
+      }
     }
   });
 });

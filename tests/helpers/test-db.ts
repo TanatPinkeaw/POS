@@ -20,6 +20,10 @@ const TABLES = [
   'display_devices',
   'point_transactions',
   'payments',
+  // Listed for the same reason the intents are: a leftover credit note would make
+  // the next test's refund look like a double refund, because the guard against
+  // one is a unique index on the order it reverses.
+  'credit_notes',
   'order_items',
   'orders',
   'stock_logs',
@@ -119,12 +123,16 @@ export async function seedOpenShift(employeeId: string, initialCash = 2000): Pro
  *
  * Returns nothing: tests that care about the values read them back through the
  * same accessor the application uses, which is the point of loading them.
+ *
+ * `creditNotePrefix` is settable so a suite can prove the credit-note series is
+ * the shop's own rather than a constant that happens to look right.
  */
 export async function seedShop(
   input: {
     isVatRegistered?: boolean;
     vatRate?: number;
     receiptPrefix?: string;
+    creditNotePrefix?: string;
   } = {},
 ): Promise<void> {
   await prisma.shops.create({
@@ -135,8 +143,18 @@ export async function seedShop(
       vat_rate: input.vatRate ?? 7,
       prices_include_vat: true,
       receipt_prefix: input.receiptPrefix ?? 'RC',
+      credit_note_prefix: input.creditNotePrefix ?? 'CN',
     },
   });
+}
+
+/** Reads the shop's two running counters, for a series assertion. */
+export async function readSeries(): Promise<{ receipt: bigint; creditNote: bigint }> {
+  const shop = await prisma.shops.findUniqueOrThrow({ where: { id: 1 } });
+  return {
+    receipt: shop.receipt_running_number,
+    creditNote: shop.credit_note_running_number,
+  };
 }
 
 /** Reads the raw counters for a product, bypassing every domain helper. */

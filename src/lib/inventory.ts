@@ -30,10 +30,11 @@ export type StockAdjustmentReason =
   | 'REASON_CORRECTION'
   | 'REASON_IMPORT';
 
-/** SRS §7 `stock_movement_type`. */
+/** SRS §7 `stock_movement_type`, plus the refund that reverses a sale. */
 export type StockMovementType =
   | 'manual_adjust'
   | 'pos_sale'
+  | 'pos_refund'
   | 'preorder_reserve'
   | 'preorder_cancel'
   | 'restock';
@@ -210,6 +211,41 @@ export async function sellFromStock(
     availableQty(current),
     input.productName,
   );
+}
+
+/**
+ * Puts sold goods back on the shelf because the sale was reversed.
+ *
+ * Unconditional, unlike `sellFromStock` and its siblings: taking stock *away*
+ * has a constraint to satisfy (`stock_qty - qty >= reserved_qty`) and a customer
+ * who must be told no, while putting it back cannot fail.
+ *
+ * It moves `stock_qty` and not `reserved_qty`, and that is the whole distinction
+ * between this and `releaseReservedStock`. A refund reverses a completed sale, so
+ * the units left the shelf when they were sold and there is no reservation left
+ * to give back; crediting `reserved_qty` instead would make the goods unsellable
+ * while looking, in every availability figure, exactly as if they had been
+ * returned.
+ */
+export async function returnRefundedStock(
+  db: Db,
+  input: { productId: string; qty: number },
+): Promise<StockBalance> {
+  assertPositiveQty(input.qty);
+
+  const rows = await db.$queryRaw<StockBalance[]>`
+    UPDATE "products"
+       SET "stock_qty" = "stock_qty" + ${input.qty},
+           "updated_at" = NOW()
+     WHERE "id" = ${input.productId}::uuid
+    RETURNING "stock_qty", "reserved_qty"
+  `;
+
+  const balance = rows[0];
+  if (!balance) {
+    throw new NotFoundError(`Product ${input.productId}`);
+  }
+  return balance;
 }
 
 /**

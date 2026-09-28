@@ -24,6 +24,7 @@ import { vatLabel } from '@/lib/shop-view';
 import { APPROVAL_HEADER } from '@/lib/supervisor-view';
 
 import { PaySheet } from './PaySheet';
+import { RefundDialog, type RefundTarget } from './RefundDialog';
 import { SupervisorApprovalDialog } from './SupervisorApprovalDialog';
 import { useSupervisorApproval } from './useSupervisorApproval';
 import { Receipt } from './Receipt';
@@ -67,6 +68,13 @@ export function Till({
   const [shiftError, setShiftError] = useState<string | null>(null);
   const [initialCash, setInitialCash] = useState('');
   const [actualCash, setActualCash] = useState('');
+  /*
+   * The bill being refunded, if any. Held here rather than inside the receipt
+   * overlay because the refund outlives it: the sheet closes, the dialog stays
+   * open through the PIN prompt and the credit note, and dismissing the receipt
+   * mid-refund must not take the refund with it.
+   */
+  const [refundTarget, setRefundTarget] = useState<RefundTarget | null>(null);
 
   const toast = useToast();
   const approval = useSupervisorApproval();
@@ -283,12 +291,50 @@ export function Till({
             <Button variant="secondary" icon="print" onClick={() => window.print()}>
               พิมพ์ใบเสร็จ
             </Button>
+            {/*
+              The customer changed their mind before leaving the counter, which
+              is the one return that needs no lookup: the bill is already on
+              screen. Offering it here is what makes the common case a two-tap
+              action rather than a trip to the back office — and it still asks a
+              supervisor for a PIN, because that is about the money and not about
+              who is standing where.
+            */}
+            {till.receipt ? (
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setRefundTarget({
+                    orderId: till.receipt!.orderId,
+                    orderNumber: till.receipt!.orderNumber,
+                    amountThb: till.receipt!.finalAmountThb,
+                    lineCount: till.receipt!.lines.length,
+                  })
+                }
+              >
+                คืนเงินบิลนี้
+              </Button>
+            ) : null}
             <Button onClick={finishSale}>ปิดและขายต่อ</Button>
           </>
         }
       >
         {till.receipt ? <Receipt shop={shop} data={till.receipt} when={till.receipt.at} /> : null}
       </Overlay>
+
+      {refundTarget ? (
+        <RefundDialog
+          target={refundTarget}
+          onClose={() => setRefundTarget(null)}
+          onRefunded={() => {
+            /*
+             * The refunded bill has left the shelf, so the catalogue pane and the
+             * shift's own takings figure are both stale now. `refresh` re-reads the
+             * drawer, which is the figure the cashier is about to reconcile against.
+             */
+            void refresh();
+          }}
+        />
+      ) : null}
 
       {/* ------------------------------------------------------------------ */}
       {shift ? (

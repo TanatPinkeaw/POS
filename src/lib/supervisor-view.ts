@@ -43,12 +43,14 @@ export const APPROVAL_HEADER = 'x-supervisor-token';
  */
 export type SupervisorAction =
   | 'void_order'
+  | 'refund_order'
   | 'over_discount'
   | 'drawer_open'
   | 'manual_payment_confirm';
 
 export const SUPERVISOR_ACTIONS: readonly SupervisorAction[] = [
   'void_order',
+  'refund_order',
   'over_discount',
   'drawer_open',
   'manual_payment_confirm',
@@ -57,6 +59,7 @@ export const SUPERVISOR_ACTIONS: readonly SupervisorAction[] = [
 /** What the approval dialog asks permission for. */
 export const SUPERVISOR_ACTION_LABELS: Record<SupervisorAction, string> = {
   void_order: 'ยกเลิกบิล',
+  refund_order: 'คืนเงินและออกใบลดหนี้',
   over_discount: 'ให้ส่วนลดเกินวงเงิน',
   drawer_open: 'เปิดลิ้นชักโดยไม่มีการขาย',
   manual_payment_confirm: 'ยืนยันเงินเข้าเอง',

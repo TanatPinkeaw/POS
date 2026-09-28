@@ -115,6 +115,10 @@ const STATUS_TONE: Record<string, Tone> = {
   ready_for_pickup: 'success',
   completed: 'neutral',
   cancelled: 'danger',
+  // Amber rather than red: a refund is a deliberate, documented reversal with a
+  // credit note behind it, not a failure — but it is money leaving the till and
+  // should not read as an ordinary closed sale either.
+  refunded: 'warning',
   open: 'success',
   closed: 'neutral',
   balanced: 'success',

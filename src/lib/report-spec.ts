@@ -136,6 +136,7 @@ const PAYMENT_METHOD_LABELS: Record<string, string> = {
 const STOCK_MOVEMENT_LABELS: Record<string, string> = {
   manual_adjust: 'ปรับด้วยมือ',
   pos_sale: 'ขายหน้าร้าน',
+  pos_refund: 'คืนสินค้า (ใบลดหนี้)',
   preorder_reserve: 'จองพรีออเดอร์',
   preorder_cancel: 'คืนการจอง',
   restock: 'รับสินค้าเข้า',

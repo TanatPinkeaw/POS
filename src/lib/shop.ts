@@ -26,6 +26,7 @@ import { fromDecimal } from './money';
 import { normalisePromptPayId, type PromptPayIdType } from './promptpay';
 import {
   DEFAULT_SUPERVISOR_DISCOUNT_LIMIT,
+  formatCreditNoteNumber,
   formatReceiptNumber,
   type ShopView,
 } from './shop-view';
@@ -225,6 +226,47 @@ export async function allocateReceiptNumber(
       row.receipt_prefix,
       bangkokParts(at).year,
       Number(row.receipt_running_number),
+    ),
+    shop: toShopView(row),
+  };
+}
+
+/**
+ * Reserves the next credit-note number, or null when no shop is set up.
+ *
+ * Same trade-off as `allocateReceiptNumber`, and for the same reason: a
+ * credit-note series with holes in it cannot be reconciled against the invoice
+ * series it reverses, so the counter is bumped by an `UPDATE … RETURNING` inside
+ * the caller's transaction — a refund that rolls back restores the counter with
+ * everything else.
+ *
+ * **Call this first inside the refund transaction**, before any product row is
+ * touched. Every transaction in this application takes the shop row's lock in
+ * the same order for the same reason, and the note in `createPosSale` explains
+ * what the opposite order costs: one register holding the shop row while it
+ * waits for a product the other register holds.
+ */
+export async function allocateCreditNoteNumber(
+  db: Db,
+  at: Date = new Date(),
+): Promise<{ documentNumber: string; shop: ShopView } | null> {
+  const rows = await db.$queryRaw<shops[]>`
+    UPDATE "shops"
+       SET "credit_note_running_number" = "credit_note_running_number" + 1
+     WHERE "id" = ${SHOP_ROW_ID}
+    RETURNING *
+  `;
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  return {
+    documentNumber: formatCreditNoteNumber(
+      row.credit_note_prefix,
+      bangkokParts(at).year,
+      Number(row.credit_note_running_number),
     ),
     shop: toShopView(row),
   };

@@ -1,4 +1,4 @@
-import { ReceiptReprintButton } from '@/components/admin/ReceiptReprintButton';
+import { OrderActions } from '@/components/admin/OrderActions';
 import {
   Card,
   CardGrid,
@@ -32,6 +32,7 @@ const STATUS_LABEL: Record<string, string> = {
   ready_for_pickup: 'พร้อมรับ',
   completed: 'สำเร็จ',
   cancelled: 'ยกเลิก',
+  refunded: 'คืนเงินแล้ว',
 };
 
 const PREORDER_STAGES = [
@@ -124,18 +125,26 @@ export default async function DashboardPage() {
       render: (row) => <Money amount={row.finalAmountThb} />,
     },
     {
-      key: 'receipt',
+      key: 'documents',
       header: '',
-      cardLabel: 'ใบเสร็จ',
+      cardLabel: 'เอกสาร',
       align: 'end',
-      render: (row) =>
+      render: (row) => (
         /*
-         * Only a completed sale has a receipt; offering the button elsewhere would
-         * promise a document that does not exist yet.
+         * One control for the three document operations a row can offer. It
+         * decides what to show from the order's own status — a completed sale can
+         * be refunded, a refunded one has a credit note, an unpaid one has
+         * nothing — which is knowledge that belongs beside the state machine
+         * rather than duplicated per screen.
          */
-        row.status === 'completed' ? (
-          <ReceiptReprintButton orderId={row.id} orderNumber={row.orderNumber} />
-        ) : null,
+        <OrderActions
+          orderId={row.id}
+          orderNumber={row.orderNumber}
+          status={row.status}
+          amountThb={row.finalAmountThb}
+          lineCount={row.itemCount}
+        />
+      ),
     },
   ];
 
@@ -143,18 +152,46 @@ export default async function DashboardPage() {
     <Stack gap="lg">
       <PageHeader
         title="ภาพรวมวันนี้"
-        subtitle="ข้อมูลสดจากฐานข้อมูล — ยอดขายนับเฉพาะออเดอร์ที่ปิดการขายแล้ว"
+        subtitle="ข้อมูลสดจากฐานข้อมูล — ยอดขายเป็นยอดรวมก่อนหักการคืนเงิน"
       />
 
       <CardGrid min="15rem">
         <Card>
-          <Stat label="ยอดขายวันนี้" value={<Money amount={snapshot.today.salesThb} />} hint={`${snapshot.today.orderCount} ออเดอร์`} icon="chart" />
+          <Stat
+            label="ยอดขายวันนี้"
+            value={<Money amount={snapshot.today.salesThb} />}
+            hint={`${snapshot.today.orderCount} ออเดอร์ · ก่อนหักคืนเงิน`}
+            icon="chart"
+          />
+        </Card>
+        {/*
+          Refunds get their own figure rather than being netted into the sales
+          one, because a refund is an event on the day it happens: a bill paid on
+          Monday and reversed on Friday belongs in Monday's takings and in
+          Friday's refunds, and a single netted number could not say both.
+        */}
+        <Card>
+          <Stat
+            label="คืนเงินวันนี้"
+            value={<Money amount={snapshot.today.refundsThb} />}
+            hint={
+              snapshot.today.refundCount === 0
+                ? 'ยังไม่มีการคืนเงินวันนี้'
+                : `${snapshot.today.refundCount} ใบลดหนี้ · สุทธิ ${formatThb(snapshot.today.netSalesThb)}`
+            }
+            tone={snapshot.today.refundsThb > 0 ? 'warning' : 'neutral'}
+            icon="refresh"
+          />
         </Card>
         <Card>
           <Stat
             label="เงินสดในลิ้นชัก"
             value={<Money amount={snapshot.today.cashThb} />}
-            hint="เฉพาะที่ชำระด้วยเงินสด"
+            hint={
+              snapshot.today.cashRefundedThb > 0
+                ? `หักเงินสดที่คืนแล้ว ${formatThb(snapshot.today.cashRefundedThb)}`
+                : 'เฉพาะที่ชำระด้วยเงินสด'
+            }
             tone="success"
             icon="cash"
           />
@@ -163,7 +200,7 @@ export default async function DashboardPage() {
           <Stat
             label="พร้อมเพย์"
             value={<Money amount={snapshot.today.promptpayThb} />}
-            hint="ไม่นับเป็นเงินสดตอนปิดกะ"
+            hint="ไม่นับเป็นเงินสดตอนปิดกะ · หักที่คืนแล้ว"
             tone="info"
             icon="qr"
           />

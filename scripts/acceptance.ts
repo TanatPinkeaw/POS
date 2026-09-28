@@ -73,6 +73,15 @@ const SHOP = {
 const ADMIN = { fullName: 'ผู้จัดการ เหลี่ยมนอก', phone: '0800000300', password: 'accept-admin-1' };
 const CASHIER = { fullName: 'มาลี เหลี่ยมนอก', phone: '0800000301', password: 'accept-cashier-1' };
 
+/**
+ * The supervisor PIN the run sets for itself.
+ *
+ * `7391` because `pinProblem` refuses the obvious ones: a repeated digit and a
+ * consecutive run are the guesses somebody makes first, and refusing them is a
+ * rule this journey should not be able to sneak past.
+ */
+const SUPERVISOR_PIN = '7391';
+
 /** One product at 107 THB — a shelf price that splits cleanly into 100 + 7. */
 const COFFEE = { barcode: 'LNM0000001', name: 'กาแฟเหลี่ยมนอก 250 มล.', cost: 60, price: 107, stock: 12 };
 const WATER = { barcode: 'LNM0000002', name: 'น้ำเปล่าเหลี่ยมนอก 600 มล.', cost: 8, price: 25, stock: 24 };
@@ -150,6 +159,45 @@ interface StockLogDto {
   reason: string | null;
   qtyChanged: number;
   balanceAfter: number;
+}
+
+interface RefundDto {
+  orderId: string;
+  orderNumber: string;
+  status: string;
+  documentNumber: string;
+  finalAmountThb: number;
+  refundMethod: string;
+  returnedLines: number;
+  returnedUnits: number;
+  pointsClawedBack: number;
+  pointsForgiven: number;
+}
+
+interface CreditNoteDto {
+  shop: { name: string; taxId: string | null };
+  creditNote: {
+    documentNumber: string;
+    reason: string;
+    refundMethod: string;
+    finalAmountThb: number;
+    netThb: number;
+    vatThb: number;
+    vatRatePercent: number | null;
+    isVatInvoice: boolean;
+    issuedBy: string;
+    approvedBy: string | null;
+    original: {
+      orderNumber: string;
+      receiptNumber: string | null;
+      tenders: { method: string; amountThb: number }[];
+    };
+  };
+}
+
+interface AuditPageDto {
+  entries: { action: string; detail: Record<string, unknown> | null }[];
+  total: number;
 }
 
 async function runChecks(seedGuardUrl: string | null): Promise<number> {
@@ -482,6 +530,206 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
 
   const anonymousShop = await new Session(() => base).raw('/api/v1/shop');
   check('an anonymous request for the settings is refused (401)', anonymousShop.status === 401, anonymousShop.status);
+
+  /* ------------------------------- 9. a refund, and the credit note behind it */
+  section('9. A refund, and the credit note behind it');
+
+  /*
+   * The wizard's administrator starts with no PIN, because a PIN is a credential
+   * a person chooses rather than one an installer generates. Setting it here is
+   * also the first thing that proves the PIN rules are enforced. An operator who
+   * types 0000 in front of a queue is exactly the mistake `pinProblem` exists for,
+   * so the run tries one and is refused.
+   */
+  const weakPin = await admin.request('/api/v1/pos/pin', { method: 'POST', body: { pin: '0000' } });
+  check('a repeated-digit supervisor PIN is refused', weakPin.status === 422, weakPin.status);
+
+  const pinSet = await admin.call<{ hasPin: boolean }>('/api/v1/pos/pin', {
+    method: 'POST',
+    body: { pin: SUPERVISOR_PIN },
+  });
+  check('the administrator sets a supervisor PIN', pinSet.hasPin === true, pinSet);
+
+  const approvers = await admin.call<{ supervisors: { id: string; fullName: string }[] }>(
+    '/api/v1/pos/approvals',
+  );
+  check(
+    'the till can see who is allowed to approve',
+    approvers.supervisors.length === 1 && approvers.supervisors[0]?.fullName === ADMIN.fullName,
+    approvers.supervisors,
+  );
+
+  // A cash refund has to come out of a drawer, and the one from section 7 was
+  // counted and closed — so the cashier opens a fresh one.
+  const secondShift = await cashier.call<{ id: number }>('/api/v1/shifts/current', {
+    method: 'POST',
+    body: { initialCash: 500 },
+  });
+  check('the cashier opens a drawer to refund out of', secondShift.id > 0, secondShift);
+
+  /*
+   * The gate, before the approval: the same request with no token has to be
+   * refused. This is the assertion that makes the rest of the section meaningful —
+   * without it, a route that had quietly stopped asking for an approval would
+   * still pass every check below.
+   */
+  const ungated = await cashier.request(`/api/v1/orders/${sale.orderId}/refund`, {
+    method: 'POST',
+    body: {
+      reason: 'ลูกค้าแจ้งว่าสินค้าชำรุด',
+      refundMethod: 'cash',
+      shiftId: secondShift.id,
+    },
+  });
+  check('a refund without a supervisor approval is refused (403)', ungated.status === 403, ungated.status);
+
+  const wrongPin = await cashier.request('/api/v1/pos/approvals', {
+    method: 'POST',
+    body: {
+      supervisorId: approvers.supervisors[0]?.id,
+      pin: '1379',
+      action: 'refund_order',
+      targetId: sale.orderId,
+    },
+  });
+  check('a wrong supervisor PIN is refused', wrongPin.status === 401 || wrongPin.status === 403, wrongPin.status);
+
+  const grant = await cashier.call<{ token: string; approverName: string }>(
+    '/api/v1/pos/approvals',
+    {
+      method: 'POST',
+      body: {
+        supervisorId: approvers.supervisors[0]?.id,
+        pin: SUPERVISOR_PIN,
+        action: 'refund_order',
+        targetId: sale.orderId,
+      },
+    },
+  );
+  check('the supervisor approves the refund', typeof grant.token === 'string', grant.approverName);
+
+  const refunded = await cashier.request<RefundDto>(`/api/v1/orders/${sale.orderId}/refund`, {
+    method: 'POST',
+    headers: { 'x-supervisor-token': grant.token },
+    body: {
+      reason: 'ลูกค้าแจ้งว่าสินค้าชำรุด',
+      refundMethod: 'cash',
+      shiftId: secondShift.id,
+    },
+  });
+  check('the refund completes', refunded.data?.status === 'refunded', refunded.error ?? refunded.data);
+  check(
+    'it is numbered from its own series, not the receipt series',
+    /^CN-\d{4}-000001$/.test(refunded.data?.documentNumber ?? ''),
+    refunded.data?.documentNumber,
+  );
+  check(
+    'the whole bill comes back: 107.00 in one unit',
+    refunded.data?.finalAmountThb === COFFEE.price && refunded.data?.returnedUnits === 1,
+    refunded.data,
+  );
+
+  const restocked = (await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`))[0];
+  check(
+    'the unit is back on the shelf',
+    restocked?.stockQty === COFFEE.stock && restocked?.availableQty === COFFEE.stock,
+    restocked,
+  );
+
+  const refundLogs = await admin.call<StockLogDto[]>(
+    `/api/v1/inventory/logs?productId=${coffee?.id ?? ''}`,
+  );
+  check(
+    'the return is its own kind of stock movement',
+    refundLogs[0]?.movementType === 'pos_refund' && refundLogs[0]?.qtyChanged === 1,
+    refundLogs[0],
+  );
+
+  const note = await admin.call<CreditNoteDto>(`/api/v1/orders/${sale.orderId}/credit-note`);
+  check(
+    "the credit note reverses the sale's own tax figures",
+    note.creditNote.netThb === 100 &&
+      note.creditNote.vatThb === 7 &&
+      note.creditNote.finalAmountThb === COFFEE.price,
+    note.creditNote,
+  );
+  check(
+    'it references the invoice it reverses',
+    note.creditNote.original.receiptNumber === sale.receiptNumber,
+    note.creditNote.original.receiptNumber,
+  );
+  check(
+    "it prints the renter's shop identity, not ours",
+    note.shop.name === SHOP.name && note.shop.taxId === SHOP.taxId,
+    note.shop,
+  );
+  check(
+    'and names both people: who was at the till, and who allowed it',
+    note.creditNote.issuedBy === CASHIER.fullName && note.creditNote.approvedBy === ADMIN.fullName,
+    `${note.creditNote.issuedBy} / ${note.creditNote.approvedBy}`,
+  );
+  check(
+    'the reason is on the document',
+    note.creditNote.reason === 'ลูกค้าแจ้งว่าสินค้าชำรุด',
+    note.creditNote.reason,
+  );
+
+  const shopAfterRefund = await admin.call<ShopDto>('/api/v1/shop');
+  check(
+    'a credit note does not consume a receipt number',
+    Number(shopAfterRefund.receiptRunningNumber) === 1,
+    shopAfterRefund.receiptRunningNumber,
+  );
+
+  /*
+   * 500 float − 107 handed back. The sale was taken in the drawer that section 7
+   * counted and closed, so the money leaves the drawer that is open *now* — which
+   * is the only drawer the cashier will actually count, and the reason a refund
+   * leg carries its own `shift_id` rather than inheriting the sale's. A figure that
+   * did not move here would mean the cash was paid out of a drawer whose expected
+   * total still claimed it.
+   */
+  const drawerAfterRefund = await cashier.call<{ shift: { expectedCashThb: number } | null }>(
+    '/api/v1/shifts/current',
+  );
+  check(
+    'the refund comes out of the drawer that is open now (500 − 107 = 393)',
+    drawerAfterRefund.shift?.expectedCashThb === 393,
+    drawerAfterRefund.shift?.expectedCashThb,
+  );
+
+  const refundAgain = await cashier.request(`/api/v1/orders/${sale.orderId}/refund`, {
+    method: 'POST',
+    headers: { 'x-supervisor-token': grant.token },
+    body: {
+      reason: 'คืนซ้ำ',
+      refundMethod: 'cash',
+      shiftId: secondShift.id,
+    },
+  });
+  check('a second refund is refused', refundAgain.status === 409, refundAgain.status);
+
+  const trail = await admin.call<AuditPageDto>('/api/v1/audit?action=refund_order');
+  check(
+    'the refund is in the audit trail, with the amount and the reason',
+    trail.total === 1 && trail.entries[0]?.detail?.finalAmountThb === COFFEE.price,
+    trail.entries[0],
+  );
+
+  /*
+   * The receipt of a refunded sale is still reprintable, and the reprint must not
+   * show the refund as a tender line: the customer paid 107.00, and a copy of that
+   * document has to keep saying so even after the money went back.
+   */
+  const receiptAfterRefund = await cashier.call<{
+    receipt: { tenders: { method: string; amountThb: number }[]; finalAmountThb: number };
+  }>(`/api/v1/orders/${sale.orderId}/receipt`);
+  check(
+    'the original receipt still reprints without the refund leg on it',
+    receiptAfterRefund.receipt.tenders.length === 1 &&
+      receiptAfterRefund.receipt.tenders[0]?.amountThb === COFFEE.price,
+    receiptAfterRefund.receipt.tenders,
+  );
 
   console.log(
     failed === 0

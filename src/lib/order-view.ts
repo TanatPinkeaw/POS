@@ -43,6 +43,15 @@ export interface OrderView {
   pickupPin: string | null;
   pickupExpiresAt: Date | null;
   cancelReason: string | null;
+  /**
+   * The credit note that reversed this sale, when there is one.
+   *
+   * Read through the order rather than fetched separately because every caller
+   * that has an order in hand may need to offer its document — the till's history
+   * row, the receipt screen, the manager's recent-orders table — and a second
+   * round trip per row is how a list of fifty becomes a slow screen.
+   */
+  creditNoteNumber: string | null;
   createdAt: Date;
   confirmedAt: Date | null;
   readyAt: Date | null;
@@ -73,6 +82,7 @@ const fullInclude = {
   payments: { orderBy: { id: 'asc' as const } },
   customer: { select: { id: true, full_name: true, phone: true, points_balance: true } },
   cashier: { select: { id: true, full_name: true } },
+  credit_note: { select: { document_number: true } },
 };
 
 /** One order with its lines, payments, and parties. */
@@ -98,6 +108,7 @@ export async function loadOrderView(orderId: string): Promise<OrderView> {
     pickupPin: order.pickup_pin,
     pickupExpiresAt: order.pickup_expires_at,
     cancelReason: order.cancel_reason,
+    creditNoteNumber: order.credit_note?.document_number ?? null,
     createdAt: order.created_at,
     confirmedAt: order.confirmed_at,
     readyAt: order.ready_at,

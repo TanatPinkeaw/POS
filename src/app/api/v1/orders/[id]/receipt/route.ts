@@ -39,7 +39,14 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     if (!order) {
       throw new NotFoundError(`Order ${id}`);
     }
-    if (order.status !== 'completed') {
+    /*
+     * A refunded sale keeps its receipt. The invoice was issued, it was handed
+     * to a customer, and nothing un-issues it — the credit note is a second
+     * document beside it rather than a replacement. Refusing the reprint would
+     * lose the only record of what the customer originally paid, which is
+     * exactly what they need to be shown when they ask where their refund went.
+     */
+    if (order.status !== 'completed' && order.status !== 'refunded') {
       throw new ConflictError(
         `Order ${order.order_number} is ${order.status}; only a completed sale has a receipt`,
         'ORDER_NOT_COMPLETED',
@@ -51,9 +58,15 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     /*
      * Points are a settlement discount rather than money, so they are excluded
      * from "received" — otherwise the receipt would claim the customer handed
-     * over cash that nobody put in the drawer.
+     * over cash that nobody put in the drawer. Refund legs are excluded for the
+     * mirror-image reason: this is the document for what the customer *paid*, and
+     * after a refund the order's payments contain a leg going the other way. A
+     * reprint that showed it would print a receipt whose tenders no longer add up
+     * to what was received.
      */
-    const money = order.payments.filter((payment) => payment.method !== 'points');
+    const money = order.payments.filter(
+      (payment) => payment.method !== 'points' && payment.direction === 'sale',
+    );
     const changeThb = money.reduce(
       (largest, payment) => Math.max(largest, fromDecimal(payment.change_amount ?? 0)),
       0,

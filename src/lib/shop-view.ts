@@ -49,6 +49,9 @@ export const DEFAULT_VAT_RATE = 7;
 /** Prefix for the first receipt series, before a renter renames it. */
 export const DEFAULT_RECEIPT_PREFIX = 'RC';
 
+/** Prefix for the first credit-note series, before a renter renames it. */
+export const DEFAULT_CREDIT_NOTE_PREFIX = 'CN';
+
 /**
  * The discount limit a shop starts with, before it sets its own.
  *
@@ -96,6 +99,19 @@ export function shopDisplayName(shop: ShopView | null): string {
 /** `RC-2026-000001`. */
 export function formatReceiptNumber(prefix: string, year: number, running: number): string {
   const safePrefix = prefix.trim() === '' ? DEFAULT_RECEIPT_PREFIX : prefix.trim();
+  return `${safePrefix}-${year}-${running.toString().padStart(6, '0')}`;
+}
+
+/**
+ * `CN-2026-000001`.
+ *
+ * Deliberately the same shape as a receipt number, because the two are read
+ * against each other: a credit note that does not look like the document it
+ * reverses makes an auditor's job harder for no gain. Only the prefix differs,
+ * and a shop can change that one to whatever its accountant prefers.
+ */
+export function formatCreditNoteNumber(prefix: string, year: number, running: number): string {
+  const safePrefix = prefix.trim() === '' ? DEFAULT_CREDIT_NOTE_PREFIX : prefix.trim();
   return `${safePrefix}-${year}-${running.toString().padStart(6, '0')}`;
 }
 

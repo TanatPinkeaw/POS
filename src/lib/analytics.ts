@@ -8,14 +8,38 @@
  */
 import { addBangkokDays, bangkokDateString, parseBangkokDay } from './bangkok-time';
 import { prisma } from './db';
-import { fromDecimal } from './money';
+import { fromDecimal, roundThb } from './money';
 
 export interface DashboardSnapshot {
   today: {
+    /**
+     * Gross: everything that was sold today, *including* a sale refunded since.
+     *
+     * A refund does not rewrite history, because the day it reversed is not the
+     * day it happened. A bill paid on Monday and refunded on Friday stays in
+     * Monday's takings and appears in Friday's refunds — which is the only
+     * reading that lets an owner reconcile a week against the bank.
+     */
     salesThb: number;
     orderCount: number;
+    /** Money paid out today against credit notes issued today. */
+    refundsThb: number;
+    refundCount: number;
+    /** Gross sales today minus refunds issued today. */
+    netSalesThb: number;
+    /**
+     * What each method actually moved today: taken by this method, minus handed
+     * back through it.
+     *
+     * Net rather than gross because the card these feed is titled "cash in the
+     * drawer", and a day that took ฿107 and refunded ฿107 leaves nothing in it.
+     * This is also the same arithmetic the close-of-shift count does, so the
+     * dashboard cannot disagree with the drawer the cashier is counting.
+     */
     cashThb: number;
     promptpayThb: number;
+    /** Cash handed back today out of a drawer, so the card can say it is net. */
+    cashRefundedThb: number;
   };
   preOrders: {
     pending: number;
@@ -45,6 +69,8 @@ export interface DashboardSnapshot {
     orderType: string;
     status: string;
     finalAmountThb: number;
+    /** Lines on the bill — what a refund is about to return. */
+    itemCount: number;
     createdAt: Date;
     cashierName: string | null;
   }[];
@@ -95,6 +121,8 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
   const [
     todayAggregate,
     todayPayments,
+    todayRefundLegs,
+    todayRefunds,
     preOrderCounts,
     completedToday,
     cancelledToday,
@@ -105,14 +133,32 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     recentOrders,
   ] = await Promise.all([
     prisma.orders.aggregate({
-      where: { status: 'completed', completed_at: { gte: todayStart } },
+      /*
+       * `refunded` is included on purpose: this figure is gross takings, and a
+       * refunded sale was still a sale. Its reversal is the next query.
+       */
+      where: { status: { in: ['completed', 'refunded'] }, completed_at: { gte: todayStart } },
       _sum: { final_amount: true },
       _count: { _all: true },
     }),
     prisma.payments.groupBy({
       by: ['method'],
-      where: { paid_at: { gte: todayStart }, method: { in: ['cash', 'promptpay'] } },
+      where: {
+        paid_at: { gte: todayStart },
+        method: { in: ['cash', 'promptpay'] },
+        direction: 'sale',
+      },
       _sum: { amount: true },
+    }),
+    prisma.payments.groupBy({
+      by: ['method'],
+      where: { paid_at: { gte: todayStart }, direction: 'refund' },
+      _sum: { amount: true },
+    }),
+    prisma.credit_notes.aggregate({
+      where: { created_at: { gte: todayStart } },
+      _sum: { final_amount: true },
+      _count: { _all: true },
     }),
     prisma.orders.groupBy({
       by: ['status'],
@@ -120,7 +166,13 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
       _count: { _all: true },
     }),
     prisma.orders.count({
-      where: { order_type: 'preorder', status: 'completed', completed_at: { gte: todayStart } },
+      // Collected today counts as collected even if it was refunded since; the
+      // refund is a Friday event, not a correction to Tuesday's board.
+      where: {
+        order_type: 'preorder',
+        status: { in: ['completed', 'refunded'] },
+        completed_at: { gte: todayStart },
+      },
     }),
     prisma.orders.count({
       where: { order_type: 'preorder', status: 'cancelled', cancelled_at: { gte: todayStart } },
@@ -159,7 +211,7 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
              COALESCE(SUM("final_amount"), 0) AS sales,
              COUNT(*)                         AS order_count
         FROM "orders"
-       WHERE "status" = 'completed'
+       WHERE "status" IN ('completed', 'refunded')
          AND "completed_at" >= ${weekStart}
        GROUP BY 1
        ORDER BY 1 ASC
@@ -167,13 +219,21 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     prisma.orders.findMany({
       orderBy: { created_at: 'desc' },
       take: 10,
-      include: { cashier: { select: { full_name: true } } },
+      include: {
+        cashier: { select: { full_name: true } },
+        _count: { select: { items: true } },
+      },
     }),
   ]);
 
   const paymentTotals = new Map<string, number>();
   for (const row of todayPayments) {
     paymentTotals.set(row.method, fromDecimal(row._sum.amount ?? 0));
+  }
+
+  const refundTotals = new Map<string, number>();
+  for (const row of todayRefundLegs) {
+    refundTotals.set(row.method, fromDecimal(row._sum.amount ?? 0));
   }
 
   const statusCounts = new Map<string, number>();
@@ -220,12 +280,21 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     0,
   );
 
+  const salesThb = fromDecimal(todayAggregate._sum.final_amount ?? 0);
+  const refundsThb = fromDecimal(todayRefunds._sum.final_amount ?? 0);
+  const netByMethod = (method: string) =>
+    roundThb((paymentTotals.get(method) ?? 0) - (refundTotals.get(method) ?? 0));
+
   return {
     today: {
-      salesThb: fromDecimal(todayAggregate._sum.final_amount ?? 0),
+      salesThb,
       orderCount: todayAggregate._count._all,
-      cashThb: paymentTotals.get('cash') ?? 0,
-      promptpayThb: paymentTotals.get('promptpay') ?? 0,
+      refundsThb,
+      refundCount: todayRefunds._count._all,
+      netSalesThb: roundThb(salesThb - refundsThb),
+      cashThb: netByMethod('cash'),
+      promptpayThb: netByMethod('promptpay'),
+      cashRefundedThb: roundThb(refundTotals.get('cash') ?? 0),
     },
     preOrders: {
       pending: statusCounts.get('pending') ?? 0,
@@ -248,6 +317,7 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
       orderType: order.order_type,
       status: order.status,
       finalAmountThb: fromDecimal(order.final_amount),
+      itemCount: order._count.items,
       createdAt: order.created_at,
       cashierName: order.cashier?.full_name ?? null,
     })),

@@ -262,6 +262,24 @@ export const cancelOrderSchema = z.object({
   reason: z.string().trim().min(1).max(500),
 });
 
+/**
+ * A refund of a completed sale.
+ *
+ * `refundMethod` is required rather than inferred from how the bill was paid,
+ * because those are different facts and the drawer depends on this one: a bill
+ * paid by transfer is very often refunded in cash, and writing that as a
+ * `promptpay` leg would tell the reconciliation a bank moved money it never did.
+ *
+ * `shiftId` is required for a cash refund only, and the domain refuses the cash
+ * case without an open drawer — so it is optional here and checked where the
+ * drawer can actually be read.
+ */
+export const refundOrderSchema = z.object({
+  reason: z.string().trim().min(1, 'บอกเหตุผลการคืนเงิน').max(500),
+  refundMethod: z.enum(['cash', 'promptpay']),
+  shiftId: z.number().int().positive().nullable().optional(),
+});
+
 export const handoverLookupSchema = z.object({
   pin: z.string().trim().regex(/^\d{4}$/, 'A pickup PIN is 4 digits').optional(),
   orderId: z.string().uuid().optional(),
@@ -344,7 +362,7 @@ export const reportQuerySchema = z.object({
 
 export const orderListQuerySchema = z.object({
   status: z
-    .enum(['pending', 'confirmed', 'ready_for_pickup', 'completed', 'cancelled'])
+    .enum(['pending', 'confirmed', 'ready_for_pickup', 'completed', 'cancelled', 'refunded'])
     .optional(),
   type: z.enum(['pos_walkin', 'preorder']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
