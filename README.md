@@ -4,8 +4,11 @@ An implementation of `system_requirements_document.md`: a realtime Point-of-Sale
 with atomic inventory reservation, a four-phase pre-order lifecycle, RBAC, staff
 cash-drawer reconciliation, and loyalty points.
 
-The interface is built on **[Hope UI](https://github.com/iqonicdesignofficial/hope-ui-html-admin-dashboard)**
-(Bootstrap 5, MIT), vendored into `public/hope-ui/`.
+The interface is built on **เหลี่ยมนอก**, this project's own design system: CSS
+custom properties for the palette, the density and dark mode, and CSS Modules for
+the components — no UI framework, and no CSS framework. Bootstrap's Reboot, the
+Hope UI theme the first milestone was built on, and the bridge that re-skinned it
+were all removed once the last screen moved across (ADR 0003).
 
 ---
 
@@ -17,7 +20,7 @@ The interface is built on **[Hope UI](https://github.com/iqonicdesignofficial/ho
 | Database | PostgreSQL 17 |
 | Data access | Prisma 7 with the `@prisma/adapter-pg` driver adapter |
 | Realtime | Socket.io mounted on the same HTTP server as Next |
-| UI | Hope UI (Bootstrap 5) + ApexCharts |
+| UI | In-house design system (`src/design/` + `src/components/ds/`): CSS custom properties + CSS Modules |
 | Auth | bcrypt hashes + `jose`-signed JWT in an httpOnly cookie |
 | Tests | Vitest — unit tests plus integration tests against real PostgreSQL |
 
@@ -31,48 +34,31 @@ authentication scheme.
 
 ---
 
-## The theme: what is vendored, and why so little
+## What is *not* vendored
 
-Hope UI has no npm package, so its compiled assets are copied into
-`public/hope-ui/`. Only the files the app actually loads are committed — 2.6 MB
-rather than the 18 MB upstream tree:
+There is no theme. The screens are drawn by `src/design/` and
+`src/components/ds/`, so the Hope UI tree that the first milestone copied into
+`public/hope-ui/` was deleted in phase 5 of the migration, together with the
+`--bs-*` bridge in `tokens.css`, the `globals.css` that patched up what the bridge
+could not reach, and Bootstrap's JavaScript. Three consequences, each a
+choice rather than an accident:
 
-```
-public/hope-ui/
-├── LICENSE
-└── assets/
-    ├── css/core/libs.min.css     Bootstrap + vendor CSS
-    ├── css/custom.min.css        Hope UI's custom layer
-    ├── css/dark.min.css          every rule scoped under `.dark`
-    ├── css/hope-ui.min.css       the design system (already contains Bootstrap 5)
-    ├── js/core/libs.min.js       Bootstrap's JS (dropdowns, collapses, modals)
-    └── images/                   favicon.ico, loader.gif
-```
-
-Two things this implies:
-
-- **Do not install Bootstrap from npm as well.** `hope-ui.min.css` already
-  bundles a compiled Bootstrap 5; a second copy would conflict.
-- `loader.gif` is kept even though nothing renders it, because
-  `hope-ui.min.css` references it. The unused demo imagery (avatars, auth
-  backgrounds, icon sets — about 15 MB) was deliberately left out; re-fetch it
-  from the upstream repo if a future screen needs it:
-
-  ```bash
-  git clone --depth 1 \
-    https://github.com/iqonicdesignofficial/hope-ui-html-admin-dashboard.git \
-    /tmp/hope-ui && cp -r /tmp/hope-ui/dist/assets/images/* \
-    public/hope-ui/assets/images/
-  ```
-
-Hope UI's own `hope-ui.js` is **not** vendored either. It is jQuery-based and
-initialises on `DOMContentLoaded`, which Next cannot guarantee for a
-client-hydrated page, so the handful of behaviours it provided are implemented
-in React instead — the sidebar collapse is a `sidebar-mini` class toggle in
-`src/components/hope/AppShell.tsx`, and dark mode is a `.dark` class on
-`<body>`, resolved on the server from a cookie so there is no white flash.
-`hope-ui.min.css` sets `--bs-body-bg` on `body` itself, so putting the class on
-`<html>` left `body` painting a light background over the dark one.
+- **Bootstrap is not a dependency, and never was one to install.** The vendored
+  stylesheet bundled its own compiled copy; nothing pulls it in now.
+  `npm run ui:audit` fails if a Bootstrap class name, a `data-bs-*` attribute or a
+  `/hope-ui/` reference reappears in `src/`, because the failure it guards is
+  silent: the markup still compiles and the screen merely renders unstyled. That
+  is not hypothetical — it happened once during the migration.
+- **No icon or chart package either.** `src/components/ds/icons.ts` is a
+  hand-written 24×24 stroke set, and `src/components/ds/Chart.tsx` draws the one
+  chart the dashboard needs, which is why `apexcharts` is not installed.
+- **Some behaviour had to be written rather than configured.** The vendored
+  `hope-ui.js` was jQuery-based and initialised on `DOMContentLoaded`, which Next
+  cannot promise for a client-rendered page, so the user menu became
+  `src/components/ds/Menu.tsx` — with `aria-haspopup`/`aria-expanded`, arrow-key
+  movement, Home/End and Escape-to-close, none of which the original had. Dark
+  mode is a `dark` class on `<body>`, resolved on the server from a cookie so
+  there is no white flash, and it is the design tokens that key off it.
 
 ---
 
@@ -95,8 +81,7 @@ Three decisions are worth knowing before changing anything here:
 - **Colour is generated, not typed.** `src/brand/brand.ts` holds one seed; the
   50–900 ramp and the neutral ramp are derived from it into a marked block of
   `src/design/tokens.css`. Change the seed, run `npm run brand:palette`, and the
-  whole product re-brands — including the four Hope UI variables that re-skin
-  every screen that has not been migrated yet.
+  whole product re-brands, because no screen hardcodes a colour.
 - **The icons are ours.** `src/components/ds/icons.ts` is a hand-written 24×24
   stroke set. The previous arrangement used text glyphs (`☰`, `☾`) and emoji,
   which render differently on Windows, iOS and Android.
@@ -109,13 +94,13 @@ Three decisions are worth knowing before changing anything here:
 | --- | --- |
 | `npm run brand:palette` | Regenerates the ramp from the seed. `-- --check` fails if stale. |
 | `npm run brand:icons` | Rasterises the mark into the PNG/ICO app icons. `-- --preview` prints them as text. |
-| `npm run verify` | `typecheck` + palette-up-to-date + `test`. |
+| `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
+| `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. |
 
-The migration is **in progress and deliberately incremental**: sign-in is on the
-design system today, the rest of the screens still run on the vendored Hope UI
-classes with the brand bridge applied. Both look like the same product while it
-happens, so there is no half-restyled phase to live through. When the last screen
-moves, the Hope UI assets, the Bootstrap JS and the bridge all go in one commit.
+The migration is **finished**: every one of the 16 routes is on the design system
+and the vendored theme is gone — no Bootstrap classes, no Bootstrap JavaScript, no
+`--bs-*` variables, nothing left to restyle. `npm run ui:audit` asserts that rather
+than assuming it, which is what makes the removal an event instead of a hope.
 
 ---
 
@@ -193,7 +178,8 @@ products the seed creates are what `npm run smoke` drives.
 
 ```bash
 npm run typecheck       # tsc --noEmit
-npm test                # 184 tests across 14 files: unit + integration
+npm run ui:audit        # the retired theme stays retired
+npm test                # 394 tests across 28 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 48 checks of the whole renter journey, from an empty schema
 ```

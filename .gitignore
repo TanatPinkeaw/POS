@@ -11,8 +11,6 @@ dist/
 # Local product image uploads are runtime data, not source.
 public/uploads/
 
-# Vendored Hope UI source clone used while extracting assets.
-.tmp-hope-ui/
 
 *.log
 npm-debug.log*
@@ -27,5 +25,4 @@ playwright-report/
 
 /generated/prisma
 
-# Vendored Hope UI assets are committed deliberately (2.6 MB, see README).
 # Uploaded product images are runtime data, not source.

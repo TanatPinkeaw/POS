@@ -22,11 +22,12 @@
     "acceptance": "tsx scripts/acceptance.ts",
     "brand:palette": "tsx scripts/brand-palette.ts",
     "brand:icons": "tsx scripts/build-icons.ts",
-    "verify": "npm run typecheck && npm run brand:palette -- --check && npm test",
+    "verify": "npm run typecheck && npm run ui:audit && npm run brand:palette -- --check && npm test",
     "db:test:prepare": "tsx scripts/prepare-test-db.ts",
     "setup": "tsx scripts/setup.ts",
     "db:setup": "npm run db:generate && npm run db:deploy && npm run db:test:prepare",
-    "db:setup:demo": "npm run db:setup && npm run db:seed"
+    "db:setup:demo": "npm run db:setup && npm run db:seed",
+    "ui:audit": "tsx scripts/ui-audit.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -34,7 +35,6 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
-    "apexcharts": "^7.6.1",
     "bcryptjs": "^3.0.2",
     "exceljs": "^4.4.0",
     "jose": "^6.1.0",

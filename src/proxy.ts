@@ -76,6 +76,6 @@ export const config = {
      * `requireShellUser` in every layout — the point of this file is only to decide
      * which *area* an unauthenticated visitor is allowed to look at.
      */
-    '/((?!_next/static|_next/image|api|realtime|hope-ui|uploads|.*\\.[A-Za-z0-9]+$).*)',
+    '/((?!_next/static|_next/image|api|realtime|uploads|.*\\.[A-Za-z0-9]+$).*)',
   ],
 };

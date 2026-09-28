@@ -1,9 +1,11 @@
 /**
  * Colour mode.
  *
- * Hope UI expresses dark mode as a `.dark` class on the root element (every
- * rule in `dark.min.css` is scoped `.dark …`), so the class is applied to
- * `<html>` on the server from this cookie rather than by a client effect.
+ * The server reads this cookie and puts a `dark` class on `<body>`, so the first
+ * byte of HTML is already the right colour and a dark-mode user never sees a
+ * white flash. The design tokens are what key off the class — `html body.dark`,
+ * mirrored onto the root with `html:has(body.dark)` — which is why it lives on
+ * `<body>` rather than on `<html>`.
  */
 
 export const THEME_COOKIE_NAME = 'pos_theme';
