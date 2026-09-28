@@ -1,0 +1,224 @@
+# Working in this repo as an agent
+
+Orientation for an agent picking this up cold. The **README** is the product
+document, the **ADRs** are the decisions, and `system_requirements_document.md`
+is the spec this implements. This file is only the part that is easy to get wrong
+from the outside: how to run it, what will get a change sent back, and the traps
+that have already cost real hours here.
+
+Read this file, then `README.md`, then the ADR that touches what you are about to
+change. **Do not restate or duplicate those documents** — if you learn something
+new and durable, put it in the file that owns it.
+
+---
+
+## What this is
+
+A single-shop, Thai-first point of sale: realtime, with atomic inventory
+reservation, a four-phase pre-order lifecycle, RBAC, cash-drawer reconciliation,
+VAT receipts and SRS §8 Excel exports. One process serves everything — Next 16
+App Router, PostgreSQL 17 through Prisma 7, and Socket.io attached to the same
+`http.Server` so the session cookie authenticates both the pages and the
+websocket (`src/server.ts`).
+
+Three authenticated areas and three public surfaces:
+
+| Area | Prefix | Screens |
+| --- | --- | --- |
+| Manager | `/admin/*` | dashboard, products, audit, reports, schedules, settings, staff |
+| Till | `/pos/*` | the register, attendance, pre-orders |
+| Customer | `/shop/*` | catalogue, orders |
+| Public | — | `/login`, `/setup` (first run), `/display` (customer screen) |
+
+---
+
+## Commands
+
+| Command | What it does | Needs |
+| --- | --- | --- |
+| `npm run setup` | Writes `.env`, creates the role and both databases, migrates. Idempotent. | Postgres superuser prompt |
+| `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
+| `npm run build` / `npm run start` | Production build, then the same custom server. | — |
+| `npm run verify` | `typecheck` → `ui:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
+| `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
+| `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
+| `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
+| `npm run brand:icons` | Rasterises the mark into the app icons. `-- --preview` prints them as text. | — |
+| `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
+| `npm run db:seed:demo` | Seeds demo data. Refuses unless the shop is unconfigured. | Throwaway DB |
+| `npm run smoke` | End-to-end checks over real HTTP. | A running server |
+| `npm run acceptance` | The whole renter journey from an empty schema; serves the production build itself. | Postgres |
+
+---
+
+## Rules a change has to satisfy
+
+These are not style preferences. Each one exists because the alternative was
+tried and hurt, and several are enforced by a test or a check.
+
+1. **UI comes from `src/components/ds/`.** Never a Bootstrap class, a
+   `data-bs-*` attribute, or a `/hope-ui/` path — the vendored theme was deleted
+   and `npm run ui:audit` fails the build if any of them come back. Inside a
+   literal `className`, the only project class is an `ln-*` utility (plus `dark`,
+   the theme class the root layout puts on `<body>`). Everything else comes from
+   a CSS module.
+2. **Do not add a dependency for something small.** There is no UI framework, no
+   Tailwind, no icon package, no chart library, and no HTTP client. Icons are one
+   file of path data; the dashboard's chart is our own SVG; the CSV parser and the
+   THB formatter are hand-rolled. Check what is already installed before
+   reaching for npm.
+3. **Forms get wired, not just styled.** Every control needs an `id`, a matching
+   `<label for>`, and an `aria-describedby` for its help or its error. Use
+   `TextField`/`SelectField`/`ToggleField`, which do it for you. `outline: none`
+   appears nowhere; every control is at least `--ln-tap` tall.
+4. **Sizes come from the density tokens, never from a hardcoded pixel value.**
+   The shell sets `data-density` once per area — `touch` for the till, `compact`
+   for the back office — so the same `<Button size="md">` is a 34px control on
+   `/admin` and a 48px target on `/pos`. A screen that writes its own height
+   breaks that.
+5. **Semantic tokens only, never a raw colour.** Components reference
+   `--ln-brand`, not `--ln-brand-600`; `--ln-brand-600` is a colour while
+   `--ln-brand` is a decision, and dark mode changes the decision without
+   touching a component. `tests/contrast.test.ts` asserts the pairs stay legible.
+6. **User-facing copy is Thai.** Comments, commit messages, identifiers and log
+   lines are English. A refusal a user reads (a 403, a validation error) is Thai
+   and says what they can do; a programming mistake is English and is a 500.
+7. **Pure logic and persistence stay in separate modules.** State machines,
+   pricing and the loyalty/discount maths are pure functions in `src/lib/*-rules`
+   or alongside their domain; the database lives in a separate module. That split
+   is why 40-odd tests need no database at all.
+8. **Every route handler funnels through `withApi` and stamps its own
+   authorisation.** The role always comes from the signed session token, never
+   from a request body. `src/proxy.ts` decides which *area* an unauthenticated
+   visitor may look at; it is not the authorisation — `requireRole` in the
+   handler is, plus `requireShellUser` in each layout.
+9. **Comments explain why, and are dense on purpose.** If a comment states what
+   the code plainly does, it will be deleted in review. If it records the
+   alternative that was rejected, the measurement behind a magic number, or a
+   failure mode, it is the point of the file.
+10. **Times are Bangkok's, not the server's.** Calendar days, "today", roster
+    windows and report ranges go through `src/lib/bangkok-time.ts`. A date that
+    means a different day depending on where the process runs is a bug that only
+    shows up on someone else's machine.
+
+---
+
+## Invariants the database enforces
+
+Do not weaken these to make a feature easier; they are the ones carrying the
+weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
+
+- **Never oversell.** Stock moves through one conditional `UPDATE` per mutation
+  (`src/lib/inventory.ts`), so 50 concurrent reservations against 20 units leave
+  exactly 20 succeeded, 30 rejected with 409, and `reserved_qty` at 20.
+- **`CHECK (net_amount + vat_amount = final_amount)`** — a tax receipt whose lines
+  do not add up is refused by the database, not by a code review.
+- **`CHECK (id = 1)` on `shops`** — the singleton is a fact, so a racing second
+  setup cannot win one.
+- **`audit_logs` refuses UPDATE and DELETE.** The trail has no writer for either,
+  by design: "who approved this" has to survive being asked months later.
+- **One open time log per employee**, enforced by a unique index, not only by the
+  application guard.
+- **Money is `DECIMAL(10,2)`; tax arithmetic is done in integer satang**
+  (`src/lib/vat.ts`). A breakdown off by one satang is a document that does not
+  balance, not a rounding nit.
+- **Receipt numbers are gapless and un-reusable**, serialised on the shop row.
+
+---
+
+## Verification: what "green" means
+
+`npm run verify` must pass, and it is not optional: `typecheck` + `ui:audit` +
+`brand:palette --check` + `test`. If you changed the schema, regenerate and
+commit `src/generated/prisma/` (it is tracked; the `/generated/prisma` line in
+`.gitignore` is a different path). If you changed an anchor colour, run
+`npm run brand:palette` and commit `src/design/tokens.css`.
+
+Then, for anything a person will look at:
+
+- `npm run build` and check the route list — a new page that fails to build is
+  usually a server component importing a client-only module.
+- For UI work, look at the rendered page, not only at the diff. **A missing
+  stylesheet is silent**: the markup still compiles and the screen merely renders
+  unstyled. That is exactly how the theme removal once went wrong here, and why
+  `ui:audit` exists.
+
+---
+
+## Traps
+
+### The browser sandbox cannot always reach your server
+
+This has bitten every round of UI verification. In order of preference:
+
+1. **Verify against the production build, never the dev server.** In dev mode
+   (`npm run dev`), Next refuses to hydrate a page loaded from a non-localhost
+   origin: every chunk returns 200, the HMR socket dies with
+   `ERR_INVALID_HTTP_RESPONSE`, and clicks do nothing. Run `npm run build`, then
+   `npm run start` with `HOSTNAME`/`PORT` from the environment, and point the
+   browser at the host's LAN or Tailscale address.
+2. **The sandboxed browser may not reach the host at all** — loopback, the LAN
+   IP, the Tailscale IP and `host.docker.internal` can all fail with
+   `chrome-error` while the public internet loads fine. When that happens, verify
+   over HTTP instead: fetch each route from the built server, collect the
+   stylesheets it links, and assert that every class in the HTML is defined in
+   that CSS. That approach is what caught the vendored theme's Google Fonts
+   `@import`, which the "fonts are self-hosted" fix had not actually removed.
+   A committed version of that check would be a good addition; it is currently
+   written from scratch each time.
+3. **A production session cookie is `Secure`**, so a plain-HTTP login cannot be
+   stored by the browser. Mint a token with `createSessionToken()` from
+   `src/lib/session-token.ts` and set it as `pos_session`, or pass it as a
+   `Cookie:` header to `curl`.
+4. **Screenshots need a composited tab.** Read values from the DOM
+   (`getComputedStyle`, geometry) instead, and use an explicit tab id — the
+   preview tools follow the *active* tab otherwise. CSS transitions read as their
+   start value in a non-composited tab, so disable them before judging a
+   transition.
+
+### Windows
+
+- **Thai text passed through `curl -d` on the command line is re-encoded into
+  `?`** by the console codepage; the request then fails validation and looks like
+  a server bug. A body written to a file by a quoted heredoc and sent with
+  `--data-binary @file` preserves UTF-8. `scripts/acceptance.ts` is a Node script
+  for this reason.
+- **Prisma's `?schema=` is honoured by Prisma and ignored by `pg`.** A raw `pg`
+  connection built from the same `DATABASE_URL` silently queries `public`, so
+  qualify the schema (`select … from ui_check.shops`) or set `search_path`.
+- `TEST_DATABASE_URL` must contain `test`. The suite truncates tables and refuses
+  to run otherwise.
+
+### Git
+
+The `origin` remote fetches over SSH and pushes over HTTPS, because SSH is not
+authorised on this machine (the local `~/.ssh/id_ed25519` is not registered on
+GitHub) while a cached HTTPS credential is. Add the key to GitHub and
+`git remote set-url --push origin git@github.com:TanatPinkeaw/POS.git` to make
+both halves SSH again.
+
+---
+
+## Where to pick up
+
+The design-system migration is **finished**: all sixteen routes are on
+`src/components/ds/`, the vendored Hope UI theme is deleted, and `ui:audit`
+keeps it that way. 394 tests across 28 files pass, and `ui:audit` covers 239
+files under `src/`.
+
+Open threads, roughly in the order worth doing:
+
+1. **`npm run acceptance` has not been re-run since the theme was removed.** It
+   serves the production build itself and drives the whole renter journey, so it
+   is the one check that would notice a regression in the root layout or the
+   proxy — both of which changed in that commit.
+2. **A keepable route check** (see the sandbox trap above): every route returns a
+   real page, every class resolves against the CSS it loads, and nothing is
+   fetched from another origin. It has caught a real bug already.
+3. **A `/design` reference route** that renders every primitive with its tokens,
+   so the library is visible in one place rather than inferred from call sites.
+
+Known product gaps are listed at the end of `README.md` (void and credit notes,
+overtime approval, pickup QR, outbound notifications, multiple branches, product
+images, production hardening). The largest *correctness* gap is the missing
+credit-note document behind a cancelled tax invoice.
