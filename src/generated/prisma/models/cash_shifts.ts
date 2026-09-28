@@ -265,6 +265,7 @@ export type cash_shiftsWhereInput = {
   payments?: Prisma.PaymentsListRelationFilter
   audit_logs?: Prisma.Audit_logsListRelationFilter
   payment_intents?: Prisma.Payment_intentsListRelationFilter
+  credit_notes?: Prisma.Credit_notesListRelationFilter
 }
 
 export type cash_shiftsOrderByWithRelationInput = {
@@ -282,6 +283,7 @@ export type cash_shiftsOrderByWithRelationInput = {
   payments?: Prisma.paymentsOrderByRelationAggregateInput
   audit_logs?: Prisma.audit_logsOrderByRelationAggregateInput
   payment_intents?: Prisma.payment_intentsOrderByRelationAggregateInput
+  credit_notes?: Prisma.credit_notesOrderByRelationAggregateInput
 }
 
 export type cash_shiftsWhereUniqueInput = Prisma.AtLeast<{
@@ -302,6 +304,7 @@ export type cash_shiftsWhereUniqueInput = Prisma.AtLeast<{
   payments?: Prisma.PaymentsListRelationFilter
   audit_logs?: Prisma.Audit_logsListRelationFilter
   payment_intents?: Prisma.Payment_intentsListRelationFilter
+  credit_notes?: Prisma.Credit_notesListRelationFilter
 }, "id">
 
 export type cash_shiftsOrderByWithAggregationInput = {
@@ -348,6 +351,7 @@ export type cash_shiftsCreateInput = {
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateInput = {
@@ -363,6 +367,7 @@ export type cash_shiftsUncheckedCreateInput = {
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUpdateInput = {
@@ -377,6 +382,7 @@ export type cash_shiftsUpdateInput = {
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateInput = {
@@ -392,6 +398,7 @@ export type cash_shiftsUncheckedUpdateInput = {
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateManyInput = {
@@ -625,6 +632,22 @@ export type cash_shiftsUpdateOneWithoutPaymentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutPaymentsInput, Prisma.cash_shiftsUpdateWithoutPaymentsInput>, Prisma.cash_shiftsUncheckedUpdateWithoutPaymentsInput>
 }
 
+export type cash_shiftsCreateNestedOneWithoutCredit_notesInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutCredit_notesInput, Prisma.cash_shiftsUncheckedCreateWithoutCredit_notesInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutCredit_notesInput
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+}
+
+export type cash_shiftsUpdateOneWithoutCredit_notesNestedInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutCredit_notesInput, Prisma.cash_shiftsUncheckedCreateWithoutCredit_notesInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutCredit_notesInput
+  upsert?: Prisma.cash_shiftsUpsertWithoutCredit_notesInput
+  disconnect?: Prisma.cash_shiftsWhereInput | boolean
+  delete?: Prisma.cash_shiftsWhereInput | boolean
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutCredit_notesInput, Prisma.cash_shiftsUpdateWithoutCredit_notesInput>, Prisma.cash_shiftsUncheckedUpdateWithoutCredit_notesInput>
+}
+
 export type cash_shiftsCreateNestedOneWithoutPayment_intentsInput = {
   create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedCreateWithoutPayment_intentsInput>
   connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutPayment_intentsInput
@@ -650,6 +673,7 @@ export type cash_shiftsCreateWithoutOpenerInput = {
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutOpenerInput = {
@@ -664,6 +688,7 @@ export type cash_shiftsUncheckedCreateWithoutOpenerInput = {
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutOpenerInput = {
@@ -687,6 +712,7 @@ export type cash_shiftsCreateWithoutCloserInput = {
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutCloserInput = {
@@ -701,6 +727,7 @@ export type cash_shiftsUncheckedCreateWithoutCloserInput = {
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutCloserInput = {
@@ -771,6 +798,7 @@ export type cash_shiftsCreateWithoutAudit_logsInput = {
   closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutAudit_logsInput = {
@@ -785,6 +813,7 @@ export type cash_shiftsUncheckedCreateWithoutAudit_logsInput = {
   status?: $Enums.shift_status
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutAudit_logsInput = {
@@ -814,6 +843,7 @@ export type cash_shiftsUpdateWithoutAudit_logsInput = {
   closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutAudit_logsInput = {
@@ -828,6 +858,7 @@ export type cash_shiftsUncheckedUpdateWithoutAudit_logsInput = {
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateWithoutPaymentsInput = {
@@ -841,6 +872,7 @@ export type cash_shiftsCreateWithoutPaymentsInput = {
   closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutPaymentsInput = {
@@ -855,6 +887,7 @@ export type cash_shiftsUncheckedCreateWithoutPaymentsInput = {
   status?: $Enums.shift_status
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutPaymentsInput = {
@@ -884,6 +917,7 @@ export type cash_shiftsUpdateWithoutPaymentsInput = {
   closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutPaymentsInput = {
@@ -896,6 +930,81 @@ export type cash_shiftsUncheckedUpdateWithoutPaymentsInput = {
   expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsCreateWithoutCredit_notesInput = {
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
+  closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsUncheckedCreateWithoutCredit_notesInput = {
+  id?: number
+  opened_by: string
+  closed_by?: string | null
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsCreateOrConnectWithoutCredit_notesInput = {
+  where: Prisma.cash_shiftsWhereUniqueInput
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutCredit_notesInput, Prisma.cash_shiftsUncheckedCreateWithoutCredit_notesInput>
+}
+
+export type cash_shiftsUpsertWithoutCredit_notesInput = {
+  update: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutCredit_notesInput, Prisma.cash_shiftsUncheckedUpdateWithoutCredit_notesInput>
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutCredit_notesInput, Prisma.cash_shiftsUncheckedCreateWithoutCredit_notesInput>
+  where?: Prisma.cash_shiftsWhereInput
+}
+
+export type cash_shiftsUpdateToOneWithWhereWithoutCredit_notesInput = {
+  where?: Prisma.cash_shiftsWhereInput
+  data: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutCredit_notesInput, Prisma.cash_shiftsUncheckedUpdateWithoutCredit_notesInput>
+}
+
+export type cash_shiftsUpdateWithoutCredit_notesInput = {
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
+  closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsUncheckedUpdateWithoutCredit_notesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  opened_by?: Prisma.StringFieldUpdateOperationsInput | string
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
 }
@@ -911,6 +1020,7 @@ export type cash_shiftsCreateWithoutPayment_intentsInput = {
   closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutPayment_intentsInput = {
@@ -925,6 +1035,7 @@ export type cash_shiftsUncheckedCreateWithoutPayment_intentsInput = {
   status?: $Enums.shift_status
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutPayment_intentsInput = {
@@ -954,6 +1065,7 @@ export type cash_shiftsUpdateWithoutPayment_intentsInput = {
   closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutPayment_intentsInput = {
@@ -968,6 +1080,7 @@ export type cash_shiftsUncheckedUpdateWithoutPayment_intentsInput = {
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateManyOpenerInput = {
@@ -1003,6 +1116,7 @@ export type cash_shiftsUpdateWithoutOpenerInput = {
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutOpenerInput = {
@@ -1017,6 +1131,7 @@ export type cash_shiftsUncheckedUpdateWithoutOpenerInput = {
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateManyWithoutOpenerInput = {
@@ -1041,6 +1156,7 @@ export type cash_shiftsUpdateWithoutCloserInput = {
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutCloserInput = {
@@ -1055,6 +1171,7 @@ export type cash_shiftsUncheckedUpdateWithoutCloserInput = {
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateManyWithoutCloserInput = {
@@ -1077,12 +1194,14 @@ export type Cash_shiftsCountOutputType = {
   payments: number
   audit_logs: number
   payment_intents: number
+  credit_notes: number
 }
 
 export type Cash_shiftsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   payments?: boolean | Cash_shiftsCountOutputTypeCountPaymentsArgs
   audit_logs?: boolean | Cash_shiftsCountOutputTypeCountAudit_logsArgs
   payment_intents?: boolean | Cash_shiftsCountOutputTypeCountPayment_intentsArgs
+  credit_notes?: boolean | Cash_shiftsCountOutputTypeCountCredit_notesArgs
 }
 
 /**
@@ -1116,6 +1235,13 @@ export type Cash_shiftsCountOutputTypeCountPayment_intentsArgs<ExtArgs extends r
   where?: Prisma.payment_intentsWhereInput
 }
 
+/**
+ * Cash_shiftsCountOutputType without action
+ */
+export type Cash_shiftsCountOutputTypeCountCredit_notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.credit_notesWhereInput
+}
+
 
 export type cash_shiftsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1132,6 +1258,7 @@ export type cash_shiftsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   payments?: boolean | Prisma.cash_shifts$paymentsArgs<ExtArgs>
   audit_logs?: boolean | Prisma.cash_shifts$audit_logsArgs<ExtArgs>
   payment_intents?: boolean | Prisma.cash_shifts$payment_intentsArgs<ExtArgs>
+  credit_notes?: boolean | Prisma.cash_shifts$credit_notesArgs<ExtArgs>
   _count?: boolean | Prisma.Cash_shiftsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["cash_shifts"]>
 
@@ -1182,6 +1309,7 @@ export type cash_shiftsInclude<ExtArgs extends runtime.Types.Extensions.Internal
   payments?: boolean | Prisma.cash_shifts$paymentsArgs<ExtArgs>
   audit_logs?: boolean | Prisma.cash_shifts$audit_logsArgs<ExtArgs>
   payment_intents?: boolean | Prisma.cash_shifts$payment_intentsArgs<ExtArgs>
+  credit_notes?: boolean | Prisma.cash_shifts$credit_notesArgs<ExtArgs>
   _count?: boolean | Prisma.Cash_shiftsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type cash_shiftsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1201,6 +1329,7 @@ export type $cash_shiftsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     payments: Prisma.$paymentsPayload<ExtArgs>[]
     audit_logs: Prisma.$audit_logsPayload<ExtArgs>[]
     payment_intents: Prisma.$payment_intentsPayload<ExtArgs>[]
+    credit_notes: Prisma.$credit_notesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1611,6 +1740,7 @@ export interface Prisma__cash_shiftsClient<T, Null = never, ExtArgs extends runt
   payments<T extends Prisma.cash_shifts$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$paymentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   audit_logs<T extends Prisma.cash_shifts$audit_logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$audit_logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$audit_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payment_intents<T extends Prisma.cash_shifts$payment_intentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$payment_intentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$payment_intentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  credit_notes<T extends Prisma.cash_shifts$credit_notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$credit_notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$credit_notesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2138,6 +2268,30 @@ export type cash_shifts$payment_intentsArgs<ExtArgs extends runtime.Types.Extens
   take?: number
   skip?: number
   distinct?: Prisma.Payment_intentsScalarFieldEnum | Prisma.Payment_intentsScalarFieldEnum[]
+}
+
+/**
+ * cash_shifts.credit_notes
+ */
+export type cash_shifts$credit_notesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the credit_notes
+   */
+  select?: Prisma.credit_notesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the credit_notes
+   */
+  omit?: Prisma.credit_notesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.credit_notesInclude<ExtArgs> | null
+  where?: Prisma.credit_notesWhereInput
+  orderBy?: Prisma.credit_notesOrderByWithRelationInput | Prisma.credit_notesOrderByWithRelationInput[]
+  cursor?: Prisma.credit_notesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Credit_notesScalarFieldEnum | Prisma.Credit_notesScalarFieldEnum[]
 }
 
 /**

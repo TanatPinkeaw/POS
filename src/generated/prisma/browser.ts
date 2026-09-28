@@ -95,6 +95,24 @@ export type order_items = Prisma.order_itemsModel
  */
 export type payments = Prisma.paymentsModel
 /**
+ * Model credit_notes
+ * *
+ *  * The document that reverses a paid sale — a full-amount credit note.
+ *  *
+ *  * Its own table rather than a flag on `orders`, because it is a *document*: it
+ *  * has its own number from its own series, its own tax figures as issued, its own
+ *  * reason, and two people named on it. A sale's total is a fact about the sale;
+ *  * a credit note's total is a fact about a piece of paper that was handed to a
+ *  * customer, and the two must be able to disagree later — which is exactly what
+ *  * a partial refund would require, and why the figures are copied here rather
+ *  * than read back through the order.
+ *  *
+ *  * `order_id` is UNIQUE. That is the double-refund guard that survives everything
+ *  * else: `canTransition` stops the API path, and this index stops a race, a
+ *  * retried request, and a future code path that forgets to ask.
+ */
+export type credit_notes = Prisma.credit_notesModel
+/**
  * Model payment_intents
  * *
  *  * A PromptPay QR issued for one amount, and what became of it.

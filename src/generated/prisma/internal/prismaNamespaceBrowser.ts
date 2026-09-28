@@ -63,6 +63,7 @@ export const ModelName = {
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
+  credit_notes: 'credit_notes',
   payment_intents: 'payment_intents',
   display_devices: 'display_devices',
   point_transactions: 'point_transactions'
@@ -97,6 +98,8 @@ export const ShopsScalarFieldEnum = {
   prices_include_vat: 'prices_include_vat',
   receipt_prefix: 'receipt_prefix',
   receipt_running_number: 'receipt_running_number',
+  credit_note_prefix: 'credit_note_prefix',
+  credit_note_running_number: 'credit_note_running_number',
   receipt_footer: 'receipt_footer',
   logo_url: 'logo_url',
   promptpay_id: 'promptpay_id',
@@ -275,6 +278,8 @@ export const PaymentsScalarFieldEnum = {
   shift_id: 'shift_id',
   method: 'method',
   amount: 'amount',
+  direction: 'direction',
+  credit_note_id: 'credit_note_id',
   received_amount: 'received_amount',
   change_amount: 'change_amount',
   transaction_ref: 'transaction_ref',
@@ -282,6 +287,27 @@ export const PaymentsScalarFieldEnum = {
 } as const
 
 export type PaymentsScalarFieldEnum = (typeof PaymentsScalarFieldEnum)[keyof typeof PaymentsScalarFieldEnum]
+
+
+export const Credit_notesScalarFieldEnum = {
+  id: 'id',
+  document_number: 'document_number',
+  order_id: 'order_id',
+  shift_id: 'shift_id',
+  reason: 'reason',
+  refund_method: 'refund_method',
+  final_amount: 'final_amount',
+  net_amount: 'net_amount',
+  vat_amount: 'vat_amount',
+  vat_rate_used: 'vat_rate_used',
+  points_clawed_back: 'points_clawed_back',
+  points_forgiven: 'points_forgiven',
+  created_by: 'created_by',
+  authorized_by_user_id: 'authorized_by_user_id',
+  created_at: 'created_at'
+} as const
+
+export type Credit_notesScalarFieldEnum = (typeof Credit_notesScalarFieldEnum)[keyof typeof Credit_notesScalarFieldEnum]
 
 
 export const Payment_intentsScalarFieldEnum = {

@@ -37,6 +37,7 @@ export type ShopsAvgAggregateOutputType = {
   id: number | null
   vat_rate: runtime.Decimal | null
   receipt_running_number: number | null
+  credit_note_running_number: number | null
   supervisor_discount_limit_thb: runtime.Decimal | null
 }
 
@@ -44,6 +45,7 @@ export type ShopsSumAggregateOutputType = {
   id: number | null
   vat_rate: runtime.Decimal | null
   receipt_running_number: bigint | null
+  credit_note_running_number: bigint | null
   supervisor_discount_limit_thb: runtime.Decimal | null
 }
 
@@ -60,6 +62,8 @@ export type ShopsMinAggregateOutputType = {
   prices_include_vat: boolean | null
   receipt_prefix: string | null
   receipt_running_number: bigint | null
+  credit_note_prefix: string | null
+  credit_note_running_number: bigint | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -82,6 +86,8 @@ export type ShopsMaxAggregateOutputType = {
   prices_include_vat: boolean | null
   receipt_prefix: string | null
   receipt_running_number: bigint | null
+  credit_note_prefix: string | null
+  credit_note_running_number: bigint | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -104,6 +110,8 @@ export type ShopsCountAggregateOutputType = {
   prices_include_vat: number
   receipt_prefix: number
   receipt_running_number: number
+  credit_note_prefix: number
+  credit_note_running_number: number
   receipt_footer: number
   logo_url: number
   promptpay_id: number
@@ -119,6 +127,7 @@ export type ShopsAvgAggregateInputType = {
   id?: true
   vat_rate?: true
   receipt_running_number?: true
+  credit_note_running_number?: true
   supervisor_discount_limit_thb?: true
 }
 
@@ -126,6 +135,7 @@ export type ShopsSumAggregateInputType = {
   id?: true
   vat_rate?: true
   receipt_running_number?: true
+  credit_note_running_number?: true
   supervisor_discount_limit_thb?: true
 }
 
@@ -142,6 +152,8 @@ export type ShopsMinAggregateInputType = {
   prices_include_vat?: true
   receipt_prefix?: true
   receipt_running_number?: true
+  credit_note_prefix?: true
+  credit_note_running_number?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -164,6 +176,8 @@ export type ShopsMaxAggregateInputType = {
   prices_include_vat?: true
   receipt_prefix?: true
   receipt_running_number?: true
+  credit_note_prefix?: true
+  credit_note_running_number?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -186,6 +200,8 @@ export type ShopsCountAggregateInputType = {
   prices_include_vat?: true
   receipt_prefix?: true
   receipt_running_number?: true
+  credit_note_prefix?: true
+  credit_note_running_number?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -295,6 +311,8 @@ export type ShopsGroupByOutputType = {
   prices_include_vat: boolean
   receipt_prefix: string
   receipt_running_number: bigint
+  credit_note_prefix: string
+  credit_note_running_number: bigint
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -340,6 +358,8 @@ export type shopsWhereInput = {
   prices_include_vat?: Prisma.BoolFilter<"shops"> | boolean
   receipt_prefix?: Prisma.StringFilter<"shops"> | string
   receipt_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
+  credit_note_prefix?: Prisma.StringFilter<"shops"> | string
+  credit_note_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
@@ -362,6 +382,8 @@ export type shopsOrderByWithRelationInput = {
   prices_include_vat?: Prisma.SortOrder
   receipt_prefix?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_prefix?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -387,6 +409,8 @@ export type shopsWhereUniqueInput = Prisma.AtLeast<{
   prices_include_vat?: Prisma.BoolFilter<"shops"> | boolean
   receipt_prefix?: Prisma.StringFilter<"shops"> | string
   receipt_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
+  credit_note_prefix?: Prisma.StringFilter<"shops"> | string
+  credit_note_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
@@ -409,6 +433,8 @@ export type shopsOrderByWithAggregationInput = {
   prices_include_vat?: Prisma.SortOrder
   receipt_prefix?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_prefix?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -439,6 +465,8 @@ export type shopsScalarWhereWithAggregatesInput = {
   prices_include_vat?: Prisma.BoolWithAggregatesFilter<"shops"> | boolean
   receipt_prefix?: Prisma.StringWithAggregatesFilter<"shops"> | string
   receipt_running_number?: Prisma.BigIntWithAggregatesFilter<"shops"> | bigint | number
+  credit_note_prefix?: Prisma.StringWithAggregatesFilter<"shops"> | string
+  credit_note_running_number?: Prisma.BigIntWithAggregatesFilter<"shops"> | bigint | number
   receipt_footer?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
@@ -461,6 +489,8 @@ export type shopsCreateInput = {
   prices_include_vat?: boolean
   receipt_prefix?: string
   receipt_running_number?: bigint | number
+  credit_note_prefix?: string
+  credit_note_running_number?: bigint | number
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -483,6 +513,8 @@ export type shopsUncheckedCreateInput = {
   prices_include_vat?: boolean
   receipt_prefix?: string
   receipt_running_number?: bigint | number
+  credit_note_prefix?: string
+  credit_note_running_number?: bigint | number
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -505,6 +537,8 @@ export type shopsUpdateInput = {
   prices_include_vat?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -527,6 +561,8 @@ export type shopsUncheckedUpdateInput = {
   prices_include_vat?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -549,6 +585,8 @@ export type shopsCreateManyInput = {
   prices_include_vat?: boolean
   receipt_prefix?: string
   receipt_running_number?: bigint | number
+  credit_note_prefix?: string
+  credit_note_running_number?: bigint | number
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -571,6 +609,8 @@ export type shopsUpdateManyMutationInput = {
   prices_include_vat?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -593,6 +633,8 @@ export type shopsUncheckedUpdateManyInput = {
   prices_include_vat?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -615,6 +657,8 @@ export type shopsCountOrderByAggregateInput = {
   prices_include_vat?: Prisma.SortOrder
   receipt_prefix?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_prefix?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -628,6 +672,7 @@ export type shopsAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   vat_rate?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   supervisor_discount_limit_thb?: Prisma.SortOrder
 }
 
@@ -644,6 +689,8 @@ export type shopsMaxOrderByAggregateInput = {
   prices_include_vat?: Prisma.SortOrder
   receipt_prefix?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_prefix?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -666,6 +713,8 @@ export type shopsMinOrderByAggregateInput = {
   prices_include_vat?: Prisma.SortOrder
   receipt_prefix?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_prefix?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -679,6 +728,7 @@ export type shopsSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   vat_rate?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  credit_note_running_number?: Prisma.SortOrder
   supervisor_discount_limit_thb?: Prisma.SortOrder
 }
 
@@ -741,6 +791,8 @@ export type shopsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   prices_include_vat?: boolean
   receipt_prefix?: boolean
   receipt_running_number?: boolean
+  credit_note_prefix?: boolean
+  credit_note_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -763,6 +815,8 @@ export type shopsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   prices_include_vat?: boolean
   receipt_prefix?: boolean
   receipt_running_number?: boolean
+  credit_note_prefix?: boolean
+  credit_note_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -785,6 +839,8 @@ export type shopsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   prices_include_vat?: boolean
   receipt_prefix?: boolean
   receipt_running_number?: boolean
+  credit_note_prefix?: boolean
+  credit_note_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -807,6 +863,8 @@ export type shopsSelectScalar = {
   prices_include_vat?: boolean
   receipt_prefix?: boolean
   receipt_running_number?: boolean
+  credit_note_prefix?: boolean
+  credit_note_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -816,7 +874,7 @@ export type shopsSelectScalar = {
   updated_at?: boolean
 }
 
-export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
+export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "credit_note_prefix" | "credit_note_running_number" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
 
 export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "shops"
@@ -834,6 +892,16 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     prices_include_vat: boolean
     receipt_prefix: string
     receipt_running_number: bigint
+    /**
+     * *
+     *    * The credit-note series, kept apart from the receipt series on purpose.
+     *    * A shop's invoice series and its credit-note series are two documents that an
+     *    * auditor reads against each other; interleaving them would make "how many
+     *    * invoices did you issue" a question about a shared counter instead of about a
+     *    * document type. Same gapless rule, same serialisation on this row.
+     */
+    credit_note_prefix: string
+    credit_note_running_number: bigint
     receipt_footer: string | null
     logo_url: string | null
     /**
@@ -1287,6 +1355,8 @@ export interface shopsFieldRefs {
   readonly prices_include_vat: Prisma.FieldRef<"shops", 'Boolean'>
   readonly receipt_prefix: Prisma.FieldRef<"shops", 'String'>
   readonly receipt_running_number: Prisma.FieldRef<"shops", 'BigInt'>
+  readonly credit_note_prefix: Prisma.FieldRef<"shops", 'String'>
+  readonly credit_note_running_number: Prisma.FieldRef<"shops", 'BigInt'>
   readonly receipt_footer: Prisma.FieldRef<"shops", 'String'>
   readonly logo_url: Prisma.FieldRef<"shops", 'String'>
   readonly promptpay_id: Prisma.FieldRef<"shops", 'String'>

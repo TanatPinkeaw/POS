@@ -531,6 +531,13 @@ export type Enumpayment_methodFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumpayment_methodFilter<$PrismaModel> | $Enums.payment_method
 }
 
+export type Enumpayment_directionFilter<$PrismaModel = never> = {
+  equals?: $Enums.payment_direction | Prisma.Enumpayment_directionFieldRefInput<$PrismaModel>
+  in?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumpayment_directionFilter<$PrismaModel> | $Enums.payment_direction
+}
+
 export type Enumpayment_methodWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.payment_method | Prisma.Enumpayment_methodFieldRefInput<$PrismaModel>
   in?: $Enums.payment_method[] | Prisma.ListEnumpayment_methodFieldRefInput<$PrismaModel>
@@ -539,6 +546,16 @@ export type Enumpayment_methodWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumpayment_methodFilter<$PrismaModel>
   _max?: Prisma.NestedEnumpayment_methodFilter<$PrismaModel>
+}
+
+export type Enumpayment_directionWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.payment_direction | Prisma.Enumpayment_directionFieldRefInput<$PrismaModel>
+  in?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumpayment_directionWithAggregatesFilter<$PrismaModel> | $Enums.payment_direction
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumpayment_directionFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumpayment_directionFilter<$PrismaModel>
 }
 
 export type Enumpayment_intent_statusFilter<$PrismaModel = never> = {
@@ -1057,6 +1074,13 @@ export type NestedEnumpayment_methodFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumpayment_methodFilter<$PrismaModel> | $Enums.payment_method
 }
 
+export type NestedEnumpayment_directionFilter<$PrismaModel = never> = {
+  equals?: $Enums.payment_direction | Prisma.Enumpayment_directionFieldRefInput<$PrismaModel>
+  in?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumpayment_directionFilter<$PrismaModel> | $Enums.payment_direction
+}
+
 export type NestedEnumpayment_methodWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.payment_method | Prisma.Enumpayment_methodFieldRefInput<$PrismaModel>
   in?: $Enums.payment_method[] | Prisma.ListEnumpayment_methodFieldRefInput<$PrismaModel>
@@ -1065,6 +1089,16 @@ export type NestedEnumpayment_methodWithAggregatesFilter<$PrismaModel = never> =
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumpayment_methodFilter<$PrismaModel>
   _max?: Prisma.NestedEnumpayment_methodFilter<$PrismaModel>
+}
+
+export type NestedEnumpayment_directionWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.payment_direction | Prisma.Enumpayment_directionFieldRefInput<$PrismaModel>
+  in?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  notIn?: $Enums.payment_direction[] | Prisma.ListEnumpayment_directionFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumpayment_directionWithAggregatesFilter<$PrismaModel> | $Enums.payment_direction
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumpayment_directionFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumpayment_directionFilter<$PrismaModel>
 }
 
 export type NestedEnumpayment_intent_statusFilter<$PrismaModel = never> = {

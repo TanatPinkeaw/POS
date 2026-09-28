@@ -31,7 +31,8 @@ export const order_status = {
   confirmed: 'confirmed',
   ready_for_pickup: 'ready_for_pickup',
   completed: 'completed',
-  cancelled: 'cancelled'
+  cancelled: 'cancelled',
+  refunded: 'refunded'
 } as const
 
 export type order_status = (typeof order_status)[keyof typeof order_status]
@@ -52,10 +53,19 @@ export const stock_movement_type = {
   pos_sale: 'pos_sale',
   preorder_reserve: 'preorder_reserve',
   preorder_cancel: 'preorder_cancel',
-  restock: 'restock'
+  restock: 'restock',
+  pos_refund: 'pos_refund'
 } as const
 
 export type stock_movement_type = (typeof stock_movement_type)[keyof typeof stock_movement_type]
+
+
+export const payment_direction = {
+  sale: 'sale',
+  refund: 'refund'
+} as const
+
+export type payment_direction = (typeof payment_direction)[keyof typeof payment_direction]
 
 
 export const stock_adjustment_reason = {
@@ -102,6 +112,7 @@ export const audit_action = {
   over_discount: 'over_discount',
   drawer_open: 'drawer_open',
   manual_payment_confirm: 'manual_payment_confirm',
+  refund_order: 'refund_order',
   pin_set: 'pin_set',
   pin_reset: 'pin_reset',
   pin_locked: 'pin_locked',

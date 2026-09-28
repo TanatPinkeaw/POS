@@ -47,6 +47,15 @@ model shops {
   prices_include_vat            Boolean            @default(true)
   receipt_prefix                String             @default("RC") @db.VarChar(10)
   receipt_running_number        BigInt             @default(0)
+  /**
+   * The credit-note series, kept apart from the receipt series on purpose.
+   * A shop's invoice series and its credit-note series are two documents that an
+   * auditor reads against each other; interleaving them would make "how many
+   * invoices did you issue" a question about a shared counter instead of about a
+   * document type. Same gapless rule, same serialisation on this row.
+   */
+  credit_note_prefix            String             @default("CN") @db.VarChar(10)
+  credit_note_running_number    BigInt             @default(0)
   receipt_footer                String?
   logo_url                      String?
   /**
@@ -84,6 +93,16 @@ enum order_status {
   ready_for_pickup
   completed
   cancelled
+  /**
+   * A sale that was paid for and then reversed — always with a credit note.
+   * Its own status rather than a flag on `completed`, because "was this bill
+   * refunded" is the question every report, receipt lookup and refusal message
+   * needs to answer, and the state machine is the one place that can answer it
+   * for all of them at once: `completed → refunded` is the only way in, and
+   * `refunded` is terminal, so a second refund is refused by `canTransition`
+   * before any transaction is opened.
+   */
+  refunded
 }
 
 enum payment_method {
@@ -99,6 +118,29 @@ enum stock_movement_type {
   preorder_reserve
   preorder_cancel
   restock
+  /**
+   * Goods coming back onto the shelf because the sale was reversed.
+   * Distinct from `restock` (stock arriving from a supplier) and from
+   * `preorder_cancel` (a reservation that never left), because a stock report
+   * that cannot tell a return from a delivery cannot tell a bad week from a
+   * generous one.
+   */
+  pos_refund
+}
+
+/**
+ * Which way the money in a `payments` row went.
+ *
+ * A column rather than a negative `amount`, because
+ * `chk_payments_amount_positive` is worth keeping: an amount is a magnitude, and
+ * a table where "how much" and "which way" are the same field is a table where
+ * every sum needs remembering to be written signed. Here, one column says the
+ * direction once and every existing aggregate either nets it deliberately or
+ * filters on it deliberately — and neither can happen by accident.
+ */
+enum payment_direction {
+  sale
+  refund
 }
 
 enum stock_adjustment_reason {
@@ -155,6 +197,13 @@ enum audit_action {
   over_discount
   drawer_open
   manual_payment_confirm
+  /**
+   * Money going back to a customer, with a credit note behind it.
+   * Its own action rather than a second `void_order`: a void stops a sale that
+   * was never paid, a refund reverses one that was, and an owner scanning the
+   * trail for "where did the cash go" needs to be able to tell them apart.
+   */
+  refund_order
   pin_set
   pin_reset
   pin_locked
@@ -202,6 +251,8 @@ model users {
   payment_intents     payment_intents[]    @relation("intent_cashier")
   intents_confirmed   payment_intents[]    @relation("intent_confirmer")
   display_devices     display_devices[]
+  credit_notes_issued credit_notes[]       @relation("credit_note_issuer")
+  credit_notes_approved credit_notes[]     @relation("credit_note_approver")
 }
 
 // ---------------------------------------------------------------- catalog
@@ -305,6 +356,7 @@ model cash_shifts {
   payments        payments[]
   audit_logs      audit_logs[]
   payment_intents payment_intents[]
+  credit_notes    credit_notes[]
 
   @@index([status])
 }
@@ -380,6 +432,7 @@ model orders {
   payments           payments[]
   point_transactions point_transactions[]
   payment_intents    payment_intents[]
+  credit_note        credit_notes?
 
   @@index([status])
   @@index([created_at])
@@ -403,22 +456,99 @@ model order_items {
 }
 
 model payments {
-  id              Int            @id @default(autoincrement())
-  order_id        String         @db.Uuid
+  id              Int               @id @default(autoincrement())
+  order_id        String            @db.Uuid
   shift_id        Int?
   method          payment_method
-  amount          Decimal        @db.Decimal(10, 2)
-  received_amount Decimal?       @db.Decimal(10, 2)
-  change_amount   Decimal?       @db.Decimal(10, 2)
-  transaction_ref String?        @db.VarChar(100)
-  paid_at         DateTime       @default(now()) @db.Timestamptz(6)
+  /** Always positive; `direction` carries the sign. */
+  amount          Decimal           @db.Decimal(10, 2)
+  direction       payment_direction @default(sale)
+  /**
+   * The credit note this leg pays out, for a refund leg — and null for a sale.
+   * Enforced by the migration as `(direction = 'refund') = (credit_note_id IS
+   * NOT NULL)`, so money can never leave without a document behind it and a sale
+   * can never claim one.
+   */
+  credit_note_id  String?           @db.Uuid
+  received_amount Decimal?          @db.Decimal(10, 2)
+  change_amount   Decimal?          @db.Decimal(10, 2)
+  transaction_ref String?           @db.VarChar(100)
+  paid_at         DateTime          @default(now()) @db.Timestamptz(6)
 
-  order orders       @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  shift cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: SetNull)
+  order       orders        @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  shift       cash_shifts?  @relation(fields: [shift_id], references: [id], onDelete: SetNull)
+  credit_note credit_notes? @relation(fields: [credit_note_id], references: [id], onDelete: Restrict)
 
   @@index([order_id])
   @@index([shift_id])
   @@index([paid_at])
+  @@index([direction])
+  @@index([credit_note_id])
+}
+
+// ------------------------------------------------------------ credit notes
+
+/**
+ * The document that reverses a paid sale — a full-amount credit note.
+ *
+ * Its own table rather than a flag on `orders`, because it is a *document*: it
+ * has its own number from its own series, its own tax figures as issued, its own
+ * reason, and two people named on it. A sale's total is a fact about the sale;
+ * a credit note's total is a fact about a piece of paper that was handed to a
+ * customer, and the two must be able to disagree later — which is exactly what
+ * a partial refund would require, and why the figures are copied here rather
+ * than read back through the order.
+ *
+ * `order_id` is UNIQUE. That is the double-refund guard that survives everything
+ * else: `canTransition` stops the API path, and this index stops a race, a
+ * retried request, and a future code path that forgets to ask.
+ */
+model credit_notes {
+  id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /** `CN-2026-000001`, from the shop's own gapless series. */
+  document_number       String         @unique @db.VarChar(30)
+  /** The sale being reversed. One credit note per receipt, by index. */
+  order_id              String         @unique @db.Uuid
+  /**
+   * The drawer the money came out of, or null when it did not come out of one.
+   * A refund paid by hand from the shop's banking app touches no drawer, and
+   * recording a drawer it never left would invent a shortage at close.
+   */
+  shift_id              Int?
+  reason                String
+  refund_method         payment_method
+  /**
+   * The reversed tax facts, snapshotted at issue.
+   * Copied from the sale rather than joined to it, so the document reprints
+   * identically forever — and so a later partial refund, which would carry
+   * *different* figures, is not a schema change.
+   */
+  final_amount          Decimal        @db.Decimal(10, 2)
+  net_amount            Decimal        @db.Decimal(10, 2)
+  vat_amount            Decimal        @db.Decimal(10, 2)
+  vat_rate_used         Decimal?       @db.Decimal(5, 2)
+  /**
+   * What happened to the customer's points, recorded on the document.
+   * `applyPointChange` refuses to drive a balance negative, and a customer who
+   * has already spent their points must not be able to block their own refund —
+   * so the clawback is clamped and the shortfall is stated here instead of
+   * vanishing.
+   */
+  points_clawed_back    Int            @default(0)
+  points_forgiven       Int            @default(0)
+  created_by            String         @db.Uuid
+  authorized_by_user_id String?        @db.Uuid
+  created_at            DateTime       @default(now()) @db.Timestamptz(6)
+
+  order         orders       @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  shift         cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: Restrict)
+  issuer        users        @relation("credit_note_issuer", fields: [created_by], references: [id], onDelete: Restrict)
+  approver      users?       @relation("credit_note_approver", fields: [authorized_by_user_id], references: [id], onDelete: Restrict)
+  /** The money legs of this document. At least one for any way of paying out. */
+  payments      payments[]
+
+  @@index([shift_id])
+  @@index([created_at])
 }
 
 // ---------------------------------------------------------------- payments
