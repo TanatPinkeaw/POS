@@ -1,0 +1,62 @@
+/*
+ * The QR panel.
+ *
+ * The frame has a white background and a border whatever the page does, because a
+ * QR on a dark surface does not scan: the encoder draws dark modules on light, and
+ * a dark theme that inverts the frame around it would produce a code that only
+ * works if the customer's camera copes with the polarity.
+ */
+
+.panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-2);
+  text-align: center;
+}
+
+.frame {
+  display: grid;
+  place-items: center;
+  padding: var(--ln-space-2);
+  border: 1px solid var(--ln-border-subtle);
+  border-radius: var(--ln-radius-md);
+  background: #ffffff;
+}
+
+.placeholder {
+  color: var(--ln-neutral-500);
+  font-size: var(--ln-size-sm);
+}
+
+.amount {
+  margin: 0;
+  font-size: var(--ln-size-lg);
+  font-weight: 700;
+}
+
+.ref {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.ref strong {
+  color: var(--ln-text);
+  letter-spacing: 0.08em;
+}
+
+.countdown,
+.expired {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdown {
+  color: var(--ln-text-muted);
+}
+
+.expired {
+  color: var(--ln-danger);
+  font-weight: 600;
+}

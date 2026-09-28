@@ -28,10 +28,12 @@ export type AggregateUsers = {
 
 export type UsersAvgAggregateOutputType = {
   points_balance: number | null
+  pin_failed_attempts: number | null
 }
 
 export type UsersSumAggregateOutputType = {
   points_balance: number | null
+  pin_failed_attempts: number | null
 }
 
 export type UsersMinAggregateOutputType = {
@@ -43,6 +45,9 @@ export type UsersMinAggregateOutputType = {
   role: $Enums.user_role | null
   points_balance: number | null
   is_active: boolean | null
+  pin_hash: string | null
+  pin_failed_attempts: number | null
+  pin_locked_until: Date | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -56,6 +61,9 @@ export type UsersMaxAggregateOutputType = {
   role: $Enums.user_role | null
   points_balance: number | null
   is_active: boolean | null
+  pin_hash: string | null
+  pin_failed_attempts: number | null
+  pin_locked_until: Date | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -69,6 +77,9 @@ export type UsersCountAggregateOutputType = {
   role: number
   points_balance: number
   is_active: number
+  pin_hash: number
+  pin_failed_attempts: number
+  pin_locked_until: number
   created_at: number
   updated_at: number
   _all: number
@@ -77,10 +88,12 @@ export type UsersCountAggregateOutputType = {
 
 export type UsersAvgAggregateInputType = {
   points_balance?: true
+  pin_failed_attempts?: true
 }
 
 export type UsersSumAggregateInputType = {
   points_balance?: true
+  pin_failed_attempts?: true
 }
 
 export type UsersMinAggregateInputType = {
@@ -92,6 +105,9 @@ export type UsersMinAggregateInputType = {
   role?: true
   points_balance?: true
   is_active?: true
+  pin_hash?: true
+  pin_failed_attempts?: true
+  pin_locked_until?: true
   created_at?: true
   updated_at?: true
 }
@@ -105,6 +121,9 @@ export type UsersMaxAggregateInputType = {
   role?: true
   points_balance?: true
   is_active?: true
+  pin_hash?: true
+  pin_failed_attempts?: true
+  pin_locked_until?: true
   created_at?: true
   updated_at?: true
 }
@@ -118,6 +137,9 @@ export type UsersCountAggregateInputType = {
   role?: true
   points_balance?: true
   is_active?: true
+  pin_hash?: true
+  pin_failed_attempts?: true
+  pin_locked_until?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -218,6 +240,9 @@ export type UsersGroupByOutputType = {
   role: $Enums.user_role
   points_balance: number
   is_active: boolean
+  pin_hash: string | null
+  pin_failed_attempts: number
+  pin_locked_until: Date | null
   created_at: Date
   updated_at: Date
   _count: UsersCountAggregateOutputType | null
@@ -254,6 +279,9 @@ export type usersWhereInput = {
   role?: Prisma.Enumuser_roleFilter<"users"> | $Enums.user_role
   points_balance?: Prisma.IntFilter<"users"> | number
   is_active?: Prisma.BoolFilter<"users"> | boolean
+  pin_hash?: Prisma.StringNullableFilter<"users"> | string | null
+  pin_failed_attempts?: Prisma.IntFilter<"users"> | number
+  pin_locked_until?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"users"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"users"> | Date | string
   orders_as_customer?: Prisma.OrdersListRelationFilter
@@ -265,6 +293,11 @@ export type usersWhereInput = {
   shifts_opened?: Prisma.Cash_shiftsListRelationFilter
   shifts_closed?: Prisma.Cash_shiftsListRelationFilter
   point_transactions?: Prisma.Point_transactionsListRelationFilter
+  audit_logs_acted?: Prisma.Audit_logsListRelationFilter
+  audit_logs_approved?: Prisma.Audit_logsListRelationFilter
+  payment_intents?: Prisma.Payment_intentsListRelationFilter
+  intents_confirmed?: Prisma.Payment_intentsListRelationFilter
+  display_devices?: Prisma.Display_devicesListRelationFilter
 }
 
 export type usersOrderByWithRelationInput = {
@@ -276,6 +309,9 @@ export type usersOrderByWithRelationInput = {
   role?: Prisma.SortOrder
   points_balance?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  pin_hash?: Prisma.SortOrderInput | Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
+  pin_locked_until?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   orders_as_customer?: Prisma.ordersOrderByRelationAggregateInput
@@ -287,6 +323,11 @@ export type usersOrderByWithRelationInput = {
   shifts_opened?: Prisma.cash_shiftsOrderByRelationAggregateInput
   shifts_closed?: Prisma.cash_shiftsOrderByRelationAggregateInput
   point_transactions?: Prisma.point_transactionsOrderByRelationAggregateInput
+  audit_logs_acted?: Prisma.audit_logsOrderByRelationAggregateInput
+  audit_logs_approved?: Prisma.audit_logsOrderByRelationAggregateInput
+  payment_intents?: Prisma.payment_intentsOrderByRelationAggregateInput
+  intents_confirmed?: Prisma.payment_intentsOrderByRelationAggregateInput
+  display_devices?: Prisma.display_devicesOrderByRelationAggregateInput
 }
 
 export type usersWhereUniqueInput = Prisma.AtLeast<{
@@ -301,6 +342,9 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   role?: Prisma.Enumuser_roleFilter<"users"> | $Enums.user_role
   points_balance?: Prisma.IntFilter<"users"> | number
   is_active?: Prisma.BoolFilter<"users"> | boolean
+  pin_hash?: Prisma.StringNullableFilter<"users"> | string | null
+  pin_failed_attempts?: Prisma.IntFilter<"users"> | number
+  pin_locked_until?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
   created_at?: Prisma.DateTimeFilter<"users"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"users"> | Date | string
   orders_as_customer?: Prisma.OrdersListRelationFilter
@@ -312,6 +356,11 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   shifts_opened?: Prisma.Cash_shiftsListRelationFilter
   shifts_closed?: Prisma.Cash_shiftsListRelationFilter
   point_transactions?: Prisma.Point_transactionsListRelationFilter
+  audit_logs_acted?: Prisma.Audit_logsListRelationFilter
+  audit_logs_approved?: Prisma.Audit_logsListRelationFilter
+  payment_intents?: Prisma.Payment_intentsListRelationFilter
+  intents_confirmed?: Prisma.Payment_intentsListRelationFilter
+  display_devices?: Prisma.Display_devicesListRelationFilter
 }, "id" | "email" | "phone">
 
 export type usersOrderByWithAggregationInput = {
@@ -323,6 +372,9 @@ export type usersOrderByWithAggregationInput = {
   role?: Prisma.SortOrder
   points_balance?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  pin_hash?: Prisma.SortOrderInput | Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
+  pin_locked_until?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.usersCountOrderByAggregateInput
@@ -344,6 +396,9 @@ export type usersScalarWhereWithAggregatesInput = {
   role?: Prisma.Enumuser_roleWithAggregatesFilter<"users"> | $Enums.user_role
   points_balance?: Prisma.IntWithAggregatesFilter<"users"> | number
   is_active?: Prisma.BoolWithAggregatesFilter<"users"> | boolean
+  pin_hash?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
+  pin_failed_attempts?: Prisma.IntWithAggregatesFilter<"users"> | number
+  pin_locked_until?: Prisma.DateTimeNullableWithAggregatesFilter<"users"> | Date | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"users"> | Date | string
 }
@@ -357,6 +412,9 @@ export type usersCreateInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -368,6 +426,11 @@ export type usersCreateInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateInput = {
@@ -379,6 +442,9 @@ export type usersUncheckedCreateInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -390,6 +456,11 @@ export type usersUncheckedCreateInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUpdateInput = {
@@ -401,6 +472,9 @@ export type usersUpdateInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -412,6 +486,11 @@ export type usersUpdateInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateInput = {
@@ -423,6 +502,9 @@ export type usersUncheckedUpdateInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -434,6 +516,11 @@ export type usersUncheckedUpdateInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersCreateManyInput = {
@@ -445,6 +532,9 @@ export type usersCreateManyInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -458,6 +548,9 @@ export type usersUpdateManyMutationInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -471,6 +564,9 @@ export type usersUncheckedUpdateManyInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -484,12 +580,16 @@ export type usersCountOrderByAggregateInput = {
   role?: Prisma.SortOrder
   points_balance?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  pin_hash?: Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
+  pin_locked_until?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
 
 export type usersAvgOrderByAggregateInput = {
   points_balance?: Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
 }
 
 export type usersMaxOrderByAggregateInput = {
@@ -501,6 +601,9 @@ export type usersMaxOrderByAggregateInput = {
   role?: Prisma.SortOrder
   points_balance?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  pin_hash?: Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
+  pin_locked_until?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -514,12 +617,16 @@ export type usersMinOrderByAggregateInput = {
   role?: Prisma.SortOrder
   points_balance?: Prisma.SortOrder
   is_active?: Prisma.SortOrder
+  pin_hash?: Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
+  pin_locked_until?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
 
 export type usersSumOrderByAggregateInput = {
   points_balance?: Prisma.SortOrder
+  pin_failed_attempts?: Prisma.SortOrder
 }
 
 export type UsersScalarRelationFilter = {
@@ -534,6 +641,10 @@ export type UsersNullableScalarRelationFilter = {
 
 export type Enumuser_roleFieldUpdateOperationsInput = {
   set?: $Enums.user_role
+}
+
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
 }
 
 export type usersCreateNestedOneWithoutStock_logsInput = {
@@ -622,6 +733,38 @@ export type usersUpdateOneWithoutShifts_closedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutShifts_closedInput, Prisma.usersUpdateWithoutShifts_closedInput>, Prisma.usersUncheckedUpdateWithoutShifts_closedInput>
 }
 
+export type usersCreateNestedOneWithoutAudit_logs_actedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_actedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_actedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAudit_logs_actedInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutAudit_logs_approvedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_approvedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_approvedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAudit_logs_approvedInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutAudit_logs_actedNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_actedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_actedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAudit_logs_actedInput
+  upsert?: Prisma.usersUpsertWithoutAudit_logs_actedInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutAudit_logs_actedInput, Prisma.usersUpdateWithoutAudit_logs_actedInput>, Prisma.usersUncheckedUpdateWithoutAudit_logs_actedInput>
+}
+
+export type usersUpdateOneWithoutAudit_logs_approvedNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_approvedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_approvedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutAudit_logs_approvedInput
+  upsert?: Prisma.usersUpsertWithoutAudit_logs_approvedInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutAudit_logs_approvedInput, Prisma.usersUpdateWithoutAudit_logs_approvedInput>, Prisma.usersUncheckedUpdateWithoutAudit_logs_approvedInput>
+}
+
 export type usersCreateNestedOneWithoutOrders_as_customerInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutOrders_as_customerInput, Prisma.usersUncheckedCreateWithoutOrders_as_customerInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutOrders_as_customerInput
@@ -654,6 +797,52 @@ export type usersUpdateOneWithoutOrders_as_cashierNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutOrders_as_cashierInput, Prisma.usersUpdateWithoutOrders_as_cashierInput>, Prisma.usersUncheckedUpdateWithoutOrders_as_cashierInput>
 }
 
+export type usersCreateNestedOneWithoutPayment_intentsInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutPayment_intentsInput, Prisma.usersUncheckedCreateWithoutPayment_intentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutPayment_intentsInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutIntents_confirmedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutIntents_confirmedInput, Prisma.usersUncheckedCreateWithoutIntents_confirmedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutIntents_confirmedInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutPayment_intentsNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutPayment_intentsInput, Prisma.usersUncheckedCreateWithoutPayment_intentsInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutPayment_intentsInput
+  upsert?: Prisma.usersUpsertWithoutPayment_intentsInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutPayment_intentsInput, Prisma.usersUpdateWithoutPayment_intentsInput>, Prisma.usersUncheckedUpdateWithoutPayment_intentsInput>
+}
+
+export type usersUpdateOneWithoutIntents_confirmedNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutIntents_confirmedInput, Prisma.usersUncheckedCreateWithoutIntents_confirmedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutIntents_confirmedInput
+  upsert?: Prisma.usersUpsertWithoutIntents_confirmedInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutIntents_confirmedInput, Prisma.usersUpdateWithoutIntents_confirmedInput>, Prisma.usersUncheckedUpdateWithoutIntents_confirmedInput>
+}
+
+export type usersCreateNestedOneWithoutDisplay_devicesInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutDisplay_devicesInput, Prisma.usersUncheckedCreateWithoutDisplay_devicesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutDisplay_devicesInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutDisplay_devicesNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutDisplay_devicesInput, Prisma.usersUncheckedCreateWithoutDisplay_devicesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutDisplay_devicesInput
+  upsert?: Prisma.usersUpsertWithoutDisplay_devicesInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutDisplay_devicesInput, Prisma.usersUpdateWithoutDisplay_devicesInput>, Prisma.usersUncheckedUpdateWithoutDisplay_devicesInput>
+}
+
 export type usersCreateNestedOneWithoutPoint_transactionsInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutPoint_transactionsInput, Prisma.usersUncheckedCreateWithoutPoint_transactionsInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutPoint_transactionsInput
@@ -677,6 +866,9 @@ export type usersCreateWithoutStock_logsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -687,6 +879,11 @@ export type usersCreateWithoutStock_logsInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutStock_logsInput = {
@@ -698,6 +895,9 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -708,6 +908,11 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutStock_logsInput = {
@@ -735,6 +940,9 @@ export type usersUpdateWithoutStock_logsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -745,6 +953,11 @@ export type usersUpdateWithoutStock_logsInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutStock_logsInput = {
@@ -756,6 +969,9 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -766,6 +982,11 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersCreateWithoutSchedule_shiftsInput = {
@@ -777,6 +998,9 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -787,6 +1011,11 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
@@ -798,6 +1027,9 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -808,6 +1040,11 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutSchedule_shiftsInput = {
@@ -824,6 +1061,9 @@ export type usersCreateWithoutSchedules_authoredInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -834,6 +1074,11 @@ export type usersCreateWithoutSchedules_authoredInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutSchedules_authoredInput = {
@@ -845,6 +1090,9 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -855,6 +1103,11 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutSchedules_authoredInput = {
@@ -882,6 +1135,9 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -892,6 +1148,11 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
@@ -903,6 +1164,9 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -913,6 +1177,11 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUpsertWithoutSchedules_authoredInput = {
@@ -935,6 +1204,9 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -945,6 +1217,11 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
@@ -956,6 +1233,9 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -966,6 +1246,11 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersCreateWithoutTime_logsInput = {
@@ -977,6 +1262,9 @@ export type usersCreateWithoutTime_logsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -987,6 +1275,11 @@ export type usersCreateWithoutTime_logsInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutTime_logsInput = {
@@ -998,6 +1291,9 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -1008,6 +1304,11 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutTime_logsInput = {
@@ -1035,6 +1336,9 @@ export type usersUpdateWithoutTime_logsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -1045,6 +1349,11 @@ export type usersUpdateWithoutTime_logsInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTime_logsInput = {
@@ -1056,6 +1365,9 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1066,6 +1378,11 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersCreateWithoutShifts_openedInput = {
@@ -1077,6 +1394,9 @@ export type usersCreateWithoutShifts_openedInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -1087,6 +1407,11 @@ export type usersCreateWithoutShifts_openedInput = {
   time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutShifts_openedInput = {
@@ -1098,6 +1423,9 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -1108,6 +1436,11 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutShifts_openedInput = {
@@ -1124,6 +1457,9 @@ export type usersCreateWithoutShifts_closedInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -1134,6 +1470,11 @@ export type usersCreateWithoutShifts_closedInput = {
   time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutShifts_closedInput = {
@@ -1145,6 +1486,9 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -1155,6 +1499,11 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutShifts_closedInput = {
@@ -1182,6 +1531,9 @@ export type usersUpdateWithoutShifts_openedInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -1192,6 +1544,11 @@ export type usersUpdateWithoutShifts_openedInput = {
   time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShifts_openedInput = {
@@ -1203,6 +1560,9 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1213,6 +1573,11 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUpsertWithoutShifts_closedInput = {
@@ -1235,6 +1600,9 @@ export type usersUpdateWithoutShifts_closedInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -1245,6 +1613,11 @@ export type usersUpdateWithoutShifts_closedInput = {
   time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShifts_closedInput = {
@@ -1256,6 +1629,9 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1266,6 +1642,275 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersCreateWithoutAudit_logs_actedInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersCreateOrConnectWithoutAudit_logs_actedInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_actedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_actedInput>
+}
+
+export type usersCreateWithoutAudit_logs_approvedInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersCreateOrConnectWithoutAudit_logs_approvedInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_approvedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_approvedInput>
+}
+
+export type usersUpsertWithoutAudit_logs_actedInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutAudit_logs_actedInput, Prisma.usersUncheckedUpdateWithoutAudit_logs_actedInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_actedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_actedInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutAudit_logs_actedInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutAudit_logs_actedInput, Prisma.usersUncheckedUpdateWithoutAudit_logs_actedInput>
+}
+
+export type usersUpdateWithoutAudit_logs_actedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersUpsertWithoutAudit_logs_approvedInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutAudit_logs_approvedInput, Prisma.usersUncheckedUpdateWithoutAudit_logs_approvedInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutAudit_logs_approvedInput, Prisma.usersUncheckedCreateWithoutAudit_logs_approvedInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutAudit_logs_approvedInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutAudit_logs_approvedInput, Prisma.usersUncheckedUpdateWithoutAudit_logs_approvedInput>
+}
+
+export type usersUpdateWithoutAudit_logs_approvedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersCreateWithoutOrders_as_customerInput = {
@@ -1277,6 +1922,9 @@ export type usersCreateWithoutOrders_as_customerInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
@@ -1287,6 +1935,11 @@ export type usersCreateWithoutOrders_as_customerInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutOrders_as_customerInput = {
@@ -1298,6 +1951,9 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
@@ -1308,6 +1964,11 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutOrders_as_customerInput = {
@@ -1324,6 +1985,9 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -1334,6 +1998,11 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
@@ -1345,6 +2014,9 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -1355,6 +2027,11 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
   point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutOrders_as_cashierInput = {
@@ -1382,6 +2059,9 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
@@ -1392,6 +2072,11 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
@@ -1403,6 +2088,9 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
@@ -1413,6 +2101,11 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUpsertWithoutOrders_as_cashierInput = {
@@ -1435,6 +2128,9 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -1445,6 +2141,11 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
@@ -1456,6 +2157,9 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1466,6 +2170,407 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
   point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersCreateWithoutPayment_intentsInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersUncheckedCreateWithoutPayment_intentsInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersCreateOrConnectWithoutPayment_intentsInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutPayment_intentsInput, Prisma.usersUncheckedCreateWithoutPayment_intentsInput>
+}
+
+export type usersCreateWithoutIntents_confirmedInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersUncheckedCreateWithoutIntents_confirmedInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+}
+
+export type usersCreateOrConnectWithoutIntents_confirmedInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutIntents_confirmedInput, Prisma.usersUncheckedCreateWithoutIntents_confirmedInput>
+}
+
+export type usersUpsertWithoutPayment_intentsInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutPayment_intentsInput, Prisma.usersUncheckedUpdateWithoutPayment_intentsInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutPayment_intentsInput, Prisma.usersUncheckedCreateWithoutPayment_intentsInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutPayment_intentsInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutPayment_intentsInput, Prisma.usersUncheckedUpdateWithoutPayment_intentsInput>
+}
+
+export type usersUpdateWithoutPayment_intentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersUncheckedUpdateWithoutPayment_intentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersUpsertWithoutIntents_confirmedInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutIntents_confirmedInput, Prisma.usersUncheckedUpdateWithoutIntents_confirmedInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutIntents_confirmedInput, Prisma.usersUncheckedCreateWithoutIntents_confirmedInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutIntents_confirmedInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutIntents_confirmedInput, Prisma.usersUncheckedUpdateWithoutIntents_confirmedInput>
+}
+
+export type usersUpdateWithoutIntents_confirmedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+}
+
+export type usersCreateWithoutDisplay_devicesInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+}
+
+export type usersUncheckedCreateWithoutDisplay_devicesInput = {
+  id?: string
+  email?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+}
+
+export type usersCreateOrConnectWithoutDisplay_devicesInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutDisplay_devicesInput, Prisma.usersUncheckedCreateWithoutDisplay_devicesInput>
+}
+
+export type usersUpsertWithoutDisplay_devicesInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutDisplay_devicesInput, Prisma.usersUncheckedUpdateWithoutDisplay_devicesInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutDisplay_devicesInput, Prisma.usersUncheckedCreateWithoutDisplay_devicesInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutDisplay_devicesInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutDisplay_devicesInput, Prisma.usersUncheckedUpdateWithoutDisplay_devicesInput>
+}
+
+export type usersUpdateWithoutDisplay_devicesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+}
+
+export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
 }
 
 export type usersCreateWithoutPoint_transactionsInput = {
@@ -1477,6 +2582,9 @@ export type usersCreateWithoutPoint_transactionsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
@@ -1487,6 +2595,11 @@ export type usersCreateWithoutPoint_transactionsInput = {
   time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
   shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersUncheckedCreateWithoutPoint_transactionsInput = {
@@ -1498,6 +2611,9 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   role?: $Enums.user_role
   points_balance?: number
   is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
   created_at?: Date | string
   updated_at?: Date | string
   orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
@@ -1508,6 +2624,11 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
   shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
   shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
 }
 
 export type usersCreateOrConnectWithoutPoint_transactionsInput = {
@@ -1535,6 +2656,9 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
@@ -1545,6 +2669,11 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
   shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
@@ -1556,6 +2685,9 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
   points_balance?: Prisma.IntFieldUpdateOperationsInput | number
   is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
@@ -1566,6 +2698,11 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
   shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
   shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
 }
 
 
@@ -1583,6 +2720,11 @@ export type UsersCountOutputType = {
   shifts_opened: number
   shifts_closed: number
   point_transactions: number
+  audit_logs_acted: number
+  audit_logs_approved: number
+  payment_intents: number
+  intents_confirmed: number
+  display_devices: number
 }
 
 export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1595,6 +2737,11 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   shifts_opened?: boolean | UsersCountOutputTypeCountShifts_openedArgs
   shifts_closed?: boolean | UsersCountOutputTypeCountShifts_closedArgs
   point_transactions?: boolean | UsersCountOutputTypeCountPoint_transactionsArgs
+  audit_logs_acted?: boolean | UsersCountOutputTypeCountAudit_logs_actedArgs
+  audit_logs_approved?: boolean | UsersCountOutputTypeCountAudit_logs_approvedArgs
+  payment_intents?: boolean | UsersCountOutputTypeCountPayment_intentsArgs
+  intents_confirmed?: boolean | UsersCountOutputTypeCountIntents_confirmedArgs
+  display_devices?: boolean | UsersCountOutputTypeCountDisplay_devicesArgs
 }
 
 /**
@@ -1670,6 +2817,41 @@ export type UsersCountOutputTypeCountPoint_transactionsArgs<ExtArgs extends runt
   where?: Prisma.point_transactionsWhereInput
 }
 
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountAudit_logs_actedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.audit_logsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountAudit_logs_approvedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.audit_logsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountPayment_intentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.payment_intentsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountIntents_confirmedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.payment_intentsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountDisplay_devicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.display_devicesWhereInput
+}
+
 
 export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1680,6 +2862,9 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   role?: boolean
   points_balance?: boolean
   is_active?: boolean
+  pin_hash?: boolean
+  pin_failed_attempts?: boolean
+  pin_locked_until?: boolean
   created_at?: boolean
   updated_at?: boolean
   orders_as_customer?: boolean | Prisma.users$orders_as_customerArgs<ExtArgs>
@@ -1691,6 +2876,11 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   shifts_opened?: boolean | Prisma.users$shifts_openedArgs<ExtArgs>
   shifts_closed?: boolean | Prisma.users$shifts_closedArgs<ExtArgs>
   point_transactions?: boolean | Prisma.users$point_transactionsArgs<ExtArgs>
+  audit_logs_acted?: boolean | Prisma.users$audit_logs_actedArgs<ExtArgs>
+  audit_logs_approved?: boolean | Prisma.users$audit_logs_approvedArgs<ExtArgs>
+  payment_intents?: boolean | Prisma.users$payment_intentsArgs<ExtArgs>
+  intents_confirmed?: boolean | Prisma.users$intents_confirmedArgs<ExtArgs>
+  display_devices?: boolean | Prisma.users$display_devicesArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["users"]>
 
@@ -1703,6 +2893,9 @@ export type usersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   role?: boolean
   points_balance?: boolean
   is_active?: boolean
+  pin_hash?: boolean
+  pin_failed_attempts?: boolean
+  pin_locked_until?: boolean
   created_at?: boolean
   updated_at?: boolean
 }, ExtArgs["result"]["users"]>
@@ -1716,6 +2909,9 @@ export type usersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   role?: boolean
   points_balance?: boolean
   is_active?: boolean
+  pin_hash?: boolean
+  pin_failed_attempts?: boolean
+  pin_locked_until?: boolean
   created_at?: boolean
   updated_at?: boolean
 }, ExtArgs["result"]["users"]>
@@ -1729,11 +2925,14 @@ export type usersSelectScalar = {
   role?: boolean
   points_balance?: boolean
   is_active?: boolean
+  pin_hash?: boolean
+  pin_failed_attempts?: boolean
+  pin_locked_until?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "phone" | "password_hash" | "full_name" | "role" | "points_balance" | "is_active" | "created_at" | "updated_at", ExtArgs["result"]["users"]>
+export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "phone" | "password_hash" | "full_name" | "role" | "points_balance" | "is_active" | "pin_hash" | "pin_failed_attempts" | "pin_locked_until" | "created_at" | "updated_at", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders_as_customer?: boolean | Prisma.users$orders_as_customerArgs<ExtArgs>
   orders_as_cashier?: boolean | Prisma.users$orders_as_cashierArgs<ExtArgs>
@@ -1744,6 +2943,11 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   shifts_opened?: boolean | Prisma.users$shifts_openedArgs<ExtArgs>
   shifts_closed?: boolean | Prisma.users$shifts_closedArgs<ExtArgs>
   point_transactions?: boolean | Prisma.users$point_transactionsArgs<ExtArgs>
+  audit_logs_acted?: boolean | Prisma.users$audit_logs_actedArgs<ExtArgs>
+  audit_logs_approved?: boolean | Prisma.users$audit_logs_approvedArgs<ExtArgs>
+  payment_intents?: boolean | Prisma.users$payment_intentsArgs<ExtArgs>
+  intents_confirmed?: boolean | Prisma.users$intents_confirmedArgs<ExtArgs>
+  display_devices?: boolean | Prisma.users$display_devicesArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type usersIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1761,6 +2965,11 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     shifts_opened: Prisma.$cash_shiftsPayload<ExtArgs>[]
     shifts_closed: Prisma.$cash_shiftsPayload<ExtArgs>[]
     point_transactions: Prisma.$point_transactionsPayload<ExtArgs>[]
+    audit_logs_acted: Prisma.$audit_logsPayload<ExtArgs>[]
+    audit_logs_approved: Prisma.$audit_logsPayload<ExtArgs>[]
+    payment_intents: Prisma.$payment_intentsPayload<ExtArgs>[]
+    intents_confirmed: Prisma.$payment_intentsPayload<ExtArgs>[]
+    display_devices: Prisma.$display_devicesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1771,6 +2980,9 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     role: $Enums.user_role
     points_balance: number
     is_active: boolean
+    pin_hash: string | null
+    pin_failed_attempts: number
+    pin_locked_until: Date | null
     created_at: Date
     updated_at: Date
   }, ExtArgs["result"]["users"]>
@@ -2176,6 +3388,11 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   shifts_opened<T extends Prisma.users$shifts_openedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$shifts_openedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$cash_shiftsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   shifts_closed<T extends Prisma.users$shifts_closedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$shifts_closedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$cash_shiftsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   point_transactions<T extends Prisma.users$point_transactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$point_transactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$point_transactionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  audit_logs_acted<T extends Prisma.users$audit_logs_actedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$audit_logs_actedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$audit_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  audit_logs_approved<T extends Prisma.users$audit_logs_approvedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$audit_logs_approvedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$audit_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  payment_intents<T extends Prisma.users$payment_intentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$payment_intentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$payment_intentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  intents_confirmed<T extends Prisma.users$intents_confirmedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$intents_confirmedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$payment_intentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  display_devices<T extends Prisma.users$display_devicesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$display_devicesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$display_devicesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2213,6 +3430,9 @@ export interface usersFieldRefs {
   readonly role: Prisma.FieldRef<"users", 'user_role'>
   readonly points_balance: Prisma.FieldRef<"users", 'Int'>
   readonly is_active: Prisma.FieldRef<"users", 'Boolean'>
+  readonly pin_hash: Prisma.FieldRef<"users", 'String'>
+  readonly pin_failed_attempts: Prisma.FieldRef<"users", 'Int'>
+  readonly pin_locked_until: Prisma.FieldRef<"users", 'DateTime'>
   readonly created_at: Prisma.FieldRef<"users", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"users", 'DateTime'>
 }
@@ -2821,6 +4041,126 @@ export type users$point_transactionsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.Point_transactionsScalarFieldEnum | Prisma.Point_transactionsScalarFieldEnum[]
+}
+
+/**
+ * users.audit_logs_acted
+ */
+export type users$audit_logs_actedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the audit_logs
+   */
+  select?: Prisma.audit_logsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the audit_logs
+   */
+  omit?: Prisma.audit_logsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.audit_logsInclude<ExtArgs> | null
+  where?: Prisma.audit_logsWhereInput
+  orderBy?: Prisma.audit_logsOrderByWithRelationInput | Prisma.audit_logsOrderByWithRelationInput[]
+  cursor?: Prisma.audit_logsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Audit_logsScalarFieldEnum | Prisma.Audit_logsScalarFieldEnum[]
+}
+
+/**
+ * users.audit_logs_approved
+ */
+export type users$audit_logs_approvedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the audit_logs
+   */
+  select?: Prisma.audit_logsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the audit_logs
+   */
+  omit?: Prisma.audit_logsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.audit_logsInclude<ExtArgs> | null
+  where?: Prisma.audit_logsWhereInput
+  orderBy?: Prisma.audit_logsOrderByWithRelationInput | Prisma.audit_logsOrderByWithRelationInput[]
+  cursor?: Prisma.audit_logsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Audit_logsScalarFieldEnum | Prisma.Audit_logsScalarFieldEnum[]
+}
+
+/**
+ * users.payment_intents
+ */
+export type users$payment_intentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the payment_intents
+   */
+  select?: Prisma.payment_intentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the payment_intents
+   */
+  omit?: Prisma.payment_intentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.payment_intentsInclude<ExtArgs> | null
+  where?: Prisma.payment_intentsWhereInput
+  orderBy?: Prisma.payment_intentsOrderByWithRelationInput | Prisma.payment_intentsOrderByWithRelationInput[]
+  cursor?: Prisma.payment_intentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Payment_intentsScalarFieldEnum | Prisma.Payment_intentsScalarFieldEnum[]
+}
+
+/**
+ * users.intents_confirmed
+ */
+export type users$intents_confirmedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the payment_intents
+   */
+  select?: Prisma.payment_intentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the payment_intents
+   */
+  omit?: Prisma.payment_intentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.payment_intentsInclude<ExtArgs> | null
+  where?: Prisma.payment_intentsWhereInput
+  orderBy?: Prisma.payment_intentsOrderByWithRelationInput | Prisma.payment_intentsOrderByWithRelationInput[]
+  cursor?: Prisma.payment_intentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Payment_intentsScalarFieldEnum | Prisma.Payment_intentsScalarFieldEnum[]
+}
+
+/**
+ * users.display_devices
+ */
+export type users$display_devicesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the display_devices
+   */
+  select?: Prisma.display_devicesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the display_devices
+   */
+  omit?: Prisma.display_devicesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.display_devicesInclude<ExtArgs> | null
+  where?: Prisma.display_devicesWhereInput
+  orderBy?: Prisma.display_devicesOrderByWithRelationInput | Prisma.display_devicesOrderByWithRelationInput[]
+  cursor?: Prisma.display_devicesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Display_devicesScalarFieldEnum | Prisma.Display_devicesScalarFieldEnum[]
 }
 
 /**

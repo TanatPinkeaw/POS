@@ -16,10 +16,8 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model shops
  * *
  *  * The shop this deployment belongs to.
- *  *
  *  * The SRS is silent on shop identity — receipts, page titles and the tax rate
  *  * were hardcoded — so this is an addition on top of §7 (see ADR 0002).
- *  *
  *  * Exactly one row is allowed, which the migration enforces with
  *  * `CHECK (id = 1)`. That is what makes double-initialisation impossible when two
  *  * requests race through the setup wizard: the second INSERT collides on the
@@ -39,12 +37,14 @@ export type ShopsAvgAggregateOutputType = {
   id: number | null
   vat_rate: runtime.Decimal | null
   receipt_running_number: number | null
+  supervisor_discount_limit_thb: runtime.Decimal | null
 }
 
 export type ShopsSumAggregateOutputType = {
   id: number | null
   vat_rate: runtime.Decimal | null
   receipt_running_number: bigint | null
+  supervisor_discount_limit_thb: runtime.Decimal | null
 }
 
 export type ShopsMinAggregateOutputType = {
@@ -62,6 +62,9 @@ export type ShopsMinAggregateOutputType = {
   receipt_running_number: bigint | null
   receipt_footer: string | null
   logo_url: string | null
+  promptpay_id: string | null
+  promptpay_type: $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb: runtime.Decimal | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -81,6 +84,9 @@ export type ShopsMaxAggregateOutputType = {
   receipt_running_number: bigint | null
   receipt_footer: string | null
   logo_url: string | null
+  promptpay_id: string | null
+  promptpay_type: $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb: runtime.Decimal | null
   created_at: Date | null
   updated_at: Date | null
 }
@@ -100,6 +106,9 @@ export type ShopsCountAggregateOutputType = {
   receipt_running_number: number
   receipt_footer: number
   logo_url: number
+  promptpay_id: number
+  promptpay_type: number
+  supervisor_discount_limit_thb: number
   created_at: number
   updated_at: number
   _all: number
@@ -110,12 +119,14 @@ export type ShopsAvgAggregateInputType = {
   id?: true
   vat_rate?: true
   receipt_running_number?: true
+  supervisor_discount_limit_thb?: true
 }
 
 export type ShopsSumAggregateInputType = {
   id?: true
   vat_rate?: true
   receipt_running_number?: true
+  supervisor_discount_limit_thb?: true
 }
 
 export type ShopsMinAggregateInputType = {
@@ -133,6 +144,9 @@ export type ShopsMinAggregateInputType = {
   receipt_running_number?: true
   receipt_footer?: true
   logo_url?: true
+  promptpay_id?: true
+  promptpay_type?: true
+  supervisor_discount_limit_thb?: true
   created_at?: true
   updated_at?: true
 }
@@ -152,6 +166,9 @@ export type ShopsMaxAggregateInputType = {
   receipt_running_number?: true
   receipt_footer?: true
   logo_url?: true
+  promptpay_id?: true
+  promptpay_type?: true
+  supervisor_discount_limit_thb?: true
   created_at?: true
   updated_at?: true
 }
@@ -171,6 +188,9 @@ export type ShopsCountAggregateInputType = {
   receipt_running_number?: true
   receipt_footer?: true
   logo_url?: true
+  promptpay_id?: true
+  promptpay_type?: true
+  supervisor_discount_limit_thb?: true
   created_at?: true
   updated_at?: true
   _all?: true
@@ -277,6 +297,9 @@ export type ShopsGroupByOutputType = {
   receipt_running_number: bigint
   receipt_footer: string | null
   logo_url: string | null
+  promptpay_id: string | null
+  promptpay_type: $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb: runtime.Decimal
   created_at: Date
   updated_at: Date
   _count: ShopsCountAggregateOutputType | null
@@ -319,6 +342,9 @@ export type shopsWhereInput = {
   receipt_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
+  promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
+  promptpay_type?: Prisma.Enumpromptpay_id_typeNullableFilter<"shops"> | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalFilter<"shops"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeFilter<"shops"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"shops"> | Date | string
 }
@@ -338,6 +364,9 @@ export type shopsOrderByWithRelationInput = {
   receipt_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptpay_type?: Prisma.SortOrderInput | Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -360,6 +389,9 @@ export type shopsWhereUniqueInput = Prisma.AtLeast<{
   receipt_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
+  promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
+  promptpay_type?: Prisma.Enumpromptpay_id_typeNullableFilter<"shops"> | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalFilter<"shops"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeFilter<"shops"> | Date | string
   updated_at?: Prisma.DateTimeFilter<"shops"> | Date | string
 }, "id">
@@ -379,6 +411,9 @@ export type shopsOrderByWithAggregationInput = {
   receipt_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  promptpay_type?: Prisma.SortOrderInput | Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
   _count?: Prisma.shopsCountOrderByAggregateInput
@@ -406,6 +441,9 @@ export type shopsScalarWhereWithAggregatesInput = {
   receipt_running_number?: Prisma.BigIntWithAggregatesFilter<"shops"> | bigint | number
   receipt_footer?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
+  promptpay_id?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
+  promptpay_type?: Prisma.Enumpromptpay_id_typeNullableWithAggregatesFilter<"shops"> | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalWithAggregatesFilter<"shops"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeWithAggregatesFilter<"shops"> | Date | string
   updated_at?: Prisma.DateTimeWithAggregatesFilter<"shops"> | Date | string
 }
@@ -425,6 +463,9 @@ export type shopsCreateInput = {
   receipt_running_number?: bigint | number
   receipt_footer?: string | null
   logo_url?: string | null
+  promptpay_id?: string | null
+  promptpay_type?: $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -444,6 +485,9 @@ export type shopsUncheckedCreateInput = {
   receipt_running_number?: bigint | number
   receipt_footer?: string | null
   logo_url?: string | null
+  promptpay_id?: string | null
+  promptpay_type?: $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -463,6 +507,9 @@ export type shopsUpdateInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_type?: Prisma.NullableEnumpromptpay_id_typeFieldUpdateOperationsInput | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -482,6 +529,9 @@ export type shopsUncheckedUpdateInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_type?: Prisma.NullableEnumpromptpay_id_typeFieldUpdateOperationsInput | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -501,6 +551,9 @@ export type shopsCreateManyInput = {
   receipt_running_number?: bigint | number
   receipt_footer?: string | null
   logo_url?: string | null
+  promptpay_id?: string | null
+  promptpay_type?: $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Date | string
   updated_at?: Date | string
 }
@@ -520,6 +573,9 @@ export type shopsUpdateManyMutationInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_type?: Prisma.NullableEnumpromptpay_id_typeFieldUpdateOperationsInput | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -539,6 +595,9 @@ export type shopsUncheckedUpdateManyInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  promptpay_type?: Prisma.NullableEnumpromptpay_id_typeFieldUpdateOperationsInput | $Enums.promptpay_id_type | null
+  supervisor_discount_limit_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -558,6 +617,9 @@ export type shopsCountOrderByAggregateInput = {
   receipt_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
+  promptpay_id?: Prisma.SortOrder
+  promptpay_type?: Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -566,6 +628,7 @@ export type shopsAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   vat_rate?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
 }
 
 export type shopsMaxOrderByAggregateInput = {
@@ -583,6 +646,9 @@ export type shopsMaxOrderByAggregateInput = {
   receipt_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
+  promptpay_id?: Prisma.SortOrder
+  promptpay_type?: Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -602,6 +668,9 @@ export type shopsMinOrderByAggregateInput = {
   receipt_running_number?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
+  promptpay_id?: Prisma.SortOrder
+  promptpay_type?: Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   updated_at?: Prisma.SortOrder
 }
@@ -610,6 +679,7 @@ export type shopsSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   vat_rate?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
+  supervisor_discount_limit_thb?: Prisma.SortOrder
 }
 
 export type IntFieldUpdateOperationsInput = {
@@ -648,6 +718,10 @@ export type BigIntFieldUpdateOperationsInput = {
   divide?: bigint | number
 }
 
+export type NullableEnumpromptpay_id_typeFieldUpdateOperationsInput = {
+  set?: $Enums.promptpay_id_type | null
+}
+
 export type DateTimeFieldUpdateOperationsInput = {
   set?: Date | string
 }
@@ -669,6 +743,9 @@ export type shopsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   receipt_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
+  promptpay_id?: boolean
+  promptpay_type?: boolean
+  supervisor_discount_limit_thb?: boolean
   created_at?: boolean
   updated_at?: boolean
 }, ExtArgs["result"]["shops"]>
@@ -688,6 +765,9 @@ export type shopsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   receipt_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
+  promptpay_id?: boolean
+  promptpay_type?: boolean
+  supervisor_discount_limit_thb?: boolean
   created_at?: boolean
   updated_at?: boolean
 }, ExtArgs["result"]["shops"]>
@@ -707,6 +787,9 @@ export type shopsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   receipt_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
+  promptpay_id?: boolean
+  promptpay_type?: boolean
+  supervisor_discount_limit_thb?: boolean
   created_at?: boolean
   updated_at?: boolean
 }, ExtArgs["result"]["shops"]>
@@ -726,11 +809,14 @@ export type shopsSelectScalar = {
   receipt_running_number?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
+  promptpay_id?: boolean
+  promptpay_type?: boolean
+  supervisor_discount_limit_thb?: boolean
   created_at?: boolean
   updated_at?: boolean
 }
 
-export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "receipt_footer" | "logo_url" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
+export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
 
 export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "shops"
@@ -750,6 +836,20 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     receipt_running_number: bigint
     receipt_footer: string | null
     logo_url: string | null
+    /**
+     * *
+     *    * Where the shop receives PromptPay transfers. Null means the till cannot
+     *    * issue a QR and asks the cashier to confirm the transfer by hand instead.
+     */
+    promptpay_id: string | null
+    promptpay_type: $Enums.promptpay_id_type | null
+    /**
+     * *
+     *    * The discount a cashier may give without asking a supervisor. Past it the
+     *    * till demands a PIN, so the limit is the shop's policy stated as a number
+     *    * rather than as a habit nobody wrote down.
+     */
+    supervisor_discount_limit_thb: runtime.Decimal
     created_at: Date
     updated_at: Date
   }, ExtArgs["result"]["shops"]>
@@ -1189,6 +1289,9 @@ export interface shopsFieldRefs {
   readonly receipt_running_number: Prisma.FieldRef<"shops", 'BigInt'>
   readonly receipt_footer: Prisma.FieldRef<"shops", 'String'>
   readonly logo_url: Prisma.FieldRef<"shops", 'String'>
+  readonly promptpay_id: Prisma.FieldRef<"shops", 'String'>
+  readonly promptpay_type: Prisma.FieldRef<"shops", 'promptpay_id_type'>
+  readonly supervisor_discount_limit_thb: Prisma.FieldRef<"shops", 'Decimal'>
   readonly created_at: Prisma.FieldRef<"shops", 'DateTime'>
   readonly updated_at: Prisma.FieldRef<"shops", 'DateTime'>
 }

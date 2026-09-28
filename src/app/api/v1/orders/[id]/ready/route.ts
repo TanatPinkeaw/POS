@@ -1,5 +1,6 @@
 import { withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
+import { broadcastReadyBoard } from '@/lib/display-broadcast';
 import { loadOrderView } from '@/lib/order-view';
 import { markOrderReady } from '@/lib/orders';
 import { notifyOrderUpdated } from '@/lib/notify';
@@ -32,6 +33,11 @@ export async function POST(_request: Request, context: RouteContext): Promise<Re
       finalAmountThb: order.finalAmountThb,
       pickupPin,
     });
+
+    // The collection board on the customer screen is rebuilt from the table
+    // rather than from this event, so a missed broadcast cannot leave a collected
+    // order on it telling customers to wait for something that is gone.
+    await broadcastReadyBoard();
 
     return { ...order, pickupPin, pickupExpiresAt };
   });

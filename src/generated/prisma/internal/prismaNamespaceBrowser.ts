@@ -59,9 +59,12 @@ export const ModelName = {
   work_schedules: 'work_schedules',
   time_logs: 'time_logs',
   cash_shifts: 'cash_shifts',
+  audit_logs: 'audit_logs',
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
+  payment_intents: 'payment_intents',
+  display_devices: 'display_devices',
   point_transactions: 'point_transactions'
 } as const
 
@@ -96,6 +99,9 @@ export const ShopsScalarFieldEnum = {
   receipt_running_number: 'receipt_running_number',
   receipt_footer: 'receipt_footer',
   logo_url: 'logo_url',
+  promptpay_id: 'promptpay_id',
+  promptpay_type: 'promptpay_type',
+  supervisor_discount_limit_thb: 'supervisor_discount_limit_thb',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -112,6 +118,9 @@ export const UsersScalarFieldEnum = {
   role: 'role',
   points_balance: 'points_balance',
   is_active: 'is_active',
+  pin_hash: 'pin_hash',
+  pin_failed_attempts: 'pin_failed_attempts',
+  pin_locked_until: 'pin_locked_until',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -202,6 +211,21 @@ export const Cash_shiftsScalarFieldEnum = {
 export type Cash_shiftsScalarFieldEnum = (typeof Cash_shiftsScalarFieldEnum)[keyof typeof Cash_shiftsScalarFieldEnum]
 
 
+export const Audit_logsScalarFieldEnum = {
+  id: 'id',
+  action: 'action',
+  actor_user_id: 'actor_user_id',
+  authorized_by_user_id: 'authorized_by_user_id',
+  target_type: 'target_type',
+  target_id: 'target_id',
+  shift_id: 'shift_id',
+  detail: 'detail',
+  created_at: 'created_at'
+} as const
+
+export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
+
+
 export const OrdersScalarFieldEnum = {
   id: 'id',
   order_number: 'order_number',
@@ -260,6 +284,40 @@ export const PaymentsScalarFieldEnum = {
 export type PaymentsScalarFieldEnum = (typeof PaymentsScalarFieldEnum)[keyof typeof PaymentsScalarFieldEnum]
 
 
+export const Payment_intentsScalarFieldEnum = {
+  id: 'id',
+  ref: 'ref',
+  shift_id: 'shift_id',
+  cashier_id: 'cashier_id',
+  order_id: 'order_id',
+  amount: 'amount',
+  qr_payload: 'qr_payload',
+  status: 'status',
+  expires_at: 'expires_at',
+  paid_at: 'paid_at',
+  consumed_at: 'consumed_at',
+  confirmed_by_user_id: 'confirmed_by_user_id',
+  created_at: 'created_at'
+} as const
+
+export type Payment_intentsScalarFieldEnum = (typeof Payment_intentsScalarFieldEnum)[keyof typeof Payment_intentsScalarFieldEnum]
+
+
+export const Display_devicesScalarFieldEnum = {
+  id: 'id',
+  label: 'label',
+  token_hash: 'token_hash',
+  pairing_code: 'pairing_code',
+  pairing_expires_at: 'pairing_expires_at',
+  paired_by_user_id: 'paired_by_user_id',
+  last_seen_at: 'last_seen_at',
+  revoked_at: 'revoked_at',
+  created_at: 'created_at'
+} as const
+
+export type Display_devicesScalarFieldEnum = (typeof Display_devicesScalarFieldEnum)[keyof typeof Display_devicesScalarFieldEnum]
+
+
 export const Point_transactionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -281,6 +339,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
@@ -295,4 +361,13 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 

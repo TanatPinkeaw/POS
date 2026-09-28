@@ -6,6 +6,7 @@
  * half-applied order is impossible: if settling the payment fails, the stock
  * reservation is rolled back with it.
  */
+import { recordAudit } from './audit';
 import { prisma } from './db';
 import { optionalNumberEnv } from './env';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
@@ -18,6 +19,7 @@ import {
   sellFromStock,
 } from './inventory';
 import { pointsEarned as computePointsEarned } from './loyalty';
+import { consumeIntent } from './payment-intents';
 import { fromDecimal, roundThb, sumThb } from './money';
 import { canTransition, type OrderStatus } from './order-state';
 import { applyPointChange } from './points';
@@ -137,10 +139,17 @@ async function priceCart(db: Db, lines: CartLine[]): Promise<PricedLine[]> {
   return priced;
 }
 
-/** Mints the next order number from the sequence created in the initial migration. */
+/**
+ * Mints the next order number from the sequence created in the initial migration.
+ *
+ * The date is taken in Bangkok explicitly rather than from the session's
+ * timezone. Between midnight and 07:00 local the two disagree, and an order
+ * numbered with yesterday's date is the kind of thing a shop notices and nobody
+ * can reproduce later.
+ */
 async function nextOrderNumber(db: Db): Promise<string> {
   const rows = await db.$queryRaw<{ order_number: string }[]>`
-    SELECT 'PO-' || to_char(NOW(), 'YYYYMMDD') || '-' ||
+    SELECT 'PO-' || to_char(NOW() AT TIME ZONE 'Asia/Bangkok', 'YYYYMMDD') || '-' ||
            lpad(nextval('order_number_seq')::text, 6, '0') AS order_number
   `;
   const row = rows[0];
@@ -312,6 +321,19 @@ function lineSummaries(priced: PricedLine[]): OrderLineSummary[] {
  *
  * Stock leaves `stock_qty` directly, because nothing was ever reserved.
  */
+/**
+ * A discount past the shop's own limit, and who authorised it.
+ *
+ * Passed in rather than re-derived here, because the PIN was verified in the
+ * request layer and this module has no business knowing about sessions. What it
+ * does with it is the part that belongs to the transaction: record who allowed
+ * the discount against the same commit that applied it.
+ */
+export interface OverDiscountApproval {
+  approverId: string;
+  limitThb: number;
+}
+
 export async function createPosSale(input: {
   cashierId: string;
   shiftId: number;
@@ -319,6 +341,16 @@ export async function createPosSale(input: {
   customerId: string | null;
   manualDiscountThb?: number;
   settlement: SettlementRequest;
+  overDiscountApproval?: OverDiscountApproval;
+  /**
+   * The paid PromptPay intent this sale settles, when the customer scanned a QR.
+   *
+   * Optional because a cash sale has none. When it is present the intent is
+   * consumed inside this same transaction, which is what makes the two records
+   * agree: there is no state in which the customer's money was recorded and the
+   * bill it paid for was rolled back, or the reverse.
+   */
+  intentRef?: string;
 }): Promise<OrderSummary> {
   return prisma.$transaction(async (tx) => {
     const priced = await priceCart(tx, input.lines);
@@ -406,6 +438,39 @@ export async function createPosSale(input: {
         change_amount: leg.method === 'cash' ? settlement.changeThb : null,
       })),
     });
+
+    // Consumed inside the transaction, and before anything else is written: a
+    // second submission of the same intent has to fail here rather than after the
+    // stock has left.
+    if (input.intentRef) {
+      await consumeIntent(tx, { ref: input.intentRef, orderId: order.id });
+    }
+
+    /*
+     * Written inside the sale's own transaction, so the trail can never record a
+     * discount that the rollback then erased. `target_id` is the order, so the
+     * row is reachable from the sale it belongs to rather than only from the
+     * discount amount that happens to be in `detail`.
+     */
+    if (input.overDiscountApproval) {
+      await recordAudit(
+        {
+          action: 'over_discount',
+          actorUserId: input.cashierId,
+          authorizedByUserId: input.overDiscountApproval.approverId,
+          targetType: 'order',
+          targetId: order.id,
+          shiftId: input.shiftId,
+          detail: {
+            orderNumber,
+            discountThb: manualDiscount,
+            limitThb: input.overDiscountApproval.limitThb,
+            totalDiscountThb: discountTotal,
+          },
+        },
+        tx,
+      );
+    }
 
     if (input.customerId) {
       if (settlement.pointsRedeemed > 0) {
@@ -789,6 +854,9 @@ export async function cancelOrder(input: {
   orderId: string;
   actorId: string;
   reason: string;
+  /** Set when a supervisor's PIN was required — a staff cancellation, not a
+   *  member withdrawing their own pre-order. */
+  authorizedByUserId?: string | null;
 }): Promise<{ orderId: string; status: OrderStatus; releasedLines: number }> {
   return prisma.$transaction(async (tx) => {
     const locked = await lockOrder(tx, input.orderId);
@@ -816,14 +884,36 @@ export async function cancelOrder(input: {
       });
     }
 
-    await tx.orders.update({
+    const cancelled = await tx.orders.update({
       where: { id: input.orderId },
       data: {
         status: 'cancelled',
         cancelled_at: new Date(),
         cancel_reason: input.reason,
       },
+      select: { order_number: true },
     });
+
+    // Only a staff cancellation needed a PIN, so only that one is an audited
+    // void. A member withdrawing their own pre-order is not an event the shop
+    // has to account for, and logging every one would drown the ones that are.
+    if (input.authorizedByUserId) {
+      await recordAudit(
+        {
+          action: 'void_order',
+          actorUserId: input.actorId,
+          authorizedByUserId: input.authorizedByUserId,
+          targetType: 'order',
+          targetId: input.orderId,
+          detail: {
+            orderNumber: cancelled.order_number,
+            reason: input.reason,
+            releasedLines: items.length,
+          },
+        },
+        tx,
+      );
+    }
 
     return {
       orderId: input.orderId,

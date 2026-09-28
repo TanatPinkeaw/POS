@@ -1,0 +1,100 @@
+/*
+ * The customer-display panel.
+ *
+ * The pairing code is the one thing here that has to survive being read from
+ * across a counter, so it is set in a size and tracking nothing else on the screen
+ * uses.
+ */
+
+.pairRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-3);
+  align-items: center;
+}
+
+.input {
+  flex: 1 1 14rem;
+  min-height: var(--ln-control-h);
+  padding: 0 var(--ln-space-3);
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--ln-ring);
+  outline-offset: 1px;
+}
+
+.codeBox {
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-6);
+  border: 1px solid var(--ln-brand-soft-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-brand-soft);
+  text-align: center;
+}
+
+.codeKicker {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.code {
+  margin: 0;
+  font-family: var(--ln-font-mono);
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  /* The tracking adds space after the last digit, which would centre it off. */
+  text-indent: 0.28em;
+}
+
+.codeHint {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.list {
+  display: grid;
+  gap: var(--ln-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border: 1px solid var(--ln-border-subtle);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface);
+}
+
+.itemLabel {
+  margin: 0;
+  font-weight: 600;
+}
+
+.itemMeta {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.empty {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}

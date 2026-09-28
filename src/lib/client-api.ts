@@ -12,6 +12,14 @@ export class ApiError extends Error {
     message: string,
     readonly status: number,
     readonly code: string,
+    /**
+     * Structured detail the screen has to react to, when the server sent any.
+     *
+     * The supervisor PIN dialog is the reason this exists: "wrong PIN" and "locked
+     * for five minutes" are different situations with different next steps, and
+     * the server is the only side that knows which one happened.
+     */
+    readonly context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -20,7 +28,12 @@ export class ApiError extends Error {
 
 interface Envelope<T> {
   data?: T;
-  error?: { message?: string; code?: string; issues?: { path: string; message: string }[] };
+  error?: {
+    message?: string;
+    code?: string;
+    issues?: { path: string; message: string }[];
+    [key: string]: unknown;
+  };
 }
 
 /** Turns a response into a payload, or throws the server's own message. */
@@ -36,7 +49,15 @@ async function readEnvelope<T>(response: Response): Promise<T> {
         ? issues.join(' · ')
         : (body?.error?.message ?? `คำขอไม่สำเร็จ (${response.status})`);
 
-    throw new ApiError(message, response.status, body?.error?.code ?? 'UNKNOWN');
+    const code = body?.error?.code ?? 'UNKNOWN';
+    /*
+     * Everything the error body carries that is not one of the three fields this
+     * helper already names is context. Spreading the body itself would put
+     * `message` and `code` in there twice.
+     */
+    const { message: _message, code: _code, issues: _issues, ...context } = body?.error ?? {};
+
+    throw new ApiError(message, response.status, code, context);
   }
 
   return body?.data as T;

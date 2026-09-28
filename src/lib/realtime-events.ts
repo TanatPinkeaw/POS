@@ -22,6 +22,22 @@ export const REALTIME_EVENTS = {
   shiftDiscrepancy: 'shift:discrepancy',
   /** Someone clocked in or out, or a roster row changed. */
   attendanceUpdated: 'attendance:updated',
+
+  /**
+   * The bill being rung up, sent to the customer display.
+   *
+   * A snapshot rather than a delta, so a screen that reconnects does not have to
+   * replay anything: the next tap sends the whole cart again.
+   */
+  displayCart: 'display:cart',
+  /** A QR was issued for this amount. Both the till and the display need it. */
+  paymentIntent: 'payment:intent',
+  /** The money arrived. This is what closes the bill without anyone tapping. */
+  paymentPaid: 'payment:paid',
+  /** The QR stopped being payable: paid, cancelled, or out of time. */
+  paymentClosed: 'payment:closed',
+  /** A pre-order became collectable, for the board on the customer screen. */
+  displayReady: 'display:ready',
 } as const;
 
 export type RealtimeEventName = (typeof REALTIME_EVENTS)[keyof typeof REALTIME_EVENTS];

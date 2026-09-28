@@ -45,10 +45,8 @@ export { Prisma }
  * Model shops
  * *
  *  * The shop this deployment belongs to.
- *  *
  *  * The SRS is silent on shop identity — receipts, page titles and the tax rate
  *  * were hardcoded — so this is an addition on top of §7 (see ADR 0002).
- *  *
  *  * Exactly one row is allowed, which the migration enforces with
  *  * `CHECK (id = 1)`. That is what makes double-initialisation impossible when two
  *  * requests race through the setup wizard: the second INSERT collides on the
@@ -91,6 +89,21 @@ export type time_logs = Prisma.time_logsModel
  */
 export type cash_shifts = Prisma.cash_shiftsModel
 /**
+ * Model audit_logs
+ * *
+ *  * The audit trail (SRS §4.3's spirit, extended to money and authority).
+ *  * Two people can be named on one row, and the distinction is the whole point:
+ *  * `actor_user_id` is who was standing at the till, `authorized_by_user_id` is
+ *  * whose PIN approved it. "Who let this through" and "who was at the keyboard"
+ *  * are different questions, and an audit trail that can only answer one of them
+ *  * is the kind that gets ignored during an investigation.
+ *  * Rows are never updated or deleted — a trigger in the migration refuses both,
+ *  * and the foreign keys are RESTRICT so that nulling an actor is refused too. So
+ *  * `detail` is the only place a later reader can find the context: the amount,
+ *  * the previous value, the reason.
+ */
+export type audit_logs = Prisma.audit_logsModel
+/**
  * Model orders
  * 
  */
@@ -105,6 +118,42 @@ export type order_items = Prisma.order_itemsModel
  * 
  */
 export type payments = Prisma.paymentsModel
+/**
+ * Model payment_intents
+ * *
+ *  * A PromptPay QR issued for one amount, and what became of it.
+ *  * The till asks for one of these before the sale exists, which is why it carries
+ *  * its own `amount`, `shift_id` and `cashier_id` rather than pointing at an order:
+ *  * the customer is scanning while the cashier still has a basket open. `order_id`
+ *  * is filled in when the bill is finally closed with this intent, so the two
+ *  * records end up joined, and the intent is what proves the QR was for this sale.
+ *  * `status` is a small state machine, and each transition is deliberate:
+ *  * pending  → paid       a confirmation arrived — a webhook, or a PIN holder
+ *  * pending  → expired    nobody paid inside the window
+ *  * pending  → cancelled  the cashier gave up and took cash instead
+ *  * paid     → consumed   the sale was settled against it, exactly once
+ *  * `consumed` is not bookkeeping: it is what makes a duplicate confirmation
+ *  * harmless. A bank bridge that fires twice, or fires after the cashier has
+ *  * already taken notes, must not be able to close two bills for one transfer.
+ */
+export type payment_intents = Prisma.payment_intentsModel
+/**
+ * Model display_devices
+ * *
+ *  * A customer-facing screen that has been paired with this till.
+ *  * The screen holds no account and no data of its own — it is a browser on the
+ *  * same shop, and the only thing it may do is receive what the till chooses to
+ *  * send it. So this row is not a user: it is a revocable grant, addressed by a
+ *  * token stored in the screen's own `localStorage`.
+ *  * Only the hash of that token is kept, for the same reason password hashes are:
+ *  * a database dump must not hand somebody the ability to join a shop's realtime
+ *  * channel and watch its takings.
+ *  * Pairing is a two-step handshake — an admin displays a six-digit code, the
+ *  * screen posts it back, the screen receives the token — which is what keeps the
+ *  * grant deliberate. A code that expires in minutes and can be revoked is the
+ *  * smallest thing that is still safe on a shop floor.
+ */
+export type display_devices = Prisma.display_devicesModel
 /**
  * Model point_transactions
  * 

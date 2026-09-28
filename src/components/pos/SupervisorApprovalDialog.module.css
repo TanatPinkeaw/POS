@@ -1,0 +1,72 @@
+/*
+ * The supervisor approval dialog.
+ *
+ * Small on purpose: the pad it wraps is already sized for a thumb by the shared
+ * numpad styles, so this file only owns the parts that are specific to asking a
+ * second person for permission — the name, the four empty slots, and the refusal.
+ */
+
+.body {
+  display: grid;
+  gap: var(--ln-space-4);
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.center {
+  display: grid;
+  place-items: center;
+  padding: var(--ln-space-6);
+}
+
+.who {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.who strong {
+  color: var(--ln-text);
+}
+
+/*
+ * Four slots, filled from the left. Not a password field: a value that is never
+ * rendered cannot be read over a shoulder, and what an operator needs to know
+ * mid-entry is how many digits are left, not what they typed.
+ */
+.pinRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--ln-space-3);
+}
+
+.pinSlot {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface-inset);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.pinFilled {
+  background: var(--ln-brand);
+  border-color: var(--ln-brand);
+}
+
+.pinHint {
+  margin: 0;
+  text-align: center;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.error {
+  margin: 0;
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-danger);
+  border-radius: var(--ln-radius-sm);
+  background: color-mix(in srgb, var(--ln-danger) 8%, transparent);
+  color: var(--ln-danger);
+  font-size: var(--ln-size-sm);
+}

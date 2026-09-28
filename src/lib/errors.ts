@@ -11,6 +11,18 @@ export class DomainError extends Error {
     message: string,
     readonly code: string,
     readonly httpStatus: number,
+    /**
+     * Machine-readable context for the client, added to the error body.
+     *
+     * A message is for a person; this is for the screen that has to react — the
+     * PIN dialog needs to know how many attempts are left, not just that it was
+     * refused.
+     *
+     * Named `context` rather than `details` because `ValidationError` already
+     * publishes `details` for its issue list, and that one is deliberately
+     * `unknown`: a validation issue is whatever the validator produced.
+     */
+    readonly context?: Record<string, unknown>,
   ) {
     super(message);
     this.name = new.target.name;
@@ -59,6 +71,20 @@ export class ConflictError extends DomainError {
 export class ForbiddenError extends DomainError {
   constructor(message = 'You do not have permission to perform this action') {
     super(message, 'FORBIDDEN', 403);
+  }
+}
+
+/**
+ * A supervisor PIN was wrong, or the PIN is locked.
+ *
+ * A 403 rather than a 401: the cashier is signed in perfectly well, it is the
+ * approval that was refused. The details carry `reason` plus either the attempts
+ * remaining or the lock's expiry, because the dialog says something different in
+ * each case and guessing on the client would get it wrong.
+ */
+export class ApprovalRejectedError extends DomainError {
+  constructor(message: string, code: string, context?: Record<string, unknown>) {
+    super(message, code, 403, context);
   }
 }
 

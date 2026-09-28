@@ -263,6 +263,8 @@ export type cash_shiftsWhereInput = {
   opener?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   closer?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   payments?: Prisma.PaymentsListRelationFilter
+  audit_logs?: Prisma.Audit_logsListRelationFilter
+  payment_intents?: Prisma.Payment_intentsListRelationFilter
 }
 
 export type cash_shiftsOrderByWithRelationInput = {
@@ -278,6 +280,8 @@ export type cash_shiftsOrderByWithRelationInput = {
   opener?: Prisma.usersOrderByWithRelationInput
   closer?: Prisma.usersOrderByWithRelationInput
   payments?: Prisma.paymentsOrderByRelationAggregateInput
+  audit_logs?: Prisma.audit_logsOrderByRelationAggregateInput
+  payment_intents?: Prisma.payment_intentsOrderByRelationAggregateInput
 }
 
 export type cash_shiftsWhereUniqueInput = Prisma.AtLeast<{
@@ -296,6 +300,8 @@ export type cash_shiftsWhereUniqueInput = Prisma.AtLeast<{
   opener?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   closer?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   payments?: Prisma.PaymentsListRelationFilter
+  audit_logs?: Prisma.Audit_logsListRelationFilter
+  payment_intents?: Prisma.Payment_intentsListRelationFilter
 }, "id">
 
 export type cash_shiftsOrderByWithAggregationInput = {
@@ -340,6 +346,8 @@ export type cash_shiftsCreateInput = {
   opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
   closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateInput = {
@@ -353,6 +361,8 @@ export type cash_shiftsUncheckedCreateInput = {
   actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: $Enums.shift_status
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUpdateInput = {
@@ -365,6 +375,8 @@ export type cash_shiftsUpdateInput = {
   opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
   closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateInput = {
@@ -378,6 +390,8 @@ export type cash_shiftsUncheckedUpdateInput = {
   actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateManyInput = {
@@ -478,6 +492,11 @@ export type Cash_shiftsNullableScalarRelationFilter = {
   isNot?: Prisma.cash_shiftsWhereInput | null
 }
 
+export type Cash_shiftsScalarRelationFilter = {
+  is?: Prisma.cash_shiftsWhereInput
+  isNot?: Prisma.cash_shiftsWhereInput
+}
+
 export type cash_shiftsCreateNestedManyWithoutOpenerInput = {
   create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutOpenerInput, Prisma.cash_shiftsUncheckedCreateWithoutOpenerInput> | Prisma.cash_shiftsCreateWithoutOpenerInput[] | Prisma.cash_shiftsUncheckedCreateWithoutOpenerInput[]
   connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutOpenerInput | Prisma.cash_shiftsCreateOrConnectWithoutOpenerInput[]
@@ -574,6 +593,22 @@ export type Enumshift_statusFieldUpdateOperationsInput = {
   set?: $Enums.shift_status
 }
 
+export type cash_shiftsCreateNestedOneWithoutAudit_logsInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutAudit_logsInput, Prisma.cash_shiftsUncheckedCreateWithoutAudit_logsInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutAudit_logsInput
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+}
+
+export type cash_shiftsUpdateOneWithoutAudit_logsNestedInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutAudit_logsInput, Prisma.cash_shiftsUncheckedCreateWithoutAudit_logsInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutAudit_logsInput
+  upsert?: Prisma.cash_shiftsUpsertWithoutAudit_logsInput
+  disconnect?: Prisma.cash_shiftsWhereInput | boolean
+  delete?: Prisma.cash_shiftsWhereInput | boolean
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutAudit_logsInput, Prisma.cash_shiftsUpdateWithoutAudit_logsInput>, Prisma.cash_shiftsUncheckedUpdateWithoutAudit_logsInput>
+}
+
 export type cash_shiftsCreateNestedOneWithoutPaymentsInput = {
   create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutPaymentsInput, Prisma.cash_shiftsUncheckedCreateWithoutPaymentsInput>
   connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutPaymentsInput
@@ -590,6 +625,20 @@ export type cash_shiftsUpdateOneWithoutPaymentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutPaymentsInput, Prisma.cash_shiftsUpdateWithoutPaymentsInput>, Prisma.cash_shiftsUncheckedUpdateWithoutPaymentsInput>
 }
 
+export type cash_shiftsCreateNestedOneWithoutPayment_intentsInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedCreateWithoutPayment_intentsInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutPayment_intentsInput
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+}
+
+export type cash_shiftsUpdateOneRequiredWithoutPayment_intentsNestedInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedCreateWithoutPayment_intentsInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutPayment_intentsInput
+  upsert?: Prisma.cash_shiftsUpsertWithoutPayment_intentsInput
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutPayment_intentsInput, Prisma.cash_shiftsUpdateWithoutPayment_intentsInput>, Prisma.cash_shiftsUncheckedUpdateWithoutPayment_intentsInput>
+}
+
 export type cash_shiftsCreateWithoutOpenerInput = {
   opened_at?: Date | string
   closed_at?: Date | string | null
@@ -599,6 +648,8 @@ export type cash_shiftsCreateWithoutOpenerInput = {
   status?: $Enums.shift_status
   closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutOpenerInput = {
@@ -611,6 +662,8 @@ export type cash_shiftsUncheckedCreateWithoutOpenerInput = {
   actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: $Enums.shift_status
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutOpenerInput = {
@@ -632,6 +685,8 @@ export type cash_shiftsCreateWithoutCloserInput = {
   status?: $Enums.shift_status
   opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutCloserInput = {
@@ -644,6 +699,8 @@ export type cash_shiftsUncheckedCreateWithoutCloserInput = {
   actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: $Enums.shift_status
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutCloserInput = {
@@ -703,6 +760,76 @@ export type cash_shiftsUpdateManyWithWhereWithoutCloserInput = {
   data: Prisma.XOR<Prisma.cash_shiftsUpdateManyMutationInput, Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserInput>
 }
 
+export type cash_shiftsCreateWithoutAudit_logsInput = {
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
+  closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsUncheckedCreateWithoutAudit_logsInput = {
+  id?: number
+  opened_by: string
+  closed_by?: string | null
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsCreateOrConnectWithoutAudit_logsInput = {
+  where: Prisma.cash_shiftsWhereUniqueInput
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutAudit_logsInput, Prisma.cash_shiftsUncheckedCreateWithoutAudit_logsInput>
+}
+
+export type cash_shiftsUpsertWithoutAudit_logsInput = {
+  update: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutAudit_logsInput, Prisma.cash_shiftsUncheckedUpdateWithoutAudit_logsInput>
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutAudit_logsInput, Prisma.cash_shiftsUncheckedCreateWithoutAudit_logsInput>
+  where?: Prisma.cash_shiftsWhereInput
+}
+
+export type cash_shiftsUpdateToOneWithWhereWithoutAudit_logsInput = {
+  where?: Prisma.cash_shiftsWhereInput
+  data: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutAudit_logsInput, Prisma.cash_shiftsUncheckedUpdateWithoutAudit_logsInput>
+}
+
+export type cash_shiftsUpdateWithoutAudit_logsInput = {
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
+  closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsUncheckedUpdateWithoutAudit_logsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  opened_by?: Prisma.StringFieldUpdateOperationsInput | string
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+}
+
 export type cash_shiftsCreateWithoutPaymentsInput = {
   opened_at?: Date | string
   closed_at?: Date | string | null
@@ -712,6 +839,8 @@ export type cash_shiftsCreateWithoutPaymentsInput = {
   status?: $Enums.shift_status
   opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
   closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutPaymentsInput = {
@@ -724,6 +853,8 @@ export type cash_shiftsUncheckedCreateWithoutPaymentsInput = {
   expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: $Enums.shift_status
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutPaymentsInput = {
@@ -751,6 +882,8 @@ export type cash_shiftsUpdateWithoutPaymentsInput = {
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
   closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutPaymentsInput = {
@@ -763,6 +896,78 @@ export type cash_shiftsUncheckedUpdateWithoutPaymentsInput = {
   expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsCreateWithoutPayment_intentsInput = {
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
+  closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsUncheckedCreateWithoutPayment_intentsInput = {
+  id?: number
+  opened_by: string
+  closed_by?: string | null
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsCreateOrConnectWithoutPayment_intentsInput = {
+  where: Prisma.cash_shiftsWhereUniqueInput
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedCreateWithoutPayment_intentsInput>
+}
+
+export type cash_shiftsUpsertWithoutPayment_intentsInput = {
+  update: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedUpdateWithoutPayment_intentsInput>
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedCreateWithoutPayment_intentsInput>
+  where?: Prisma.cash_shiftsWhereInput
+}
+
+export type cash_shiftsUpdateToOneWithWhereWithoutPayment_intentsInput = {
+  where?: Prisma.cash_shiftsWhereInput
+  data: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutPayment_intentsInput, Prisma.cash_shiftsUncheckedUpdateWithoutPayment_intentsInput>
+}
+
+export type cash_shiftsUpdateWithoutPayment_intentsInput = {
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
+  closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsUncheckedUpdateWithoutPayment_intentsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  opened_by?: Prisma.StringFieldUpdateOperationsInput | string
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateManyOpenerInput = {
@@ -796,6 +1001,8 @@ export type cash_shiftsUpdateWithoutOpenerInput = {
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutOpenerInput = {
@@ -808,6 +1015,8 @@ export type cash_shiftsUncheckedUpdateWithoutOpenerInput = {
   actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateManyWithoutOpenerInput = {
@@ -830,6 +1039,8 @@ export type cash_shiftsUpdateWithoutCloserInput = {
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutCloserInput = {
@@ -842,6 +1053,8 @@ export type cash_shiftsUncheckedUpdateWithoutCloserInput = {
   actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateManyWithoutCloserInput = {
@@ -862,10 +1075,14 @@ export type cash_shiftsUncheckedUpdateManyWithoutCloserInput = {
 
 export type Cash_shiftsCountOutputType = {
   payments: number
+  audit_logs: number
+  payment_intents: number
 }
 
 export type Cash_shiftsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   payments?: boolean | Cash_shiftsCountOutputTypeCountPaymentsArgs
+  audit_logs?: boolean | Cash_shiftsCountOutputTypeCountAudit_logsArgs
+  payment_intents?: boolean | Cash_shiftsCountOutputTypeCountPayment_intentsArgs
 }
 
 /**
@@ -885,6 +1102,20 @@ export type Cash_shiftsCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime.
   where?: Prisma.paymentsWhereInput
 }
 
+/**
+ * Cash_shiftsCountOutputType without action
+ */
+export type Cash_shiftsCountOutputTypeCountAudit_logsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.audit_logsWhereInput
+}
+
+/**
+ * Cash_shiftsCountOutputType without action
+ */
+export type Cash_shiftsCountOutputTypeCountPayment_intentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.payment_intentsWhereInput
+}
+
 
 export type cash_shiftsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -899,6 +1130,8 @@ export type cash_shiftsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   closer?: boolean | Prisma.cash_shifts$closerArgs<ExtArgs>
   payments?: boolean | Prisma.cash_shifts$paymentsArgs<ExtArgs>
+  audit_logs?: boolean | Prisma.cash_shifts$audit_logsArgs<ExtArgs>
+  payment_intents?: boolean | Prisma.cash_shifts$payment_intentsArgs<ExtArgs>
   _count?: boolean | Prisma.Cash_shiftsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["cash_shifts"]>
 
@@ -947,6 +1180,8 @@ export type cash_shiftsInclude<ExtArgs extends runtime.Types.Extensions.Internal
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   closer?: boolean | Prisma.cash_shifts$closerArgs<ExtArgs>
   payments?: boolean | Prisma.cash_shifts$paymentsArgs<ExtArgs>
+  audit_logs?: boolean | Prisma.cash_shifts$audit_logsArgs<ExtArgs>
+  payment_intents?: boolean | Prisma.cash_shifts$payment_intentsArgs<ExtArgs>
   _count?: boolean | Prisma.Cash_shiftsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type cash_shiftsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -964,6 +1199,8 @@ export type $cash_shiftsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     opener: Prisma.$usersPayload<ExtArgs>
     closer: Prisma.$usersPayload<ExtArgs> | null
     payments: Prisma.$paymentsPayload<ExtArgs>[]
+    audit_logs: Prisma.$audit_logsPayload<ExtArgs>[]
+    payment_intents: Prisma.$payment_intentsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1372,6 +1609,8 @@ export interface Prisma__cash_shiftsClient<T, Null = never, ExtArgs extends runt
   opener<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   closer<T extends Prisma.cash_shifts$closerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$closerArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   payments<T extends Prisma.cash_shifts$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$paymentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  audit_logs<T extends Prisma.cash_shifts$audit_logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$audit_logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$audit_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  payment_intents<T extends Prisma.cash_shifts$payment_intentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$payment_intentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$payment_intentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1851,6 +2090,54 @@ export type cash_shifts$paymentsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.PaymentsScalarFieldEnum | Prisma.PaymentsScalarFieldEnum[]
+}
+
+/**
+ * cash_shifts.audit_logs
+ */
+export type cash_shifts$audit_logsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the audit_logs
+   */
+  select?: Prisma.audit_logsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the audit_logs
+   */
+  omit?: Prisma.audit_logsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.audit_logsInclude<ExtArgs> | null
+  where?: Prisma.audit_logsWhereInput
+  orderBy?: Prisma.audit_logsOrderByWithRelationInput | Prisma.audit_logsOrderByWithRelationInput[]
+  cursor?: Prisma.audit_logsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Audit_logsScalarFieldEnum | Prisma.Audit_logsScalarFieldEnum[]
+}
+
+/**
+ * cash_shifts.payment_intents
+ */
+export type cash_shifts$payment_intentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the payment_intents
+   */
+  select?: Prisma.payment_intentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the payment_intents
+   */
+  omit?: Prisma.payment_intentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.payment_intentsInclude<ExtArgs> | null
+  where?: Prisma.payment_intentsWhereInput
+  orderBy?: Prisma.payment_intentsOrderByWithRelationInput | Prisma.payment_intentsOrderByWithRelationInput[]
+  cursor?: Prisma.payment_intentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Payment_intentsScalarFieldEnum | Prisma.Payment_intentsScalarFieldEnum[]
 }
 
 /**

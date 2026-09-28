@@ -12,6 +12,12 @@ import { SYSTEM_USER_ID, SYSTEM_USER_NAME, SYSTEM_USER_PHONE } from '@/lib/syste
 
 /** Every table, most dependent first is unnecessary thanks to CASCADE. */
 const TABLES = [
+  'audit_logs',
+  // Listed explicitly even though CASCADE would reach them: the payment intents
+  // and the paired displays are money and authority, and a reset that quietly
+  // skipped them would leave a payable QR behind for the next test.
+  'payment_intents',
+  'display_devices',
   'point_transactions',
   'payments',
   'order_items',

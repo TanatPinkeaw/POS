@@ -23,7 +23,12 @@ import { prisma } from './db';
 import { ConflictError } from './errors';
 import type { Db } from './inventory';
 import { fromDecimal } from './money';
-import { formatReceiptNumber, type ShopView } from './shop-view';
+import { normalisePromptPayId, type PromptPayIdType } from './promptpay';
+import {
+  DEFAULT_SUPERVISOR_DISCOUNT_LIMIT,
+  formatReceiptNumber,
+  type ShopView,
+} from './shop-view';
 
 /** There is exactly one shop row, and this is its primary key. */
 export const SHOP_ROW_ID = 1;
@@ -40,6 +45,14 @@ export interface ShopSettingsInput {
   receiptPrefix: string;
   receiptFooter?: string | null;
   logoUrl?: string | null;
+  /** Omitted leaves the column alone — the DB default covers a new shop. */
+  supervisorDiscountLimitThb?: number;
+  /**
+   * Both or neither: the till cannot build a payload from an id without knowing
+   * which kind of account it is, so half a setting is refused at the schema.
+   */
+  promptpayId?: string | null;
+  promptpayType?: PromptPayIdType | null;
 }
 
 /**
@@ -79,6 +92,9 @@ export function toShopView(row: shops): ShopView {
     receiptRunningNumber: Number(row.receipt_running_number),
     receiptFooter: row.receipt_footer,
     logoUrl: row.logo_url,
+    promptpayId: row.promptpay_id,
+    promptpayType: (row.promptpay_type as PromptPayIdType | null) ?? null,
+    supervisorDiscountLimitThb: fromDecimal(row.supervisor_discount_limit_thb),
   };
 }
 
@@ -86,6 +102,26 @@ export function toShopView(row: shops): ShopView {
 export async function loadShop(): Promise<ShopView | null> {
   const row = await prisma.shops.findUnique({ where: { id: SHOP_ROW_ID } });
   return row ? toShopView(row) : null;
+}
+
+/**
+ * The discount a cashier may give without a supervisor's PIN.
+ *
+ * Read per sale rather than cached: an owner lowering the limit mid-shift
+ * expects the next discount to be judged by the new number, and a module-level
+ * cache would keep the old one until the process restarted. Falls back to the
+ * default on an unconfigured shop, which is the same answer `toShopView`
+ * gives — the two must agree, or the till would prompt for a PIN the server
+ * does not require.
+ */
+export async function supervisorDiscountLimit(db: Db = prisma): Promise<number> {
+  const row = await db.shops.findUnique({
+    where: { id: SHOP_ROW_ID },
+    select: { supervisor_discount_limit_thb: true },
+  });
+  return row
+    ? fromDecimal(row.supervisor_discount_limit_thb)
+    : DEFAULT_SUPERVISOR_DISCOUNT_LIMIT;
 }
 
 /** Whether this deployment has been set up. */
@@ -211,6 +247,26 @@ export function shopColumns(input: ShopSettingsInput) {
     receipt_prefix: input.receiptPrefix.trim(),
     receipt_footer: blankToNull(input.receiptFooter),
     logo_url: blankToNull(input.logoUrl),
+    /*
+     * Normalised on the way in, so what is stored is exactly what the payload
+     * builder will carry. A shop that typed 081-234-5678 gets 0066812345678.
+     */
+    ...(input.promptpayId === undefined
+      ? {}
+      : {
+          promptpay_id: normalisePromptPayId(input.promptpayType ?? 'mobile', input.promptpayId ?? ''),
+          promptpay_type: input.promptpayType ?? 'mobile',
+        }),
+    /*
+     * Spread rather than always written, because the same helper serves insert
+     * and update: omitting it on insert lets the column's own default apply, and
+     * omitting it on update leaves the shop's policy alone. Writing a fallback
+     * here would silently reset a configured limit to 50 every time an admin
+     * saved the VAT rate.
+     */
+    ...(input.supervisorDiscountLimitThb === undefined
+      ? {}
+      : { supervisor_discount_limit_thb: input.supervisorDiscountLimitThb }),
   };
 }
 

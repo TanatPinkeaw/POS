@@ -400,10 +400,6 @@ export type time_logsUncheckedUpdateManyWithoutEmployeeNestedInput = {
   deleteMany?: Prisma.time_logsScalarWhereInput | Prisma.time_logsScalarWhereInput[]
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type time_logsCreateWithoutEmployeeInput = {
   check_in?: Date | string
   check_out?: Date | string | null

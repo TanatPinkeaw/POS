@@ -7,6 +7,7 @@
  */
 import type { cash_shifts } from '../generated/prisma/client';
 
+import { recordAudit } from './audit';
 import { prisma } from './db';
 import { optionalNumberEnv } from './env';
 import { ConflictError, NotFoundError } from './errors';
@@ -190,6 +191,58 @@ export async function closeShift(input: {
     });
 
     return summarize(tx, updated);
+  }, TRANSACTION_OPTIONS);
+}
+
+/**
+ * Records a drawer opened with no sale behind it.
+ *
+ * The classic no-sale kick, and the reason `drawer_open` is a gated action: it
+ * is how change gets broken, how a float gets checked, and how a drawer gets
+ * emptied when nobody is watching. A browser cannot push a physical drawer, so
+ * what this writes is the *record* — the cashier still opens the till by hand.
+ * That is the part that matters for an owner reading the trail later.
+ *
+ * It touches no money, which is why it is not a `payments` row and why the
+ * reconciliation ignores it: this is an event log, not a till transaction.
+ */
+export async function recordDrawerOpening(input: {
+  shiftId: number;
+  openedByUserId: string;
+  /** Whose PIN permitted it. Equal to `openedByUserId` when an owner opens it. */
+  authorizedByUserId: string;
+  reason?: string | null;
+}): Promise<{ shiftId: number; recordedAt: string }> {
+  return prisma.$transaction(async (tx) => {
+    const shift = await tx.cash_shifts.findUnique({
+      where: { id: input.shiftId },
+      select: { id: true, status: true },
+    });
+    if (!shift) {
+      throw new NotFoundError(`Cash drawer #${input.shiftId}`);
+    }
+    if (shift.status !== 'open') {
+      throw new ConflictError(
+        `Cash drawer #${input.shiftId} is closed, so opening it would leave no record to check against`,
+        'SHIFT_NOT_OPEN',
+      );
+    }
+
+    const at = new Date();
+    await recordAudit(
+      {
+        action: 'drawer_open',
+        actorUserId: input.openedByUserId,
+        authorizedByUserId: input.authorizedByUserId,
+        targetType: 'cash_shift',
+        targetId: String(shift.id),
+        shiftId: shift.id,
+        detail: { reason: input.reason?.trim() || null },
+      },
+      tx,
+    );
+
+    return { shiftId: shift.id, recordedAt: at.toISOString() };
   }, TRANSACTION_OPTIONS);
 }
 

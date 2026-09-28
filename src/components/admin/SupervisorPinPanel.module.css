@@ -1,0 +1,73 @@
+/*
+ * The supervisor PIN panel.
+ *
+ * A label-and-value pair per row, the same shape the shop settings screen uses,
+ * because both are "here is a fact about this shop" rather than a form.
+ */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-3);
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: var(--ln-space-3);
+  border-bottom: 1px solid var(--ln-border-subtle);
+}
+
+.label {
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.value {
+  font-weight: 600;
+  text-align: right;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-3);
+}
+
+.small {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+  line-height: var(--ln-leading);
+}
+
+.body {
+  display: grid;
+  gap: var(--ln-space-4);
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.pinRow {
+  display: flex;
+  justify-content: center;
+  gap: var(--ln-space-3);
+}
+
+.pinSlot {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--ln-border-strong);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface-inset);
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.pinFilled {
+  background: var(--ln-brand);
+  border-color: var(--ln-brand);
+}
+
+.error {
+  margin: 0;
+  text-align: center;
+  color: var(--ln-danger);
+  font-size: var(--ln-size-sm);
+}

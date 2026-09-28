@@ -1,0 +1,103 @@
+/*
+ * The chart's own styles.
+ *
+ * Everything is a token, which is the point of drawing the chart here rather than
+ * handing it to a library: the bars are the brand, the second series is the info
+ * hue, and both move with the rest of the interface when the palette does. The
+ * colours that the previous chart hardcoded (`#3a57e8`, `#21cc6a`) belonged to no
+ * palette this project ever had, on the one element whose whole job is to be read
+ * at a glance.
+ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+}
+
+.chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--ln-font);
+  overflow: visible;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-4);
+  justify-content: flex-end;
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+}
+
+.legendBar {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--ln-brand);
+}
+
+.legendDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ln-info);
+}
+
+.grid {
+  stroke: var(--ln-border-subtle);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+}
+
+.baseline {
+  stroke: var(--ln-border-strong);
+  stroke-width: 1;
+}
+
+.bar {
+  fill: var(--ln-brand);
+}
+
+.line {
+  fill: none;
+  stroke: var(--ln-info);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.dot {
+  fill: var(--ln-info);
+}
+
+/*
+ * 11px in viewBox units. The SVG scales with its container, so on a 1200px card
+ * this renders at about 15px and on a phone it would shrink below legibility —
+ * which is the accepted trade, because the charts live on the desktop-first back
+ * office and the phone screens (`/shop`) carry none.
+ */
+.tick,
+.axis {
+  fill: var(--ln-text-subtle);
+  font-size: 11px;
+}
+
+.tick {
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding: var(--ln-space-6) 0;
+  text-align: center;
+  color: var(--ln-text-subtle);
+  font-size: var(--ln-size-sm);
+}

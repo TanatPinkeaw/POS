@@ -18,9 +18,8 @@ import '../src/lib/env';
 
 import { hash } from 'bcryptjs';
 
-import { PrismaPg } from '@prisma/adapter-pg';
-
-import { PrismaClient } from '../src/generated/prisma/client';
+import { prisma } from '../src/lib/db';
+import type { PrismaClient } from '../src/generated/prisma/client';
 import {
   addBangkokDays,
   bangkokDateString,
@@ -167,9 +166,16 @@ async function assertSafeToSeed(prisma: PrismaClient): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-  const prisma = new PrismaClient({ adapter });
-
+  /*
+   * The application's own client rather than one built here.
+   *
+   * A second `new PrismaPg({ connectionString })` was a second place the
+   * `?schema=` parameter could be — and was — dropped, since the pg driver
+   * accepts it and ignores it: seeding `DATABASE_URL=…?schema=smoke` wrote the
+   * whole demo catalogue into `public`, and a server pointed at `smoke` then
+   * looked at an empty database. One client, built in one place, means the seed
+   * writes to exactly the schema the application reads.
+   */
   try {
     await assertSafeToSeed(prisma);
 

@@ -405,9 +405,12 @@ export const ModelName = {
   work_schedules: 'work_schedules',
   time_logs: 'time_logs',
   cash_shifts: 'cash_shifts',
+  audit_logs: 'audit_logs',
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
+  payment_intents: 'payment_intents',
+  display_devices: 'display_devices',
   point_transactions: 'point_transactions'
 } as const
 
@@ -424,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "orders" | "order_items" | "payments" | "point_transactions"
+    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "payment_intents" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1020,6 +1023,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    audit_logs: {
+      payload: Prisma.$audit_logsPayload<ExtArgs>
+      fields: Prisma.audit_logsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.audit_logsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.audit_logsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        findFirst: {
+          args: Prisma.audit_logsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.audit_logsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        findMany: {
+          args: Prisma.audit_logsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>[]
+        }
+        create: {
+          args: Prisma.audit_logsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        createMany: {
+          args: Prisma.audit_logsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.audit_logsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>[]
+        }
+        delete: {
+          args: Prisma.audit_logsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        update: {
+          args: Prisma.audit_logsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        deleteMany: {
+          args: Prisma.audit_logsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.audit_logsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.audit_logsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>[]
+        }
+        upsert: {
+          args: Prisma.audit_logsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$audit_logsPayload>
+        }
+        aggregate: {
+          args: Prisma.Audit_logsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAudit_logs>
+        }
+        groupBy: {
+          args: Prisma.audit_logsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Audit_logsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.audit_logsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Audit_logsCountAggregateOutputType> | number
+        }
+      }
+    }
     orders: {
       payload: Prisma.$ordersPayload<ExtArgs>
       fields: Prisma.ordersFieldRefs
@@ -1242,6 +1319,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    payment_intents: {
+      payload: Prisma.$payment_intentsPayload<ExtArgs>
+      fields: Prisma.payment_intentsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.payment_intentsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.payment_intentsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>
+        }
+        findFirst: {
+          args: Prisma.payment_intentsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.payment_intentsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>
+        }
+        findMany: {
+          args: Prisma.payment_intentsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>[]
+        }
+        create: {
+          args: Prisma.payment_intentsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>
+        }
+        createMany: {
+          args: Prisma.payment_intentsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.payment_intentsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>[]
+        }
+        delete: {
+          args: Prisma.payment_intentsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>
+        }
+        update: {
+          args: Prisma.payment_intentsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>
+        }
+        deleteMany: {
+          args: Prisma.payment_intentsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.payment_intentsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.payment_intentsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>[]
+        }
+        upsert: {
+          args: Prisma.payment_intentsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$payment_intentsPayload>
+        }
+        aggregate: {
+          args: Prisma.Payment_intentsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePayment_intents>
+        }
+        groupBy: {
+          args: Prisma.payment_intentsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Payment_intentsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.payment_intentsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Payment_intentsCountAggregateOutputType> | number
+        }
+      }
+    }
+    display_devices: {
+      payload: Prisma.$display_devicesPayload<ExtArgs>
+      fields: Prisma.display_devicesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.display_devicesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.display_devicesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>
+        }
+        findFirst: {
+          args: Prisma.display_devicesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.display_devicesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>
+        }
+        findMany: {
+          args: Prisma.display_devicesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>[]
+        }
+        create: {
+          args: Prisma.display_devicesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>
+        }
+        createMany: {
+          args: Prisma.display_devicesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.display_devicesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>[]
+        }
+        delete: {
+          args: Prisma.display_devicesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>
+        }
+        update: {
+          args: Prisma.display_devicesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>
+        }
+        deleteMany: {
+          args: Prisma.display_devicesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.display_devicesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.display_devicesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>[]
+        }
+        upsert: {
+          args: Prisma.display_devicesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$display_devicesPayload>
+        }
+        aggregate: {
+          args: Prisma.Display_devicesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateDisplay_devices>
+        }
+        groupBy: {
+          args: Prisma.display_devicesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Display_devicesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.display_devicesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Display_devicesCountAggregateOutputType> | number
+        }
+      }
+    }
     point_transactions: {
       payload: Prisma.$point_transactionsPayload<ExtArgs>
       fields: Prisma.point_transactionsFieldRefs
@@ -1370,6 +1595,9 @@ export const ShopsScalarFieldEnum = {
   receipt_running_number: 'receipt_running_number',
   receipt_footer: 'receipt_footer',
   logo_url: 'logo_url',
+  promptpay_id: 'promptpay_id',
+  promptpay_type: 'promptpay_type',
+  supervisor_discount_limit_thb: 'supervisor_discount_limit_thb',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -1386,6 +1614,9 @@ export const UsersScalarFieldEnum = {
   role: 'role',
   points_balance: 'points_balance',
   is_active: 'is_active',
+  pin_hash: 'pin_hash',
+  pin_failed_attempts: 'pin_failed_attempts',
+  pin_locked_until: 'pin_locked_until',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -1476,6 +1707,21 @@ export const Cash_shiftsScalarFieldEnum = {
 export type Cash_shiftsScalarFieldEnum = (typeof Cash_shiftsScalarFieldEnum)[keyof typeof Cash_shiftsScalarFieldEnum]
 
 
+export const Audit_logsScalarFieldEnum = {
+  id: 'id',
+  action: 'action',
+  actor_user_id: 'actor_user_id',
+  authorized_by_user_id: 'authorized_by_user_id',
+  target_type: 'target_type',
+  target_id: 'target_id',
+  shift_id: 'shift_id',
+  detail: 'detail',
+  created_at: 'created_at'
+} as const
+
+export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
+
+
 export const OrdersScalarFieldEnum = {
   id: 'id',
   order_number: 'order_number',
@@ -1534,6 +1780,40 @@ export const PaymentsScalarFieldEnum = {
 export type PaymentsScalarFieldEnum = (typeof PaymentsScalarFieldEnum)[keyof typeof PaymentsScalarFieldEnum]
 
 
+export const Payment_intentsScalarFieldEnum = {
+  id: 'id',
+  ref: 'ref',
+  shift_id: 'shift_id',
+  cashier_id: 'cashier_id',
+  order_id: 'order_id',
+  amount: 'amount',
+  qr_payload: 'qr_payload',
+  status: 'status',
+  expires_at: 'expires_at',
+  paid_at: 'paid_at',
+  consumed_at: 'consumed_at',
+  confirmed_by_user_id: 'confirmed_by_user_id',
+  created_at: 'created_at'
+} as const
+
+export type Payment_intentsScalarFieldEnum = (typeof Payment_intentsScalarFieldEnum)[keyof typeof Payment_intentsScalarFieldEnum]
+
+
+export const Display_devicesScalarFieldEnum = {
+  id: 'id',
+  label: 'label',
+  token_hash: 'token_hash',
+  pairing_code: 'pairing_code',
+  pairing_expires_at: 'pairing_expires_at',
+  paired_by_user_id: 'paired_by_user_id',
+  last_seen_at: 'last_seen_at',
+  revoked_at: 'revoked_at',
+  created_at: 'created_at'
+} as const
+
+export type Display_devicesScalarFieldEnum = (typeof Display_devicesScalarFieldEnum)[keyof typeof Display_devicesScalarFieldEnum]
+
+
 export const Point_transactionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -1555,6 +1835,14 @@ export const SortOrder = {
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
 
 
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
 export const QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
@@ -1569,6 +1857,15 @@ export const NullsOrder = {
 } as const
 
 export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
 
 
 
@@ -1637,6 +1934,20 @@ export type BigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 
  * Reference to a field of type 'BigInt[]'
  */
 export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BigInt[]'>
+    
+
+
+/**
+ * Reference to a field of type 'promptpay_id_type'
+ */
+export type Enumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'promptpay_id_type'>
+    
+
+
+/**
+ * Reference to a field of type 'promptpay_id_type[]'
+ */
+export type ListEnumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'promptpay_id_type[]'>
     
 
 
@@ -1711,6 +2022,34 @@ export type ListEnumshift_statusFieldRefInput<$PrismaModel> = FieldRefInputType<
 
 
 /**
+ * Reference to a field of type 'audit_action'
+ */
+export type Enumaudit_actionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'audit_action'>
+    
+
+
+/**
+ * Reference to a field of type 'audit_action[]'
+ */
+export type ListEnumaudit_actionFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'audit_action[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
+    
+
+
+/**
  * Reference to a field of type 'order_type'
  */
 export type Enumorder_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'order_type'>
@@ -1749,6 +2088,20 @@ export type Enumpayment_methodFieldRefInput<$PrismaModel> = FieldRefInputType<$P
  * Reference to a field of type 'payment_method[]'
  */
 export type ListEnumpayment_methodFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'payment_method[]'>
+    
+
+
+/**
+ * Reference to a field of type 'payment_intent_status'
+ */
+export type Enumpayment_intent_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'payment_intent_status'>
+    
+
+
+/**
+ * Reference to a field of type 'payment_intent_status[]'
+ */
+export type ListEnumpayment_intent_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'payment_intent_status[]'>
     
 
 
@@ -1924,9 +2277,12 @@ export type GlobalOmitConfig = {
   work_schedules?: Prisma.work_schedulesOmit
   time_logs?: Prisma.time_logsOmit
   cash_shifts?: Prisma.cash_shiftsOmit
+  audit_logs?: Prisma.audit_logsOmit
   orders?: Prisma.ordersOmit
   order_items?: Prisma.order_itemsOmit
   payments?: Prisma.paymentsOmit
+  payment_intents?: Prisma.payment_intentsOmit
+  display_devices?: Prisma.display_devicesOmit
   point_transactions?: Prisma.point_transactionsOmit
 }
 

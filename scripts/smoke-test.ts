@@ -13,6 +13,8 @@
 import { existsSync } from 'node:fs';
 import { loadEnvFile } from 'node:process';
 
+import { io } from 'socket.io-client';
+
 if (existsSync('.env')) {
   loadEnvFile('.env');
 }
@@ -380,6 +382,82 @@ async function main(): Promise<void> {
     .then(() => 200)
     .catch((error: Error) => Number(/\b(422)\b/.exec(error.message)?.[1] ?? 0));
   check('a shift that ends before it starts is refused with 422', reversedSchedule === 422, reversedSchedule);
+
+  /*
+   * 16. The realtime channel.
+   *
+   * This section exists because of a bug exactly one check here would have
+   * caught. The socket server lived in a module-scoped variable in
+   * `lib/realtime.ts`, and Next bundles the route handlers separately from the
+   * entry server — so the copy inside the bundle had no server, every emit was a
+   * silent no-op, and a cart POST answered 200 while the customer screen never
+   * changed. Nothing else in this suite touches the channel: the API is
+   * perfectly happy to accept writes nobody hears about.
+   *
+   * The display is the easiest client to test end to end, because it needs no
+   * cookie — only a device token, which this section pairs for itself.
+   */
+  console.log('\n16. A paired screen actually receives what the till emits');
+
+  const pairingCode = await admin.call<{ id: string; code: string }>('/api/v1/display/devices', {
+    method: 'POST',
+    body: { label: 'จอทดสอบเรียลไทม์' },
+  });
+  check('an admin can mint a pairing code', /^\d{6}$/.test(pairingCode.data?.code ?? ''), pairingCode.data?.code);
+
+  const redeemed = await fetch(`${BASE}/api/v1/display/pair`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code: pairingCode.data?.code }),
+  }).then((response) => response.json() as Promise<{ data?: { token?: string } }>);
+  const displayToken = redeemed.data?.token ?? '';
+  check('the code redeems for a device token', /^[0-9a-f]{64}$/.test(displayToken));
+
+  const reused = await fetch(`${BASE}/api/v1/display/pair`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code: pairingCode.data?.code }),
+  });
+  check('the same code cannot be spent twice', reused.status === 409, reused.status);
+
+  const heard: string[] = [];
+  const display = io(BASE, {
+    path: '/realtime',
+    auth: { displayToken },
+    transports: ['websocket', 'polling'],
+  });
+  await new Promise<void>((resolve) => {
+    display.on('connect', () => resolve());
+    display.on('connect_error', () => resolve());
+    setTimeout(resolve, 5000);
+  });
+  check('the paired screen connects', display.connected);
+  display.on('display:cart', (payload: { totalThb?: number }) => {
+    heard.push(`display:cart:${payload?.totalThb}`);
+  });
+
+  await admin.call('/api/v1/pos/display/cart', {
+    method: 'POST',
+    body: {
+      lines: [{ name: 'กาแฟเย็นกระป๋อง', quantity: 1, totalPrice: 25 }],
+      subtotalThb: 25,
+      discountThb: 0,
+      totalThb: 25,
+    },
+  });
+  // Long enough for the round trip, short enough not to be noticed.
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+  check(
+    'the bill the till posted reached the screen',
+    heard.includes('display:cart:25'),
+    heard.length === 0 ? 'nothing arrived' : heard,
+  );
+
+  const revoked = await admin.call(`/api/v1/display/devices/${pairingCode.data?.id}`, {
+    method: 'DELETE',
+  });
+  check('the admin can revoke the screen it paired', revoked.status === 200, revoked.status);
+  display.close();
 
   console.log(
     failures === 0

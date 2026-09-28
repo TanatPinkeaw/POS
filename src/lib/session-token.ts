@@ -29,7 +29,15 @@ export class InvalidSessionError extends Error {
   }
 }
 
-function secretKey(): Uint8Array {
+/**
+ * The signing key, shared with the supervisor approval tokens.
+ *
+ * Exported rather than duplicated: two private copies of an `AUTH_SECRET` check
+ * is two chances for one of them to be missing the length floor. Approval tokens
+ * carry a different issuer and audience, so the two kinds of token cannot be
+ * confused for each other even though they are signed with the same key.
+ */
+export function authSecretKey(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error(
@@ -48,13 +56,13 @@ export async function createSessionToken(user: SessionUser): Promise<string> {
     .setIssuedAt()
     .setIssuer('pos-realtime')
     .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
-    .sign(secretKey());
+    .sign(authSecretKey());
 }
 
 /** Verifies a token and returns the user it describes. */
 export async function verifySessionToken(token: string): Promise<SessionUser> {
   try {
-    const { payload } = await jwtVerify(token, secretKey(), { issuer: 'pos-realtime' });
+    const { payload } = await jwtVerify(token, authSecretKey(), { issuer: 'pos-realtime' });
 
     const { sub, role, fullName, phone } = payload as Record<string, unknown>;
     if (typeof sub !== 'string' || typeof role !== 'string') {

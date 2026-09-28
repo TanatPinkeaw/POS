@@ -6,6 +6,7 @@
  * the indexes from SRS §7 are more than enough, and a live number is worth more
  * to a manager than a cached one.
  */
+import { addBangkokDays, bangkokDateString, parseBangkokDay } from './bangkok-time';
 import { prisma } from './db';
 import { fromDecimal } from './money';
 
@@ -52,16 +53,44 @@ export interface DashboardSnapshot {
 /** Units at or below this level are surfaced as "running low". */
 const LOW_STOCK_THRESHOLD = 5;
 
-function startOfToday(now: Date): Date {
-  const start = new Date(now);
-  start.setHours(0, 0, 0, 0);
-  return start;
+/** How many days the dashboard's trend covers, today inclusive. */
+export const DASHBOARD_DAYS = 7;
+
+/**
+ * The seven Bangkok days the dashboard covers, oldest first, ending with today.
+ *
+ * Pure and exported because the equivalent expression used to live inline and was
+ * wrong in a way nothing could see: it started from `setHours(0, 0, 0, 0)` — the
+ * *host's* midnight — and serialised through `toISOString()`, which is UTC. On a
+ * deployment ahead of UTC (Bangkok is seven hours ahead) every key came out one day
+ * early, so the chart's labels named the wrong date for every bar and the last bar
+ * was always yesterday, with today's takings falling off the end of the window.
+ *
+ * The test for it is a `now` at 18:30 UTC, which is already tomorrow in Bangkok.
+ */
+export function dashboardDays(now: Date = new Date()): string[] {
+  const today = bangkokDateString(now);
+  return Array.from({ length: DASHBOARD_DAYS }, (_, index) =>
+    addBangkokDays(today, index - (DASHBOARD_DAYS - 1)),
+  );
 }
 
+
 export async function dashboardSnapshot(now: Date = new Date()): Promise<DashboardSnapshot> {
-  const todayStart = startOfToday(now);
-  const weekStart = new Date(todayStart);
-  weekStart.setDate(weekStart.getDate() - 6);
+  /*
+   * Every window on this screen is a *Bangkok* day, and until it was written this
+   * way it was the server's: `setHours(0, 0, 0, 0)` reads the host's clock, so on a
+   * deployment that is not in Bangkok "today" began at the wrong instant, and the
+   * seven day keys below drifted a day away from the keys the SQL produces. The
+   * measurement that found it: a chart whose last bar was yesterday and whose
+   * tooltips named the wrong date for every sale.
+   *
+   * `parseBangkokDay` gives the instant of Bangkok midnight; `addBangkokDays`
+   * moves along the calendar. Nothing here reads the host timezone at all.
+   */
+  const days = dashboardDays(now);
+  const todayStart = parseBangkokDay(days[days.length - 1]!);
+  const weekStart = parseBangkokDay(days[0]!);
 
   const [
     todayAggregate,
@@ -112,8 +141,21 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
         cost_price: true,
       },
     }),
+    /*
+     * The day bucket is Bangkok's, stated in the query rather than inherited
+     * from the connection's session timezone.
+     *
+     * Two conversions, and the second is the one that is easy to get wrong: the
+     * inner one moves the instant onto the Bangkok wall clock, and the outer one
+     * re-attaches UTC so the value that comes back is midnight **UTC** of the
+     * Bangkok calendar day — the same convention `dateColumnFromDay` uses, which
+     * is what lets the keys below line up with `weekStart`. A plain
+     * `date_trunc('day', …)` would file a 01:00 Bangkok sale under the previous
+     * day the moment the session stopped being Bangkok's.
+     */
     prisma.$queryRaw<{ day: Date; sales: unknown; order_count: unknown }[]>`
-      SELECT date_trunc('day', "completed_at") AS day,
+      SELECT date_trunc('day', "completed_at" AT TIME ZONE 'Asia/Bangkok')
+               AT TIME ZONE 'UTC'                AS day,
              COALESCE(SUM("final_amount"), 0) AS sales,
              COUNT(*)                         AS order_count
         FROM "orders"
@@ -150,10 +192,7 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
   }
 
   const salesByDay: DashboardSnapshot['salesByDay'] = [];
-  for (let offset = 0; offset < 7; offset += 1) {
-    const day = new Date(weekStart);
-    day.setDate(day.getDate() + offset);
-    const key = day.toISOString().slice(0, 10);
+  for (const key of days) {
     const found = salesByDayMap.get(key);
     salesByDay.push({
       day: key,

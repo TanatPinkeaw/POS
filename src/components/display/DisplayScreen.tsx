@@ -1,0 +1,318 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { PinPad, QrPanel, Spinner } from '@/components/ds';
+import { apiFetch } from '@/lib/client-api';
+import { bangkokTimeString } from '@/lib/bangkok-time';
+import { DISPLAY_THANKS_MS } from '@/lib/display-view';
+import { formatThb } from '@/lib/money';
+
+import styles from './DisplayScreen.module.css';
+import {
+  clearStoredToken,
+  readStoredToken,
+  storeToken,
+  useDisplaySocket,
+} from './useDisplaySocket';
+
+/**
+ * The customer's screen: what the till is doing, from where the customer stands.
+ *
+ * Four stages, and which one is showing is a question this screen answers alone
+ * from what it has been told — no mode to set, nothing to configure at the
+ * counter:
+ *
+ *   * **idle** — nobody is being served. The shop's name, its logo, and what it
+ *     actually sells most of. Not a promotions engine; an idle screen that is
+ *     never wrong is worth more than one that needs configuring.
+ *   * **selling** — the bill as it is rung up, line by line, so the customer can
+ *     see what is being scanned instead of asking.
+ *   * **paying** — the PromptPay QR, the amount, and the clock. This is the stage
+ *     that earns its keep: the customer scans their own screen, and the till
+ *     closes the bill the moment the money lands.
+ *   * **ready** — pre-orders waiting to be collected, by order number and an
+ *     initial, because a queue needs to be called without naming anyone.
+ *
+ * Sized for a screen standing three metres away: everything is set in the largest
+ * type the layout allows, and there is no interactive control anywhere in the
+ * selling and paying stages — nothing on this screen can change the sale.
+ */
+export function DisplayScreen() {
+  const [token, setToken] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
+  const [code, setCode] = useState('');
+  const [pairBusy, setPairBusy] = useState(false);
+  const [pairError, setPairError] = useState<string | null>(null);
+  const [thanks, setThanks] = useState(false);
+
+  useEffect(() => {
+    setToken(readStoredToken());
+    setReady(true);
+  }, []);
+
+  const state = useDisplaySocket(ready ? token : null);
+
+  /*
+   * The thank-you is a timeout rather than a stage: it is the *absence* of a
+   * stage, so nothing has to tell the screen the sale is over.
+   *
+   * The timer is held in a ref and cancelled only by a *newer* payment, never by
+   * the effect's cleanup. A cleanup that cancelled it would fire the moment
+   * `paid` changed, and `paid` changes on the very next event after a sale — the
+   * till resetting its basket, or the next customer's QR. The message would then
+   * stay up until somebody reloaded the screen, because nothing was left to take
+   * it down.
+   */
+  const thanksTimer = useRef<number | null>(null);
+  useEffect(() => {
+    if (!state.paid) {
+      return;
+    }
+    if (thanksTimer.current !== null) {
+      window.clearTimeout(thanksTimer.current);
+    }
+    setThanks(true);
+    thanksTimer.current = window.setTimeout(() => {
+      thanksTimer.current = null;
+      setThanks(false);
+    }, DISPLAY_THANKS_MS);
+  }, [state.paid]);
+
+  useEffect(
+    () => () => {
+      if (thanksTimer.current !== null) {
+        window.clearTimeout(thanksTimer.current);
+      }
+    },
+    [],
+  );
+
+  /*
+   * A revoked screen loses its token. The server refuses it at both the socket
+   * and the state fetch, so there is nothing to keep showing — and leaving the
+   * screen on a dead stage would look like the till had crashed rather than like
+   * somebody had deliberately switched this display off.
+   */
+  useEffect(() => {
+    if (!state.revoked) {
+      return;
+    }
+    clearStoredToken();
+    setToken(null);
+    setPairError('จอนี้ถูกยกเลิกการเชื่อมต่อแล้ว — กรุณาจับคู่ใหม่');
+  }, [state.revoked]);
+
+  const pair = useCallback(async (candidate: string): Promise<void> => {
+    setPairBusy(true);
+    setPairError(null);
+    try {
+      const result = await apiFetch<{ token: string; label: string }>('/api/v1/display/pair', {
+        method: 'POST',
+        body: JSON.stringify({ code: candidate }),
+      });
+      storeToken(result.token);
+      setToken(result.token);
+      setCode('');
+    } catch (caught) {
+      setCode('');
+      setPairError(caught instanceof Error ? caught.message : 'จับคู่ไม่สำเร็จ');
+    } finally {
+      setPairBusy(false);
+    }
+  }, []);
+
+  const append = (digit: string): void => {
+    if (pairBusy) {
+      return;
+    }
+    setPairError(null);
+    const next = (code + digit).slice(0, 6);
+    setCode(next);
+    if (next.length === 6) {
+      void pair(next);
+    }
+  };
+
+  if (!ready) {
+    return (
+      <main className={styles.screen}>
+        <Spinner label="กำลังโหลด…" />
+      </main>
+    );
+  }
+
+  if (!token) {
+    return (
+      <main className={styles.screen}>
+        <div className={styles.pairCard}>
+          <p className={styles.pairKicker}>จอลูกค้า</p>
+          <h1 className={styles.pairTitle}>ใส่รหัสจับคู่ 6 หลัก</h1>
+          <p className={styles.pairHint}>
+            ดูรหัสได้จากหน้า “ตั้งค่าร้าน” → จอลูกค้า บนเครื่องขาย
+          </p>
+
+          <div className={styles.pinRow} aria-hidden="true">
+            {Array.from({ length: 6 }, (_, index) => (
+              <span
+                key={index}
+                className={`${styles.pinSlot} ${index < code.length ? styles.pinFilled : ''}`}
+              />
+            ))}
+          </div>
+
+          <PinPad
+            label="แป้นรหัสจับคู่"
+            disabled={pairBusy}
+            onInput={append}
+            onBackspace={() => setCode((current) => current.slice(0, -1))}
+            onClear={() => setCode('')}
+          />
+
+          {pairError ? (
+            <p className={styles.pairError} role="alert">
+              {pairError}
+            </p>
+          ) : null}
+        </div>
+      </main>
+    );
+  }
+
+  const lines = state.cart?.lines ?? [];
+  const paying = state.intent !== null;
+  const selling = !paying && lines.length > 0;
+
+  return (
+    <main className={styles.screen}>
+      <header className={styles.bar}>
+        <span className={styles.stageLabel}>
+          {paying
+            ? 'สแกนจ่ายด้วยพร้อมเพย์'
+            : selling
+              ? 'รายการที่กำลังคิดเงิน'
+              : thanks
+                ? 'ขอบคุณที่ใช้บริการ'
+                : 'ยินดีต้อนรับ'}
+        </span>
+        <span className={styles.connection} aria-live="polite">
+          {state.connected ? null : 'การเชื่อมต่อขาด — กำลังเชื่อมใหม่'}
+        </span>
+      </header>
+
+      {paying && state.intent ? (
+        <section className={styles.stage}>
+          <QrPanel intent={state.intent} size={320} />
+          <p className={styles.instruction}>
+            เปิดแอปธนาคารแล้วสแกน QR นี้ · ยอดเงินถูกล็อกไว้แล้ว
+          </p>
+        </section>
+      ) : null}
+
+      {selling ? (
+        <section className={styles.stage}>
+          <ul className={styles.lines}>
+            {lines.map((line, index) => (
+              <li key={`${line.name}-${index}`} className={styles.line}>
+                <span className={styles.lineName}>
+                  {line.name}
+                  {line.quantity > 1 ? <span className={styles.qty}> × {line.quantity}</span> : null}
+                </span>
+                <span className={styles.linePrice}>{formatThb(line.totalPrice)}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className={styles.totals}>
+            {state.cart && state.cart.discountThb > 0 ? (
+              <div className={styles.totalRow}>
+                <span>ส่วนลด</span>
+                <span>-{formatThb(state.cart.discountThb)}</span>
+              </div>
+            ) : null}
+            <div className={`${styles.totalRow} ${styles.grand}`}>
+              <span>รวมทั้งสิ้น</span>
+              <span>{formatThb(state.cart?.totalThb ?? 0)}</span>
+            </div>
+            {state.cart && state.cart.changeThb !== null && state.cart.changeThb > 0 ? (
+              <div className={`${styles.totalRow} ${styles.change}`}>
+                <span>เงินทอน</span>
+                <span>{formatThb(state.cart.changeThb)}</span>
+              </div>
+            ) : null}
+          </div>
+
+          {state.cart?.memberFirstName ? (
+            <p className={styles.member}>
+              สมาชิก <strong>{state.cart.memberFirstName}</strong> — แต้มจะถูกบันทึกให้อัตโนมัติ
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {!paying && !selling && state.ready && state.ready.orders.length > 0 ? (
+        <section className={styles.stage}>
+          <p className={styles.instruction}>พร้อมรับของแล้ว</p>
+          <ul className={styles.readyList}>
+            {state.ready.orders.map((order) => (
+              <li key={order.orderNumber} className={styles.readyItem}>
+                <span className={styles.readyNumber}>{order.orderNumber}</span>
+                <span className={styles.readyWho}>
+                  {order.customerInitial ?? ''} · {bangkokTimeString(new Date(order.readyAt))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {!paying && !selling && (state.ready?.orders.length ?? 0) === 0 ? (
+        <section className={`${styles.stage} ${styles.idle}`}>
+          {/*
+           * The logo is plain `<img>` rather than `next/image`: the shop's logo is
+           * an arbitrary URL an owner pasted in, and the optimizer would have to
+           * be told to trust every host a shop might use.
+           */}
+          {!thanks && state.idle?.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className={styles.logo} src={state.idle.logoUrl} alt="" />
+          ) : null}
+
+          <p className={styles.shopName}>
+            {thanks ? 'ขอบคุณที่ใช้บริการ' : (state.idle?.shopName ?? 'ยินดีต้อนรับ')}
+          </p>
+
+          {thanks ? null : (
+            <p className={styles.idleHint}>
+              {state.idle && !state.idle.sessionOpen
+                ? 'ร้านยังไม่เปิดกะ — สอบถามพนักงานได้เลย'
+                : 'สแกนจ่ายที่จอนี้ได้เมื่อพนักงานเริ่มคิดเงิน'}
+            </p>
+          )}
+
+          {!thanks && (state.idle?.popular.length ?? 0) > 0 ? (
+            <div className={styles.popular}>
+              <p className={styles.popularKicker}>ขายดีที่ร้านนี้</p>
+              <ul className={styles.popularList}>
+                {state.idle?.popular.map((name) => (
+                  <li key={name} className={styles.popularItem}>
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      <footer className={styles.foot}>
+        <button type="button" className={styles.unpair} onClick={() => {
+          clearStoredToken();
+          setToken(null);
+        }}>
+          ยกเลิกการจับคู่จอนี้
+        </button>
+      </footer>
+    </main>
+  );
+}

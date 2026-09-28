@@ -75,3 +75,38 @@ export const shift_status = {
 } as const
 
 export type shift_status = (typeof shift_status)[keyof typeof shift_status]
+
+
+export const promptpay_id_type = {
+  mobile: 'mobile',
+  national_id: 'national_id',
+  ewallet: 'ewallet'
+} as const
+
+export type promptpay_id_type = (typeof promptpay_id_type)[keyof typeof promptpay_id_type]
+
+
+export const payment_intent_status = {
+  pending: 'pending',
+  paid: 'paid',
+  expired: 'expired',
+  cancelled: 'cancelled',
+  consumed: 'consumed'
+} as const
+
+export type payment_intent_status = (typeof payment_intent_status)[keyof typeof payment_intent_status]
+
+
+export const audit_action = {
+  void_order: 'void_order',
+  over_discount: 'over_discount',
+  drawer_open: 'drawer_open',
+  manual_payment_confirm: 'manual_payment_confirm',
+  pin_set: 'pin_set',
+  pin_reset: 'pin_reset',
+  pin_locked: 'pin_locked',
+  display_paired: 'display_paired',
+  display_revoked: 'display_revoked'
+} as const
+
+export type audit_action = (typeof audit_action)[keyof typeof audit_action]

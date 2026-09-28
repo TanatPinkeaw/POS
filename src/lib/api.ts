@@ -34,7 +34,7 @@ export function fail(
  */
 export function errorResponse(error: unknown): NextResponse {
   if (error instanceof DomainError) {
-    return fail(error.message, error.code, error.httpStatus);
+    return fail(error.message, error.code, error.httpStatus, error.context);
   }
 
   if (error instanceof ZodError) {

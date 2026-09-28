@@ -27,32 +27,42 @@ datasource db {
 
 /**
  * The shop this deployment belongs to.
- *
  * The SRS is silent on shop identity — receipts, page titles and the tax rate
  * were hardcoded — so this is an addition on top of §7 (see ADR 0002).
- *
  * Exactly one row is allowed, which the migration enforces with
  * `CHECK (id = 1)`. That is what makes double-initialisation impossible when two
  * requests race through the setup wizard: the second INSERT collides on the
  * primary key rather than winning a read-then-write check.
  */
 model shops {
-  id                     Int      @id @default(1)
-  name                   String   @db.VarChar(150)
-  legal_name             String?  @db.VarChar(200)
-  branch_label           String?  @db.VarChar(100)
-  tax_id                 String?  @db.VarChar(13)
-  address                String?
-  phone                  String?  @db.VarChar(20)
-  is_vat_registered      Boolean  @default(false)
-  vat_rate               Decimal  @default(7) @db.Decimal(5, 2)
-  prices_include_vat     Boolean  @default(true)
-  receipt_prefix         String   @default("RC") @db.VarChar(10)
-  receipt_running_number BigInt   @default(0)
-  receipt_footer         String?
-  logo_url               String?
-  created_at             DateTime @default(now()) @db.Timestamptz(6)
-  updated_at             DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  id                            Int                @id @default(1)
+  name                          String             @db.VarChar(150)
+  legal_name                    String?            @db.VarChar(200)
+  branch_label                  String?            @db.VarChar(100)
+  tax_id                        String?            @db.VarChar(13)
+  address                       String?
+  phone                         String?            @db.VarChar(20)
+  is_vat_registered             Boolean            @default(false)
+  vat_rate                      Decimal            @default(7) @db.Decimal(5, 2)
+  prices_include_vat            Boolean            @default(true)
+  receipt_prefix                String             @default("RC") @db.VarChar(10)
+  receipt_running_number        BigInt             @default(0)
+  receipt_footer                String?
+  logo_url                      String?
+  /**
+   * Where the shop receives PromptPay transfers. Null means the till cannot
+   * issue a QR and asks the cashier to confirm the transfer by hand instead.
+   */
+  promptpay_id                  String?            @db.VarChar(20)
+  promptpay_type                promptpay_id_type?
+  /**
+   * The discount a cashier may give without asking a supervisor. Past it the
+   * till demands a PIN, so the limit is the shop's policy stated as a number
+   * rather than as a habit nobody wrote down.
+   */
+  supervisor_discount_limit_thb Decimal            @default(50) @db.Decimal(10, 2)
+  created_at                    DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                    DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
 }
 
 // ---------------------------------------------------------------- enums
@@ -104,29 +114,94 @@ enum shift_status {
   closed
 }
 
+/**
+ * What a supervisor approved, or what the system recorded on their behalf.
+ * An enum rather than a free-text code, so "which voids happened last month" is
+ * a question the database can answer rather than a grep through strings. Adding
+ * a gated action therefore costs a migration — deliberately, because an audit
+ * trail whose vocabulary can drift silently is not an audit trail.
+ */
+/**
+ * Which kind of PromptPay account the shop receives on.
+ * The three cases carry different identifiers and, critically, different rates of
+ * identifier length in the payload — a mobile is written as `0066` plus nine
+ * digits, a national id as thirteen digits, an e-wallet as fifteen. Storing the
+ * kind rather than inferring it from the shape of the value keeps a shop with a
+ * mobile number and a shop with a tax id from being told apart by guesswork.
+ */
+enum promptpay_id_type {
+  mobile
+  national_id
+  ewallet
+}
+
+/**
+ * How a payment intent ended.
+ * `consumed` is separate from `paid` on purpose: `paid` says the money arrived,
+ * `consumed` says the till then closed a bill with it. Without the second state a
+ * confirmation arriving twice, or after the cashier had already given up and
+ * taken cash, would close two sales for one transfer.
+ */
+enum payment_intent_status {
+  pending
+  paid
+  expired
+  cancelled
+  consumed
+}
+
+enum audit_action {
+  void_order
+  over_discount
+  drawer_open
+  manual_payment_confirm
+  pin_set
+  pin_reset
+  pin_locked
+  display_paired
+  display_revoked
+}
+
 // ---------------------------------------------------------------- users
 
 model users {
-  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email          String?   @unique @db.VarChar(255)
-  phone          String    @unique @db.VarChar(20)
-  password_hash  String    @db.VarChar(255)
-  full_name      String    @db.VarChar(100)
-  role           user_role @default(member)
-  points_balance Int       @default(0)
-  is_active      Boolean   @default(true)
-  created_at     DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email               String?   @unique @db.VarChar(255)
+  phone               String    @unique @db.VarChar(20)
+  password_hash       String    @db.VarChar(255)
+  full_name           String    @db.VarChar(100)
+  role                user_role @default(member)
+  points_balance      Int       @default(0)
+  is_active           Boolean   @default(true)
+  // ---------------------------------------------------------- supervisor PIN
+  // A 4-digit PIN that authorises the actions a cashier may not take alone
+  // (void a bill, discount past the shop's own limit, open the drawer, confirm a
+  // transfer by hand). It is a *second* credential, separate from the password:
+  // the person who approves is usually not the person signed in at the till, and
+  // typing a full password in front of a customer is not a realistic ask.
+  //
+  // Null means "this account holds no PIN", which is the normal state for
+  // cashiers and for members. Only administrators may set one.
+  pin_hash            String?   @db.VarChar(255)
+  pin_failed_attempts Int       @default(0)
+  pin_locked_until    DateTime? @db.Timestamptz(6)
+  created_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
-  orders_as_customer orders[]             @relation("order_customer")
-  orders_as_cashier  orders[]             @relation("order_cashier")
-  stock_logs         stock_logs[]
-  schedule_shifts    work_schedules[]     @relation("schedule_employee")
-  schedules_authored work_schedules[]     @relation("schedule_author")
-  time_logs          time_logs[]
-  shifts_opened      cash_shifts[]        @relation("shift_opener")
-  shifts_closed      cash_shifts[]        @relation("shift_closer")
-  point_transactions point_transactions[]
+  orders_as_customer  orders[]             @relation("order_customer")
+  orders_as_cashier   orders[]             @relation("order_cashier")
+  stock_logs          stock_logs[]
+  schedule_shifts     work_schedules[]     @relation("schedule_employee")
+  schedules_authored  work_schedules[]     @relation("schedule_author")
+  time_logs           time_logs[]
+  shifts_opened       cash_shifts[]        @relation("shift_opener")
+  shifts_closed       cash_shifts[]        @relation("shift_closer")
+  point_transactions  point_transactions[]
+  audit_logs_acted    audit_logs[]         @relation("audit_actor")
+  audit_logs_approved audit_logs[]         @relation("audit_authorizer")
+  payment_intents     payment_intents[]    @relation("intent_cashier")
+  intents_confirmed   payment_intents[]    @relation("intent_confirmer")
+  display_devices     display_devices[]
 }
 
 // ---------------------------------------------------------------- catalog
@@ -156,7 +231,7 @@ model products {
   // Restrict rather than SetNull: deleting a category that still has products
   // would silently orphan them, and the database now refuses it rather than
   // relying on the API to remember to check first.
-  category    categories?    @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  category    categories?   @relation(fields: [category_id], references: [id], onDelete: Restrict)
   stock_logs  stock_logs[]
   order_items order_items[]
 
@@ -165,15 +240,15 @@ model products {
 }
 
 model stock_logs {
-  id            BigInt                    @id @default(autoincrement())
-  product_id    String                    @db.Uuid
-  changed_by    String                    @db.Uuid
+  id            BigInt                   @id @default(autoincrement())
+  product_id    String                   @db.Uuid
+  changed_by    String                   @db.Uuid
   movement_type stock_movement_type
   reason        stock_adjustment_reason?
   qty_changed   Int
   balance_after Int
   note          String?
-  created_at    DateTime                  @default(now()) @db.Timestamptz(6)
+  created_at    DateTime                 @default(now()) @db.Timestamptz(6)
 
   product products @relation(fields: [product_id], references: [id], onDelete: Cascade)
   user    users    @relation(fields: [changed_by], references: [id])
@@ -225,11 +300,47 @@ model cash_shifts {
   actual_cash   Decimal?     @db.Decimal(10, 2)
   status        shift_status @default(open)
 
-  opener   users      @relation("shift_opener", fields: [opened_by], references: [id])
-  closer   users?     @relation("shift_closer", fields: [closed_by], references: [id])
-  payments payments[]
+  opener          users             @relation("shift_opener", fields: [opened_by], references: [id])
+  closer          users?            @relation("shift_closer", fields: [closed_by], references: [id])
+  payments        payments[]
+  audit_logs      audit_logs[]
+  payment_intents payment_intents[]
 
   @@index([status])
+}
+
+// ---------------------------------------------------------------- audit
+
+/**
+ * The audit trail (SRS §4.3's spirit, extended to money and authority).
+ * Two people can be named on one row, and the distinction is the whole point:
+ * `actor_user_id` is who was standing at the till, `authorized_by_user_id` is
+ * whose PIN approved it. "Who let this through" and "who was at the keyboard"
+ * are different questions, and an audit trail that can only answer one of them
+ * is the kind that gets ignored during an investigation.
+ * Rows are never updated or deleted — a trigger in the migration refuses both,
+ * and the foreign keys are RESTRICT so that nulling an actor is refused too. So
+ * `detail` is the only place a later reader can find the context: the amount,
+ * the previous value, the reason.
+ */
+model audit_logs {
+  id                    BigInt       @id @default(autoincrement())
+  action                audit_action
+  actor_user_id         String?      @db.Uuid
+  authorized_by_user_id String?      @db.Uuid
+  target_type           String?      @db.VarChar(40)
+  target_id             String?      @db.VarChar(60)
+  shift_id              Int?
+  detail                Json?
+  created_at            DateTime     @default(now()) @db.Timestamptz(6)
+
+  actor         users?       @relation("audit_actor", fields: [actor_user_id], references: [id], onDelete: Restrict)
+  authorized_by users?       @relation("audit_authorizer", fields: [authorized_by_user_id], references: [id], onDelete: Restrict)
+  shift         cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: Restrict)
+
+  @@index([action, created_at])
+  @@index([actor_user_id, created_at])
+  @@index([created_at])
 }
 
 // ---------------------------------------------------------------- orders
@@ -268,6 +379,7 @@ model orders {
   items              order_items[]
   payments           payments[]
   point_transactions point_transactions[]
+  payment_intents    payment_intents[]
 
   @@index([status])
   @@index([created_at])
@@ -301,12 +413,96 @@ model payments {
   transaction_ref String?        @db.VarChar(100)
   paid_at         DateTime       @default(now()) @db.Timestamptz(6)
 
-  order orders      @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  order orders       @relation(fields: [order_id], references: [id], onDelete: Cascade)
   shift cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: SetNull)
 
   @@index([order_id])
   @@index([shift_id])
   @@index([paid_at])
+}
+
+// ---------------------------------------------------------------- payments
+
+/**
+ * A PromptPay QR issued for one amount, and what became of it.
+ * The till asks for one of these before the sale exists, which is why it carries
+ * its own `amount`, `shift_id` and `cashier_id` rather than pointing at an order:
+ * the customer is scanning while the cashier still has a basket open. `order_id`
+ * is filled in when the bill is finally closed with this intent, so the two
+ * records end up joined, and the intent is what proves the QR was for this sale.
+ * `status` is a small state machine, and each transition is deliberate:
+ * pending  → paid       a confirmation arrived — a webhook, or a PIN holder
+ * pending  → expired    nobody paid inside the window
+ * pending  → cancelled  the cashier gave up and took cash instead
+ * paid     → consumed   the sale was settled against it, exactly once
+ * `consumed` is not bookkeeping: it is what makes a duplicate confirmation
+ * harmless. A bank bridge that fires twice, or fires after the cashier has
+ * already taken notes, must not be able to close two bills for one transfer.
+ */
+model payment_intents {
+  id                   BigInt                @id @default(autoincrement())
+  /**
+   * The short code on the QR's reference field, and how a webhook names a bill.
+   */
+  ref                  String                @unique @db.VarChar(12)
+  shift_id             Int
+  cashier_id           String                @db.Uuid
+  order_id             String?               @db.Uuid
+  amount               Decimal               @db.Decimal(10, 2)
+  /**
+   * The EMVCo payload itself, kept so a disputed QR can be reproduced.
+   */
+  qr_payload           String
+  status               payment_intent_status @default(pending)
+  expires_at           DateTime              @db.Timestamptz(6)
+  paid_at              DateTime?             @db.Timestamptz(6)
+  consumed_at          DateTime?             @db.Timestamptz(6)
+  /**
+   * Set only when a person confirmed it; a webhook leaves this null.
+   */
+  confirmed_by_user_id String?               @db.Uuid
+  created_at           DateTime              @default(now()) @db.Timestamptz(6)
+
+  shift        cash_shifts @relation(fields: [shift_id], references: [id], onDelete: Restrict)
+  cashier      users       @relation("intent_cashier", fields: [cashier_id], references: [id], onDelete: Restrict)
+  confirmed_by users?      @relation("intent_confirmer", fields: [confirmed_by_user_id], references: [id], onDelete: SetNull)
+  order        orders?     @relation(fields: [order_id], references: [id], onDelete: SetNull)
+
+  @@index([status, expires_at])
+  @@index([order_id])
+}
+
+// ---------------------------------------------------------------- display
+
+/**
+ * A customer-facing screen that has been paired with this till.
+ * The screen holds no account and no data of its own — it is a browser on the
+ * same shop, and the only thing it may do is receive what the till chooses to
+ * send it. So this row is not a user: it is a revocable grant, addressed by a
+ * token stored in the screen's own `localStorage`.
+ * Only the hash of that token is kept, for the same reason password hashes are:
+ * a database dump must not hand somebody the ability to join a shop's realtime
+ * channel and watch its takings.
+ * Pairing is a two-step handshake — an admin displays a six-digit code, the
+ * screen posts it back, the screen receives the token — which is what keeps the
+ * grant deliberate. A code that expires in minutes and can be revoked is the
+ * smallest thing that is still safe on a shop floor.
+ */
+model display_devices {
+  id                 BigInt    @id @default(autoincrement())
+  label              String    @db.VarChar(60)
+  token_hash         String    @unique @db.VarChar(255)
+  /**
+   * Present only between "add a screen" and the screen redeeming it.
+   */
+  pairing_code       String?   @unique @db.VarChar(6)
+  pairing_expires_at DateTime? @db.Timestamptz(6)
+  paired_by_user_id  String?   @db.Uuid
+  last_seen_at       DateTime? @db.Timestamptz(6)
+  revoked_at         DateTime? @db.Timestamptz(6)
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+
+  paired_by users? @relation(fields: [paired_by_user_id], references: [id], onDelete: SetNull)
 }
 
 model point_transactions {

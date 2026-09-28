@@ -1,0 +1,71 @@
+/*
+ * The audit trail.
+ *
+ * A table rather than cards, at every width: a trail is read by scanning one
+ * column for an anomaly, and stacked cards turn that scan into a scroll. It is
+ * the one place in the application where the back office's own rule — tables
+ * collapse under 900px — is deliberately not followed, and the horizontal scroll
+ * below is the price of keeping the comparison readable.
+ */
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ln-size-sm);
+}
+
+.table th,
+.table td {
+  padding: var(--ln-space-3) var(--ln-space-4);
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--ln-border-subtle);
+  white-space: nowrap;
+}
+
+.table th {
+  position: sticky;
+  top: 0;
+  background: var(--ln-surface-2);
+  color: var(--ln-text-muted);
+  font-weight: 600;
+}
+
+.time {
+  display: grid;
+  gap: 2px;
+}
+
+.date {
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-xs);
+}
+
+.who {
+  font-weight: 600;
+}
+
+.empty {
+  margin: 0;
+  padding: var(--ln-space-6);
+  text-align: center;
+  color: var(--ln-text-muted);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border-top: 1px solid var(--ln-border-subtle);
+}
+
+.count {
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}

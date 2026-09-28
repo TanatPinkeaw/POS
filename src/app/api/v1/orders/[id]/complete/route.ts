@@ -2,6 +2,7 @@ import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { broadcastPointsFor, broadcastStockFor } from '@/lib/broadcast';
 import { prisma } from '@/lib/db';
+import { broadcastReadyBoard } from '@/lib/display-broadcast';
 import { ConflictError } from '@/lib/errors';
 import { loadOrderView } from '@/lib/order-view';
 import { completeOrder } from '@/lib/orders';
@@ -46,6 +47,21 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     });
     await broadcastStockFor(summary.lines.map((line) => line.productId));
     await broadcastPointsFor(order.customer?.id);
+
+    /*
+     * A collected pre-order has to leave the customer screen's collection board.
+     * The board is rebuilt from the orders table, so this is the same query the
+     * "ready" event runs — what matters is that the *removal* is broadcast too,
+     * or a screen that stays connected all day keeps calling out a parcel that is
+     * already in somebody's bag.
+     *
+     * Gated on the order type rather than on its previous status: only a pre-order
+     * is ever on that board, and a walk-in sale should not pay for a query it
+     * cannot have affected.
+     */
+    if (order.orderType === 'preorder') {
+      await broadcastReadyBoard();
+    }
 
     return { ...order, changeThb: summary.changeThb, paidThb: summary.paidThb };
   });
