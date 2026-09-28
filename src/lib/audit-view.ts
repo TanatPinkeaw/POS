@@ -12,6 +12,7 @@
 export type AuditAction =
   | 'void_order'
   | 'refund_order'
+  | 'inbound_transfer_dismissed'
   | 'over_discount'
   | 'drawer_open'
   | 'manual_payment_confirm'
@@ -24,6 +25,7 @@ export type AuditAction =
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
   'refund_order',
+  'inbound_transfer_dismissed',
   'over_discount',
   'drawer_open',
   'manual_payment_confirm',
@@ -44,6 +46,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
 export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   void_order: 'ยกเลิกบิล',
   refund_order: 'คืนเงิน (ใบลดหนี้)',
+  inbound_transfer_dismissed: 'ปิดรายการเงินโอนที่ไม่ใช่ยอดขาย',
   over_discount: 'ส่วนลดเกินวงเงิน',
   drawer_open: 'เปิดลิ้นชัก',
   manual_payment_confirm: 'ยืนยันเงินเข้าเอง',
@@ -73,6 +76,9 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   // Money leaving the drawer is at least as interesting as a void, and an owner
   // scrolling for "where did the cash go" must not have to read every row.
   refund_order: 'danger',
+  // Investigative rather than alarming: somebody looked at money in the bank and
+  // decided it was not a sale of ours.
+  inbound_transfer_dismissed: 'info',
   over_discount: 'warning',
   drawer_open: 'info',
   manual_payment_confirm: 'warning',

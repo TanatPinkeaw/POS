@@ -52,7 +52,7 @@ that does not want its sales data in somebody else's cloud).
 | **VAT on the receipt** | ✅ | `[U]` | derived out of the shelf price, rate snapshotted per sale |
 | **Gapless receipt numbering** | ✅ | `[U]` | column bumped in-transaction, so a rollback cannot burn a number |
 | **Void / refund / credit note** | ✅ | ✅ `[C]` | whole-bill refund + gapless `CN` series; partial/per-line returns still absent |
-| QR payment generate + verify at the till | ❌ | ✅ `[C]` | theirs locks and verifies the bill amount |
+| QR payment generate + verify at the till | ✅ | ✅ `[C]` | amount locked into the QR, and the bill closes itself from the shop's own bank notification — no PSP, no per-check fee (ADR 0005). Needs the shop's bank to send notification email |
 | Split bill per seat | ➖ | ✅ `[C]` | a restaurant concept |
 | Loyalty points | ✅ | `[U]` | accrued and redeemed with a ledger |
 
@@ -110,6 +110,11 @@ that does not want its sales data in somebody else's cloud).
 5. **The whole renter journey is acceptance-tested** from an empty schema
    (`npm run acceptance`), which is a fact about the software nobody can claim
    from a feature list.
+6. **An incoming transfer closes its own bill for nothing.** The shop's bank
+   already emails when money arrives, so the fact is carried by something the shop
+   owns rather than by a payment provider's per-check service — and when the
+   notification cannot be matched to a bill, the money is still recorded and shown
+   instead of being guessed at or dropped (ADR 0005).
 
 ---
 
@@ -224,8 +229,10 @@ Stated here rather than implied anywhere above:
 
 **Competitive parity, which follows demand rather than correctness:**
 
-8. **QR payment generation and verification at the till** — needs a PSP
-   relationship, so it is not purely a coding task.
+8. ~~**QR payment generation and verification at the till**~~ — **done** without a
+   PSP: the QR is generated at the till and the bill is closed from the shop's own
+   bank notification (ADR 0005). What is left here is a screen for the money that
+   matched, so a statement can be reconciled in one place.
 9. **Audit-log viewer plus rate limiting** — hardening; do it before exposing the
    till to a public network.
 10. **Kitchen/table features** — only if we decide to serve food service. Today

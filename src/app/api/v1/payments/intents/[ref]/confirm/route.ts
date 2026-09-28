@@ -18,37 +18,21 @@
  * null and the intent's own row carries the amount and time. A person's
  * confirmation writes an audit row naming both the cashier and the approver.
  */
-import { timingSafeEqual } from 'node:crypto';
-
 import { withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { broadcastPaymentPaid } from '@/lib/display-broadcast';
 import { ConflictError, ForbiddenError } from '@/lib/errors';
 import { confirmIntent } from '@/lib/payment-intents';
 import { requireApproval } from '@/lib/supervisor';
+import { requestHasPaymentSecret } from '@/lib/webhook-secret';
 
 type RouteContext = { params: Promise<{ ref: string }> };
-
-/** Constant-time comparison of the shared secret, tolerating a missing one. */
-function matchesWebhookSecret(provided: string | null): boolean {
-  const expected = process.env.PAYMENT_WEBHOOK_SECRET;
-  if (!expected || !provided) {
-    return false;
-  }
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  // `timingSafeEqual` throws on different lengths, which is itself a leak of the
-  // length; compare fixed-size digests instead.
-  const left = Buffer.from(a.length === b.length ? a : Buffer.alloc(0));
-  const right = Buffer.from(b.length === a.length ? b : Buffer.alloc(0));
-  return left.length > 0 && timingSafeEqual(left, right);
-}
 
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
   return withApi(async () => {
     const { ref } = await context.params;
 
-    if (matchesWebhookSecret(request.headers.get('x-payment-secret'))) {
+    if (requestHasPaymentSecret(request)) {
       if (!process.env.PAYMENT_WEBHOOK_SECRET) {
         throw new ConflictError('Webhook confirmation is not configured', 'NO_WEBHOOK_SECRET');
       }

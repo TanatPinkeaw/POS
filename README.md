@@ -97,6 +97,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Rasterises the mark into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run route:audit` | Builds, serves, and opens all 16 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with nothing fetched from another origin. |
+| `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. |
 
 The migration is **finished**: every one of the 16 routes is on the design system
@@ -188,10 +189,11 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 439 tests across 30 files: unit + integration
+npm test                # 502 tests across 34 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 48 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 82 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
+npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 ```
 
 `npm run acceptance` is the one that proves an *installation* works, which the
@@ -205,7 +207,7 @@ exactly, and that the demo seed now *refuses* to touch the configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 48 of its
+or that quietly began fetching a font from another origin passes all 82 of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.
@@ -231,6 +233,13 @@ was misread because of it — the application was right and the harness was lyin
 - **Attendance**, including that `work_hours` is computed by PostgreSQL, that the
   roster is joined to the day the shift actually started, and that a second open
   log is impossible even when the application guard is bypassed.
+- **Reversing a paid sale**, including that a second refund is refused by the
+  database as well as by the state machine, that money cannot leave the till with
+  no credit note behind it, that clawing back points never blocks a customer's
+  refund, and that the dashboard's cash figure nets what was handed back.
+- **Money arriving from a bank notification**, including the refusals: an amount
+  matching a bill but naming none, two candidates for one amount, money that
+  arrives after the QR was withdrawn, and a bridge retrying the same message.
 
 `npm run smoke` drives the running server as a browser would — logging in as all
 three roles, placing a pre-order, confirming it, collecting it with a PIN,
@@ -310,7 +319,7 @@ endpoint that says so.
 
 The domain rules are split into **pure functions** (loyalty, settlement, the
 state machine, the discrepancy formula) and **persistence** modules. That split
-is why 267 of the 439 tests need no database at all, and why the money rules can
+is why 313 of the 502 tests need no database at all, and why the money rules can
 be checked without a running server.
 
 ---
@@ -331,6 +340,8 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | `GET /api/v1/orders/{id}/receipt` | Reprint data, read from the order's own snapshot columns, so a 2026 receipt still shows 7% in 2027. |
 | `POST /api/v1/orders/{id}/refund` | Reverse a whole paid bill and issue a credit note. Supervisor PIN required, always. |
 | `GET /api/v1/orders/{id}/credit-note` | Reprint data for that credit note — the sibling of the receipt route. |
+| `POST /api/v1/payments/inbound` | A bank notification, from the shop's own bridge. Machine-only, shared secret. |
+| `GET /api/v1/payments/inbound` | Money the bank reported that could not be matched to a bill. Admin-only. |
 
 Two database-enforced invariants carry most of the weight:
 
@@ -402,6 +413,53 @@ the till and the supervisor whose PIN allowed it — the same shape as a staff
 cancel. Rewriting the original receipt is never an option: its number is already
 in somebody's hands, so the credit note is a second document that references it.
 
+### Confirming a transfer automatically, for nothing
+
+A customer pays by PromptPay and the bill should close itself. The honest position
+is that this system cannot know money arrived — only a bank can — so the question
+is who carries the fact from the bank to the till. The usual answer is a payment
+provider or a bank API; both cost money per check or per month, and both ask the
+shop to sign up for something before the first transfer can close a bill.
+`docs/adr/0005-automatic-transfer-confirmation.md` is the decision; the short
+version is that the shop's own bank notification does the carrying.
+
+```bash
+npm run bank:bridge -- --file ./notification.eml   # what would be posted
+npm run bank:bridge -- --once                     # one pass over the mailbox
+npm run bank:bridge -- --interval 60              # keep watching
+```
+
+The bridge reads a mailbox the bank already emails, extracts the amount with the
+shop's own pattern, and posts the notification to `/api/v1/payments/inbound` with
+the message's own id and the bank's own timestamp. Everything about *reading* mail
+is pure and unit-tested (`src/lib/bank-mail.ts`); everything about *deciding* which
+bill the money paid is pure and unit-tested too (`src/lib/inbound-match.ts`); what
+is left in the script is a socket and a loop.
+
+**The matcher never guesses.** It requires the amount to match a QR exactly — in
+satang — and then requires the notification to name that QR's reference as a
+whole token. An amount on its own is refused even when exactly one QR is open,
+because two customers in one queue can owe the same ฿107.00 and "there was only
+one" is a fact about the moment rather than about the transfer. Money that arrives
+after the QR was withdrawn is refused; so is money for a bill that was already
+closed, which is what a retrying bridge sends the second time.
+
+**Nothing is dropped, and nothing is invented.** Every notification is recorded in
+`inbound_payments` — matched or not, with the reason it could not be attributed,
+and with `NULL` rather than a fabricated number when the amount could not be read
+at all. An amount of zero or one satang in the place where a real amount belongs
+is the one thing that table must never contain. Whatever is left unattributed
+appears on the dashboard, and an admin can close it with a reason (audited as
+`inbound_transfer_dismissed`) when it turns out not to be a sale of ours. The same
+bank message is recorded once, enforced by `UNIQUE (source, external_id)` rather
+than by the bridge's own bookkeeping.
+
+**Refunds are never sent this way.** Money leaves through the open drawer or by
+hand in the shop's banking app, and the credit note says which. Automating a payout
+needs bank API onboarding and an authority this system should not hold: a bug in a
+matcher that closes a bill is a bill closed wrongly, while a bug in one that pays
+out is money gone.
+
 ---
 
 ## Deliberate deviations and additions
@@ -440,6 +498,7 @@ goes through them.
 | `docs/adr/0001-schema-deviations-from-srs.md` | Every place the database departs from SRS §7, and why. |
 | `docs/adr/0002-shop-identity-and-vat.md` | Shop identity, VAT and gapless receipt numbering — a requirement the SRS never states. |
 | `docs/adr/0004-credit-notes-and-refunds.md` | Reversing a paid sale: the credit-note series, the refund leg, and why money is signed by direction. |
+| `docs/adr/0005-automatic-transfer-confirmation.md` | Closing a bill from the shop's own bank notification, and why the matcher refuses when it is not certain. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
@@ -463,3 +522,6 @@ Deferred deliberately, and listed here rather than discovered during service:
   exist; there is no upload and no storage.
 - **Production hardening:** rate limiting, an audit-log viewer, RTL, and object
   storage.
+- **A reconciliation screen for matched transfers.** Unattributed money is visible
+  and closable; money that matched a bill is only visible in the audit trail, so a
+  shop reconciling a statement against the day still reads two lists.

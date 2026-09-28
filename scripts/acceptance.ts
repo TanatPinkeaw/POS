@@ -82,6 +82,15 @@ const CASHIER = { fullName: 'มาลี เหลี่ยมนอก', phone
  */
 const SUPERVISOR_PIN = '7391';
 
+/**
+ * The secret this run configures its own bridge with.
+ *
+ * Set here and inherited by the server the harness starts, so the journey can
+ * prove the machine path works end to end without a shop having to own a mailbox
+ * first. A real shop sets the same variable in `.env`.
+ */
+const ACCEPT_BRIDGE_SECRET = 'accept-bridge-secret';
+
 /** One product at 107 THB — a shelf price that splits cleanly into 100 + 7. */
 const COFFEE = { barcode: 'LNM0000001', name: 'กาแฟเหลี่ยมนอก 250 มล.', cost: 60, price: 107, stock: 12 };
 const WATER = { barcode: 'LNM0000002', name: 'น้ำเปล่าเหลี่ยมนอก 600 มล.', cost: 8, price: 25, stock: 24 };
@@ -731,6 +740,172 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     receiptAfterRefund.receipt.tenders,
   );
 
+  /* ----------------------------- 10. a transfer that closes its own bill */
+  section('10. A bank notification that closes its own bill');
+
+  /*
+   * The shop's own QR, which needs PromptPay configured. Done here rather than in
+   * the wizard because a shop that takes transfers turns this on later, in
+   * settings — and the journey should take the same road.
+   */
+  const settings = await admin.call<ShopDto & { promptpayId?: string | null }>('/api/v1/shop');
+  const withPromptPay = await cashier.request('/api/v1/shop', {
+    method: 'PUT',
+    body: {
+      name: settings.name,
+      branchLabel: settings.branchLabel,
+      taxId: settings.taxId,
+      isVatRegistered: settings.isVatRegistered,
+      vatRate: settings.vatRate,
+      receiptPrefix: settings.receiptPrefix,
+      promptpayId: '0812345678',
+      promptpayType: 'mobile',
+    },
+  });
+  check(
+    'a cashier cannot configure where the shop receives money (403)',
+    withPromptPay.status === 403,
+    withPromptPay.status,
+  );
+
+  await admin.call('/api/v1/shop', {
+    method: 'PUT',
+    body: {
+      name: settings.name,
+      branchLabel: settings.branchLabel,
+      taxId: settings.taxId,
+      isVatRegistered: settings.isVatRegistered,
+      vatRate: settings.vatRate,
+      receiptPrefix: settings.receiptPrefix,
+      promptpayId: '0812345678',
+      promptpayType: 'mobile',
+    },
+  });
+
+  const qr = await cashier.call<{ ref: string; status: string; amountThb: number }>(
+    '/api/v1/payments/intents',
+    { method: 'POST', body: { shiftId: secondShift.id, amountThb: COFFEE.price } },
+  );
+  check(
+    'the till shows a QR for the amount due',
+    qr.status === 'pending' && qr.amountThb === COFFEE.price,
+    qr,
+  );
+
+  const unauthenticated = await anonymous.request('/api/v1/payments/inbound', {
+    method: 'POST',
+    body: { amountThb: COFFEE.price, text: `โอน ${qr.ref}` },
+  });
+  check(
+    'a notification without the shop\'s secret is refused',
+    unauthenticated.status >= 400 && unauthenticated.status < 500,
+    unauthenticated.status,
+  );
+
+  const wrongSecret = await anonymous.request('/api/v1/payments/inbound', {
+    method: 'POST',
+    headers: { 'x-payment-secret': 'not-the-secret' },
+    body: { amountThb: COFFEE.price, text: `โอน ${qr.ref}` },
+  });
+  check(
+    'and so is one with the wrong secret',
+    wrongSecret.status >= 400 && wrongSecret.status < 500,
+    wrongSecret.status,
+  );
+
+  const bridge = await anonymous.request<{
+    status: string;
+    intentRef: string | null;
+    refusalReason: string | null;
+  }>('/api/v1/payments/inbound', {
+    method: 'POST',
+    headers: { 'x-payment-secret': ACCEPT_BRIDGE_SECRET },
+    body: {
+      amountThb: COFFEE.price,
+      text: `รับเงินโอน ${COFFEE.price.toFixed(2)} บาท ${qr.ref}`,
+      source: 'bank-bridge',
+      externalId: 'accept-mail-1',
+    },
+  });
+  check(
+    'a notification naming the QR closes it, with no human involved',
+    bridge.data?.status === 'matched' && bridge.data?.intentRef === qr.ref,
+    bridge.data ?? bridge.error,
+  );
+
+  const intentAfter = await cashier.call<{ status: string }>(`/api/v1/payments/intents/${qr.ref}`);
+  check(
+    'the QR the till is polling reads as paid',
+    intentAfter.status === 'paid',
+    intentAfter.status,
+  );
+
+  const repeated = await anonymous.request<{ duplicate: boolean }>('/api/v1/payments/inbound', {
+    method: 'POST',
+    headers: { 'x-payment-secret': ACCEPT_BRIDGE_SECRET },
+    body: {
+      amountThb: COFFEE.price,
+      text: `รับเงินโอน ${COFFEE.price.toFixed(2)} บาท ${qr.ref}`,
+      source: 'bank-bridge',
+      externalId: 'accept-mail-1',
+    },
+  });
+  check(
+    'a bridge that retries records the same message once',
+    repeated.data?.duplicate === true,
+    repeated.data,
+  );
+
+  /*
+   * The other half of the feature, and the reason the first half is safe: money
+   * that cannot be attributed has to end up somewhere a person will look. An
+   * amount with no reference is exactly that case, and it must not be guessed at
+   * even though a QR for that amount is open.
+   */
+  const unreadable = await anonymous.request('/api/v1/payments/inbound', {
+    method: 'POST',
+    headers: { 'x-payment-secret': ACCEPT_BRIDGE_SECRET },
+    body: { text: 'มีเงินเข้าบัญชี จำนวนหนึ่ง บาท', source: 'bank-bridge' },
+  });
+  check(
+    'a notification it cannot read an amount out of is kept, not dropped',
+    unreadable.status === 200,
+    unreadable.status,
+  );
+
+  const unattributed = await admin.call<{
+    transfers: { id: string; status: string; amountThb: number | null; refusalReason: string | null }[];
+  }>('/api/v1/payments/inbound');
+  check(
+    'unattributed money is listed for a person, with the reason',
+    unattributed.transfers.length === 1 &&
+      unattributed.transfers[0]?.refusalReason === 'amount_unreadable',
+    unattributed.transfers,
+  );
+
+  const dismissed = await cashier.request(`/api/v1/payments/inbound/${unattributed.transfers[0]?.id ?? ''}/dismiss`, {
+    method: 'POST',
+    body: { reason: 'โอนผิดบัญชี' },
+  });
+  check('a cashier cannot write off a transfer (403)', dismissed.status === 403, dismissed.status);
+
+  await admin.call(`/api/v1/payments/inbound/${unattributed.transfers[0]?.id ?? ''}/dismiss`, {
+    method: 'POST',
+    body: { reason: 'โอนผิดบัญชี ไม่ใช่ยอดขาย' },
+  });
+  const cleared = await admin.call<{ transfers: unknown[] }>('/api/v1/payments/inbound');
+  check('a dismissed transfer leaves the list', cleared.transfers.length === 0, cleared.transfers);
+
+  const dismissTrail = await admin.call<AuditPageDto>(
+    '/api/v1/audit?action=inbound_transfer_dismissed',
+  );
+  check(
+    'and the decision is in the audit trail, with the reason',
+    dismissTrail.total === 1 &&
+      dismissTrail.entries[0]?.detail?.reason === 'โอนผิดบัญชี ไม่ใช่ยอดขาย',
+    dismissTrail.entries[0],
+  );
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -752,6 +927,16 @@ async function main(): Promise<void> {
   let scratch: string | null = null;
 
   const sourceUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL ?? null;
+
+  /*
+   * The server this harness starts inherits this process's environment, so the
+   * machine-confirmation secret has to be set here rather than in `.env` — a
+   * run that depended on the renter's own secret would either fail or, worse,
+   * pass by using one nobody configured.
+   */
+  if (!process.env.PAYMENT_WEBHOOK_SECRET) {
+    process.env.PAYMENT_WEBHOOK_SECRET = ACCEPT_BRIDGE_SECRET;
+  }
 
   console.log('');
   console.log('POS — virgin deployment acceptance run');

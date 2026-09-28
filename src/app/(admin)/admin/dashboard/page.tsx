@@ -1,3 +1,4 @@
+import { InboundDismissButton } from '@/components/admin/InboundDismissButton';
 import { OrderActions } from '@/components/admin/OrderActions';
 import {
   Card,
@@ -14,7 +15,13 @@ import {
   type Column,
 } from '@/components/ds';
 import { dashboardSnapshot } from '@/lib/analytics';
+import { bangkokDateTimeString } from '@/lib/bangkok-time';
 import { shortThaiDay, type TrendPoint } from '@/lib/chart';
+import { listInboundTransfers } from '@/lib/inbound-payments';
+import {
+  INBOUND_REFUSAL_LABELS,
+  type InboundTransferView,
+} from '@/lib/inbound-transfer-view';
 import { formatThb } from '@/lib/money';
 
 /**
@@ -35,6 +42,19 @@ const STATUS_LABEL: Record<string, string> = {
   refunded: 'คืนเงินแล้ว',
 };
 
+/**
+ * Enough of a bank notification to recognise it, without a wall of prose in a
+ * table cell. The whole text is in the record, and in the dismiss dialog, for
+ * whoever has to read it properly.
+ */
+function shorten(text: string, max = 80): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  if (flat.length === 0) {
+    return '—';
+  }
+  return flat.length > max ? `${flat.slice(0, max - 1)}…` : flat;
+}
+
 const PREORDER_STAGES = [
   { status: 'pending', label: '1. รอยืนยัน', key: 'pending' },
   { status: 'confirmed', label: '2. กำลังเตรียม', key: 'confirmed' },
@@ -44,7 +64,17 @@ const PREORDER_STAGES = [
 ] as const;
 
 export default async function DashboardPage() {
-  const snapshot = await dashboardSnapshot();
+  /*
+   * Money the bank reported that this system could not attribute to a bill. Read
+   * here rather than inside the snapshot because it is not a figure on a chart —
+   * it is a to-do, and the only thing that makes the automatic confirmation path
+   * safe to run: a notification that cannot be matched has to end up somewhere a
+   * person will see it.
+   */
+  const [snapshot, unattributed] = await Promise.all([
+    dashboardSnapshot(),
+    listInboundTransfers(),
+  ]);
 
   const points: TrendPoint[] = snapshot.salesByDay.map((day) => ({
     label: shortThaiDay(day.day),
@@ -55,6 +85,49 @@ export default async function DashboardPage() {
 
   type StockRow = (typeof snapshot.lowStock)[number];
   type OrderRow = (typeof snapshot.recentOrders)[number];
+  type InboundRow = InboundTransferView;
+
+  const inboundColumns: Column<InboundRow>[] = [
+    {
+      key: 'receivedAt',
+      header: 'เวลาเข้า',
+      cardLabel: 'เวลาเข้า',
+      render: (row) => <span className="ln-num">{bangkokDateTimeString(row.receivedAt)}</span>,
+    },
+    {
+      key: 'amount',
+      header: 'จำนวน',
+      align: 'end',
+      // Not `Money`: an amount that could not be read is not zero, and formatting
+      // it as one would put a number on the screen that nobody ever sent.
+      render: (row) =>
+        row.amountThb === null ? (
+          <Pill tone="warning">อ่านยอดไม่ได้</Pill>
+        ) : (
+          <Money amount={row.amountThb} />
+        ),
+    },
+    {
+      key: 'reason',
+      header: 'เหตุที่ยังจับคู่ไม่ได้',
+      cardLabel: 'เหตุที่ยังจับคู่ไม่ได้',
+      render: (row) =>
+        row.refusalReason ? INBOUND_REFUSAL_LABELS[row.refusalReason] : '—',
+    },
+    {
+      key: 'text',
+      header: 'ข้อความจากธนาคาร',
+      cardLabel: 'ข้อความจากธนาคาร',
+      render: (row) => <span className="ln-mono">{shorten(row.rawText)}</span>,
+    },
+    {
+      key: 'action',
+      header: '',
+      cardLabel: 'จัดการ',
+      align: 'end',
+      render: (row) => <InboundDismissButton transfer={row} />,
+    },
+  ];
 
   const lowStockColumns: Column<StockRow>[] = [
     {
@@ -258,6 +331,27 @@ export default async function DashboardPage() {
           />
         </Card>
       </CardGrid>
+
+      {/*
+        Rendered only when there is something to do, and that is a judgement: an
+        empty "no unattributed transfers" card every day would teach an owner to
+        skip the one card that means money is sitting in the bank with no bill
+        behind it.
+      */}
+      {unattributed.length > 0 ? (
+        <Card
+          title="เงินโอนที่ยังจับคู่กับบิลไม่ได้"
+          subtitle="อ่านจากข้อความแจ้งเตือนของธนาคาร — ถ้าไม่ใช่ยอดขายของร้าน ปิดรายการพร้อมเหตุผลได้"
+          flush
+        >
+          <DataTable
+            columns={inboundColumns}
+            rows={unattributed}
+            getRowKey={(row) => row.id}
+            caption="เงินโอนเข้าที่ระบบยังไม่รู้ว่าเป็นบิลไหน"
+          />
+        </Card>
+      ) : null}
 
       <Card title="ออเดอร์ล่าสุด" subtitle="ทุกช่องทาง ทั้งหน้าร้านและออนไลน์" flush>
         <DataTable

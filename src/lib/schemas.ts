@@ -447,6 +447,32 @@ export const displayCartSchema = z.object({
   memberFirstName: z.string().trim().max(60).nullable().optional(),
 });
 
+/**
+ * A bank notification, as a bridge on the shop's own network posts it.
+ *
+ * `amountThb` is nullable on purpose: a bridge that cannot read a number out of
+ * this bank's wording posts what it has rather than dropping the money, and the
+ * transfer is filed as unreadable. `receivedAt` is the bank's own instant, so a
+ * notification delayed in a mailbox is still judged by when the money moved.
+ */
+export const inboundTransferSchema = z.object({
+  amountThb: z.number().positive().max(1_000_000).nullable().optional(),
+  /**
+   * Generous on purpose. A bank's notification is often a whole HTML email with
+   * tracking markup around two useful lines, and a cap the bridge could exceed
+   * would make that message unpostable — and therefore retried forever.
+   */
+  text: z.string().max(20_000).default(''),
+  source: z.string().trim().min(1).max(40).default('bank-bridge'),
+  externalId: z.string().trim().min(1).max(200).nullable().optional(),
+  receivedAt: z.coerce.date().optional(),
+});
+
+/** Closing a transfer as not ours. The reason is required; see the route. */
+export const dismissInboundSchema = z.object({
+  reason: z.string().trim().min(1).max(300),
+});
+
 export const auditQuerySchema = z.object({
   action: z.enum(AUDIT_ACTIONS).optional(),
   userId: z.string().uuid().optional(),

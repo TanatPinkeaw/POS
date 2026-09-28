@@ -25,6 +25,7 @@
     "smoke": "tsx scripts/smoke-test.ts",
     "acceptance": "tsx scripts/acceptance.ts",
     "route:audit": "tsx scripts/route-audit.ts",
+    "bank:bridge": "tsx scripts/bank-bridge.ts",
     "brand:palette": "tsx scripts/brand-palette.ts",
     "brand:icons": "tsx scripts/build-icons.ts",
     "verify": "npm run typecheck && npm run ui:audit && npm run brand:palette -- --check && npm test",

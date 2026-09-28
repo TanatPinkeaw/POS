@@ -48,7 +48,8 @@ Three authenticated areas and three public surfaces:
 | `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
 | `npm run db:seed:demo` | Seeds demo data. Refuses unless the shop is unconfigured. | Throwaway DB |
 | `npm run smoke` | End-to-end checks over real HTTP. | A running server |
-| `npm run acceptance` | The whole renter journey from an empty schema; serves the production build itself. | Postgres |
+| `npm run acceptance` | The whole renter journey from an empty schema, including a refund and a bank notification; serves the production build itself. | Postgres |
+| `npm run bank:bridge` | Reads the shop's own bank notification mailbox and posts what it finds to the app. `-- --file <eml>` parses a saved one and prints what it would post. | An IMAP mailbox, or none with `--file` |
 
 ---
 
@@ -87,7 +88,7 @@ tried and hurt, and several are enforced by a test or a check.
 7. **Pure logic and persistence stay in separate modules.** State machines,
    pricing and the loyalty/discount maths are pure functions in `src/lib/*-rules`
    or alongside their domain; the database lives in a separate module. That split
-   is why 267 of the 439 tests need no database at all.
+   is why 313 of the 502 tests need no database at all.
 8. **Every route handler funnels through `withApi` and stamps its own
    authorisation.** The role always comes from the signed session token, never
    from a request body. `src/proxy.ts` decides which *area* an unauthenticated
@@ -140,6 +141,16 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   second refund is impossible even when two requests race past `canTransition`.
   `refunded` is a terminal order status (`src/lib/order-state.ts`), and the only
   edge into it is `refund` out of `completed`.
+- **`UNIQUE (source, external_id)` on `inbound_payments`** — the same bank message
+  is recorded once, so a retrying bridge cannot double-count money. `external_id`
+  is the bank's own `Message-ID`, falling back to the mailbox UID.
+- **`inbound_payments.amount` is null if and only if the reason is
+  `amount_unreadable`** — a notification whose figure could not be read is kept
+  with no amount rather than with a made-up one. Never write a placeholder number
+  into that column to satisfy a `NOT NULL`; the pairing is the contract.
+- **`CHECK ((direction = 'refund') = (credit_note_id IS NOT NULL))` on
+  `payments`** (repeated here because it is the one that reads oddly): a refund
+  leg must name a credit note, and a sale leg must not.
 
 ---
 
@@ -226,12 +237,19 @@ both halves SSH again.
 
 ## Where to pick up
 
-The design-system migration is **finished**, and so is the money work that
-followed it: a paid bill can be reversed with a credit note behind it (ADR 0004).
-All sixteen routes are on `src/components/ds/`, the vendored Hope UI theme is
-deleted, `ui:audit` keeps it that way, 439 tests across 30 files pass, `route:audit`
-walks all sixteen screens, and `acceptance` drives the renter journey **including a
-refund** — all four green, all four in CI.
+The design-system migration is **finished**, and so is the money work that followed
+it: a paid bill can be reversed with a credit note behind it (ADR 0004), and an
+incoming transfer can close its own bill from the shop's own bank notification with
+no payment provider (ADR 0005). All sixteen routes are on `src/components/ds/`, the
+vendored Hope UI theme is deleted, `ui:audit` keeps it that way, 497 tests across 34
+files pass, `route:audit` walks all sixteen screens, and `acceptance` drives the
+renter journey **including a refund and a machine-confirmed transfer** — all four
+green, all four in CI.
+
+Two shapes to copy when adding to either path, because both are the reason the
+money logic is trustworthy: the *decision* is a pure module with typed refusals
+(`order-state.ts`, `inbound-match.ts`) and the *record* is a persistence module
+tested against real Postgres (`credit-notes.ts`, `inbound-payments.ts`).
 
 Open threads, roughly in the order worth doing:
 
@@ -240,13 +258,13 @@ Open threads, roughly in the order worth doing:
    three asks for. The shape is a credit note that itemises the part it reverses
    rather than mirroring its invoice, and it is the head of the gap list in
    `README.md`.
-2. **Zero-cost automatic transfer confirmation.** The ingress already exists —
-   `POST /api/v1/payments/intents/[ref]/confirm` with `x-payment-secret` — and
-   what is missing is the bridge that reads the shop's own bank notification and
-   the record for money that arrived with no bill behind it. (There is no refund
-   counterpart by design: money leaves through an open drawer or by hand in the
-   banking app, never by an automated transfer.)
-3. **A `/design` reference route** that renders every primitive with its tokens,
+2. **Reconciling matched transfers.** Unattributed money is visible and closable,
+   but money that matched a bill is only visible in the audit trail, so a shop
+   checking a bank statement against a day still reads two lists.
+3. **Notification outbox with a real channel** (gap analysis §4.2). The bridge
+   proves the shop can carry facts outward; the same bridge pattern is half of what
+   a LINE/SMS notifier needs.
+4. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
 Known product gaps are listed at the end of `README.md` (partial refunds, overtime

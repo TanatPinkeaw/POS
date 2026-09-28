@@ -150,6 +150,37 @@ email in this system; recovery is a SQL statement (see §8).
 - **Still ask your accountant.** The credit-note layout follows the usual Thai
   format, but whether it satisfies the Revenue Department is their call.
 
+### 6.1 Letting a transfer close its own bill
+
+When a customer pays by PromptPay, the till shows a QR and waits. Somebody then
+has to tell the system the money actually arrived — normally the cashier, by
+looking at the shop's banking app and entering a supervisor PIN. If your bank
+emails you when money comes in, a small script shipped with this software can do
+that for you instead, for nothing:
+
+1. In `/admin/settings`, fill in **พร้อมเพย์** with the number or tax id the shop
+   receives on. The till can then issue a QR locked to the bill's amount.
+2. Put the bank's notification mailbox and the amount pattern into `.env` — see
+   `BANK_IMAP_*`, `BANK_NOTIFICATION_FROM` and `BANK_AMOUNT_REGEX` in
+   `.env.example`. The pattern is the only bank-specific part; test it against a
+   real notification before trusting it:
+   `npm run bank:bridge -- --file ./notification.eml`
+   Set `BANK_NOTIFICATION_FROM` to the bank's address unless you made a mailbox
+   only for these notifications — otherwise other unread mail gets filed as money
+   the system could not read.
+3. Run the bridge on something always on:
+   `npm run bank:bridge -- --interval 60`
+
+What it does *not* do, so nobody is surprised: it never guesses which bill a
+transfer paid. It needs the amount to match a QR exactly **and** the notification
+to quote that QR's reference, which the customer types into their memo. A transfer
+it cannot match is not lost — it appears on the dashboard under *เงินโอนที่ยังจับคู่กับบิลไม่ได้* —
+with the reason, and an admin closes it with a note once they know what it was.
+
+Money only ever leaves through an open drawer or by hand in your banking app; this
+script never sends anything out. If your bank does not send notification email,
+keep confirming transfers by hand with a supervisor PIN — nothing else breaks.
+
 ---
 
 ## 7. Backups and upgrades
