@@ -42,6 +42,7 @@ Three authenticated areas and three public surfaces:
 | `npm run verify` | `typecheck` → `ui:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
+| `npm run route:audit` | Builds, serves, and checks that every one of the 16 screens renders a page whose CSS defines every class on it. | Postgres |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
 | `npm run brand:icons` | Rasterises the mark into the app icons. `-- --preview` prints them as text. | — |
 | `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
@@ -140,8 +141,17 @@ Then, for anything a person will look at:
   usually a server component importing a client-only module.
 - For UI work, look at the rendered page, not only at the diff. **A missing
   stylesheet is silent**: the markup still compiles and the screen merely renders
-  unstyled. That is exactly how the theme removal once went wrong here, and why
-  `ui:audit` exists.
+  unstyled. That is exactly how the theme removal once went wrong here, which is
+  why `ui:audit` (no retired vocabulary in the source) and `npm run route:audit`
+  (every rendered class defined in the CSS that page loads) both exist.
+- `npm run acceptance` when you have touched the root layout, the proxy, roles,
+  the sale path or anything a renter meets on first run. It builds, serves on a
+  scratch schema, and drives the whole journey.
+
+**CI runs all of it** (`.github/workflows/verify.yml`): `verify` in one job, then
+`acceptance` + `route:audit --skip-build` in a second, each with a PostgreSQL 17
+service. Node is pinned by `.nvmrc` and `engines.node`, so the version the suite
+runs on is the version a renter is told to install.
 
 ---
 
@@ -159,13 +169,12 @@ This has bitten every round of UI verification. In order of preference:
    browser at the host's LAN or Tailscale address.
 2. **The sandboxed browser may not reach the host at all** — loopback, the LAN
    IP, the Tailscale IP and `host.docker.internal` can all fail with
-   `chrome-error` while the public internet loads fine. When that happens, verify
-   over HTTP instead: fetch each route from the built server, collect the
-   stylesheets it links, and assert that every class in the HTML is defined in
-   that CSS. That approach is what caught the vendored theme's Google Fonts
+   `chrome-error` while the public internet loads fine. When that happens, run
+   `npm run route:audit`: it fetches each of the sixteen routes from the built
+   server, collects the stylesheets each one links, and asserts that every class
+   in the HTML is defined in that CSS. Do not re-write that check by hand — the
+   first hand-written version is what caught the vendored theme's Google Fonts
    `@import`, which the "fonts are self-hosted" fix had not actually removed.
-   A committed version of that check would be a good addition; it is currently
-   written from scratch each time.
 3. **A production session cookie is `Secure`**, so a plain-HTTP login cannot be
    stored by the browser. Mint a token with `createSessionToken()` from
    `src/lib/session-token.ts` and set it as `pos_session`, or pass it as a
@@ -203,22 +212,24 @@ both halves SSH again.
 
 The design-system migration is **finished**: all sixteen routes are on
 `src/components/ds/`, the vendored Hope UI theme is deleted, and `ui:audit`
-keeps it that way. 394 tests across 28 files pass, and `ui:audit` covers 239
-files under `src/`.
+keeps it that way. 415 tests across 29 files pass, `ui:audit` covers 239 files
+under `src/`, `route:audit` walks all sixteen screens, and `acceptance` drives
+the renter journey — all four green, all four in CI.
 
 Open threads, roughly in the order worth doing:
 
-1. **`npm run acceptance` has not been re-run since the theme was removed.** It
-   serves the production build itself and drives the whole renter journey, so it
-   is the one check that would notice a regression in the root layout or the
-   proxy — both of which changed in that commit.
-2. **A keepable route check** (see the sandbox trap above): every route returns a
-   real page, every class resolves against the CSS it loads, and nothing is
-   fetched from another origin. It has caught a real bug already.
+1. **Void, refund and credit notes** — the largest *correctness* gap. Receipt
+   numbers are gapless and un-reusable and an order can be cancelled, but a shop
+   that has issued a tax invoice has no compliant way to reverse one. The schema
+   facts that make it a real design decision are recorded in
+   `docs/wongnai-pos-gap-analysis.md` §4.1.
+2. **Zero-cost automatic transfer confirmation.** The ingress already exists —
+   `POST /api/v1/payments/intents/[ref]/confirm` with `x-payment-secret` — and
+   what is missing is the bridge that reads the shop's own bank notification and
+   the record for money that arrived with no bill behind it.
 3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
 Known product gaps are listed at the end of `README.md` (void and credit notes,
 overtime approval, pickup QR, outbound notifications, multiple branches, product
-images, production hardening). The largest *correctness* gap is the missing
-credit-note document behind a cancelled tax invoice.
+images, production hardening).

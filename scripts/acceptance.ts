@@ -34,18 +34,25 @@
  *   npm run acceptance -- --keep            leave the scratch schema to inspect
  *   npm run acceptance -- --base-url URL    check a server that is already running
  */
-import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
+import { spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { createServer } from 'node:net';
-import { loadEnvFile } from 'node:process';
 
-import { Client } from 'pg';
+import {
+  Session,
+  csvForm,
+  freePort,
+  loadEnv,
+  resetScratchSchema,
+  scratchUrl,
+  shell,
+  startServer,
+  stopServer,
+  waitForServer,
+} from './harness';
 
 /* ------------------------------------------------------------------ config */
 
-if (existsSync('.env')) {
-  loadEnvFile('.env');
-}
+loadEnv();
 
 const SCRATCH_SCHEMA = 'accept';
 const FIRST_PORT = 3211;
@@ -90,236 +97,15 @@ const PARTIAL_CSV = [
 
 /* ------------------------------------------------------------------ plumbing */
 
-/** Set once in `main`; every request goes through it. */
+/**
+ * Set once in `main`; every request goes through it.
+ *
+ * The HTTP session, the port picker and the production server all live in
+ * `scripts/harness.ts` now, because `route-audit.ts` needs exactly the same
+ * ones — and a second copy of "how do we start the server on Windows" is how the
+ * two scripts drift apart.
+ */
 let base = '';
-
-interface ApiResult<T> {
-  status: number;
-  data: T | null;
-  error: string | null;
-}
-
-/**
- * A cookie jar per persona that never throws on an error status.
- *
- * The smoke test's version throws, which is right when every call is expected to
- * succeed. Acceptance has to assert on refusals — 401, 403, 409, 422 — so the
- * status is returned rather than raised.
- */
-class Session {
-  private cookie = '';
-
-  private absorb(response: Response): void {
-    for (const raw of response.headers.getSetCookie?.() ?? []) {
-      const [pair] = raw.split(';');
-      if (pair?.startsWith('pos_session=')) {
-        this.cookie = pair;
-      }
-    }
-  }
-
-  async request<T>(
-    path: string,
-    init: { method?: string; body?: unknown } = {},
-  ): Promise<ApiResult<T>> {
-    const response = await fetch(`${base}${path}`, {
-      method: init.method ?? 'GET',
-      headers: {
-        ...(init.body === undefined ? {} : { 'content-type': 'application/json' }),
-        ...(this.cookie ? { cookie: this.cookie } : {}),
-      },
-      body: init.body === undefined ? undefined : JSON.stringify(init.body),
-      redirect: 'manual',
-    });
-    this.absorb(response);
-
-    const text = await response.text();
-    let parsed: unknown = null;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = null;
-    }
-
-    const envelope = parsed as { data?: T; error?: { message?: string } } | null;
-    return {
-      status: response.status,
-      data: (envelope?.data ?? null) as T | null,
-      error: envelope?.error?.message ?? (envelope === null ? text.slice(0, 200) : null),
-    };
-  }
-
-  /** Sends multipart form data, which is how the catalogue import works. */
-  async postForm<T>(path: string, form: FormData): Promise<ApiResult<T>> {
-    const response = await fetch(`${base}${path}`, {
-      method: 'POST',
-      headers: this.cookie ? { cookie: this.cookie } : {},
-      body: form,
-      redirect: 'manual',
-    });
-    this.absorb(response);
-
-    const text = await response.text();
-    let parsed: unknown = null;
-    try {
-      parsed = JSON.parse(text);
-    } catch {
-      parsed = null;
-    }
-    const envelope = parsed as { data?: T; error?: { message?: string } } | null;
-    return {
-      status: response.status,
-      data: (envelope?.data ?? null) as T | null,
-      error: envelope?.error?.message ?? (envelope === null ? text.slice(0, 200) : null),
-    };
-  }
-
-  /** Sends a body that is expected to succeed, and explains itself when it does not. */
-  async call<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
-    const result = await this.request<T>(path, init);
-    if (result.status >= 400 || result.error !== null) {
-      throw new Error(`${init.method ?? 'GET'} ${path} → ${result.status}: ${result.error}`);
-    }
-    return result.data as T;
-  }
-
-  async login(credentials: { identifier: string; password: string }): Promise<void> {
-    await this.call('/api/v1/auth/login', { method: 'POST', body: credentials });
-  }
-
-  raw(path: string): Promise<Response> {
-    return fetch(`${base}${path}`, {
-      headers: this.cookie ? { cookie: this.cookie } : {},
-      redirect: 'manual',
-    });
-  }
-}
-
-function csvForm(text: string, mode: 'preview' | 'commit', filename = 'catalogue.csv'): FormData {
-  const form = new FormData();
-  form.append('file', new Blob([text], { type: 'text/csv' }), filename);
-  form.append('mode', mode);
-  return form;
-}
-
-/** Picks a port the OS says is free, so a running dev server is never disturbed. */
-async function freePort(start: number): Promise<number> {
-  for (let port = start; port < start + 40; port += 1) {
-    const available = await new Promise<boolean>((resolve) => {
-      const probe = createServer();
-      probe.once('error', () => resolve(false));
-      probe.once('listening', () => probe.close(() => resolve(true)));
-      probe.listen(port, '127.0.0.1');
-    });
-    if (available) {
-      return port;
-    }
-  }
-  throw new Error(`No free port between ${start} and ${start + 40}`);
-}
-
-/** The scratch connection string: the configured database, a private schema. */
-function scratchUrl(source: string): string {
-  const parsed = new URL(source);
-  parsed.searchParams.set('schema', SCRATCH_SCHEMA);
-  return parsed.toString();
-}
-
-/**
- * Drops the scratch schema, optionally recreating it empty.
- *
- * The schema is recreated here rather than left to `prisma migrate deploy`, so
- * the run does not depend on whether the migration engine creates a missing
- * schema for a `?schema=` parameter.
- *
- * Connects with explicit fields rather than passing the URL straight to `pg`,
- * because `?schema=` is a Prisma-only parameter: libpq would reject it as an
- * unknown runtime setting.
- */
-async function resetScratchSchema(source: string, recreate: boolean): Promise<void> {
-  const parsed = new URL(source);
-  const client = new Client({
-    host: parsed.hostname,
-    port: Number(parsed.port) || 5432,
-    user: decodeURIComponent(parsed.username),
-    password: decodeURIComponent(parsed.password),
-    database: parsed.pathname.replace(/^\//, ''),
-  });
-  await client.connect();
-  try {
-    await client.query(`DROP SCHEMA IF EXISTS "${SCRATCH_SCHEMA}" CASCADE`);
-    if (recreate) {
-      await client.query(`CREATE SCHEMA "${SCRATCH_SCHEMA}"`);
-    }
-  } finally {
-    await client.end();
-  }
-}
-
-/** Runs a command through the shell, because npx on Windows is a `.cmd` shim. */
-function shell(step: string, command: string, env?: NodeJS.ProcessEnv): void {
-  const result = spawnSync(command, { stdio: 'inherit', shell: true, env: env ?? process.env });
-  if (result.error) {
-    throw new Error(`${step} could not start: ${result.error.message}`);
-  }
-  if (result.status !== 0) {
-    throw new Error(`${step} failed with exit code ${result.status ?? 'null'}`);
-  }
-}
-
-function startServer(url: string, port: number): { child: ChildProcess; log: () => string } {
-  const lines: string[] = [];
-  const child = spawn(process.execPath, ['--import', 'tsx', 'src/server.ts'], {
-    env: {
-      ...process.env,
-      DATABASE_URL: url,
-      NODE_ENV: 'production',
-      PORT: String(port),
-      HOSTNAME: '127.0.0.1',
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
-  child.stdout?.on('data', (chunk: Buffer) => lines.push(chunk.toString('utf8')));
-  child.stderr?.on('data', (chunk: Buffer) => lines.push(chunk.toString('utf8')));
-  return { child, log: () => lines.join('') };
-}
-
-async function waitForServer(child: ChildProcess, log: () => string): Promise<void> {
-  const deadline = Date.now() + 90_000;
-  while (Date.now() < deadline) {
-    if (child.exitCode !== null) {
-      throw new Error(`The server exited with code ${child.exitCode}.\n${log()}`);
-    }
-    try {
-      const response = await fetch(`${base}/api/v1/setup`, { signal: AbortSignal.timeout(3000) });
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // Not listening yet.
-    }
-    await new Promise((resolve) => setTimeout(resolve, 400));
-  }
-  throw new Error(`The server never answered on ${base}.\n${log()}`);
-}
-
-async function stopServer(child: ChildProcess): Promise<void> {
-  if (child.exitCode !== null || child.pid === undefined) {
-    return;
-  }
-  child.kill('SIGTERM');
-  const exited = await new Promise<boolean>((resolve) => {
-    const timer = setTimeout(() => resolve(false), 5000);
-    child.once('exit', () => {
-      clearTimeout(timer);
-      resolve(true);
-    });
-  });
-  if (!exited) {
-    child.kill('SIGKILL');
-    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' });
-  }
-}
 
 /* ------------------------------------------------------------------ the run */
 
@@ -386,7 +172,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   /* ---------------------------------------------------------- 1. virgin */
   section('1. A deployment nobody has set up yet');
 
-  const anonymous = new Session();
+  const anonymous = new Session(() => base);
   const initial = await anonymous.request<{ initialized: boolean }>('/api/v1/setup');
   check('setup reports initialized: false', initial.data?.initialized === false, initial.data);
 
@@ -439,7 +225,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   /* ------------------------------------------------- 3. the renter's shop */
   section('3. The renter signs in and reads their own settings back');
 
-  const admin = new Session();
+  const admin = new Session(() => base);
   await admin.login({ identifier: ADMIN.phone, password: ADMIN.password });
 
   const me = await admin.call<{ role: string; fullName: string }>('/api/v1/auth/me');
@@ -487,7 +273,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   });
   check('a 5-character password is refused with 422', weakPassword.status === 422, weakPassword.status);
 
-  const cashier = new Session();
+  const cashier = new Session(() => base);
   await cashier.login({ identifier: CASHIER.phone, password: CASHIER.password });
   const cashierMe = await cashier.call<{ role: string }>('/api/v1/auth/me');
   check('the new cashier can sign in', cashierMe.role === 'employee', cashierMe.role);
@@ -694,7 +480,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
-  const anonymousShop = await new Session().raw('/api/v1/shop');
+  const anonymousShop = await new Session(() => base).raw('/api/v1/shop');
   check('an anonymous request for the settings is refused (401)', anonymousShop.status === 401, anonymousShop.status);
 
   console.log(
@@ -731,11 +517,11 @@ async function main(): Promise<void> {
       if (sourceUrl === null) {
         throw new Error('Neither TEST_DATABASE_URL nor DATABASE_URL is set. Run `npm run setup` first.');
       }
-      scratch = scratchUrl(sourceUrl);
+      scratch = scratchUrl(sourceUrl, SCRATCH_SCHEMA);
 
       console.log(`\nScratch schema: ${SCRATCH_SCHEMA} (in ${new URL(sourceUrl).pathname.replace(/^\//, '')})`);
       console.log('\n1. Resetting the scratch schema');
-      await resetScratchSchema(sourceUrl, true);
+      await resetScratchSchema(sourceUrl, SCRATCH_SCHEMA, true);
       console.log('  • dropped and recreated, so this starts from empty');
 
       console.log('\n2. Applying migrations to the empty schema');
@@ -756,7 +542,7 @@ async function main(): Promise<void> {
       console.log(`\n4. Serving the build on ${base}`);
       const started = startServer(scratch, port);
       child = started.child;
-      await waitForServer(child, started.log);
+      await waitForServer(base, child, started.log);
       console.log(`  • up (${new Date().toISOString()})`);
     }
 
@@ -770,7 +556,7 @@ async function main(): Promise<void> {
     }
 
     if (scratch !== null && !keep) {
-      await resetScratchSchema(sourceUrl as string, false);
+      await resetScratchSchema(sourceUrl as string, SCRATCH_SCHEMA, false);
       console.log('\n6. Scratch schema dropped');
     } else if (scratch !== null) {
       console.log(`\n6. Scratch schema kept: ${scratch}`);

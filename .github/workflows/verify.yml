@@ -1,0 +1,116 @@
+name: verify
+
+# Two jobs, because they answer two different questions.
+#
+# `verify` is the gate a change has to pass before it is worth a person's time:
+# types, the design-system audit, the colour ramp, and the unit and integration
+# suites. `journeys` is the part that only means something when the whole thing is
+# built and served — the renter's journey from an empty schema, and every screen
+# rendering styled. They are split rather than chained so a failing unit test
+# reports in a couple of minutes instead of after a Next build.
+#
+# PostgreSQL is a service in both jobs, not an optional extra: the integration
+# tests truncate real tables, and `acceptance` and `route:audit` each migrate their
+# own scratch schema. Nothing in this suite mocks the database.
+
+on:
+  push:
+  pull_request:
+
+# A second push to the same branch cancels the first run. These suites are slow,
+# and the answer to "is this green" only ever matters for the tip of the branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # One database for both variables, because a runner has nothing else on it.
+  # The name must contain "test": `tests/setup.ts` and `scripts/prepare-test-db.ts`
+  # both refuse anything else, so a mis-set variable cannot make a test run
+  # truncate a shop's real tables.
+  DATABASE_URL: postgresql://pos_app:pos_app@localhost:5432/pos_test?schema=public
+  TEST_DATABASE_URL: postgresql://pos_app:pos_app@localhost:5432/pos_test?schema=public
+  # Not a secret, and not pretending to be: the app only requires it to be long
+  # enough to sign a cookie with, and no real session is ever minted here.
+  AUTH_SECRET: ci-only-secret-that-is-definitely-long-enough-1234567890
+  # `PAYMENT_WEBHOOK_SECRET` is deliberately left unset, which is the state a shop
+  # with no bank bridge is in — so the journey exercises the "a person confirms,
+  # with a supervisor PIN" path rather than the automatic one.
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pos_app
+          POSTGRES_PASSWORD: pos_app
+          POSTGRES_DB: pos_test
+        ports:
+          - 5432:5432
+        # Without a health check the steps race the server: `pg_isready` is what
+        # makes "the service is up" mean the database accepts connections rather
+        # than that the container started.
+        options: >-
+          --health-cmd "pg_isready -U pos_app -d pos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Pinned by `.nvmrc`, so the version the suite runs on is the version a
+          # renter is told to install rather than whatever the runner defaults to.
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # The Prisma client is generated, not committed as a build artefact, and
+      # every import of the generated client fails without this.
+      - run: npm run db:generate
+
+      # Applies every migration to the test database and refuses a name that does
+      # not contain "test".
+      - run: npm run db:test:prepare
+
+      - run: npm run verify
+
+  journeys:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pos_app
+          POSTGRES_PASSWORD: pos_app
+          POSTGRES_DB: pos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pos_app -d pos_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run db:generate
+
+      # Builds, migrates a scratch schema, serves the production build, and drives
+      # the whole renter journey from an empty database.
+      - run: npm run acceptance
+
+      # Reuses the build `acceptance` just made (`--skip-build`) and walks every
+      # screen. Its own scratch schema on a different port, so the two cannot
+      # collide however their order changes.
+      - run: npm run route:audit -- --skip-build

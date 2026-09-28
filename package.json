@@ -2,7 +2,11 @@
   "name": "pos-realtime",
   "version": "0.1.0",
   "private": true,
+  "license": "UNLICENSED",
   "description": "Realtime POS, Inventory, 4-Phase Pre-order & Staff Management System",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/server.ts",
     "build": "next build",
@@ -20,6 +24,7 @@
     "db:studio": "prisma studio",
     "smoke": "tsx scripts/smoke-test.ts",
     "acceptance": "tsx scripts/acceptance.ts",
+    "route:audit": "tsx scripts/route-audit.ts",
     "brand:palette": "tsx scripts/brand-palette.ts",
     "brand:icons": "tsx scripts/build-icons.ts",
     "verify": "npm run typecheck && npm run ui:audit && npm run brand:palette -- --check && npm test",

@@ -19,6 +19,7 @@ were all removed once the last screen moved across (ADR 0003).
 | Application | Next.js 16 App Router, TypeScript, one process |
 | Database | PostgreSQL 17 |
 | Data access | Prisma 7 with the `@prisma/adapter-pg` driver adapter |
+| Node | 24 (`.nvmrc`; `engines.node` requires `>=22`) |
 | Realtime | Socket.io mounted on the same HTTP server as Next |
 | UI | In-house design system (`src/design/` + `src/components/ds/`): CSS custom properties + CSS Modules |
 | Auth | bcrypt hashes + `jose`-signed JWT in an httpOnly cookie |
@@ -95,12 +96,20 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:palette` | Regenerates the ramp from the seed. `-- --check` fails if stale. |
 | `npm run brand:icons` | Rasterises the mark into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
+| `npm run route:audit` | Builds, serves, and opens all 16 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with nothing fetched from another origin. |
 | `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. |
 
 The migration is **finished**: every one of the 16 routes is on the design system
 and the vendored theme is gone — no Bootstrap classes, no Bootstrap JavaScript, no
 `--bs-*` variables, nothing left to restyle. `npm run ui:audit` asserts that rather
 than assuming it, which is what makes the removal an event instead of a hope.
+
+`npm run route:audit` asserts the other half of the same claim, the half a source
+scan cannot see: that each route's rendered markup is actually *styled* by the CSS
+it loads. A stylesheet that stops being imported, or one that begins pulling a font
+from a CDN, compiles and type-checks perfectly and ships an unstyled screen — which
+is not hypothetical here, because exactly that survived the theme removal until
+this check was written. All of it runs in CI on every push.
 
 ---
 
@@ -179,9 +188,10 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 394 tests across 28 files: unit + integration
+npm test                # 415 tests across 29 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 48 checks of the whole renter journey, from an empty schema
+npm run route:audit     # all 16 screens render, and render styled
 ```
 
 `npm run acceptance` is the one that proves an *installation* works, which the
@@ -192,6 +202,13 @@ the setup wizard's API, the staff API, a catalogue spreadsheet and a VAT sale �
 asserting that `net + VAT === gross` to the satang, that the first receipt takes
 the renter's own series (`FR-<year>-000001`), that a reprint matches the sale
 exactly, and that the demo seed now *refuses* to touch the configured shop.
+
+`npm run route:audit` covers the other blind spot. Acceptance never reads a byte
+of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
+or that quietly began fetching a font from another origin passes all 48 of its
+checks. So this one builds, serves, sets up a shop the way a renter would, opens
+every screen with the session that screen needs, and compares the markup against
+the CSS that came back with it.
 
 It is a Node script rather than curl and bash, and that is worth recording: on
 Windows, Thai text in a `curl -d` argument is re-encoded through the console
@@ -348,6 +365,13 @@ In short:
   constraint to accommodate automation would have cost the audit trail.
 - The route guard lives in `src/proxy.ts` exporting `proxy()`, which is the
   Next 16 replacement for the deprecated `middleware.ts` convention.
+
+## Licence
+
+**Proprietary — all rights reserved.** See `LICENSE`. This is software a shop runs
+and owns rather than open source: copying it, redistributing it and offering it as
+a hosted service are all reserved to the copyright holder. Commercial licensing
+goes through them.
 
 ## Documentation
 
