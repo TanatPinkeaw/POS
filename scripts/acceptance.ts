@@ -39,7 +39,6 @@ import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 
 import { roundThb } from '../src/lib/money';
-import { hashPassword } from '../src/lib/password';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
 
 import {
@@ -236,6 +235,17 @@ interface CreditNoteDto {
 interface AuditPageDto {
   entries: { action: string; detail: Record<string, unknown> | null }[];
   total: number;
+}
+
+interface MemberDto {
+  id: string;
+  fullName: string;
+  phone: string;
+  email: string | null;
+  isActive: boolean;
+  pointsBalance: number;
+  orderCount: number;
+  joinedAt: string;
 }
 
 interface PreOrderPlacedDto {
@@ -1108,219 +1118,241 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   /* ------------------------- 11. a pre-order, collected by QR */
   section('11. A pre-order the customer collects by QR');
 
-  if (seedGuardUrl === null) {
-    console.log(
-      '  • skipped: the member fixture needs the scratch schema (not available with --base-url)',
-    );
-  } else {
-    /*
-     * The fixture, and it is the one thing in this journey that is not HTTP — see
-     * `MEMBER`. No route in this application creates a customer, so a run that
-     * places a pre-order has to be handed one, exactly as the setup wizard hands
-     * it an administrator.
-     */
-    const fixture = await scratchClient(seedGuardUrl);
-    try {
-      await fixture.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
-      await fixture.query(
-        `INSERT INTO "users" ("full_name", "phone", "password_hash", "role", "is_active")
-         VALUES ($1, $2, $3, 'member', true)`,
-        [MEMBER.fullName, MEMBER.phone, await hashPassword(MEMBER.password)],
-      );
-    } finally {
-      await fixture.end();
-    }
+  /*
+   * The customer is enrolled the way a shop enrols one (ADR 0010). This used to be
+   * the one leg of the journey that was not HTTP at all — a `member` row written
+   * with SQL, because no route in the application created customers — which meant a
+   * fresh shop could not place a pre-order at all. Now the manager adds them and the
+   * customer signs in with the temporary password they were handed.
+   */
+  const enrolled = await admin.call<MemberDto>('/api/v1/members', {
+    method: 'POST',
+    body: { fullName: MEMBER.fullName, phone: MEMBER.phone, password: MEMBER.password },
+  });
+  check(
+    'a manager enrols a customer at the counter',
+    enrolled.phone === MEMBER.phone && enrolled.isActive && enrolled.pointsBalance === 0,
+    enrolled,
+  );
 
-    const member = new Session(() => base);
-    await member.login({ identifier: MEMBER.phone, password: MEMBER.password });
-    const memberMe = await member.call<{ role: string }>('/api/v1/auth/me');
-    check('the customer signs in as a member', memberMe.role === 'member', memberMe.role);
+  /*
+   * The same number, written the way a customer would write it. Uniqueness spans
+   * every role and survives the punctuation, or a cashier's number could be reused
+   * by a customer and the cashier would stop being able to sign in.
+   */
+  const duplicated = await admin.request('/api/v1/members', {
+    method: 'POST',
+    body: {
+      fullName: 'สมชาย ซ้ำ',
+      phone: MEMBER.phone.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3'),
+      password: MEMBER.password,
+    },
+  });
+  check(
+    'and the same number written with dashes is refused as a duplicate (409)',
+    duplicated.status === 409,
+    duplicated.status,
+  );
 
-    const beforePreOrder = (
-      await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`)
-    )[0];
+  const cashierEnrols = await cashier.request('/api/v1/members', {
+    method: 'POST',
+    body: { fullName: 'โดยแคชเชียร์', phone: '0800000999', password: MEMBER.password },
+  });
+  check(
+    'a cashier cannot enrol a customer from the till (403)',
+    cashierEnrols.status === 403,
+    cashierEnrols.status,
+  );
 
-    const placed = await member.call<PreOrderPlacedDto>('/api/v1/orders', {
-      method: 'POST',
-      body: { type: 'preorder', lines: [{ productId: coffee?.id, quantity: 2 }] },
-    });
-    check('the customer places a pre-order for two', placed.status === 'pending', placed);
+  const member = new Session(() => base);
+  await member.login({ identifier: MEMBER.phone, password: MEMBER.password });
+  const memberMe = await member.call<{ role: string }>('/api/v1/auth/me');
+  check('the customer signs in as a member', memberMe.role === 'member', memberMe.role);
 
-    const reserved = (
-      await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`)
-    )[0];
-    check(
-      'two units leave the shelf for sale the moment they are promised',
-      reserved?.availableQty === (beforePreOrder?.availableQty ?? 0) - 2,
-      `${beforePreOrder?.availableQty} → ${reserved?.availableQty}`,
-    );
-    check(
-      'but nothing has left stock yet — the promise is not a sale',
-      reserved?.stockQty === beforePreOrder?.stockQty,
-      `${beforePreOrder?.stockQty} → ${reserved?.stockQty}`,
-    );
+  const beforePreOrder = (
+    await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`)
+  )[0];
 
-    const accepted = await cashier.call<{ status: string }>(
-      `/api/v1/orders/${placed.orderId}/confirm`,
-      { method: 'POST', body: {} },
-    );
-    check('staff accept it', accepted.status === 'confirmed', accepted.status);
+  const placed = await member.call<PreOrderPlacedDto>('/api/v1/orders', {
+    method: 'POST',
+    body: { type: 'preorder', lines: [{ productId: coffee?.id, quantity: 2 }] },
+  });
+  check('the customer places a pre-order for two', placed.status === 'pending', placed);
 
-    const packed = await cashier.call<{
-      status: string;
-      pickupPin: string;
-      pickupExpiresAt: string;
-    }>(`/api/v1/orders/${placed.orderId}/ready`, { method: 'POST' });
-    packedPickupPin = packed.pickupPin;
-    check('packing it issues a 4-digit PIN', /^\d{4}$/.test(packed.pickupPin ?? ''), packed.pickupPin);
-    check(
-      'and a hold deadline in the future',
-      new Date(packed.pickupExpiresAt).getTime() > Date.now(),
-      packed.pickupExpiresAt,
-    );
+  const reserved = (
+    await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`)
+  )[0];
+  check(
+    'two units leave the shelf for sale the moment they are promised',
+    reserved?.availableQty === (beforePreOrder?.availableQty ?? 0) - 2,
+    `${beforePreOrder?.availableQty} → ${reserved?.availableQty}`,
+  );
+  check(
+    'but nothing has left stock yet — the promise is not a sale',
+    reserved?.stockQty === beforePreOrder?.stockQty,
+    `${beforePreOrder?.stockQty} → ${reserved?.stockQty}`,
+  );
 
-    const staffBoard = await admin.call<OrderBoardRowDto[]>(
-      '/api/v1/orders?status=ready_for_pickup',
-    );
-    const packedRow = staffBoard.find((row) => row.orderNumber === placed.orderNumber);
-    const shownCode = packedRow?.pickupToken ?? '';
-    check(
-      'the same screen also carries the signed code behind the QR',
-      looksLikePickupToken(shownCode),
-      shownCode.slice(0, 32),
-    );
+  const accepted = await cashier.call<{ status: string }>(
+    `/api/v1/orders/${placed.orderId}/confirm`,
+    { method: 'POST', body: {} },
+  );
+  check('staff accept it', accepted.status === 'confirmed', accepted.status);
 
-    const customerBoard = await member.call<OrderBoardRowDto[]>('/api/v1/orders');
-    check(
-      'the customer sees that code on their own order',
-      customerBoard.find((row) => row.orderNumber === placed.orderNumber)?.pickupToken ===
-        shownCode,
-      customerBoard.find((row) => row.orderNumber === placed.orderNumber)?.pickupToken?.slice(0, 32),
-    );
+  const packed = await cashier.call<{
+    status: string;
+    pickupPin: string;
+    pickupExpiresAt: string;
+  }>(`/api/v1/orders/${placed.orderId}/ready`, { method: 'POST' });
+  packedPickupPin = packed.pickupPin;
+  check('packing it issues a 4-digit PIN', /^\d{4}$/.test(packed.pickupPin ?? ''), packed.pickupPin);
+  check(
+    'and a hold deadline in the future',
+    new Date(packed.pickupExpiresAt).getTime() > Date.now(),
+    packed.pickupExpiresAt,
+  );
 
-    const scanned = await cashier.call<PickupLookupDto>('/api/v1/orders/lookup', {
-      method: 'POST',
-      body: { pickupToken: shownCode },
-    });
-    check(
-      'scanning it brings up exactly that parcel',
-      scanned.orderNumber === placed.orderNumber,
-      scanned.orderNumber,
-    );
+  const staffBoard = await admin.call<OrderBoardRowDto[]>(
+    '/api/v1/orders?status=ready_for_pickup',
+  );
+  const packedRow = staffBoard.find((row) => row.orderNumber === placed.orderNumber);
+  const shownCode = packedRow?.pickupToken ?? '';
+  check(
+    'the same screen also carries the signed code behind the QR',
+    looksLikePickupToken(shownCode),
+    shownCode.slice(0, 32),
+  );
 
-    const byPin = await cashier.call<PickupLookupDto>('/api/v1/orders/lookup', {
-      method: 'POST',
-      body: { pin: packed.pickupPin },
-    });
-    check(
-      'and the PIN still works, for the customer whose phone is flat',
-      byPin.orderNumber === placed.orderNumber,
-      byPin.orderNumber,
-    );
+  const customerBoard = await member.call<OrderBoardRowDto[]>('/api/v1/orders');
+  check(
+    'the customer sees that code on their own order',
+    customerBoard.find((row) => row.orderNumber === placed.orderNumber)?.pickupToken ===
+      shownCode,
+    customerBoard.find((row) => row.orderNumber === placed.orderNumber)?.pickupToken?.slice(0, 32),
+  );
 
-    /*
-     * One character changed, the same edit the unit test makes. This is the leg that
-     * checks the *status*: a bad code has to arrive as a refusal the cashier can read,
-     * and it arrived as a 500 until `InvalidPickupTokenError` became a domain error.
-     */
-    const [header, payload, signature] = shownCode.split('.');
-    const tampered = `${header}.${payload}.${signature?.startsWith('A') ? 'B' : 'A'}${signature?.slice(1)}`;
-    const forged = await cashier.request('/api/v1/orders/lookup', {
-      method: 'POST',
-      body: { pickupToken: tampered },
-    });
-    check('a code with one character changed is refused as a bad code', forged.status === 422, {
-      status: forged.status,
-      error: forged.error,
-    });
+  const scanned = await cashier.call<PickupLookupDto>('/api/v1/orders/lookup', {
+    method: 'POST',
+    body: { pickupToken: shownCode },
+  });
+  check(
+    'scanning it brings up exactly that parcel',
+    scanned.orderNumber === placed.orderNumber,
+    scanned.orderNumber,
+  );
 
-    const openShift = await cashier.call<{ shift: { id: number; status: string } | null }>(
-      '/api/v1/shifts/current',
-    );
-    const handover = await cashier.call<OrderDto>(`/api/v1/orders/${placed.orderId}/complete`, {
-      method: 'POST',
-      body: {
-        shiftId: openShift.shift?.id,
-        settlement: { cash: placed.subtotalThb, receivedCash: placed.subtotalThb },
-      },
-    });
-    check('the collection settles and closes the bill', handover.status === 'completed', handover);
-    check(
-      'the customer pays the price agreed when they ordered',
-      handover.finalAmountThb === placed.subtotalThb,
-      `${handover.finalAmountThb} vs ${placed.subtotalThb}`,
-    );
-    /*
-     * Read off the document rather than off the response, because the document is
-     * what the customer leaves with — and because this is the tax that was *frozen*
-     * at handover. The order was placed at a price with no tax on it at all; the
-     * handover is the moment the money and the tax both become real.
-     */
-    const handoverReceipt = await cashier.call<{
-      receipt: { receiptNumber: string | null; netThb: number; vatThb: number };
-    }>(`/api/v1/orders/${placed.orderId}/receipt`);
-    check(
-      'the tax is worked out at handover, not at placement',
-      handoverReceipt.receipt.vatThb > 0 &&
-        handoverReceipt.receipt.netThb + handoverReceipt.receipt.vatThb === placed.subtotalThb,
-      handoverReceipt.receipt,
-    );
-    /*
-     * Gapless means *no number is skipped*, not that this happens to be the
-     * second receipt of the run: the journey now rings up more bills before the
-     * parcel is collected, so the expectation is derived from the last one
-     * issued rather than hard-coded.
-     */
-    const lastReceiptNumber = pair.receiptNumber ?? '';
-    const expectedReceiptNumber = lastReceiptNumber.replace(/(\d+)$/, (digits) =>
-      String(Number(digits) + 1).padStart(digits.length, '0'),
-    );
-    check(
-      'and it takes the next number in the same gapless series',
-      expectedReceiptNumber !== '' &&
-        handoverReceipt.receipt.receiptNumber === expectedReceiptNumber,
-      `${handoverReceipt.receipt.receiptNumber} vs ${expectedReceiptNumber}`,
-    );
+  const byPin = await cashier.call<PickupLookupDto>('/api/v1/orders/lookup', {
+    method: 'POST',
+    body: { pin: packed.pickupPin },
+  });
+  check(
+    'and the PIN still works, for the customer whose phone is flat',
+    byPin.orderNumber === placed.orderNumber,
+    byPin.orderNumber,
+  );
 
-    const afterPreOrder = (
-      await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`)
-    )[0];
-    check(
-      'the two units leave the shelf when the parcel does',
-      afterPreOrder?.stockQty === (beforePreOrder?.stockQty ?? 0) - 2 &&
-        afterPreOrder?.availableQty === afterPreOrder?.stockQty,
-      `${beforePreOrder?.stockQty}/${beforePreOrder?.availableQty} → ${afterPreOrder?.stockQty}/${afterPreOrder?.availableQty}`,
-    );
+  /*
+   * One character changed, the same edit the unit test makes. This is the leg that
+   * checks the *status*: a bad code has to arrive as a refusal the cashier can read,
+   * and it arrived as a 500 until `InvalidPickupTokenError` became a domain error.
+   */
+  const [header, payload, signature] = shownCode.split('.');
+  const tampered = `${header}.${payload}.${signature?.startsWith('A') ? 'B' : 'A'}${signature?.slice(1)}`;
+  const forged = await cashier.request('/api/v1/orders/lookup', {
+    method: 'POST',
+    body: { pickupToken: tampered },
+  });
+  check('a code with one character changed is refused as a bad code', forged.status === 422, {
+    status: forged.status,
+    error: forged.error,
+  });
 
-    /*
-     * Both credentials, after collection, and both are the same answer. Neither can
-     * release the parcel a second time, because the code is minted only while an
-     * order is waiting and the lookup filters on that status either way. The PIN
-     * stays on the row as the record of what was issued — it is inert, and
-     * `allocatePickupPin` only ever worries about PINs on parcels still on the shelf.
-     */
-    const codeAgain = await cashier.request('/api/v1/orders/lookup', {
-      method: 'POST',
-      body: { pickupToken: shownCode },
-    });
-    check('a code cannot collect the same parcel twice', codeAgain.status === 404, codeAgain.status);
+  const openShift = await cashier.call<{ shift: { id: number; status: string } | null }>(
+    '/api/v1/shifts/current',
+  );
+  const handover = await cashier.call<OrderDto>(`/api/v1/orders/${placed.orderId}/complete`, {
+    method: 'POST',
+    body: {
+      shiftId: openShift.shift?.id,
+      settlement: { cash: placed.subtotalThb, receivedCash: placed.subtotalThb },
+    },
+  });
+  check('the collection settles and closes the bill', handover.status === 'completed', handover);
+  check(
+    'the customer pays the price agreed when they ordered',
+    handover.finalAmountThb === placed.subtotalThb,
+    `${handover.finalAmountThb} vs ${placed.subtotalThb}`,
+  );
+  /*
+   * Read off the document rather than off the response, because the document is
+   * what the customer leaves with — and because this is the tax that was *frozen*
+   * at handover. The order was placed at a price with no tax on it at all; the
+   * handover is the moment the money and the tax both become real.
+   */
+  const handoverReceipt = await cashier.call<{
+    receipt: { receiptNumber: string | null; netThb: number; vatThb: number };
+  }>(`/api/v1/orders/${placed.orderId}/receipt`);
+  check(
+    'the tax is worked out at handover, not at placement',
+    handoverReceipt.receipt.vatThb > 0 &&
+      handoverReceipt.receipt.netThb + handoverReceipt.receipt.vatThb === placed.subtotalThb,
+    handoverReceipt.receipt,
+  );
+  /*
+   * Gapless means *no number is skipped*, not that this happens to be the
+   * second receipt of the run: the journey now rings up more bills before the
+   * parcel is collected, so the expectation is derived from the last one
+   * issued rather than hard-coded.
+   */
+  const lastReceiptNumber = pair.receiptNumber ?? '';
+  const expectedReceiptNumber = lastReceiptNumber.replace(/(\d+)$/, (digits) =>
+    String(Number(digits) + 1).padStart(digits.length, '0'),
+  );
+  check(
+    'and it takes the next number in the same gapless series',
+    expectedReceiptNumber !== '' &&
+      handoverReceipt.receipt.receiptNumber === expectedReceiptNumber,
+    `${handoverReceipt.receipt.receiptNumber} vs ${expectedReceiptNumber}`,
+  );
 
-    const pinAgain = await cashier.request('/api/v1/orders/lookup', {
-      method: 'POST',
-      body: { pin: packed.pickupPin },
-    });
-    check('nor can the PIN it was packed with', pinAgain.status === 404, pinAgain.status);
+  const afterPreOrder = (
+    await admin.call<ProductDto[]>(`/api/v1/products?barcode=${COFFEE.barcode}`)
+  )[0];
+  check(
+    'the two units leave the shelf when the parcel does',
+    afterPreOrder?.stockQty === (beforePreOrder?.stockQty ?? 0) - 2 &&
+      afterPreOrder?.availableQty === afterPreOrder?.stockQty,
+    `${beforePreOrder?.stockQty}/${beforePreOrder?.availableQty} → ${afterPreOrder?.stockQty}/${afterPreOrder?.availableQty}`,
+  );
 
-    const settledRow = (await member.call<OrderBoardRowDto[]>('/api/v1/orders')).find(
-      (row) => row.orderNumber === placed.orderNumber,
-    );
-    check('the customer sees their own order settled', settledRow?.status === 'completed', settledRow?.status);
-    check(
-      'and the code is gone from the screen once the parcel is',
-      settledRow?.pickupToken === null,
-      settledRow?.pickupToken,
-    );
-  }
+  /*
+   * Both credentials, after collection, and both are the same answer. Neither can
+   * release the parcel a second time, because the code is minted only while an
+   * order is waiting and the lookup filters on that status either way. The PIN
+   * stays on the row as the record of what was issued — it is inert, and
+   * `allocatePickupPin` only ever worries about PINs on parcels still on the shelf.
+   */
+  const codeAgain = await cashier.request('/api/v1/orders/lookup', {
+    method: 'POST',
+    body: { pickupToken: shownCode },
+  });
+  check('a code cannot collect the same parcel twice', codeAgain.status === 404, codeAgain.status);
+
+  const pinAgain = await cashier.request('/api/v1/orders/lookup', {
+    method: 'POST',
+    body: { pin: packed.pickupPin },
+  });
+  check('nor can the PIN it was packed with', pinAgain.status === 404, pinAgain.status);
+
+  const settledRow = (await member.call<OrderBoardRowDto[]>('/api/v1/orders')).find(
+    (row) => row.orderNumber === placed.orderNumber,
+  );
+  check('the customer sees their own order settled', settledRow?.status === 'completed', settledRow?.status);
+  check(
+    'and the code is gone from the screen once the parcel is',
+    settledRow?.pickupToken === null,
+    settledRow?.pickupToken,
+  );
 
   /* ---------------- 12. the shop hears about it without watching a screen */
   section('12. A message that leaves the building');

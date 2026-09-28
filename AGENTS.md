@@ -42,7 +42,7 @@ Three authenticated areas and three public surfaces:
 | `npm run verify` | `typecheck` → `ui:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
-| `npm run route:audit` | Builds, serves, and checks that every one of the 16 screens renders a page whose CSS defines every class on it. | Postgres |
+| `npm run route:audit` | Builds, serves, and checks that every one of the 17 screens renders a page whose CSS defines every class on it. | Postgres |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
 | `npm run brand:icons` | Rasterises the mark into the app icons. `-- --preview` prints them as text. | — |
 | `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
@@ -163,6 +163,12 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
 - **`CHECK ((direction = 'refund') = (credit_note_id IS NOT NULL))` on
   `payments`** (repeated here because it is the one that reads oddly): a refund
   leg must name a credit note, and a sale leg must not.
+- **`users.phone` is unique across every role, and normalised before it is
+  compared** (`src/lib/phone.ts`). A customer account cannot take a cashier's
+  number, and `080-000-0002` and `0800000002` are one account — which is what keeps
+  the till's phone lookup working. Role is decided by the *surface* that writes the
+  row (`members.ts`, `staff.ts`), never by a request body, and each refuses the
+  other's accounts.
 - **The rate limiter's buckets live in the process, not in a table**
   (`src/lib/rate-limit.ts`), so a restart forgets them and a second process would
   be a second limiter. The policy is pure (`rate-limit-policy.ts`) and keyed by the
@@ -217,7 +223,7 @@ This has bitten every round of UI verification. In order of preference:
 2. **The sandboxed browser may not reach the host at all** — loopback, the LAN
    IP, the Tailscale IP and `host.docker.internal` can all fail with
    `chrome-error` while the public internet loads fine. When that happens, run
-   `npm run route:audit`: it fetches each of the sixteen routes from the built
+   `npm run route:audit`: it fetches each of the seventeen routes from the built
    server, collects the stylesheets each one links, and asserts that every class
    in the HTML is defined in that CSS. Do not re-write that check by hand — the
    first hand-written version is what caught the vendored theme's Google Fonts
@@ -265,9 +271,9 @@ from the shop's own bank notification with
 no payment provider (ADR 0005), a pre-order is handed over with either a scanned QR
 or the PIN beside it (ADR 0006), and the messages that used to need somebody
 watching a screen are queued with the fact that produced them and sent by a worker
-the shop runs (ADR 0007). All sixteen routes are on `src/components/ds/`,
+the shop runs (ADR 0007). All seventeen routes are on `src/components/ds/`,
 the vendored Hope UI theme is deleted, `ui:audit` keeps it that way, `route:audit`
-walks all sixteen screens, and `acceptance` drives the renter journey **including a
+walks all seventeen screens, and `acceptance` drives the renter journey **including a
 refund, a machine-confirmed transfer and a pre-order collected by code** — all in
 CI. The test count lives in `README.md` and in the `verify` output; do not quote it
 from here, it drifts.
@@ -286,23 +292,21 @@ versions type-check and both refuse the request; only one is readable at a count
 
 Open threads, roughly in the order worth doing:
 
-0. **Nothing can create a member.** `/api/v1/members` is a read-only lookup and
-   the staff screen makes only employees and admins, so a freshly installed shop
-   has nobody who can place a pre-order — the one flow that `requireRole(['member'])`
-   gates, and the one the pickup code above exists to collect. Found by writing the
-   acceptance leg, which has to insert the customer with SQL to get started
-   (gap analysis §4.3a). Small, and everything member-facing is behind it.
 1. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-2. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
+2. **A cashier-side "add customer".** Enrolling one works (ADR 0010) but only from
+   the back office, while the counter is where customers actually ask. That is a POS
+   screen decision — does it interrupt the basket, who types the temporary password
+   — and the API is already there behind an admin-only check.
+3. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
    not. A LINE push needs a LINE user id, this system stores only phone numbers,
    and asking members for one is a consent decision before it is a schema change.
    Until then `line` means the shop's own group, and customers get SMS or a
    webhook.
-3. **A `/design` reference route** that renders every primitive with its tokens,
+4. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
-Known product gaps are listed at the end of `README.md` (no way to create a member,
-overtime approval, LINE addresses for customers, multiple branches, product images,
-RTL, object storage).
+Known product gaps are listed at the end of `README.md` (a counter-side customer
+form, overtime approval, LINE addresses for customers, multiple branches, product
+images, RTL, object storage).

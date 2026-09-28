@@ -177,16 +177,25 @@ underneath it for the phone that has died. The till's one handover box takes
 either — it routes on the shape of what arrives (`src/lib/pickup-scan.ts`) — and
 the collection board seen by the queue deliberately carries neither.
 
-### 4.3a A shop cannot create a customer
+### 4.3a A shop cannot create a customer — closed by ADR 0010
 
-Found while wiring the acceptance run against §4.3, and worth stating plainly:
-`/api/v1/members` is read-only and `/api/v1/staff` only makes employees and
-admins, so a freshly installed shop has **no way to create a member** — and a
-pre-order requires `requireRole(['member'])`. SRS §2 is a member-facing ordering
-path, so this blocks the feature it is built for. Shape: member self-registration
-(phone + OTP or PIN) or a till-side "add customer" form, plus the loyalty points
-already stored on `users`. Small, and it is now the first thing standing between a
-new renter and their own pre-order screen.
+Found while wiring the acceptance run against §4.3, and it was the sharpest kind of
+hole: `/api/v1/members` was a read-only lookup and `/api/v1/staff` made only
+employees and admins, so a freshly installed shop had **no way to create a member** —
+while a pre-order requires `requireRole(['member'])`. SRS §2 is a member-facing
+ordering path, so the absence blocked the feature it existed for, and the only
+workaround was a developer running SQL.
+
+Closed by `/admin/members` and `POST /api/v1/members` (ADR 0010): a manager types a
+name, a phone number and a temporary password, and the customer signs in with it.
+What it deliberately did *not* take is the branch this section first suggested —
+member self-registration with an OTP — because that needs a messaging account, a
+consent story and an unpaid attacker's playground of fake accounts, while a shop that
+already knows the customer can hand them a credential in ten seconds.
+
+The remaining gap is the *counter*: enrolling a customer is back-office only, and the
+till is where shops actually do it. That is a POS screen decision (§4.4's surface),
+not a missing API — `POST /api/v1/members` exists and is admin-only.
 
 ### 4.4 A till that survives a flaky connection — operational risk
 
@@ -241,9 +250,11 @@ Stated here rather than implied anywhere above:
    Messages are written with the fact that produced them and sent by a worker the
    shop runs, so half of the pre-order feature — "the customer finds out" — no
    longer depends on somebody looking at a screen.
-3. ~~**Pickup QR** (§4.3)~~ — **done**, ADR 0006. What it surfaced is now the
-   urgent item: **a shop cannot create a member** (§4.3a), and without one there
-   is nobody who can place the pre-order the QR collects.
+3. ~~**Pickup QR** (§4.3)~~ — **done**, ADR 0006, and the gap it surfaced is closed
+   too: **a shop can create a member** (§4.3a, ADR 0010), so the pre-order the QR
+   collects can actually be placed by somebody the shop enrolled. What is left of
+   that thread is the counter-side form, which is a POS screen rather than a
+   missing capability.
 
 **Then the things that keep a growing shop:**
 

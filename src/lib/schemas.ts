@@ -162,6 +162,34 @@ export const staffUpdateSchema = z.object({
   password: z.string().min(8, 'A password must be at least 8 characters').max(72).optional(),
 });
 
+// ------------------------------------------------ customers (ADR 0010)
+
+/**
+ * Creating a customer at the counter.
+ *
+ * No `role`, deliberately: there is no shape of this request that should produce
+ * anything but a member, and a field the server ignores is a field somebody will
+ * eventually believe.
+ */
+export const memberCreateSchema = z.object({
+  fullName: z.string().trim().min(1, 'Enter a name').max(100),
+  phone: z.string().trim().min(1, 'Enter a phone number').max(20),
+  email: optionalEmail,
+  password: z.string().min(8, 'A password must be at least 8 characters').max(72),
+});
+
+/**
+ * Editing one. Every field is optional because the screen patches one thing at a
+ * time, and an absent password means "leave it alone" rather than "blank it".
+ */
+export const memberUpdateSchema = z.object({
+  fullName: z.string().trim().min(1).max(100).optional(),
+  phone: z.string().trim().min(1).max(20).optional(),
+  email: optionalEmail,
+  isActive: z.boolean().optional(),
+  password: z.string().min(8, 'A password must be at least 8 characters').max(72).optional(),
+});
+
 /**
  * First-run setup.
  *

@@ -11,9 +11,10 @@
 import { prisma } from './db';
 import { ConflictError } from './errors';
 import { hashPassword } from './password';
+import { normalisePhone } from './phone';
 import { SHOP_ROW_ID, shopColumns, toShopView, type ShopSettingsInput } from './shop';
 import type { ShopView } from './shop-view';
-import { normalisePhone, toStaffMember, type StaffMember } from './staff';
+import { toStaffMember, type StaffMember } from './staff';
 
 export interface SystemSetupInput {
   shop: ShopSettingsInput;

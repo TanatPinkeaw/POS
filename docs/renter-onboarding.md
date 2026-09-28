@@ -117,6 +117,7 @@ email in this system; recovery is a SQL statement (see §8).
 | Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Tick the lines coming back and how many of each — or leave it blank to hand the whole bill back. The credit note itemises exactly what it reverses, and the customer can come back later for the rest. Always needs a supervisor PIN, even for the owner. |
 | Reports | `/admin/reports` | Four Excel workbooks, per date range. |
 | Roster & timesheet | `/admin/schedules` | Roster shifts per employee per day; the timesheet shows lateness and overtime. |
+| Enrol a customer | `/admin/members` | Name, phone number and a temporary password you read to them. The phone number is what they sign in with, so ask before you type — and it must not be one a staff account already uses. |
 | Check what happened | `/admin/audit` | Every gated action, newest first: who was at the till, whose PIN approved it, the amounts and the reasons. Nothing here can be edited or deleted, including by us — filter by action or by person. |
 
 ---
@@ -250,10 +251,9 @@ Recorded here so nobody discovers it during service:
 
 - No way to *send* a refund automatically — cash goes back out of an open drawer,
   or you transfer it yourself from your banking app.
-- **You cannot add a customer.** Staff accounts are created in `/admin/staff`, but
-  there is no screen that creates a *member* — so a new shop has nobody who can
-  place a pre-order until members are created for it. Ask us to do it directly, or
-  wait for the member sign-up screen.
+- You cannot add a customer *from the till*: enrolling a member is a manager's job in
+  `/admin/members`. The customer is created with a temporary password you read out to
+  them, and they change it themselves later.
 - No customer-facing online ordering — members can pre-order from inside the app.
 - Notifications are off until you configure a channel (§6.2), and a LINE channel
   reaches the shop's own group only — not a customer's phone.

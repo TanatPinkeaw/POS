@@ -5,14 +5,14 @@
  * and that the walk covers every page file in `src/app`. This is the part that
  * cannot be proven from a string: build the app, serve the production build
  * against a schema that has just been set up the way a renter would set it up,
- * open all sixteen screens with the session each one needs, and check the CSS
+ * open all seventeen screens with the session each one needs, and check the CSS
  * that came back actually defines the markup.
  *
  * Why it is worth a whole script rather than six assertions in `acceptance.ts`:
  * the failure it catches is invisible to every other check. `acceptance` drives
  * the API and never reads a byte of HTML, so a screen whose module was renamed,
  * whose stylesheet was never imported, or that quietly began fetching a font
- * from a CDN, passes all 48 of its checks and ships unstyled. That is not a
+ * from a CDN, passes all 133 of its checks and ships unstyled. That is not a
  * thought experiment — the theme deletion left exactly such a bug behind, and it
  * was found by doing this by hand.
  *
@@ -39,7 +39,6 @@ import {
   type RouteSession,
   type RouteSpec,
 } from '../src/lib/route-audit';
-import { hashPassword } from '../src/lib/password';
 
 import {
   Session,
@@ -47,7 +46,6 @@ import {
   freePort,
   loadEnv,
   resetScratchSchema,
-  scratchClient,
   scratchSource,
   scratchUrl,
   shell,
@@ -76,14 +74,12 @@ const ADMIN = { fullName: 'ผู้จัดการ เหลี่ยมน�
 const CASHIER = { fullName: 'มาลี เหลี่ยมนอก', phone: '0800000401', password: 'route-cashier-1' };
 
 /**
- * The member is the one account with no API surface that creates it.
+ * The customer, enrolled through `POST /api/v1/members` like any other.
  *
- * Staff accounts are made by `POST /api/v1/staff`, which deliberately manages
- * only employees and admins — a shop's customers are not something an admin
- * creates. So this row is written directly, with the application's own hash
- * function, because a member session is the only honest way to open `/shop/*`:
- * those screens ask who is signed in, and an employee's answer is not a
- * customer's.
+ * A member session is the only honest way to open `/shop/*` — those screens ask
+ * who is signed in, and an employee's answer is not a customer's — and until ADR
+ * 0010 the only way to get one was a SQL insert, which is why the member area used
+ * to be reachable only on a deployment somebody had reached into.
  */
 const MEMBER = { fullName: 'สมชาย สมาชิก', phone: '0800000402', password: 'route-member-1' };
 
@@ -111,8 +107,8 @@ interface Fetched {
  * Fetches a page, following redirects by hand.
  *
  * By hand because the walk has to know *where* a request ended up: fifteen of
- * these sixteen paths redirect to `/login` when handed no session, so a check
- * that only looked at the status code would call the login page sixteen
+ * these seventeen paths redirect to `/login` when handed no session, so a check
+ * that only looked at the status code would call the login page seventeen
  * different screens. `redirect: 'follow'` would hide the chain and
  * `redirect: 'error'` would hide the page.
  */
@@ -330,7 +326,7 @@ async function main(): Promise<void> {
 }
 
 /**
- * Creates everything the sixteen screens need to render *with content*.
+ * Creates everything the seventeen screens need to render *with content*.
  *
  * Through the API wherever an API exists, because that is the path a renter
  * takes and it keeps this script from depending on internals. The two things it
@@ -365,17 +361,13 @@ async function bootstrap(scratch: string): Promise<Record<RouteSession, string>>
     body: { fullName: CASHIER.fullName, phone: CASHIER.phone, role: 'employee', password: CASHIER.password },
   });
 
-  const client = await scratchClient(scratch);
-  try {
-    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
-    await client.query(
-      `INSERT INTO "users" ("full_name", "phone", "password_hash", "role", "is_active")
-       VALUES ($1, $2, $3, 'member', true)`,
-      [MEMBER.fullName, MEMBER.phone, await hashPassword(MEMBER.password)],
-    );
-  } finally {
-    await client.end();
-  }
+  // The customer is enrolled the way the shop enrolls one (ADR 0010). This used to
+  // be a SQL insert, because no route created customers — which is exactly the gap
+  // that made the member area unreachable on a fresh install.
+  await admin.call('/api/v1/members', {
+    method: 'POST',
+    body: { fullName: MEMBER.fullName, phone: MEMBER.phone, password: MEMBER.password },
+  });
 
   await admin.postForm('/api/v1/products/import', csvForm(CATALOGUE_CSV, 'commit'));
 

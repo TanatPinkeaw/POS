@@ -14,9 +14,10 @@
  * admin" requests would each observe a surviving admin and both succeed.
  */
 import { prisma } from './db';
-import { ConflictError, NotFoundError, ValidationError } from './errors';
+import { ConflictError, NotFoundError } from './errors';
 import type { Db } from './inventory';
-import { MIN_PASSWORD_LENGTH, hashPassword } from './password';
+import { assertPassword, hashPassword } from './password';
+import { normalisePhone } from './phone';
 import type { Role } from './roles';
 
 /** Roles this surface manages. Members are customers, not staff. */
@@ -252,29 +253,6 @@ export function toStaffMember(user: {
     role: user.role as Role,
     isActive: user.is_active,
   };
-}
-
-/**
- * Strips the punctuation Thai phone numbers are usually written with, so
- * `080-000-0001` and `0800000001` are recognised as the same person.
- */
-export function normalisePhone(phone: string): string {
-  return phone.replace(/[\s()\-.]/g, '');
-}
-
-/** Shared with the schema layer so the rule is stated once. */
-export function passwordProblem(password: string): string | null {
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `A password must be at least ${MIN_PASSWORD_LENGTH} characters`;
-  }
-  return null;
-}
-
-function assertPassword(password: string): void {
-  const problem = passwordProblem(password);
-  if (problem) {
-    throw new ValidationError(problem);
-  }
 }
 
 function blankToNull(value: string | null | undefined): string | null {

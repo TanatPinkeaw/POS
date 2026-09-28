@@ -9,7 +9,7 @@ import { SignJWT } from 'jose';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { ApprovalRejectedError, ForbiddenError, ValidationError } from '@/lib/errors';
-import { passwordProblem } from '@/lib/staff';
+import { passwordProblem } from '@/lib/password';
 import { authSecretKey } from '@/lib/session-token';
 import {
   assertApprovalMatches,

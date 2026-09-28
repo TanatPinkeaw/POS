@@ -6,6 +6,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/dashboard', label: 'แดชบอร์ด', icon: 'dashboard' },
   { href: '/admin/products', label: 'สินค้าและสต็อก', icon: 'box' },
   { href: '/admin/staff', label: 'พนักงาน', icon: 'users' },
+  { href: '/admin/members', label: 'ลูกค้า', icon: 'user' },
   { href: '/admin/schedules', label: 'ตารางงาน & เวลา', icon: 'calendar' },
   { href: '/admin/reports', label: 'รายงาน & ส่งออก', icon: 'chart' },
   { href: '/admin/audit', label: 'ประวัติการใช้งาน', icon: 'eye' },

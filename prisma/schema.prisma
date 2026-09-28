@@ -253,6 +253,21 @@ enum audit_action {
    * down, where five wrong PINs for one admin is the trip.
    */
   rate_limited
+  /**
+   * A customer account was created at the counter, with a password in it.
+   * Audited because a member can reserve stock without paying, which makes an
+   * account worth inventing — and because "who added this customer" is the
+   * question a shop asks when a name it does not recognise turns up with twelve
+   * pending pre-orders.
+   */
+  member_created
+  /**
+   * A customer account had something changed about how it signs in, or whether it
+   * can: the phone number, the email, the password, or the account being closed.
+   * Not a rename — the trail is for what a later reader needs to find, and every
+   * corrected spelling is not one of those.
+   */
+  member_updated
 }
 
 // ---------------------------------------------------------------- users

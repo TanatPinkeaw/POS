@@ -46,9 +46,9 @@ export interface RouteSpec {
    * The path the request must end on — the path itself for a screen that just
    * renders, and the redirect target for one that does not.
    *
-   * This is what stops the audit from passing vacuously: fifteen of these sixteen
+   * This is what stops the audit from passing vacuously: sixteen of these seventeen
    * screens redirect to `/login` when they are handed no session, so "it
-   * answered 200" would otherwise mean "the login page is styled" sixteen times
+   * answered 200" would otherwise mean "the login page is styled" seventeen times
    * over. Pinning the landing path also makes the table a live assertion about
    * `roles.ts` and the proxy — a front door that sends a manager to the till
    * fails here rather than passing as a styled page.
@@ -73,6 +73,7 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/display', area: 'public', session: 'none', landsOn: '/display', label: 'the customer display' },
   { path: '/admin/dashboard', area: 'admin', session: 'admin', landsOn: '/admin/dashboard', label: 'the manager dashboard' },
   { path: '/admin/products', area: 'admin', session: 'admin', landsOn: '/admin/products', label: 'the catalogue' },
+  { path: '/admin/members', area: 'admin', session: 'admin', landsOn: '/admin/members', label: 'the customers' },
   { path: '/admin/audit', area: 'admin', session: 'admin', landsOn: '/admin/audit', label: 'the audit trail' },
   { path: '/admin/reports', area: 'admin', session: 'admin', landsOn: '/admin/reports', label: 'the reports' },
   { path: '/admin/schedules', area: 'admin', session: 'admin', landsOn: '/admin/schedules', label: 'the roster' },
@@ -85,7 +86,7 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/shop/orders', area: 'shop', session: 'member', landsOn: '/shop/orders', label: 'the member orders' },
 ];
 
-/** The distinct paths in the walk — what "sixteen routes" means. */
+/** The distinct paths in the walk — what "seventeen routes" means. */
 export function routePaths(walk: readonly RouteSpec[] = ROUTE_WALK): string[] {
   return [...new Set(walk.map((entry) => entry.path))];
 }

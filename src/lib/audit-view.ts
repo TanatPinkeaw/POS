@@ -21,7 +21,9 @@ export type AuditAction =
   | 'pin_locked'
   | 'display_paired'
   | 'display_revoked'
-  | 'rate_limited';
+  | 'rate_limited'
+  | 'member_created'
+  | 'member_updated';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -36,6 +38,8 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'display_paired',
   'display_revoked',
   'rate_limited',
+  'member_created',
+  'member_updated',
 ];
 
 /**
@@ -58,6 +62,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   display_paired: 'เพิ่มจอลูกค้า',
   display_revoked: 'ยกเลิกจอลูกค้า',
   rate_limited: 'ถูกรับจำกัดความถี่ (พยายามซ้ำหลายครั้ง)',
+  member_created: 'เพิ่มบัญชีลูกค้า (สมาชิก)',
+  member_updated: 'แก้ข้อมูลบัญชีลูกค้า',
 };
 
 /**
@@ -93,6 +99,10 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   // Alarming, but not the same as money moving: nobody got in and nothing left
   // the drawer, so it is the row an owner reads and then goes looking.
   rate_limited: 'danger',
+  // Routine bookkeeping rather than a problem — a shop adds customers every day.
+  member_created: 'neutral',
+  // Worth a second look: something about how the account signs in changed.
+  member_updated: 'info',
 };
 
 /**
@@ -164,6 +174,28 @@ export function auditTargetLabel(row: AuditRow): string {
         return `${policy} · ${address}`;
       }
       return policy ?? 'ระบบจำกัดความถี่';
+    }
+    case 'member_created':
+      return typeof row.detail?.phone === 'string' ? `เบอร์ ${row.detail.phone}` : 'บัญชีลูกค้า';
+    case 'member_updated': {
+      /*
+       * The fields that changed, in the shop's own words. The phone number is
+       * spelled out with what it *was* when it moved, because that is the part a
+       * person searching for a customer needs to see.
+       */
+      const fields = Array.isArray(row.detail?.fields) ? (row.detail.fields as unknown[]) : [];
+      const labels: Record<string, string> = {
+        phone: 'เบอร์โทร',
+        email: 'อีเมล',
+        active: 'สถานะบัญชี',
+        password: 'รหัสผ่าน',
+      };
+      const named = fields
+        .filter((field): field is string => typeof field === 'string')
+        .map((field) => labels[field] ?? field);
+      const previous =
+        typeof row.detail?.previousPhone === 'string' ? ` (เดิม ${row.detail.previousPhone})` : '';
+      return named.length > 0 ? `${named.join(', ')}${previous}` : 'แก้ข้อมูลลูกค้า';
     }
     default:
       return row.targetId ?? '';
