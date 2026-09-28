@@ -410,6 +410,7 @@ export const ModelName = {
   order_items: 'order_items',
   payments: 'payments',
   credit_notes: 'credit_notes',
+  credit_note_items: 'credit_note_items',
   payment_intents: 'payment_intents',
   inbound_payments: 'inbound_payments',
   notifications: 'notifications',
@@ -430,7 +431,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
+    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1396,6 +1397,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    credit_note_items: {
+      payload: Prisma.$credit_note_itemsPayload<ExtArgs>
+      fields: Prisma.credit_note_itemsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.credit_note_itemsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.credit_note_itemsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>
+        }
+        findFirst: {
+          args: Prisma.credit_note_itemsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.credit_note_itemsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>
+        }
+        findMany: {
+          args: Prisma.credit_note_itemsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>[]
+        }
+        create: {
+          args: Prisma.credit_note_itemsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>
+        }
+        createMany: {
+          args: Prisma.credit_note_itemsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.credit_note_itemsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>[]
+        }
+        delete: {
+          args: Prisma.credit_note_itemsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>
+        }
+        update: {
+          args: Prisma.credit_note_itemsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>
+        }
+        deleteMany: {
+          args: Prisma.credit_note_itemsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.credit_note_itemsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.credit_note_itemsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>[]
+        }
+        upsert: {
+          args: Prisma.credit_note_itemsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$credit_note_itemsPayload>
+        }
+        aggregate: {
+          args: Prisma.Credit_note_itemsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCredit_note_items>
+        }
+        groupBy: {
+          args: Prisma.credit_note_itemsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Credit_note_itemsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.credit_note_itemsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Credit_note_itemsCountAggregateOutputType> | number
+        }
+      }
+    }
     payment_intents: {
       payload: Prisma.$payment_intentsPayload<ExtArgs>
       fields: Prisma.payment_intentsFieldRefs
@@ -2013,9 +2088,12 @@ export const Credit_notesScalarFieldEnum = {
   id: 'id',
   document_number: 'document_number',
   order_id: 'order_id',
+  sequence: 'sequence',
   shift_id: 'shift_id',
   reason: 'reason',
   refund_method: 'refund_method',
+  gross_amount: 'gross_amount',
+  discount_amount: 'discount_amount',
   final_amount: 'final_amount',
   net_amount: 'net_amount',
   vat_amount: 'vat_amount',
@@ -2028,6 +2106,18 @@ export const Credit_notesScalarFieldEnum = {
 } as const
 
 export type Credit_notesScalarFieldEnum = (typeof Credit_notesScalarFieldEnum)[keyof typeof Credit_notesScalarFieldEnum]
+
+
+export const Credit_note_itemsScalarFieldEnum = {
+  id: 'id',
+  credit_note_id: 'credit_note_id',
+  order_item_id: 'order_item_id',
+  quantity: 'quantity',
+  unit_price: 'unit_price',
+  line_total: 'line_total'
+} as const
+
+export type Credit_note_itemsScalarFieldEnum = (typeof Credit_note_itemsScalarFieldEnum)[keyof typeof Credit_note_itemsScalarFieldEnum]
 
 
 export const Payment_intentsScalarFieldEnum = {
@@ -2639,6 +2729,7 @@ export type GlobalOmitConfig = {
   order_items?: Prisma.order_itemsOmit
   payments?: Prisma.paymentsOmit
   credit_notes?: Prisma.credit_notesOmit
+  credit_note_items?: Prisma.credit_note_itemsOmit
   payment_intents?: Prisma.payment_intentsOmit
   inbound_payments?: Prisma.inbound_paymentsOmit
   notifications?: Prisma.notificationsOmit

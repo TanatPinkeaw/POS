@@ -1,0 +1,60 @@
+/*
+ * The refund sheet's line list.
+ *
+ * The stepper is the part that matters: a cashier holding a bag in one hand and a
+ * phone in the other has to change a quantity without aiming, so the two buttons are
+ * large enough to hit with a thumb and the count sits between them where the eye
+ * already is.
+ */
+
+.lines {
+  display: grid;
+  gap: var(--ln-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-2) 0;
+  border-bottom: 1px solid var(--ln-border-subtle);
+}
+
+.line:last-child {
+  border-bottom: none;
+}
+
+/* A line with nothing left to return reads as settled rather than selectable. */
+.line[data-exhausted='true'] {
+  color: var(--ln-text-muted);
+}
+
+.meta {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-1);
+}
+
+.count {
+  min-width: 3.5rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding-top: var(--ln-space-2);
+  border-top: 1px solid var(--ln-border);
+}

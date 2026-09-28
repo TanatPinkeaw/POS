@@ -51,7 +51,7 @@ that does not want its sales data in somebody else's cloud).
 | Receipt print and reprint | ✅ | ✅ `[C]` | reprint reads the order's own snapshot columns |
 | **VAT on the receipt** | ✅ | `[U]` | derived out of the shelf price, rate snapshotted per sale |
 | **Gapless receipt numbering** | ✅ | `[U]` | column bumped in-transaction, so a rollback cannot burn a number |
-| **Void / refund / credit note** | ✅ | ✅ `[C]` | whole-bill refund + gapless `CN` series; partial/per-line returns still absent |
+| **Void / refund / credit note** | ✅ | ✅ `[C]` | whole-bill and per-line refunds + gapless `CN` series; no free-form amount |
 | QR payment generate + verify at the till | ✅ | ✅ `[C]` | amount locked into the QR, and the bill closes itself from the shop's own bank notification — no PSP, no per-check fee (ADR 0005). Needs the shop's bank to send notification email |
 | Split bill per seat | ➖ | ✅ `[C]` | a restaurant concept |
 | Loyalty points | ✅ | `[U]` | accrued and redeemed with a ledger |
@@ -146,10 +146,12 @@ worth recording:
   money back from its banking app would have had a false shortage recorded against
   a cashier who never touched it, so a refund leg may instead carry no `shift_id`
   at all, and the credit note says which of the two happened.
-- **The refund is the whole bill.** Per-line and free-form-amount reversals were
-  the other candidate; they are a bigger feature (the note stops mirroring its
-  invoice and starts itemising a part of it) and are now the head of the gap list
-  in `README.md`.
+- **The refund itemises, and a bill takes several notes.** Per-line and per-quantity
+  reversals land in ADR 0008: the note records the lines going back, the closing note
+  is defined by subtraction so the notes foot to the invoice to the satang, and a
+  partly credited invoice keeps its own totals. What is still absent is a **free-form
+  amount** — a refund that names no line — and that is deliberate rather than pending,
+  because an amount matching no line is a document that proves nothing.
 
 Remaining, and small: no automatic *outbound* refund, because pushing money back
 needs bank API onboarding rather than code.
@@ -229,9 +231,10 @@ Stated here rather than implied anywhere above:
 
 **Correctness first — this is not discretionary:**
 
-1. ~~**Void / refund + credit notes** (§4.1)~~ — **done**, ADR 0004. The only item
-   on this list where *not* building it means a shop cannot legally trade.
-   **Partial and per-line refunds** are now the top of the correctness list.
+1. ~~**Void / refund + credit notes** (§4.1)~~ — **done**, ADRs 0004 and 0008. The
+   only item on this list where *not* building it means a shop cannot legally
+   trade. Per-line refunds closed the last correctness gap: a customer returning
+   one item out of three is served at the counter.
 2. ~~**Notification outbox with a real channel** (§4.2)~~ — **done**, ADR 0007.
    Messages are written with the fact that produced them and sent by a worker the
    shop runs, so half of the pre-order feature — "the customer finds out" — no

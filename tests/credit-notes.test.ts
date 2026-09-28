@@ -141,7 +141,7 @@ describe('refunding a sale', () => {
 
     expect(refund.documentNumber).toMatch(/^CN-\d{4}-000001$/);
 
-    const note = await prisma.credit_notes.findUniqueOrThrow({ where: { order_id: sale.orderId } });
+    const note = await prisma.credit_notes.findFirstOrThrow({ where: { order_id: sale.orderId } });
     expect(note.document_number).toBe(refund.documentNumber);
     expect(note.reason).toBe('คิดเงินผิด');
     expect(note.created_by).toBe(people.employeeId);
@@ -404,7 +404,7 @@ describe('refunding a sale', () => {
     expect(refund.pointsClawedBack).toBe(0);
     expect(refund.pointsForgiven).toBe(101);
 
-    const note = await prisma.credit_notes.findUniqueOrThrow({ where: { order_id: sale.orderId } });
+    const note = await prisma.credit_notes.findFirstOrThrow({ where: { order_id: sale.orderId } });
     expect(note.points_forgiven).toBe(101);
     expect((await prisma.users.findUniqueOrThrow({ where: { id: people.memberId } })).points_balance).toBe(0);
   });

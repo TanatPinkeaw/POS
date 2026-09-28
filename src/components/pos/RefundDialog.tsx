@@ -20,20 +20,39 @@
  *   * **The document is shown, not just announced.** A refund that ends with a
  *     toast leaves the cashier with nothing to hand the customer. The credit note
  *     is fetched and rendered here, printable, immediately after it is issued.
+ *   * **The amount is previewed with the server's own arithmetic.** A customer
+ *     returning one item out of three has to be told what they get back *before*
+ *     the cashier hands it over, and the figure depends on the line's share of the
+ *     order-level discount. So the preview calls the same pure function the
+ *     transaction calls (`refund-plan.ts`) rather than a second implementation
+ *     that could disagree with it at the counter.
  *
  * The whole reversal — stock, points, drawer, audit — happens server-side in one
  * transaction. This component sends one request and believes nothing until it
  * answers.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { Button, InlineNotice, Money, Overlay, SelectField, Stack, TextField, useToast } from '@/components/ds';
+import {
+  Button,
+  InlineNotice,
+  Money,
+  Overlay,
+  Pill,
+  SelectField,
+  Stack,
+  TextField,
+  useToast,
+} from '@/components/ds';
 import { APPROVAL_HEADER } from '@/lib/supervisor-view';
 import { ApiError, apiFetch } from '@/lib/client-api';
 import type { CreditNoteDocument, RefundMethod, RefundSummary } from '@/lib/credit-note-view';
 import { REFUND_METHODS } from '@/lib/credit-note-view';
 import { formatThb } from '@/lib/money';
+import { planRefund, type RefundableLine } from '@/lib/refund-plan';
 import type { ShopView } from '@/lib/shop-view';
+
+import styles from './RefundDialog.module.css';
 
 import { CreditNote } from './CreditNote';
 import { SupervisorApprovalDialog } from './SupervisorApprovalDialog';
@@ -42,10 +61,33 @@ import { useSupervisorApproval } from './useSupervisorApproval';
 export interface RefundTarget {
   orderId: string;
   orderNumber: string;
-  /** What will be handed back, read off the sale. Not editable: full amount only. */
+  /** What will be handed back if nothing is deselected. A starting figure only. */
   amountThb: number;
   /** How many lines go back on the shelf, so the operator knows what to expect. */
   lineCount: number;
+}
+
+/**
+ * The sale, as the refund sheet needs it.
+ *
+ * Fetched here rather than passed in because every caller already has an order id
+ * and only the refund dialog needs the line-level detail — including how much of
+ * each line has already gone back, which is what makes a second visit to the same
+ * bill safe.
+ */
+interface RefundableOrder {
+  orderNumber: string;
+  subtotalThb: number;
+  discountThb: number;
+  finalAmountThb: number;
+  refundedThb: number;
+  items: {
+    id: string;
+    name: string;
+    quantity: number;
+    refundedQuantity: number;
+    totalPrice: number;
+  }[];
 }
 
 interface CreditNotePayload {
@@ -72,6 +114,80 @@ export function RefundDialog({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [document, setDocument] = useState<CreditNotePayload | null>(null);
+  const [order, setOrder] = useState<RefundableOrder | null>(null);
+  /** How many units of each line the cashier is taking back, by order item id. */
+  const [taking, setTaking] = useState<Record<string, number>>({});
+
+  /*
+   * The sale itself, and the default answer: everything that is left. A full refund
+   * is still one button — the per-line steppers only matter to the cashier whose
+   * customer is standing there with two of the three items.
+   */
+  useEffect(() => {
+    let live = true;
+
+    void (async () => {
+      try {
+        const loaded = await apiFetch<RefundableOrder>(`/api/v1/orders/${target.orderId}`);
+        if (!live) {
+          return;
+        }
+        setOrder(loaded);
+        setTaking(
+          Object.fromEntries(
+            loaded.items
+              .map((item) => [item.id, item.quantity - item.refundedQuantity] as const)
+              .filter(([, remaining]) => remaining > 0),
+          ),
+        );
+      } catch (caught) {
+        if (live) {
+          setError(
+            caught instanceof ApiError ? caught.message : 'โหลดรายการของบิลนี้ไม่สำเร็จ',
+          );
+        }
+      }
+    })();
+
+    return () => {
+      live = false;
+    };
+  }, [target.orderId]);
+
+  /*
+   * The preview, computed by the function the server will use. `null` when the
+   * arithmetic refuses the selection — which is the same refusal the transaction
+   * would raise, so the button can be disabled for the same reason.
+   */
+  const preview = useMemo(() => {
+    if (!order) {
+      return null;
+    }
+
+    const lines: RefundableLine[] = order.items.map((item) => ({
+      orderItemId: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      returnedQuantity: item.refundedQuantity,
+      totalPrice: item.totalPrice,
+    }));
+    const requested = Object.entries(taking)
+      .filter(([, quantity]) => quantity > 0)
+      .map(([orderItemId, quantity]) => ({ orderItemId, quantity }));
+
+    try {
+      return planRefund({
+        lines,
+        requested: requested.length === 0 ? null : requested,
+        subtotalThb: order.subtotalThb,
+        discountThb: order.discountThb,
+        finalAmountThb: order.finalAmountThb,
+        alreadyRefundedThb: order.refundedThb,
+      });
+    } catch {
+      return null;
+    }
+  }, [order, taking]);
 
   /*
    * The drawer decides which method is even possible, and asking is cheaper than
@@ -115,7 +231,7 @@ export function RefundDialog({
       const token = await approval.request({
         action: 'refund_order',
         targetId: target.orderId,
-        summary: `คืนเงินบิล ${target.orderNumber} · ${formatThb(target.amountThb)}`,
+        summary: `คืนเงินบิล ${target.orderNumber} · ${formatThb(refundAmountThb)}`,
       });
       if (token === null) {
         // The supervisor walked away, which is a refusal rather than a failure.
@@ -130,6 +246,12 @@ export function RefundDialog({
           reason: reason.trim(),
           refundMethod: method,
           shiftId,
+          /*
+           * Every line, including the ones at zero, because "take back none of
+           * this" is a statement the server can check against what is left while
+           * an omission is not.
+           */
+          lines: takingLines,
         }),
       });
 
@@ -164,6 +286,15 @@ export function RefundDialog({
 
   const noDrawer = shiftId === null;
 
+  /** What the selected lines come to, or the sale's whole remaining total. */
+  const refundAmountThb = preview?.refundThb ?? target.amountThb;
+  const takingLines = Object.entries(taking).map(([orderItemId, quantity]) => ({
+    orderItemId,
+    quantity,
+  }));
+  const returnedUnits = preview?.returnedUnits ?? 0;
+  const isPartial = preview !== null && !preview.closes;
+
   return (
     <>
       <Overlay
@@ -176,24 +307,98 @@ export function RefundDialog({
             <Button variant="secondary" onClick={onClose} disabled={busy}>
               ยกเลิก
             </Button>
-            <Button variant="danger" loading={busy} onClick={() => void submit()}>
-              ยืนยันคืนเงิน {formatThb(target.amountThb)}
+            <Button
+              variant="danger"
+              loading={busy}
+              disabled={preview === null}
+              onClick={() => void submit()}
+            >
+              ยืนยันคืนเงิน {formatThb(refundAmountThb)}
+              {returnedUnits > 0 ? ` · ${returnedUnits} ชิ้น` : ''}
             </Button>
           </>
         }
       >
         <Stack gap="md">
-          <InlineNotice tone="warning" title="การคืนเงินย้อนกลับทั้งบิล">
-            ระบบจะคืนสินค้าทั้ง {target.lineCount} รายการเข้าสต็อก
-            และออกใบลดหนี้ให้บิลนี้ทั้งจำนวน — คืนบางรายการยังทำไม่ได้
-          </InlineNotice>
+          {order && order.refundedThb > 0 ? (
+            <InlineNotice tone="info" title="บิลนี้เคยคืนเงินไปแล้วบางส่วน">
+              คืนไปแล้ว {formatThb(order.refundedThb)} — เลือกได้เฉพาะส่วนที่เหลือ
+            </InlineNotice>
+          ) : null}
 
-          <div>
-            <span>ยอดที่คืน</span>
+          {/*
+            The lines, with what is left of each. Steppers rather than checkboxes
+            because a line can come back in part: three sold, one returned, two to
+            go. The defaults are everything outstanding, so a full refund — the
+            common case — is still a single button.
+          */}
+          {order ? (
+            <ul className={styles.lines}>
+              {order.items.map((item) => {
+                const remaining = item.quantity - item.refundedQuantity;
+                const chosen = taking[item.id] ?? 0;
+
+                return (
+                  <li className={styles.line} key={item.id} data-exhausted={remaining === 0}>
+                    <span className="ln-break">
+                      {item.name}
+                      {item.refundedQuantity > 0 ? (
+                        <span className={styles.meta}>
+                          {' '}
+                          · คืนไปแล้ว {item.refundedQuantity}/{item.quantity}
+                        </span>
+                      ) : null}
+                    </span>
+
+                    {remaining === 0 ? (
+                      <Pill tone="neutral">คืนครบแล้ว</Pill>
+                    ) : (
+                      <span className={styles.stepper}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`ลดจำนวน ${item.name}`}
+                          disabled={chosen <= 0}
+                          onClick={() =>
+                            setTaking((current) => ({ ...current, [item.id]: chosen - 1 }))
+                          }
+                        >
+                          −
+                        </Button>
+                        <span className={styles.count}>
+                          {chosen}/{remaining}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label={`เพิ่มจำนวน ${item.name}`}
+                          disabled={chosen >= remaining}
+                          onClick={() =>
+                            setTaking((current) => ({ ...current, [item.id]: chosen + 1 }))
+                          }
+                        >
+                          +
+                        </Button>
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+
+          <div className={styles.total}>
+            <span>{isPartial ? 'คืนเงินเฉพาะรายการที่เลือก' : 'คืนเงินทั้งบิล'}</span>
             <strong>
-              <Money amount={target.amountThb} />
+              <Money amount={refundAmountThb} size="lg" />
             </strong>
           </div>
+
+          {preview === null ? (
+            <InlineNotice tone="warning">
+              เลือกอย่างน้อยหนึ่งรายการก่อน — ยอดที่คืนต้องมากกว่าศูนย์
+            </InlineNotice>
+          ) : null}
 
           <SelectField
             id="refund-method"

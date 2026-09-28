@@ -138,10 +138,17 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
 - **`CHECK ((direction = 'refund') = (credit_note_id IS NOT NULL))` on
   `payments`** — money cannot leave without a document behind it, and an ordinary
   sale cannot claim a credit note.
-- **`UNIQUE (order_id)` on `credit_notes`** — one credit note per receipt, so a
-  second refund is impossible even when two requests race past `canTransition`.
-  `refunded` is a terminal order status (`src/lib/order-state.ts`), and the only
-  edge into it is `refund` out of `completed`.
+- **`UNIQUE (order_id, sequence)` on `credit_notes`** — a bill takes several notes
+  now (ADR 0008), numbered within it, and `credit_note_items` is unique per line per
+  note so one line cannot be returned twice on one document. `refunded` is a
+  terminal order status (`src/lib/order-state.ts`), and the only edge into it is
+  `refund` out of `completed`; a **partial** refund leaves the bill `completed`.
+- **What a bill still owes is the sum of its notes, never a column.**
+  `credit_notes.gross_amount − discount_amount = final_amount` is a CHECK, the
+  order's own totals are never rewritten, and the note that empties the order takes
+  the remainder (ADR 0008) so the notes foot to the invoice to the satang. The
+  arithmetic is pure and tested in `src/lib/refund-plan.ts`; the till previews with
+  the same function the route writes with.
 - **`inbound_payments` is only half of a transfer.** The other half is the
   `payment_intents` row that closed a bill, and the only way to see the day as a
   whole is to compare them (`src/lib/inbound-reconcile.ts`). A change to either
@@ -243,8 +250,9 @@ both halves SSH again.
 ## Where to pick up
 
 The design-system migration is **finished**, and so is the money work that followed
-it: a paid bill can be reversed with a credit note behind it (ADR 0004), an
-incoming transfer can close its own bill from the shop's own bank notification with
+it: a paid bill can be reversed wholly or one line at a time, with a credit note
+behind every note (ADRs 0004, 0008), an incoming transfer can close its own bill
+from the shop's own bank notification with
 no payment provider (ADR 0005), a pre-order is handed over with either a scanned QR
 or the PIN beside it (ADR 0006), and the messages that used to need somebody
 watching a screen are queued with the fact that produced them and sent by a worker
@@ -275,22 +283,17 @@ Open threads, roughly in the order worth doing:
    gates, and the one the pickup code above exists to collect. Found by writing the
    acceptance leg, which has to insert the customer with SQL to get started
    (gap analysis §4.3a). Small, and everything member-facing is behind it.
-1. **Partial and per-line refunds.** A refund reverses the whole bill today, which
-   is what a tax invoice needs but not what a customer returning one item out of
-   three asks for. The shape is a credit note that itemises the part it reverses
-   rather than mirroring its invoice, and it is the head of the gap list in
-   `README.md`.
-2. **A reconciliation over a range.** The dashboard reconciles today — confirmed
+1. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-3. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
+2. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
    not. A LINE push needs a LINE user id, this system stores only phone numbers,
    and asking members for one is a consent decision before it is a schema change.
    Until then `line` means the shop's own group, and customers get SMS or a
    webhook.
-4. **A `/design` reference route** that renders every primitive with its tokens,
+3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
 Known product gaps are listed at the end of `README.md` (no way to create a member,
-partial refunds, overtime approval, LINE addresses for customers, multiple branches,
-product images, production hardening).
+overtime approval, LINE addresses for customers, multiple branches, product images,
+production hardening).

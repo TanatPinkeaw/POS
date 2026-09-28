@@ -40,7 +40,10 @@ export type AggregateCredit_notes = {
 }
 
 export type Credit_notesAvgAggregateOutputType = {
+  sequence: number | null
   shift_id: number | null
+  gross_amount: runtime.Decimal | null
+  discount_amount: runtime.Decimal | null
   final_amount: runtime.Decimal | null
   net_amount: runtime.Decimal | null
   vat_amount: runtime.Decimal | null
@@ -50,7 +53,10 @@ export type Credit_notesAvgAggregateOutputType = {
 }
 
 export type Credit_notesSumAggregateOutputType = {
+  sequence: number | null
   shift_id: number | null
+  gross_amount: runtime.Decimal | null
+  discount_amount: runtime.Decimal | null
   final_amount: runtime.Decimal | null
   net_amount: runtime.Decimal | null
   vat_amount: runtime.Decimal | null
@@ -63,9 +69,12 @@ export type Credit_notesMinAggregateOutputType = {
   id: string | null
   document_number: string | null
   order_id: string | null
+  sequence: number | null
   shift_id: number | null
   reason: string | null
   refund_method: $Enums.payment_method | null
+  gross_amount: runtime.Decimal | null
+  discount_amount: runtime.Decimal | null
   final_amount: runtime.Decimal | null
   net_amount: runtime.Decimal | null
   vat_amount: runtime.Decimal | null
@@ -81,9 +90,12 @@ export type Credit_notesMaxAggregateOutputType = {
   id: string | null
   document_number: string | null
   order_id: string | null
+  sequence: number | null
   shift_id: number | null
   reason: string | null
   refund_method: $Enums.payment_method | null
+  gross_amount: runtime.Decimal | null
+  discount_amount: runtime.Decimal | null
   final_amount: runtime.Decimal | null
   net_amount: runtime.Decimal | null
   vat_amount: runtime.Decimal | null
@@ -99,9 +111,12 @@ export type Credit_notesCountAggregateOutputType = {
   id: number
   document_number: number
   order_id: number
+  sequence: number
   shift_id: number
   reason: number
   refund_method: number
+  gross_amount: number
+  discount_amount: number
   final_amount: number
   net_amount: number
   vat_amount: number
@@ -116,7 +131,10 @@ export type Credit_notesCountAggregateOutputType = {
 
 
 export type Credit_notesAvgAggregateInputType = {
+  sequence?: true
   shift_id?: true
+  gross_amount?: true
+  discount_amount?: true
   final_amount?: true
   net_amount?: true
   vat_amount?: true
@@ -126,7 +144,10 @@ export type Credit_notesAvgAggregateInputType = {
 }
 
 export type Credit_notesSumAggregateInputType = {
+  sequence?: true
   shift_id?: true
+  gross_amount?: true
+  discount_amount?: true
   final_amount?: true
   net_amount?: true
   vat_amount?: true
@@ -139,9 +160,12 @@ export type Credit_notesMinAggregateInputType = {
   id?: true
   document_number?: true
   order_id?: true
+  sequence?: true
   shift_id?: true
   reason?: true
   refund_method?: true
+  gross_amount?: true
+  discount_amount?: true
   final_amount?: true
   net_amount?: true
   vat_amount?: true
@@ -157,9 +181,12 @@ export type Credit_notesMaxAggregateInputType = {
   id?: true
   document_number?: true
   order_id?: true
+  sequence?: true
   shift_id?: true
   reason?: true
   refund_method?: true
+  gross_amount?: true
+  discount_amount?: true
   final_amount?: true
   net_amount?: true
   vat_amount?: true
@@ -175,9 +202,12 @@ export type Credit_notesCountAggregateInputType = {
   id?: true
   document_number?: true
   order_id?: true
+  sequence?: true
   shift_id?: true
   reason?: true
   refund_method?: true
+  gross_amount?: true
+  discount_amount?: true
   final_amount?: true
   net_amount?: true
   vat_amount?: true
@@ -280,9 +310,12 @@ export type Credit_notesGroupByOutputType = {
   id: string
   document_number: string
   order_id: string
+  sequence: number
   shift_id: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount: runtime.Decimal
+  discount_amount: runtime.Decimal
   final_amount: runtime.Decimal
   net_amount: runtime.Decimal
   vat_amount: runtime.Decimal
@@ -321,9 +354,12 @@ export type credit_notesWhereInput = {
   id?: Prisma.UuidFilter<"credit_notes"> | string
   document_number?: Prisma.StringFilter<"credit_notes"> | string
   order_id?: Prisma.UuidFilter<"credit_notes"> | string
+  sequence?: Prisma.IntFilter<"credit_notes"> | number
   shift_id?: Prisma.IntNullableFilter<"credit_notes"> | number | null
   reason?: Prisma.StringFilter<"credit_notes"> | string
   refund_method?: Prisma.Enumpayment_methodFilter<"credit_notes"> | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -338,15 +374,19 @@ export type credit_notesWhereInput = {
   issuer?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   approver?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   payments?: Prisma.PaymentsListRelationFilter
+  items?: Prisma.Credit_note_itemsListRelationFilter
 }
 
 export type credit_notesOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   document_number?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrderInput | Prisma.SortOrder
   reason?: Prisma.SortOrder
   refund_method?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
@@ -361,18 +401,23 @@ export type credit_notesOrderByWithRelationInput = {
   issuer?: Prisma.usersOrderByWithRelationInput
   approver?: Prisma.usersOrderByWithRelationInput
   payments?: Prisma.paymentsOrderByRelationAggregateInput
+  items?: Prisma.credit_note_itemsOrderByRelationAggregateInput
 }
 
 export type credit_notesWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   document_number?: string
-  order_id?: string
+  order_id_sequence?: Prisma.credit_notesOrder_idSequenceCompoundUniqueInput
   AND?: Prisma.credit_notesWhereInput | Prisma.credit_notesWhereInput[]
   OR?: Prisma.credit_notesWhereInput[]
   NOT?: Prisma.credit_notesWhereInput | Prisma.credit_notesWhereInput[]
+  order_id?: Prisma.UuidFilter<"credit_notes"> | string
+  sequence?: Prisma.IntFilter<"credit_notes"> | number
   shift_id?: Prisma.IntNullableFilter<"credit_notes"> | number | null
   reason?: Prisma.StringFilter<"credit_notes"> | string
   refund_method?: Prisma.Enumpayment_methodFilter<"credit_notes"> | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -387,15 +432,19 @@ export type credit_notesWhereUniqueInput = Prisma.AtLeast<{
   issuer?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   approver?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
   payments?: Prisma.PaymentsListRelationFilter
-}, "id" | "document_number" | "order_id">
+  items?: Prisma.Credit_note_itemsListRelationFilter
+}, "id" | "document_number" | "order_id_sequence">
 
 export type credit_notesOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   document_number?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrderInput | Prisma.SortOrder
   reason?: Prisma.SortOrder
   refund_method?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
@@ -419,9 +468,12 @@ export type credit_notesScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"credit_notes"> | string
   document_number?: Prisma.StringWithAggregatesFilter<"credit_notes"> | string
   order_id?: Prisma.UuidWithAggregatesFilter<"credit_notes"> | string
+  sequence?: Prisma.IntWithAggregatesFilter<"credit_notes"> | number
   shift_id?: Prisma.IntNullableWithAggregatesFilter<"credit_notes"> | number | null
   reason?: Prisma.StringWithAggregatesFilter<"credit_notes"> | string
   refund_method?: Prisma.Enumpayment_methodWithAggregatesFilter<"credit_notes"> | $Enums.payment_method
+  gross_amount?: Prisma.DecimalWithAggregatesFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalWithAggregatesFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalWithAggregatesFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalWithAggregatesFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalWithAggregatesFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -436,8 +488,11 @@ export type credit_notesScalarWhereWithAggregatesInput = {
 export type credit_notesCreateInput = {
   id?: string
   document_number: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -445,20 +500,24 @@ export type credit_notesCreateInput = {
   points_clawed_back?: number
   points_forgiven?: number
   created_at?: Date | string
-  order: Prisma.ordersCreateNestedOneWithoutCredit_noteInput
+  order: Prisma.ordersCreateNestedOneWithoutCredit_notesInput
   shift?: Prisma.cash_shiftsCreateNestedOneWithoutCredit_notesInput
   issuer: Prisma.usersCreateNestedOneWithoutCredit_notes_issuedInput
   approver?: Prisma.usersCreateNestedOneWithoutCredit_notes_approvedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUncheckedCreateInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -469,13 +528,17 @@ export type credit_notesUncheckedCreateInput = {
   authorized_by_user_id?: string | null
   created_at?: Date | string
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -483,20 +546,24 @@ export type credit_notesUpdateInput = {
   points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
   points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_noteNestedInput
+  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_notesNestedInput
   shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
   issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
   approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -507,15 +574,19 @@ export type credit_notesUncheckedUpdateInput = {
   authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesCreateManyInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -530,8 +601,11 @@ export type credit_notesCreateManyInput = {
 export type credit_notesUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -545,9 +619,12 @@ export type credit_notesUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -574,13 +651,21 @@ export type Credit_notesNullableScalarRelationFilter = {
   isNot?: Prisma.credit_notesWhereInput | null
 }
 
+export type credit_notesOrder_idSequenceCompoundUniqueInput = {
+  order_id: string
+  sequence: number
+}
+
 export type credit_notesCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   document_number?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   refund_method?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
@@ -593,7 +678,10 @@ export type credit_notesCountOrderByAggregateInput = {
 }
 
 export type credit_notesAvgOrderByAggregateInput = {
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
@@ -606,9 +694,12 @@ export type credit_notesMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   document_number?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   refund_method?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
@@ -624,9 +715,12 @@ export type credit_notesMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   document_number?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrder
   reason?: Prisma.SortOrder
   refund_method?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
@@ -639,13 +733,21 @@ export type credit_notesMinOrderByAggregateInput = {
 }
 
 export type credit_notesSumOrderByAggregateInput = {
+  sequence?: Prisma.SortOrder
   shift_id?: Prisma.SortOrder
+  gross_amount?: Prisma.SortOrder
+  discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
   vat_rate_used?: Prisma.SortOrder
   points_clawed_back?: Prisma.SortOrder
   points_forgiven?: Prisma.SortOrder
+}
+
+export type Credit_notesScalarRelationFilter = {
+  is?: Prisma.credit_notesWhereInput
+  isNot?: Prisma.credit_notesWhereInput
 }
 
 export type credit_notesCreateNestedManyWithoutIssuerInput = {
@@ -774,36 +876,46 @@ export type credit_notesUncheckedUpdateManyWithoutShiftNestedInput = {
   deleteMany?: Prisma.credit_notesScalarWhereInput | Prisma.credit_notesScalarWhereInput[]
 }
 
-export type credit_notesCreateNestedOneWithoutOrderInput = {
-  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
-  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput
-  connect?: Prisma.credit_notesWhereUniqueInput
+export type credit_notesCreateNestedManyWithoutOrderInput = {
+  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput> | Prisma.credit_notesCreateWithoutOrderInput[] | Prisma.credit_notesUncheckedCreateWithoutOrderInput[]
+  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput | Prisma.credit_notesCreateOrConnectWithoutOrderInput[]
+  createMany?: Prisma.credit_notesCreateManyOrderInputEnvelope
+  connect?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
 }
 
-export type credit_notesUncheckedCreateNestedOneWithoutOrderInput = {
-  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
-  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput
-  connect?: Prisma.credit_notesWhereUniqueInput
+export type credit_notesUncheckedCreateNestedManyWithoutOrderInput = {
+  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput> | Prisma.credit_notesCreateWithoutOrderInput[] | Prisma.credit_notesUncheckedCreateWithoutOrderInput[]
+  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput | Prisma.credit_notesCreateOrConnectWithoutOrderInput[]
+  createMany?: Prisma.credit_notesCreateManyOrderInputEnvelope
+  connect?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
 }
 
-export type credit_notesUpdateOneWithoutOrderNestedInput = {
-  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
-  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput
-  upsert?: Prisma.credit_notesUpsertWithoutOrderInput
-  disconnect?: Prisma.credit_notesWhereInput | boolean
-  delete?: Prisma.credit_notesWhereInput | boolean
-  connect?: Prisma.credit_notesWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.credit_notesUpdateToOneWithWhereWithoutOrderInput, Prisma.credit_notesUpdateWithoutOrderInput>, Prisma.credit_notesUncheckedUpdateWithoutOrderInput>
+export type credit_notesUpdateManyWithoutOrderNestedInput = {
+  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput> | Prisma.credit_notesCreateWithoutOrderInput[] | Prisma.credit_notesUncheckedCreateWithoutOrderInput[]
+  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput | Prisma.credit_notesCreateOrConnectWithoutOrderInput[]
+  upsert?: Prisma.credit_notesUpsertWithWhereUniqueWithoutOrderInput | Prisma.credit_notesUpsertWithWhereUniqueWithoutOrderInput[]
+  createMany?: Prisma.credit_notesCreateManyOrderInputEnvelope
+  set?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  disconnect?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  delete?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  connect?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  update?: Prisma.credit_notesUpdateWithWhereUniqueWithoutOrderInput | Prisma.credit_notesUpdateWithWhereUniqueWithoutOrderInput[]
+  updateMany?: Prisma.credit_notesUpdateManyWithWhereWithoutOrderInput | Prisma.credit_notesUpdateManyWithWhereWithoutOrderInput[]
+  deleteMany?: Prisma.credit_notesScalarWhereInput | Prisma.credit_notesScalarWhereInput[]
 }
 
-export type credit_notesUncheckedUpdateOneWithoutOrderNestedInput = {
-  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
-  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput
-  upsert?: Prisma.credit_notesUpsertWithoutOrderInput
-  disconnect?: Prisma.credit_notesWhereInput | boolean
-  delete?: Prisma.credit_notesWhereInput | boolean
-  connect?: Prisma.credit_notesWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.credit_notesUpdateToOneWithWhereWithoutOrderInput, Prisma.credit_notesUpdateWithoutOrderInput>, Prisma.credit_notesUncheckedUpdateWithoutOrderInput>
+export type credit_notesUncheckedUpdateManyWithoutOrderNestedInput = {
+  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput> | Prisma.credit_notesCreateWithoutOrderInput[] | Prisma.credit_notesUncheckedCreateWithoutOrderInput[]
+  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutOrderInput | Prisma.credit_notesCreateOrConnectWithoutOrderInput[]
+  upsert?: Prisma.credit_notesUpsertWithWhereUniqueWithoutOrderInput | Prisma.credit_notesUpsertWithWhereUniqueWithoutOrderInput[]
+  createMany?: Prisma.credit_notesCreateManyOrderInputEnvelope
+  set?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  disconnect?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  delete?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  connect?: Prisma.credit_notesWhereUniqueInput | Prisma.credit_notesWhereUniqueInput[]
+  update?: Prisma.credit_notesUpdateWithWhereUniqueWithoutOrderInput | Prisma.credit_notesUpdateWithWhereUniqueWithoutOrderInput[]
+  updateMany?: Prisma.credit_notesUpdateManyWithWhereWithoutOrderInput | Prisma.credit_notesUpdateManyWithWhereWithoutOrderInput[]
+  deleteMany?: Prisma.credit_notesScalarWhereInput | Prisma.credit_notesScalarWhereInput[]
 }
 
 export type credit_notesCreateNestedOneWithoutPaymentsInput = {
@@ -822,11 +934,28 @@ export type credit_notesUpdateOneWithoutPaymentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.credit_notesUpdateToOneWithWhereWithoutPaymentsInput, Prisma.credit_notesUpdateWithoutPaymentsInput>, Prisma.credit_notesUncheckedUpdateWithoutPaymentsInput>
 }
 
+export type credit_notesCreateNestedOneWithoutItemsInput = {
+  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutItemsInput, Prisma.credit_notesUncheckedCreateWithoutItemsInput>
+  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutItemsInput
+  connect?: Prisma.credit_notesWhereUniqueInput
+}
+
+export type credit_notesUpdateOneRequiredWithoutItemsNestedInput = {
+  create?: Prisma.XOR<Prisma.credit_notesCreateWithoutItemsInput, Prisma.credit_notesUncheckedCreateWithoutItemsInput>
+  connectOrCreate?: Prisma.credit_notesCreateOrConnectWithoutItemsInput
+  upsert?: Prisma.credit_notesUpsertWithoutItemsInput
+  connect?: Prisma.credit_notesWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.credit_notesUpdateToOneWithWhereWithoutItemsInput, Prisma.credit_notesUpdateWithoutItemsInput>, Prisma.credit_notesUncheckedUpdateWithoutItemsInput>
+}
+
 export type credit_notesCreateWithoutIssuerInput = {
   id?: string
   document_number: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -834,19 +963,23 @@ export type credit_notesCreateWithoutIssuerInput = {
   points_clawed_back?: number
   points_forgiven?: number
   created_at?: Date | string
-  order: Prisma.ordersCreateNestedOneWithoutCredit_noteInput
+  order: Prisma.ordersCreateNestedOneWithoutCredit_notesInput
   shift?: Prisma.cash_shiftsCreateNestedOneWithoutCredit_notesInput
   approver?: Prisma.usersCreateNestedOneWithoutCredit_notes_approvedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUncheckedCreateWithoutIssuerInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -856,6 +989,7 @@ export type credit_notesUncheckedCreateWithoutIssuerInput = {
   authorized_by_user_id?: string | null
   created_at?: Date | string
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesCreateOrConnectWithoutIssuerInput = {
@@ -871,8 +1005,11 @@ export type credit_notesCreateManyIssuerInputEnvelope = {
 export type credit_notesCreateWithoutApproverInput = {
   id?: string
   document_number: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -880,19 +1017,23 @@ export type credit_notesCreateWithoutApproverInput = {
   points_clawed_back?: number
   points_forgiven?: number
   created_at?: Date | string
-  order: Prisma.ordersCreateNestedOneWithoutCredit_noteInput
+  order: Prisma.ordersCreateNestedOneWithoutCredit_notesInput
   shift?: Prisma.cash_shiftsCreateNestedOneWithoutCredit_notesInput
   issuer: Prisma.usersCreateNestedOneWithoutCredit_notes_issuedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUncheckedCreateWithoutApproverInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -902,6 +1043,7 @@ export type credit_notesUncheckedCreateWithoutApproverInput = {
   created_by: string
   created_at?: Date | string
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesCreateOrConnectWithoutApproverInput = {
@@ -937,9 +1079,12 @@ export type credit_notesScalarWhereInput = {
   id?: Prisma.UuidFilter<"credit_notes"> | string
   document_number?: Prisma.StringFilter<"credit_notes"> | string
   order_id?: Prisma.UuidFilter<"credit_notes"> | string
+  sequence?: Prisma.IntFilter<"credit_notes"> | number
   shift_id?: Prisma.IntNullableFilter<"credit_notes"> | number | null
   reason?: Prisma.StringFilter<"credit_notes"> | string
   refund_method?: Prisma.Enumpayment_methodFilter<"credit_notes"> | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFilter<"credit_notes"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -970,8 +1115,11 @@ export type credit_notesUpdateManyWithWhereWithoutApproverInput = {
 export type credit_notesCreateWithoutShiftInput = {
   id?: string
   document_number: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -979,18 +1127,22 @@ export type credit_notesCreateWithoutShiftInput = {
   points_clawed_back?: number
   points_forgiven?: number
   created_at?: Date | string
-  order: Prisma.ordersCreateNestedOneWithoutCredit_noteInput
+  order: Prisma.ordersCreateNestedOneWithoutCredit_notesInput
   issuer: Prisma.usersCreateNestedOneWithoutCredit_notes_issuedInput
   approver?: Prisma.usersCreateNestedOneWithoutCredit_notes_approvedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUncheckedCreateWithoutShiftInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1001,6 +1153,7 @@ export type credit_notesUncheckedCreateWithoutShiftInput = {
   authorized_by_user_id?: string | null
   created_at?: Date | string
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesCreateOrConnectWithoutShiftInput = {
@@ -1032,8 +1185,11 @@ export type credit_notesUpdateManyWithWhereWithoutShiftInput = {
 export type credit_notesCreateWithoutOrderInput = {
   id?: string
   document_number: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1045,14 +1201,18 @@ export type credit_notesCreateWithoutOrderInput = {
   issuer: Prisma.usersCreateNestedOneWithoutCredit_notes_issuedInput
   approver?: Prisma.usersCreateNestedOneWithoutCredit_notes_approvedInput
   payments?: Prisma.paymentsCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUncheckedCreateWithoutOrderInput = {
   id?: string
   document_number: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1063,6 +1223,7 @@ export type credit_notesUncheckedCreateWithoutOrderInput = {
   authorized_by_user_id?: string | null
   created_at?: Date | string
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutCredit_noteInput
+  items?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesCreateOrConnectWithoutOrderInput = {
@@ -1070,58 +1231,35 @@ export type credit_notesCreateOrConnectWithoutOrderInput = {
   create: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
 }
 
-export type credit_notesUpsertWithoutOrderInput = {
-  update: Prisma.XOR<Prisma.credit_notesUpdateWithoutOrderInput, Prisma.credit_notesUncheckedUpdateWithoutOrderInput>
-  create: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
-  where?: Prisma.credit_notesWhereInput
+export type credit_notesCreateManyOrderInputEnvelope = {
+  data: Prisma.credit_notesCreateManyOrderInput | Prisma.credit_notesCreateManyOrderInput[]
+  skipDuplicates?: boolean
 }
 
-export type credit_notesUpdateToOneWithWhereWithoutOrderInput = {
-  where?: Prisma.credit_notesWhereInput
+export type credit_notesUpsertWithWhereUniqueWithoutOrderInput = {
+  where: Prisma.credit_notesWhereUniqueInput
+  update: Prisma.XOR<Prisma.credit_notesUpdateWithoutOrderInput, Prisma.credit_notesUncheckedUpdateWithoutOrderInput>
+  create: Prisma.XOR<Prisma.credit_notesCreateWithoutOrderInput, Prisma.credit_notesUncheckedCreateWithoutOrderInput>
+}
+
+export type credit_notesUpdateWithWhereUniqueWithoutOrderInput = {
+  where: Prisma.credit_notesWhereUniqueInput
   data: Prisma.XOR<Prisma.credit_notesUpdateWithoutOrderInput, Prisma.credit_notesUncheckedUpdateWithoutOrderInput>
 }
 
-export type credit_notesUpdateWithoutOrderInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  document_number?: Prisma.StringFieldUpdateOperationsInput | string
-  reason?: Prisma.StringFieldUpdateOperationsInput | string
-  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
-  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
-  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
-  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
-  issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
-  approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
-  payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
-}
-
-export type credit_notesUncheckedUpdateWithoutOrderInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  document_number?: Prisma.StringFieldUpdateOperationsInput | string
-  shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
-  reason?: Prisma.StringFieldUpdateOperationsInput | string
-  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
-  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
-  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
-  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
-  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
-  created_by?: Prisma.StringFieldUpdateOperationsInput | string
-  authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
+export type credit_notesUpdateManyWithWhereWithoutOrderInput = {
+  where: Prisma.credit_notesScalarWhereInput
+  data: Prisma.XOR<Prisma.credit_notesUpdateManyMutationInput, Prisma.credit_notesUncheckedUpdateManyWithoutOrderInput>
 }
 
 export type credit_notesCreateWithoutPaymentsInput = {
   id?: string
   document_number: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1129,19 +1267,23 @@ export type credit_notesCreateWithoutPaymentsInput = {
   points_clawed_back?: number
   points_forgiven?: number
   created_at?: Date | string
-  order: Prisma.ordersCreateNestedOneWithoutCredit_noteInput
+  order: Prisma.ordersCreateNestedOneWithoutCredit_notesInput
   shift?: Prisma.cash_shiftsCreateNestedOneWithoutCredit_notesInput
   issuer: Prisma.usersCreateNestedOneWithoutCredit_notes_issuedInput
   approver?: Prisma.usersCreateNestedOneWithoutCredit_notes_approvedInput
+  items?: Prisma.credit_note_itemsCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesUncheckedCreateWithoutPaymentsInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1151,6 +1293,7 @@ export type credit_notesUncheckedCreateWithoutPaymentsInput = {
   created_by: string
   authorized_by_user_id?: string | null
   created_at?: Date | string
+  items?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutCredit_noteInput
 }
 
 export type credit_notesCreateOrConnectWithoutPaymentsInput = {
@@ -1172,8 +1315,11 @@ export type credit_notesUpdateToOneWithWhereWithoutPaymentsInput = {
 export type credit_notesUpdateWithoutPaymentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1181,19 +1327,23 @@ export type credit_notesUpdateWithoutPaymentsInput = {
   points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
   points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_noteNestedInput
+  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_notesNestedInput
   shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
   issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
   approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
+  items?: Prisma.credit_note_itemsUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateWithoutPaymentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1203,15 +1353,123 @@ export type credit_notesUncheckedUpdateWithoutPaymentsInput = {
   created_by?: Prisma.StringFieldUpdateOperationsInput | string
   authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  items?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutCredit_noteNestedInput
+}
+
+export type credit_notesCreateWithoutItemsInput = {
+  id?: string
+  document_number: string
+  sequence?: number
+  reason: string
+  refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: number
+  points_forgiven?: number
+  created_at?: Date | string
+  order: Prisma.ordersCreateNestedOneWithoutCredit_notesInput
+  shift?: Prisma.cash_shiftsCreateNestedOneWithoutCredit_notesInput
+  issuer: Prisma.usersCreateNestedOneWithoutCredit_notes_issuedInput
+  approver?: Prisma.usersCreateNestedOneWithoutCredit_notes_approvedInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutCredit_noteInput
+}
+
+export type credit_notesUncheckedCreateWithoutItemsInput = {
+  id?: string
+  document_number: string
+  order_id: string
+  sequence?: number
+  shift_id?: number | null
+  reason: string
+  refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: number
+  points_forgiven?: number
+  created_by: string
+  authorized_by_user_id?: string | null
+  created_at?: Date | string
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutCredit_noteInput
+}
+
+export type credit_notesCreateOrConnectWithoutItemsInput = {
+  where: Prisma.credit_notesWhereUniqueInput
+  create: Prisma.XOR<Prisma.credit_notesCreateWithoutItemsInput, Prisma.credit_notesUncheckedCreateWithoutItemsInput>
+}
+
+export type credit_notesUpsertWithoutItemsInput = {
+  update: Prisma.XOR<Prisma.credit_notesUpdateWithoutItemsInput, Prisma.credit_notesUncheckedUpdateWithoutItemsInput>
+  create: Prisma.XOR<Prisma.credit_notesCreateWithoutItemsInput, Prisma.credit_notesUncheckedCreateWithoutItemsInput>
+  where?: Prisma.credit_notesWhereInput
+}
+
+export type credit_notesUpdateToOneWithWhereWithoutItemsInput = {
+  where?: Prisma.credit_notesWhereInput
+  data: Prisma.XOR<Prisma.credit_notesUpdateWithoutItemsInput, Prisma.credit_notesUncheckedUpdateWithoutItemsInput>
+}
+
+export type credit_notesUpdateWithoutItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
+  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_notesNestedInput
+  shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
+  issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
+  approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
+}
+
+export type credit_notesUncheckedUpdateWithoutItemsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
+  shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
+  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
+  created_by?: Prisma.StringFieldUpdateOperationsInput | string
+  authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesCreateManyIssuerInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1226,9 +1484,12 @@ export type credit_notesCreateManyApproverInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   shift_id?: number | null
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1242,8 +1503,11 @@ export type credit_notesCreateManyApproverInput = {
 export type credit_notesUpdateWithoutIssuerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1251,19 +1515,23 @@ export type credit_notesUpdateWithoutIssuerInput = {
   points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
   points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_noteNestedInput
+  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_notesNestedInput
   shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
   approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateWithoutIssuerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1273,15 +1541,19 @@ export type credit_notesUncheckedUpdateWithoutIssuerInput = {
   authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateManyWithoutIssuerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1295,8 +1567,11 @@ export type credit_notesUncheckedUpdateManyWithoutIssuerInput = {
 export type credit_notesUpdateWithoutApproverInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1304,19 +1579,23 @@ export type credit_notesUpdateWithoutApproverInput = {
   points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
   points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_noteNestedInput
+  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_notesNestedInput
   shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
   issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateWithoutApproverInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1326,15 +1605,19 @@ export type credit_notesUncheckedUpdateWithoutApproverInput = {
   created_by?: Prisma.StringFieldUpdateOperationsInput | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateManyWithoutApproverInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1349,8 +1632,11 @@ export type credit_notesCreateManyShiftInput = {
   id?: string
   document_number: string
   order_id: string
+  sequence?: number
   reason: string
   refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1365,8 +1651,11 @@ export type credit_notesCreateManyShiftInput = {
 export type credit_notesUpdateWithoutShiftInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1374,18 +1663,22 @@ export type credit_notesUpdateWithoutShiftInput = {
   points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
   points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_noteNestedInput
+  order?: Prisma.ordersUpdateOneRequiredWithoutCredit_notesNestedInput
   issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
   approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
   payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateWithoutShiftInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1396,14 +1689,102 @@ export type credit_notesUncheckedUpdateWithoutShiftInput = {
   authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutCredit_noteNestedInput
 }
 
 export type credit_notesUncheckedUpdateManyWithoutShiftInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   document_number?: Prisma.StringFieldUpdateOperationsInput | string
   order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
+  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
+  created_by?: Prisma.StringFieldUpdateOperationsInput | string
+  authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type credit_notesCreateManyOrderInput = {
+  id?: string
+  document_number: string
+  sequence?: number
+  shift_id?: number | null
+  reason: string
+  refund_method: $Enums.payment_method
+  gross_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: number
+  points_forgiven?: number
+  created_by: string
+  authorized_by_user_id?: string | null
+  created_at?: Date | string
+}
+
+export type credit_notesUpdateWithoutOrderInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
+  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  shift?: Prisma.cash_shiftsUpdateOneWithoutCredit_notesNestedInput
+  issuer?: Prisma.usersUpdateOneRequiredWithoutCredit_notes_issuedNestedInput
+  approver?: Prisma.usersUpdateOneWithoutCredit_notes_approvedNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUpdateManyWithoutCredit_noteNestedInput
+}
+
+export type credit_notesUncheckedUpdateWithoutOrderInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
+  shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  points_clawed_back?: Prisma.IntFieldUpdateOperationsInput | number
+  points_forgiven?: Prisma.IntFieldUpdateOperationsInput | number
+  created_by?: Prisma.StringFieldUpdateOperationsInput | string
+  authorized_by_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutCredit_noteNestedInput
+  items?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutCredit_noteNestedInput
+}
+
+export type credit_notesUncheckedUpdateManyWithoutOrderInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  document_number?: Prisma.StringFieldUpdateOperationsInput | string
+  sequence?: Prisma.IntFieldUpdateOperationsInput | number
+  shift_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  reason?: Prisma.StringFieldUpdateOperationsInput | string
+  refund_method?: Prisma.Enumpayment_methodFieldUpdateOperationsInput | $Enums.payment_method
+  gross_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   net_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1422,10 +1803,12 @@ export type credit_notesUncheckedUpdateManyWithoutShiftInput = {
 
 export type Credit_notesCountOutputType = {
   payments: number
+  items: number
 }
 
 export type Credit_notesCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   payments?: boolean | Credit_notesCountOutputTypeCountPaymentsArgs
+  items?: boolean | Credit_notesCountOutputTypeCountItemsArgs
 }
 
 /**
@@ -1445,14 +1828,24 @@ export type Credit_notesCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime
   where?: Prisma.paymentsWhereInput
 }
 
+/**
+ * Credit_notesCountOutputType without action
+ */
+export type Credit_notesCountOutputTypeCountItemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.credit_note_itemsWhereInput
+}
+
 
 export type credit_notesSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   document_number?: boolean
   order_id?: boolean
+  sequence?: boolean
   shift_id?: boolean
   reason?: boolean
   refund_method?: boolean
+  gross_amount?: boolean
+  discount_amount?: boolean
   final_amount?: boolean
   net_amount?: boolean
   vat_amount?: boolean
@@ -1467,6 +1860,7 @@ export type credit_notesSelect<ExtArgs extends runtime.Types.Extensions.Internal
   issuer?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   approver?: boolean | Prisma.credit_notes$approverArgs<ExtArgs>
   payments?: boolean | Prisma.credit_notes$paymentsArgs<ExtArgs>
+  items?: boolean | Prisma.credit_notes$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.Credit_notesCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["credit_notes"]>
 
@@ -1474,9 +1868,12 @@ export type credit_notesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   document_number?: boolean
   order_id?: boolean
+  sequence?: boolean
   shift_id?: boolean
   reason?: boolean
   refund_method?: boolean
+  gross_amount?: boolean
+  discount_amount?: boolean
   final_amount?: boolean
   net_amount?: boolean
   vat_amount?: boolean
@@ -1496,9 +1893,12 @@ export type credit_notesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   id?: boolean
   document_number?: boolean
   order_id?: boolean
+  sequence?: boolean
   shift_id?: boolean
   reason?: boolean
   refund_method?: boolean
+  gross_amount?: boolean
+  discount_amount?: boolean
   final_amount?: boolean
   net_amount?: boolean
   vat_amount?: boolean
@@ -1518,9 +1918,12 @@ export type credit_notesSelectScalar = {
   id?: boolean
   document_number?: boolean
   order_id?: boolean
+  sequence?: boolean
   shift_id?: boolean
   reason?: boolean
   refund_method?: boolean
+  gross_amount?: boolean
+  discount_amount?: boolean
   final_amount?: boolean
   net_amount?: boolean
   vat_amount?: boolean
@@ -1532,13 +1935,14 @@ export type credit_notesSelectScalar = {
   created_at?: boolean
 }
 
-export type credit_notesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "document_number" | "order_id" | "shift_id" | "reason" | "refund_method" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "points_clawed_back" | "points_forgiven" | "created_by" | "authorized_by_user_id" | "created_at", ExtArgs["result"]["credit_notes"]>
+export type credit_notesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "document_number" | "order_id" | "sequence" | "shift_id" | "reason" | "refund_method" | "gross_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "points_clawed_back" | "points_forgiven" | "created_by" | "authorized_by_user_id" | "created_at", ExtArgs["result"]["credit_notes"]>
 export type credit_notesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.ordersDefaultArgs<ExtArgs>
   shift?: boolean | Prisma.credit_notes$shiftArgs<ExtArgs>
   issuer?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   approver?: boolean | Prisma.credit_notes$approverArgs<ExtArgs>
   payments?: boolean | Prisma.credit_notes$paymentsArgs<ExtArgs>
+  items?: boolean | Prisma.credit_notes$itemsArgs<ExtArgs>
   _count?: boolean | Prisma.Credit_notesCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type credit_notesIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1565,6 +1969,13 @@ export type $credit_notesPayload<ExtArgs extends runtime.Types.Extensions.Intern
      * * The money legs of this document. At least one for any way of paying out.
      */
     payments: Prisma.$paymentsPayload<ExtArgs>[]
+    /**
+     * *
+     *    * The lines this note takes back, with their quantities.
+     *    * This is what makes a partial refund a document rather than an adjustment, and
+     *    * what a later refund reads to know how much of each line is still refundable.
+     */
+    items: Prisma.$credit_note_itemsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1573,9 +1984,16 @@ export type $credit_notesPayload<ExtArgs extends runtime.Types.Extensions.Intern
      */
     document_number: string
     /**
-     * * The sale being reversed. One credit note per receipt, by index.
+     * * The sale being reversed. One receipt may carry several notes.
      */
     order_id: string
+    /**
+     * *
+     *    * 1-based, within one sale.
+     *    * A bill refunded in three visits has three notes, and "which one is this" is a
+     *    * question an owner asks when the notes are read against the invoice.
+     */
+    sequence: number
     /**
      * *
      *    * The drawer the money came out of, or null when it did not come out of one.
@@ -1591,7 +2009,20 @@ export type $credit_notesPayload<ExtArgs extends runtime.Types.Extensions.Intern
      *    * Copied from the sale rather than joined to it, so the document reprints
      *    * identically forever — and so a later partial refund, which would carry
      *    * *different* figures, is not a schema change.
+     * /**
+     *    * What this note's lines were charged, before the discount it accounts for.
+     *    * A full reversal copies the sale's subtotal; a partial one is the pro-rata share
+     *    * of the lines coming back. Stored rather than summed from the items so that the
+     *    * database can check the document reconciles (`chk_credit_notes_lines_reconcile`).
      */
+    gross_amount: runtime.Decimal
+    /**
+     * *
+     *    * This note's share of the order-level discount.
+     *    * Every note but the last rounds its share; the note that empties the sale takes
+     *    * the remainder, which is what makes the notes foot to the invoice exactly.
+     */
+    discount_amount: runtime.Decimal
     final_amount: runtime.Decimal
     net_amount: runtime.Decimal
     vat_amount: runtime.Decimal
@@ -2008,6 +2439,7 @@ export interface Prisma__credit_notesClient<T, Null = never, ExtArgs extends run
   issuer<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   approver<T extends Prisma.credit_notes$approverArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.credit_notes$approverArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   payments<T extends Prisma.credit_notes$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.credit_notes$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$paymentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  items<T extends Prisma.credit_notes$itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.credit_notes$itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$credit_note_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2040,9 +2472,12 @@ export interface credit_notesFieldRefs {
   readonly id: Prisma.FieldRef<"credit_notes", 'String'>
   readonly document_number: Prisma.FieldRef<"credit_notes", 'String'>
   readonly order_id: Prisma.FieldRef<"credit_notes", 'String'>
+  readonly sequence: Prisma.FieldRef<"credit_notes", 'Int'>
   readonly shift_id: Prisma.FieldRef<"credit_notes", 'Int'>
   readonly reason: Prisma.FieldRef<"credit_notes", 'String'>
   readonly refund_method: Prisma.FieldRef<"credit_notes", 'payment_method'>
+  readonly gross_amount: Prisma.FieldRef<"credit_notes", 'Decimal'>
+  readonly discount_amount: Prisma.FieldRef<"credit_notes", 'Decimal'>
   readonly final_amount: Prisma.FieldRef<"credit_notes", 'Decimal'>
   readonly net_amount: Prisma.FieldRef<"credit_notes", 'Decimal'>
   readonly vat_amount: Prisma.FieldRef<"credit_notes", 'Decimal'>
@@ -2512,6 +2947,30 @@ export type credit_notes$paymentsArgs<ExtArgs extends runtime.Types.Extensions.I
   take?: number
   skip?: number
   distinct?: Prisma.PaymentsScalarFieldEnum | Prisma.PaymentsScalarFieldEnum[]
+}
+
+/**
+ * credit_notes.items
+ */
+export type credit_notes$itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the credit_note_items
+   */
+  select?: Prisma.credit_note_itemsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the credit_note_items
+   */
+  omit?: Prisma.credit_note_itemsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.credit_note_itemsInclude<ExtArgs> | null
+  where?: Prisma.credit_note_itemsWhereInput
+  orderBy?: Prisma.credit_note_itemsOrderByWithRelationInput | Prisma.credit_note_itemsOrderByWithRelationInput[]
+  cursor?: Prisma.credit_note_itemsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Credit_note_itemsScalarFieldEnum | Prisma.Credit_note_itemsScalarFieldEnum[]
 }
 
 /**

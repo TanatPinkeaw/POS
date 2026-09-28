@@ -469,7 +469,13 @@ model orders {
   payments           payments[]
   point_transactions point_transactions[]
   payment_intents    payment_intents[]
-  credit_note        credit_notes?
+  /**
+   * Every credit note issued against this sale, in order.
+   * A list rather than a single document: a bill can be refunded in pieces, and
+   * "how much of this came back" is the sum of these rather than a column that can
+   * drift away from them.
+   */
+  credit_notes       credit_notes[]  @relation("credit_notes_for_order")
   notifications      notifications[]
 
   @@index([status])
@@ -488,6 +494,8 @@ model order_items {
 
   order   orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
   product products @relation(fields: [product_id], references: [id])
+  /** The credit-note lines that took this one back, wholly or in part. */
+  refunded_on credit_note_items[]
 
   @@index([order_id])
   @@index([product_id])
@@ -545,8 +553,14 @@ model credit_notes {
   id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   /** `CN-2026-000001`, from the shop's own gapless series. */
   document_number       String         @unique @db.VarChar(30)
-  /** The sale being reversed. One credit note per receipt, by index. */
-  order_id              String         @unique @db.Uuid
+  /** The sale being reversed. One receipt may carry several notes. */
+  order_id              String         @db.Uuid
+  /**
+   * 1-based, within one sale.
+   * A bill refunded in three visits has three notes, and "which one is this" is a
+   * question an owner asks when the notes are read against the invoice.
+   */
+  sequence              Int            @default(1)
   /**
    * The drawer the money came out of, or null when it did not come out of one.
    * A refund paid by hand from the shop's banking app touches no drawer, and
@@ -561,6 +575,19 @@ model credit_notes {
    * identically forever — and so a later partial refund, which would carry
    * *different* figures, is not a schema change.
    */
+  /**
+   * What this note's lines were charged, before the discount it accounts for.
+   * A full reversal copies the sale's subtotal; a partial one is the pro-rata share
+   * of the lines coming back. Stored rather than summed from the items so that the
+   * database can check the document reconciles (`chk_credit_notes_lines_reconcile`).
+   */
+  gross_amount          Decimal        @default(0) @db.Decimal(10, 2)
+  /**
+   * This note's share of the order-level discount.
+   * Every note but the last rounds its share; the note that empties the sale takes
+   * the remainder, which is what makes the notes foot to the invoice exactly.
+   */
+  discount_amount       Decimal        @default(0) @db.Decimal(10, 2)
   final_amount          Decimal        @db.Decimal(10, 2)
   net_amount            Decimal        @db.Decimal(10, 2)
   vat_amount            Decimal        @db.Decimal(10, 2)
@@ -578,15 +605,43 @@ model credit_notes {
   authorized_by_user_id String?        @db.Uuid
   created_at            DateTime       @default(now()) @db.Timestamptz(6)
 
-  order         orders       @relation(fields: [order_id], references: [id], onDelete: Restrict)
+  order         orders       @relation("credit_notes_for_order", fields: [order_id], references: [id], onDelete: Restrict)
   shift         cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: Restrict)
   issuer        users        @relation("credit_note_issuer", fields: [created_by], references: [id], onDelete: Restrict)
   approver      users?       @relation("credit_note_approver", fields: [authorized_by_user_id], references: [id], onDelete: Restrict)
   /** The money legs of this document. At least one for any way of paying out. */
   payments      payments[]
+  /**
+   * The lines this note takes back, with their quantities.
+   * This is what makes a partial refund a document rather than an adjustment, and
+   * what a later refund reads to know how much of each line is still refundable.
+   */
+  items         credit_note_items[]
 
+  @@unique([order_id, sequence])
   @@index([shift_id])
   @@index([created_at])
+}
+
+/**
+ * One line of a credit note, and how much of it went back.
+ * Quantity lives here rather than on the order line because a line can be returned
+ * in more than one visit: three units sold, one back on Monday and two on Friday.
+ */
+model credit_note_items {
+  id             BigInt  @id @default(autoincrement())
+  credit_note_id String  @db.Uuid
+  order_item_id  BigInt
+  quantity       Int
+  unit_price     Decimal @db.Decimal(10, 2)
+  /** `unit_price × quantity`, to the satang — checked by the database. */
+  line_total     Decimal @db.Decimal(10, 2)
+
+  credit_note credit_notes @relation(fields: [credit_note_id], references: [id], onDelete: Cascade)
+  order_item  order_items  @relation(fields: [order_item_id], references: [id], onDelete: Restrict)
+
+  @@unique([credit_note_id, order_item_id])
+  @@index([order_item_id])
 }
 
 // ---------------------------------------------------------------- payments

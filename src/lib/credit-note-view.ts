@@ -68,10 +68,17 @@ export interface DocumentLine {
  */
 export interface CreditNoteDocument {
   documentNumber: string;
+  /** Which note on this sale it is, 1-based. */
+  sequence: number;
+  /** True when the note left something refundable behind. */
+  isPartial: boolean;
   issuedAt: string;
   reason: string;
   refundMethod: RefundMethod;
   refundMethodLabel: string;
+  /** What came back in this transaction, before the discount this note accounts for. */
+  grossAmountThb: number;
+  discountThb: number;
   finalAmountThb: number;
   netThb: number;
   vatThb: number;
@@ -82,6 +89,13 @@ export interface CreditNoteDocument {
   pointsForgiven: number;
   issuedBy: string;
   approvedBy: string | null;
+  /**
+   * The lines this note takes back.
+   * Deliberately not the sale's lines: a note for one item out of three that
+   * restated the whole invoice under its own total would be a document nobody can
+   * reconcile.
+   */
+  lines: DocumentLine[];
   /** What is being reversed — the sale, and how it was paid. */
   original: {
     orderNumber: string;
@@ -98,8 +112,20 @@ export interface CreditNoteDocument {
 export interface RefundSummary {
   orderId: string;
   orderNumber: string;
-  status: 'refunded';
+  /**
+   * The sale's status *after* the refund.
+   * `refunded` only when this note took back everything that was left; a partial
+   * refund leaves a completed sale with a note against it.
+   */
+  status: 'refunded' | 'completed';
+  /** 1-based, within this sale: which note this is. */
+  sequence: number;
+  /** True when this note left something refundable behind. */
+  partial: boolean;
   documentNumber: string;
+  /** The lines' worth, before the discount this note accounts for. */
+  grossAmountThb: number;
+  discountThb: number;
   finalAmountThb: number;
   refundMethod: RefundMethod;
   returnedLines: number;

@@ -11,17 +11,19 @@
  * Four decisions are worth stating before the code, because each one closes a
  * failure that a simpler implementation would have:
  *
- *   1. **Full amount only.** One credit note refunds the whole bill and returns
- *      every line. Partial refunds need their own arithmetic across the tax
- *      breakdown and the loyalty ledger, and getting that half-right would put a
- *      wrong figure on a legal document. The schema does not stand in the way —
- *      the figures are snapshotted per document, so a later partial refund is a
- *      change here rather than a migration.
- *   2. **A refunded sale is terminal.** `canTransition(status, 'refund')` is
- *      false for a cancelled order, a live one, and one already refunded — so a
- *      second payout is refused before a transaction is even opened. The
- *      database backs it with a unique index on `credit_notes.order_id`, which
- *      is what survives two requests that both get past the check.
+ *   1. **A bill can be refunded in pieces, and the pieces add up.** Each note
+ *      itemises the lines and quantities it takes back, and the *arithmetic* lives
+ *      in `refund-plan.ts` where it is pure and tested: every note but the last
+ *      rounds its share of the order-level discount, and the note that empties the
+ *      sale takes the remainder instead of computing its own. That one rule is
+ *      what stops a split refund leaving a satang stranded — the failure mode of
+ *      `refund / 3` written three times.
+ *   2. **The sale itself is never rewritten.** The order's totals stay exactly as
+ *      the invoice printed them, and what has been refunded is the sum of its
+ *      notes. The order's *status* moves to `refunded` only when the last
+ *      refundable unit is gone, which is what keeps `canTransition` a complete
+ *      answer to "can this be refunded again" without inventing a status per
+ *      degree of refundedness.
  *   3. **Money leaves through the drawer or by hand, never automatically.**
  *      Pushing money back to a customer's bank needs a PSP relationship and a fee
  *      per transfer, so `cash` is written against the open shift (and refused
@@ -33,7 +35,12 @@
  *      mean a customer who spent their points could never return anything. So the
  *      clawback is clamped to the balance and the shortfall is recorded on the
  *      credit note instead of thrown. "We forgave 12 points" is a fact an owner
- *      can act on; a customer held at the counter is not.
+ *      can act on; a customer held at the counter is not. On a partial refund the
+ *      clawback is that note's share of what was earned, and the closing note takes
+ *      the remainder — so points come back exactly once, however many visits it
+ *      takes. Redeemed points are returned only when the bill is fully reversed:
+ *      the discount they paid for applied to the whole purchase, and giving a third
+ *      of it back would leave the customer holding a discount for goods they kept.
  */
 import type { credit_notes, orders } from '../generated/prisma/client';
 
@@ -43,10 +50,11 @@ import { refundMethodLabel } from './credit-note-view';
 import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { type Db, recordStockMovement, returnRefundedStock } from './inventory';
-import { fromDecimal, roundThb } from './money';
+import { fromDecimal, roundThb, sumThb, toSatang } from './money';
 import { canTransition } from './order-state';
 import { lockOrder } from './orders';
 import { applyPointChange } from './points';
+import { planRefund, refundTax, type RefundableLine, type RefundRequestLine } from './refund-plan';
 import { allocateCreditNoteNumber, loadShop } from './shop';
 import { UNCONFIGURED_SHOP } from './shop-view';
 
@@ -77,6 +85,12 @@ export async function refundOrder(input: {
   refundMethod: RefundMethod;
   /** The drawer the cash came out of. Required for `cash`, ignored otherwise. */
   shiftId: number | null;
+  /**
+   * The lines to take back. Omitted or null means everything still outstanding,
+   * which is what a full refund is and what the till sends when the cashier does
+   * not pick lines apart.
+   */
+  lines?: RefundRequestLine[] | null;
   /** Set when a supervisor's PIN was required. A refund always requires one. */
   authorizedByUserId?: string | null;
 }): Promise<RefundSummary> {
@@ -104,8 +118,50 @@ export async function refundOrder(input: {
       include: {
         items: { include: { product: { select: { name: true } } }, orderBy: { id: 'asc' } },
         payments: { orderBy: { id: 'asc' } },
+        /*
+         * Every note already on this bill, with what each one took back. Read
+         * inside the transaction that holds the order's row lock, so two cahsiers
+         * refunding the same line at two tills cannot both see it as outstanding —
+         * the second waits on the lock and then finds the units already gone.
+         */
+        credit_notes: {
+          orderBy: { sequence: 'asc' },
+          include: { items: { select: { order_item_id: true, quantity: true } } },
+        },
       },
     });
+
+    /*
+     * A line that was sold and has come back in part is still refundable — three
+     * units sold, one back on Monday, two on Friday — so the plan is given the
+     * running total per line rather than a flag.
+     */
+    const returnedByItem = new Map<string, number>();
+    for (const note of order.credit_notes) {
+      for (const line of note.items) {
+        const key = line.order_item_id.toString();
+        returnedByItem.set(key, (returnedByItem.get(key) ?? 0) + line.quantity);
+      }
+    }
+
+    const refundable: RefundableLine[] = order.items.map((item) => ({
+      orderItemId: item.id.toString(),
+      name: item.product.name,
+      quantity: item.quantity,
+      returnedQuantity: returnedByItem.get(item.id.toString()) ?? 0,
+      totalPrice: fromDecimal(item.total_price),
+    }));
+
+    const plan = planRefund({
+      lines: refundable,
+      requested: input.lines ?? null,
+      subtotalThb: fromDecimal(order.subtotal_amount),
+      discountThb: fromDecimal(order.discount_amount),
+      finalAmountThb: fromDecimal(order.final_amount),
+      alreadyRefundedThb: sumThb(order.credit_notes.map((note) => fromDecimal(note.final_amount))),
+    });
+
+    const finalAmount = plan.refundThb;
 
     /*
      * A cash refund needs a drawer, for the same reason a sale does: money that
@@ -135,8 +191,6 @@ export async function refundOrder(input: {
       );
     }
 
-    const finalAmount = fromDecimal(order.final_amount);
-
     /*
      * Points first, so that a failure here is a failure before any stock has
      * moved. The clawback is deliberately clamped rather than attempted: the
@@ -145,45 +199,93 @@ export async function refundOrder(input: {
      */
     const earned = order.customer_id ? order.points_earned : 0;
     const redeemed = order.customer_id ? order.points_redeemed : 0;
+    const alreadyClawedBack = order.credit_notes.reduce(
+      (total, note) => total + note.points_clawed_back,
+      0,
+    );
+
+    /*
+     * This note's share of the points the sale awarded. The closing note takes what
+     * is left rather than its own share, for the same reason the money works that
+     * way: three rounded shares do not add back up.
+     */
+    const clawbackTarget = plan.closes
+      ? Math.max(0, earned - alreadyClawedBack)
+      : Math.floor((earned * toSatang(finalAmount)) / Math.max(1, toSatang(fromDecimal(order.final_amount))));
+
+    /*
+     * Given back only when the bill is fully reversed, because the discount those
+     * points bought applied to the whole purchase. Returning a third of them would
+     * leave the customer holding a discount for goods they kept.
+     */
+    const redeemReturn = plan.closes ? redeemed : 0;
+
     let pointsClawedBack = 0;
     let pointsForgiven = 0;
 
-    if (order.customer_id && (earned > 0 || redeemed > 0)) {
+    if (order.customer_id && (clawbackTarget > 0 || redeemReturn > 0)) {
       const balance = await pointsBalance(tx, order.customer_id);
-      pointsClawedBack = Math.min(earned, Math.max(0, balance));
-      pointsForgiven = earned - pointsClawedBack;
 
-      if (pointsClawedBack > 0) {
-        await applyPointChange(tx, {
-          userId: order.customer_id,
-          delta: -pointsClawedBack,
-          orderId: order.id,
-          description: `ยึดคืนจากใบลดหนี้ ${allocation.documentNumber}`,
-        });
+      if (clawbackTarget > 0) {
+        /*
+         * Clamped rather than attempted: the customer may already have spent the
+         * points, and their refund cannot depend on their balance. The shortfall is
+         * recorded on the document instead of thrown.
+         */
+        pointsClawedBack = Math.min(clawbackTarget, Math.max(0, balance));
+        pointsForgiven = clawbackTarget - pointsClawedBack;
+
+        if (pointsClawedBack > 0) {
+          await applyPointChange(tx, {
+            userId: order.customer_id,
+            delta: -pointsClawedBack,
+            orderId: order.id,
+            description: `ยึดคืนจากใบลดหนี้ ${allocation.documentNumber}`,
+          });
+        }
       }
-      if (redeemed > 0) {
-        // Given back unconditionally: the customer paid for that discount with
-        // points, and the sale they paid for no longer exists.
+
+      if (redeemReturn > 0) {
         await applyPointChange(tx, {
           userId: order.customer_id,
-          delta: redeemed,
+          delta: redeemReturn,
           orderId: order.id,
           description: `คืนแต้มจากการคืนสินค้า ${allocation.documentNumber}`,
         });
       }
     }
 
+    /*
+     * The tax, out of the sale's own snapshot rather than today's settings — and on
+     * the closing note, the base the earlier notes did not claim, so the notes
+     * reconstruct the invoice's net and VAT exactly.
+     */
+    const tax = refundTax({
+      refundThb: finalAmount,
+      ratePercent: order.vat_rate_used === null ? 0 : fromDecimal(order.vat_rate_used),
+      isVatInvoice: order.is_vat_invoice,
+      netOverride: plan.closes
+        ? fromDecimal(order.net_amount) -
+          sumThb(order.credit_notes.map((note) => fromDecimal(note.net_amount)))
+        : null,
+    });
+
+    const nextSequence =
+      order.credit_notes.reduce((highest, note) => Math.max(highest, note.sequence), 0) + 1;
+
     const creditNote = await tx.credit_notes.create({
       data: {
         document_number: allocation.documentNumber,
         order_id: order.id,
+        sequence: nextSequence,
         shift_id: shiftId,
         reason,
         refund_method: input.refundMethod,
+        gross_amount: plan.grossThb,
+        discount_amount: plan.discountThb,
         final_amount: finalAmount,
-        /* Copied from the sale's snapshot, not recomputed from today's settings. */
-        net_amount: fromDecimal(order.net_amount),
-        vat_amount: fromDecimal(order.vat_amount),
+        net_amount: tax.netThb,
+        vat_amount: tax.vatThb,
         vat_rate_used: order.vat_rate_used,
         points_clawed_back: pointsClawedBack,
         points_forgiven: pointsForgiven,
@@ -192,21 +294,41 @@ export async function refundOrder(input: {
       },
     });
 
+    const itemsById = new Map(order.items.map((item) => [item.id.toString(), item]));
     let returnedUnits = 0;
-    for (const item of order.items) {
+
+    for (const line of plan.lines) {
+      const item = itemsById.get(line.orderItemId);
+      if (!item) {
+        throw new ConflictError(
+          `Order item ${line.orderItemId} vanished while the refund was being written`,
+          'ORDER_ITEM_MISSING',
+        );
+      }
+
+      await tx.credit_note_items.create({
+        data: {
+          credit_note_id: creditNote.id,
+          order_item_id: item.id,
+          quantity: line.quantity,
+          unit_price: line.unitPrice,
+          line_total: line.lineTotal,
+        },
+      });
+
       const balanceAfter = await returnRefundedStock(tx, {
         productId: item.product_id,
-        qty: item.quantity,
+        qty: line.quantity,
       });
       await recordStockMovement(tx, {
         productId: item.product_id,
         userId: input.actorId,
         movementType: 'pos_refund',
-        qtyChanged: item.quantity,
+        qtyChanged: line.quantity,
         balanceAfter: balanceAfter.stock_qty,
         note: `คืนสินค้า ${order.order_number} · ${allocation.documentNumber}`,
       });
-      returnedUnits += item.quantity;
+      returnedUnits += line.quantity;
     }
 
     /*
@@ -228,10 +350,18 @@ export async function refundOrder(input: {
       },
     });
 
-    await tx.orders.update({
-      where: { id: order.id },
-      data: { status: 'refunded' },
-    });
+    /*
+     * The status moves only when there is nothing left to refund. A partly credited
+     * bill is still a completed sale — it is the *notes* that record what came back,
+     * and `canTransition` keeps being a complete answer to "can this be refunded
+     * again" without a status per degree of refundedness.
+     */
+    if (plan.closes) {
+      await tx.orders.update({
+        where: { id: order.id },
+        data: { status: 'refunded' },
+      });
+    }
 
     await recordAudit(
       {
@@ -244,10 +374,19 @@ export async function refundOrder(input: {
         detail: {
           orderNumber: order.order_number,
           documentNumber: allocation.documentNumber,
+          sequence: nextSequence,
+          /*
+           * Whether this note finished the sale is the first thing an owner
+           * scanning the trail for "where did the money go" needs to know: a
+           * partial refund leaves a bill that was still paid.
+           */
+          partial: !plan.closes,
           reason,
           refundMethod: input.refundMethod,
+          grossAmountThb: plan.grossThb,
+          discountThb: plan.discountThb,
           finalAmountThb: finalAmount,
-          returnedLines: order.items.length,
+          returnedLines: plan.lines.length,
           returnedUnits,
           pointsClawedBack,
           pointsForgiven,
@@ -259,11 +398,16 @@ export async function refundOrder(input: {
     return {
       orderId: order.id,
       orderNumber: order.order_number,
-      status: 'refunded' as const,
+      /* The sale's status, which is unchanged by a partial refund. */
+      status: plan.closes ? ('refunded' as const) : ('completed' as const),
+      sequence: nextSequence,
+      partial: !plan.closes,
       documentNumber: allocation.documentNumber,
+      grossAmountThb: plan.grossThb,
+      discountThb: plan.discountThb,
       finalAmountThb: finalAmount,
       refundMethod: input.refundMethod,
-      returnedLines: order.items.length,
+      returnedLines: plan.lines.length,
       returnedUnits,
       pointsClawedBack,
       pointsForgiven,
@@ -280,11 +424,23 @@ export async function refundOrder(input: {
  * *now* — a renamed shop reprints under its new name — while every figure and the
  * document number come from the snapshot, which is the same split the receipt
  * route documents.
+ *
+ * A sale can carry several notes now, so `documentNumber` picks one and omitting it
+ * means "the latest" — which is what a till reprinting straight after a refund
+ * wants, and what an order screen shows when it can only show one.
  */
-export async function loadCreditNoteDocument(orderId: string): Promise<CreditNoteDocument | null> {
-  const note = await prisma.credit_notes.findUnique({
-    where: { order_id: orderId },
+export async function loadCreditNoteDocument(
+  orderId: string,
+  documentNumber?: string | null,
+): Promise<CreditNoteDocument | null> {
+  const note = await prisma.credit_notes.findFirst({
+    where: {
+      order_id: orderId,
+      ...(documentNumber ? { document_number: documentNumber } : {}),
+    },
+    orderBy: { sequence: 'desc' },
     include: {
+      items: { orderBy: { id: 'asc' } },
       issuer: { select: { full_name: true } },
       approver: { select: { full_name: true } },
       order: {
@@ -292,6 +448,8 @@ export async function loadCreditNoteDocument(orderId: string): Promise<CreditNot
           cashier: { select: { full_name: true } },
           items: { include: { product: { select: { name: true } } }, orderBy: { id: 'asc' } },
           payments: { orderBy: { id: 'asc' } },
+          /* The siblings, for "did this note finish the sale" — see `toDocument`. */
+          credit_notes: { select: { sequence: true, final_amount: true } },
         },
       },
     },
@@ -304,17 +462,51 @@ export async function loadCreditNoteDocument(orderId: string): Promise<CreditNot
   return toDocument(note);
 }
 
+/**
+ * Every credit note on a sale, newest first.
+ * What an order screen needs to show that a bill was refunded in pieces rather than
+ * hiding all but the last document.
+ */
+export async function listCreditNoteDocuments(orderId: string): Promise<CreditNoteDocument[]> {
+  const notes = await prisma.credit_notes.findMany({
+    where: { order_id: orderId },
+    orderBy: { sequence: 'desc' },
+    include: {
+      items: { orderBy: { id: 'asc' } },
+      issuer: { select: { full_name: true } },
+      approver: { select: { full_name: true } },
+      order: {
+        include: {
+          cashier: { select: { full_name: true } },
+          items: { include: { product: { select: { name: true } } }, orderBy: { id: 'asc' } },
+          payments: { orderBy: { id: 'asc' } },
+          credit_notes: { select: { sequence: true, final_amount: true } },
+        },
+      },
+    },
+  });
+
+  return notes.map(toDocument);
+}
+
 /** The shop identity a credit note prints under, for the document route. */
 export async function creditNoteShop() {
   return (await loadShop()) ?? UNCONFIGURED_SHOP;
 }
 
 type NoteRow = credit_notes & {
+  items: { order_item_id: bigint; quantity: number; unit_price: unknown; line_total: unknown }[];
   issuer: { full_name: string };
   approver: { full_name: string } | null;
   order: orders & {
     cashier: { full_name: string } | null;
-    items: { quantity: number; unit_price: unknown; total_price: unknown; product: { name: string } }[];
+    items: {
+      id: bigint;
+      quantity: number;
+      unit_price: unknown;
+      total_price: unknown;
+      product: { name: string };
+    }[];
     payments: {
       method: string;
       amount: unknown;
@@ -322,6 +514,7 @@ type NoteRow = credit_notes & {
       change_amount: unknown;
       direction: string;
     }[];
+    credit_notes: { sequence: number; final_amount: unknown }[];
   };
 };
 
@@ -344,12 +537,50 @@ function toDocument(note: NoteRow): CreditNoteDocument {
     totalPrice: fromDecimal(item.total_price as never),
   }));
 
+  /*
+   * The lines *this note* takes back, joined to the sale's own lines for their
+   * names. A note written before this column existed has no item rows and falls
+   * back to the whole invoice, which is exactly what it reversed.
+   */
+  const byItemId = new Map(order.items.map((item) => [item.id.toString(), item]));
+  const returned: DocumentLine[] =
+    note.items.length === 0
+      ? lines
+      : note.items.map((line) => {
+          const item = byItemId.get(line.order_item_id.toString());
+          return {
+            name: item?.product.name ?? 'สินค้า',
+            quantity: line.quantity,
+            unitPrice: fromDecimal(line.unit_price as never),
+            totalPrice: fromDecimal(line.line_total as never),
+          };
+        });
+
+  /*
+   * Whether this note left the sale standing. Asked of the whole set of notes rather
+   * than stored on each one: the closing note is the last one written *and* the one
+   * that made the notes add up to the invoice, so a reprint answers the question
+   * from the same evidence a person would use.
+   */
+  const siblings = order.credit_notes;
+  const coveredByNotes = sumThb(
+    siblings.map((sibling) => fromDecimal(sibling.final_amount as never)),
+  );
+  const isClosing =
+    note.sequence === Math.max(...siblings.map((sibling) => sibling.sequence)) &&
+    coveredByNotes >= fromDecimal(order.final_amount);
+
   return {
     documentNumber: note.document_number,
+    sequence: note.sequence,
+    isPartial: !isClosing,
     issuedAt: note.created_at.toISOString(),
     reason: note.reason,
     refundMethod: note.refund_method as RefundMethod,
     refundMethodLabel: refundMethodLabel(note.refund_method as RefundMethod),
+    grossAmountThb: fromDecimal(note.gross_amount),
+    discountThb: fromDecimal(note.discount_amount),
+    lines: returned,
     finalAmountThb: fromDecimal(note.final_amount),
     netThb: fromDecimal(note.net_amount),
     vatThb: fromDecimal(note.vat_amount),
@@ -384,14 +615,22 @@ function toDocument(note: NoteRow): CreditNoteDocument {
  *
  * Separate from the document because it answers a different question: the
  * document is what the customer holds, this is what the day's takings have to
- * subtract. `null` when the sale was not refunded.
+ * subtract. `null` when nothing has been refunded.
+ *
+ * Summed rather than read off one note, and that is the whole point of partial
+ * refunds: a bill credited three times subtracts three amounts, and a report that
+ * read only the latest would count the takings as nearly whole.
  */
 export async function refundedAmountFor(orderId: string): Promise<number | null> {
-  const note = await prisma.credit_notes.findUnique({
+  const aggregate = await prisma.credit_notes.aggregate({
     where: { order_id: orderId },
-    select: { final_amount: true },
+    _sum: { final_amount: true },
+    _count: { _all: true },
   });
-  return note ? roundThb(fromDecimal(note.final_amount)) : null;
+
+  return aggregate._count._all === 0 || aggregate._sum.final_amount === null
+    ? null
+    : roundThb(fromDecimal(aggregate._sum.final_amount));
 }
 
 async function pointsBalance(db: Db, userId: string): Promise<number> {
@@ -411,6 +650,28 @@ export async function findCreditNoteByNumber(
     select: { id: true, order_id: true },
   });
   return note ? { id: note.id, orderId: note.order_id } : null;
+}
+
+/**
+ * The history of a sale's reversals, for the order screen.
+ * Cheapest possible read: one row per note, before the amounts are needed, so the
+ * screen can decide whether to fetch the documents themselves.
+ */
+export async function creditNoteHistoryFor(
+  orderId: string,
+): Promise<{ documentNumber: string; sequence: number; amountThb: number; isLast: boolean }[]> {
+  const notes = await prisma.credit_notes.findMany({
+    where: { order_id: orderId },
+    orderBy: { sequence: 'asc' },
+    select: { document_number: true, sequence: true, final_amount: true },
+  });
+
+  return notes.map((note, index) => ({
+    documentNumber: note.document_number,
+    sequence: note.sequence,
+    amountThb: fromDecimal(note.final_amount),
+    isLast: index === notes.length - 1,
+  }));
 }
 
 /** Throws the not-found error a route needs, naming the document. */

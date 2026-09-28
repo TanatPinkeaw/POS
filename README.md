@@ -189,9 +189,9 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 573 tests across 41 files: unit + integration
+npm test                # 609 tests across 43 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 82 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 124 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -234,10 +234,13 @@ was misread because of it — the application was right and the harness was lyin
 - **Attendance**, including that `work_hours` is computed by PostgreSQL, that the
   roster is joined to the day the shift actually started, and that a second open
   log is impossible even when the application guard is bypassed.
-- **Reversing a paid sale**, including that a second refund is refused by the
-  database as well as by the state machine, that money cannot leave the till with
-  no credit note behind it, that clawing back points never blocks a customer's
-  refund, and that the dashboard's cash figure nets what was handed back.
+- **Reversing a paid sale**, including that money cannot leave the till with no
+  credit note behind it, that clawing back points never blocks a customer's refund,
+  and that the dashboard's cash figure nets what was handed back.
+- **A partial refund**, including that a three-way split of a discounted ฿99.99 bill
+  foots to the invoice exactly, that a line cannot be returned twice, that every unit
+  comes back to the shelf exactly once, and that the bill is `refunded` only when the
+  last line does.
 - **Money arriving from a bank notification**, including the refusals: an amount
   matching a bill but naming none, two candidates for one amount, money that
   arrives after the QR was withdrawn, and a bridge retrying the same message.
@@ -375,7 +378,7 @@ endpoint that says so.
 | §6.2 cash drawer | `src/lib/shifts.ts` (pure) + `src/lib/cash-shifts.ts` (persistence) |
 | §8 Excel exports | `src/lib/reports.ts` (queries) + `src/lib/report-spec.ts` (columns/formatting) + `src/lib/excel.ts` (rendering) |
 | §2 RBAC | `src/lib/roles.ts`, enforced in `src/proxy.ts` **and** every route handler |
-| Reversal of a paid sale (beyond the SRS) | `src/lib/credit-notes.ts` (the transaction) + `src/lib/order-state.ts` (the `refund` edge) — ADR 0004 |
+| Reversal of a paid sale (beyond the SRS) | `src/lib/credit-notes.ts` (the transaction) + `src/lib/refund-plan.ts` (the arithmetic) + `src/lib/order-state.ts` (the `refund` edge) — ADRs 0004, 0008 |
 | §3 pickup QR | `src/lib/pickup-token.ts` (the signed code), `pickup-scan.ts` (what the counter typed), rendered on the customer's order — ADR 0006 |
 
 The domain rules are split into **pure functions** (loyalty, settlement, the state
@@ -400,7 +403,7 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | `/admin/products` → categories | Categories are createable at last, and deleting one that still has products is refused by the database. |
 | `/admin/products` → import | CSV or `.xlsx` catalogue import: a preview that writes nothing, a downloadable template, and its own `REASON_IMPORT` audit entries. |
 | `GET /api/v1/orders/{id}/receipt` | Reprint data, read from the order's own snapshot columns, so a 2026 receipt still shows 7% in 2027. |
-| `POST /api/v1/orders/{id}/refund` | Reverse a whole paid bill and issue a credit note. Supervisor PIN required, always. |
+| `POST /api/v1/orders/{id}/refund` | Reverse a paid bill — named lines and quantities, or everything outstanding — and issue a credit note. Supervisor PIN required, always. |
 | `GET /api/v1/orders/{id}/credit-note` | Reprint data for that credit note — the sibling of the receipt route. |
 | `POST /api/v1/payments/inbound` | A bank notification, from the shop's own bridge. Machine-only, shared secret. |
 | `GET /api/v1/payments/inbound` | Money the bank reported that could not be matched to a bill. Admin-only. |
@@ -429,12 +432,29 @@ series with no way to reverse one is a gap a tax-invoice-issuing shop cannot liv
 with. `docs/adr/0004-credit-notes-and-refunds.md` is the decision; this is what it
 means in practice.
 
-**One credit note per receipt, for the whole bill.** Not per line and not for a
-free-form amount: an amount that matches no bill is a document that proves
-nothing, and a tax invoice is reversed by a credit note that names it in full. A
-receipt therefore has at most one credit note (`UNIQUE (order_id)`), and
-`refunded` is a terminal order status — a second refund has nowhere to go, and
-the database refuses it even if two requests race past the state machine.
+**A credit note itemises what it reverses.** `credit_note_items` records the lines
+and quantities going back, so a customer returning one item out of three is served
+at the counter and the invoice survives untouched for their next visit. There is no
+free-form amount: an amount that matches no line is a document that proves nothing.
+A bill takes several notes, numbered within it (`sequence`), and a line cannot be
+returned twice within one note — the unique index catches two requests that raced
+past the state machine.
+
+**The closing note takes the remainder.** A partial refund has to split an
+order-level discount across the lines coming back, and a two-decimal round of that
+share leaves a satang somewhere. The note that empties the order is *defined* by
+subtraction — the invoice, less what the earlier notes already gave back — so no
+split of one sale can strand a satang, however many visits it takes. The same
+trick keeps the tax exact: the closing note takes the net the earlier notes did not
+round to, so the notes reconstruct the sale's own net and VAT to the satang.
+`src/lib/refund-plan.ts` is that arithmetic, pure, because it ends up on a legal
+document — and the till previews with the same function the server writes with.
+
+**A partly credited invoice is still the invoice.** The order's own totals and its
+receipt number are never rewritten; what was refunded is the sum of the notes,
+which the database can answer rather than a column that can drift. A sale is
+`refunded` only when the notes have taken back everything on it, because a bill that
+has been partly credited is money the shop is still entitled to hold.
 
 **The number comes from the shop's own series.** `shops.credit_note_prefix` and
 `shops.credit_note_running_number` mirror the receipt columns, allocated in the
@@ -573,17 +593,13 @@ goes through them.
 | `docs/adr/0005-automatic-transfer-confirmation.md` | Closing a bill from the shop's own bank notification, and why the matcher refuses when it is not certain. |
 | `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
 | `docs/adr/0007-notification-outbox.md` | The notification outbox: written with the fact, sent by a worker the shop runs, and why a customer's code never goes to the shop's LINE group. |
+| `docs/adr/0008-partial-refunds.md` | Per-line refunds: the note itemises, several notes per invoice, and why the closing note takes the remainder. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
 
 Deferred deliberately, and listed here rather than discovered during service:
 
-- **Partial refunds and per-line returns.** A refund reverses the whole bill
-  (ADR 0004 decision 2). Returning one line of a three-line sale, or refunding
-  only part of what was paid, is not expressible yet — and doing it properly
-  means the credit note stops mirroring its invoice and starts *itemising* the
-  part it reverses.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **A shop cannot create a customer.** `/api/v1/members` is read-only and the

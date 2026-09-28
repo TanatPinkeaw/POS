@@ -114,7 +114,7 @@ email in this system; recovery is a SQL statement (see §8).
 | Handover | `/pos/preorders` → ค้นหา | **Scan the customer's QR**, or type their 4-digit PIN, or their phone number — one box takes all three. The QR is on the customer's own order screen, under that order. |
 | Clock in / out | `/pos/attendance` | One button. Hours are computed by the database. |
 | Close the drawer | `/pos` → ปิดลิ้นชัก | Count the cash and type it in. The screen shows the expected amount and names any discrepancy as short, over, or balanced. |
-| Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Hands the whole bill back and issues a credit note. Always needs a supervisor PIN, even for the owner. |
+| Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Tick the lines coming back and how many of each — or leave it blank to hand the whole bill back. The credit note itemises exactly what it reverses, and the customer can come back later for the rest. Always needs a supervisor PIN, even for the owner. |
 | Reports | `/admin/reports` | Four Excel workbooks, per date range. |
 | Roster & timesheet | `/admin/schedules` | Roster shifts per employee per day; the timesheet shows lateness and overtime. |
 
@@ -247,7 +247,6 @@ that `migrate dev` would propose dropping.
 
 Recorded here so nobody discovers it during service:
 
-- No partial refunds or per-line returns: a refund reverses the whole bill.
 - No way to *send* a refund automatically — cash goes back out of an open drawer,
   or you transfer it yourself from your banking app.
 - **You cannot add a customer.** Staff accounts are created in `/admin/staff`, but

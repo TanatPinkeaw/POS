@@ -9,9 +9,13 @@
  * naming both roles rather than an unaudited hole.
  *
  * Everything else about the reversal lives in `refundOrder`: the transaction, the
- * gapless credit-note number, the stock coming back, the points reversal and the
- * audit row. This file is the authorisation and the fan-out to the screens that
- * have to stop believing what they were showing.
+ * gapless credit-note number, the arithmetic that turns "these three of those five"
+ * into an amount, the stock coming back, the points reversal and the audit row.
+ * This file is the authorisation and the fan-out to the screens that have to stop
+ * believing what they were showing.
+ *
+ * A body with no `lines` is a full refund of whatever is left, which is what the
+ * till sent before partial refunds existed.
  */
 import { readJson, withApi } from '@/lib/api';
 import { broadcastStockFor } from '@/lib/broadcast';
@@ -42,6 +46,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
       reason: body.reason,
       refundMethod: body.refundMethod,
       shiftId: body.shiftId ?? null,
+      lines: body.lines ?? null,
       authorizedByUserId: approverId,
     });
 

@@ -274,7 +274,24 @@ export const cancelOrderSchema = z.object({
  * case without an open drawer — so it is optional here and checked where the
  * drawer can actually be read.
  */
+/**
+ * Reversing a paid sale, wholly or in part.
+ *
+ * `lines` is what makes a refund partial. Omitting it means "everything still
+ * outstanding", which is what a full refund has always meant and what the till
+ * sends when the cashier does not pick the bill apart — so a caller that has not
+ * been taught about partial refunds keeps working, unchanged.
+ */
 export const refundOrderSchema = z.object({
+  lines: z
+    .array(
+      z.object({
+        orderItemId: z.string().min(1),
+        quantity: z.number().int().positive(),
+      }),
+    )
+    .min(1, 'Name at least one line to take back')
+    .optional(),
   reason: z.string().trim().min(1, 'บอกเหตุผลการคืนเงิน').max(500),
   refundMethod: z.enum(['cash', 'promptpay']),
   shiftId: z.number().int().positive().nullable().optional(),

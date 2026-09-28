@@ -38,6 +38,7 @@ import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createServer } from 'node:http';
 
+import { roundThb } from '../src/lib/money';
 import { hashPassword } from '../src/lib/password';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
 
@@ -191,7 +192,13 @@ interface RefundDto {
   orderId: string;
   orderNumber: string;
   status: string;
+  /** 1-based, within this sale: which note this is. */
+  sequence: number;
+  /** True when this note left something refundable behind. */
+  partial: boolean;
   documentNumber: string;
+  grossAmountThb: number;
+  discountThb: number;
   finalAmountThb: number;
   refundMethod: string;
   returnedLines: number;
@@ -213,6 +220,11 @@ interface CreditNoteDto {
     isVatInvoice: boolean;
     issuedBy: string;
     approvedBy: string | null;
+    sequence: number;
+    isPartial: boolean;
+    grossAmountThb: number;
+    discountThb: number;
+    lines: { name: string; quantity: number; unitPrice: number; totalPrice: number }[];
     original: {
       orderNumber: string;
       receiptNumber: string | null;
@@ -779,6 +791,147 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     receiptAfterRefund.receipt.tenders,
   );
 
+  /* --------- 9b. a customer who brings back one item out of two */
+
+  /*
+   * The everyday case the whole-bill refund could not serve. Two items on the bill,
+   * one comes back: the customer keeps the coffee and gets the water's money, and
+   * the invoice stays exactly as it was issued — which is what makes a later visit
+   * with the other item possible at all.
+   */
+  const water = (await admin.call<ProductDto[]>(`/api/v1/products?barcode=${WATER.barcode}`))[0];
+
+  const pair = await cashier.call<OrderDto>('/api/v1/orders', {
+    method: 'POST',
+    body: {
+      type: 'pos_walkin',
+      shiftId: secondShift.id,
+      lines: [
+        { productId: coffee?.id, quantity: 1 },
+        { productId: water?.id, quantity: 2 },
+      ],
+      settlement: { cash: COFFEE.price + WATER.price * 2 },
+    },
+  });
+  check('a two-line sale rings up', pair.status === 'completed', pair.status);
+
+  const pairDetail = await cashier.call<{
+    items: { id: string; name: string; quantity: number; refundedQuantity: number; totalPrice: number }[];
+  }>(`/api/v1/orders/${pair.orderId}`);
+  const waterLine = pairDetail.items.find((item) => item.name === WATER.name);
+  check(
+    'nothing on it has been refunded yet',
+    pairDetail.items.every((item) => item.refundedQuantity === 0),
+    pairDetail.items.map((item) => item.refundedQuantity),
+  );
+
+  const partialGrant = await cashier.call<{ token: string }>('/api/v1/pos/approvals', {
+    method: 'POST',
+    body: {
+      supervisorId: approvers.supervisors[0]?.id,
+      pin: SUPERVISOR_PIN,
+      action: 'refund_order',
+      targetId: pair.orderId,
+    },
+  });
+
+  const partialRefund = await cashier.call<RefundDto>(
+    `/api/v1/orders/${pair.orderId}/refund`,
+    {
+      method: 'POST',
+      headers: { 'x-supervisor-token': partialGrant.token },
+      body: {
+        reason: 'ลูกค้าคืนน้ำเปล่า 1 ขวด',
+        refundMethod: 'cash',
+        shiftId: secondShift.id,
+        lines: [{ orderItemId: waterLine?.id, quantity: 1 }],
+      },
+    },
+  );
+  check(
+    'the note reverses one line and leaves the bill standing',
+    partialRefund.partial === true && partialRefund.status === 'completed',
+    partialRefund,
+  );
+  check(
+    `and pays back exactly that bottle (${WATER.price})`,
+    partialRefund.finalAmountThb === WATER.price,
+    partialRefund.finalAmountThb,
+  );
+  check('it is the first note on the bill', partialRefund.sequence === 1, partialRefund.sequence);
+
+  const partialNote = await cashier.call<CreditNoteDto>(
+    `/api/v1/orders/${pair.orderId}/credit-note`,
+  );
+  check(
+    'the document itemises the bottle and nothing else',
+    partialNote.creditNote.lines.length === 1 &&
+      partialNote.creditNote.lines[0]?.name === WATER.name &&
+      partialNote.creditNote.lines[0]?.quantity === 1,
+    partialNote.creditNote.lines,
+  );
+  check(
+    'and its own arithmetic reconciles: lines − discount = total',
+    roundThb(partialNote.creditNote.grossAmountThb - partialNote.creditNote.discountThb) ===
+      partialNote.creditNote.finalAmountThb,
+    partialNote.creditNote,
+  );
+
+  const shelfAfterPartial = (await admin.call<ProductDto[]>(`/api/v1/products?barcode=${WATER.barcode}`))[0];
+  check(
+    'only that one unit is back on the shelf',
+    shelfAfterPartial?.stockQty === WATER.stock - 2 + 1,
+    `${WATER.stock} − 2 + 1 vs ${shelfAfterPartial?.stockQty}`,
+  );
+
+  /*
+   * And the second visit, with what is left. This is the assertion the whole
+   * feature turns on: the two notes together are the invoice, to the satang, so a
+   * bill refunded in pieces cannot leave the shop holding money it owes.
+   */
+  const restGrant = await cashier.call<{ token: string }>('/api/v1/pos/approvals', {
+    method: 'POST',
+    body: {
+      supervisorId: approvers.supervisors[0]?.id,
+      pin: SUPERVISOR_PIN,
+      action: 'refund_order',
+      targetId: pair.orderId,
+    },
+  });
+
+  const rest = await cashier.call<RefundDto>(`/api/v1/orders/${pair.orderId}/refund`, {
+    method: 'POST',
+    headers: { 'x-supervisor-token': restGrant.token },
+    body: { reason: 'ลูกค้ากลับมาคืนที่เหลือ', refundMethod: 'cash', shiftId: secondShift.id },
+  });
+  check(
+    'the second visit closes the bill',
+    rest.partial === false && rest.status === 'refunded' && rest.sequence === 2,
+    rest,
+  );
+  check(
+    'and the two notes add up to the invoice exactly',
+    roundThb(partialRefund.finalAmountThb + rest.finalAmountThb) === pair.finalAmountThb,
+    `${partialRefund.finalAmountThb} + ${rest.finalAmountThb} vs ${pair.finalAmountThb}`,
+  );
+
+  const pairShelf = (await admin.call<ProductDto[]>(`/api/v1/products?barcode=${WATER.barcode}`))[0];
+  check(
+    'every unit is back, and none of them twice',
+    pairShelf?.stockQty === WATER.stock,
+    pairShelf?.stockQty,
+  );
+
+  const pairReceipt = await cashier.call<{
+    receipt: { finalAmountThb: number; tenders: { method: string; amountThb: number }[] };
+  }>(`/api/v1/orders/${pair.orderId}/receipt`);
+  check(
+    'and the invoice itself still reprints as issued',
+    pairReceipt.receipt.finalAmountThb === pair.finalAmountThb &&
+      pairReceipt.receipt.tenders.length === 1,
+    pairReceipt.receipt,
+  );
+
   /* ----------------------------- 10. a transfer that closes its own bill */
   section('10. A bank notification that closes its own bill');
 
@@ -1112,10 +1265,21 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
         handoverReceipt.receipt.netThb + handoverReceipt.receipt.vatThb === placed.subtotalThb,
       handoverReceipt.receipt,
     );
+    /*
+     * Gapless means *no number is skipped*, not that this happens to be the
+     * second receipt of the run: the journey now rings up more bills before the
+     * parcel is collected, so the expectation is derived from the last one
+     * issued rather than hard-coded.
+     */
+    const lastReceiptNumber = pair.receiptNumber ?? '';
+    const expectedReceiptNumber = lastReceiptNumber.replace(/(\d+)$/, (digits) =>
+      String(Number(digits) + 1).padStart(digits.length, '0'),
+    );
     check(
       'and it takes the next number in the same gapless series',
-      /^FR-\d{4}-000002$/.test(handoverReceipt.receipt.receiptNumber ?? ''),
-      handoverReceipt.receipt.receiptNumber,
+      expectedReceiptNumber !== '' &&
+        handoverReceipt.receipt.receiptNumber === expectedReceiptNumber,
+      `${handoverReceipt.receipt.receiptNumber} vs ${expectedReceiptNumber}`,
     );
 
     const afterPreOrder = (

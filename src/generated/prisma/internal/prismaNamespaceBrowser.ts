@@ -64,6 +64,7 @@ export const ModelName = {
   order_items: 'order_items',
   payments: 'payments',
   credit_notes: 'credit_notes',
+  credit_note_items: 'credit_note_items',
   payment_intents: 'payment_intents',
   inbound_payments: 'inbound_payments',
   notifications: 'notifications',
@@ -295,9 +296,12 @@ export const Credit_notesScalarFieldEnum = {
   id: 'id',
   document_number: 'document_number',
   order_id: 'order_id',
+  sequence: 'sequence',
   shift_id: 'shift_id',
   reason: 'reason',
   refund_method: 'refund_method',
+  gross_amount: 'gross_amount',
+  discount_amount: 'discount_amount',
   final_amount: 'final_amount',
   net_amount: 'net_amount',
   vat_amount: 'vat_amount',
@@ -310,6 +314,18 @@ export const Credit_notesScalarFieldEnum = {
 } as const
 
 export type Credit_notesScalarFieldEnum = (typeof Credit_notesScalarFieldEnum)[keyof typeof Credit_notesScalarFieldEnum]
+
+
+export const Credit_note_itemsScalarFieldEnum = {
+  id: 'id',
+  credit_note_id: 'credit_note_id',
+  order_item_id: 'order_item_id',
+  quantity: 'quantity',
+  unit_price: 'unit_price',
+  line_total: 'line_total'
+} as const
+
+export type Credit_note_itemsScalarFieldEnum = (typeof Credit_note_itemsScalarFieldEnum)[keyof typeof Credit_note_itemsScalarFieldEnum]
 
 
 export const Payment_intentsScalarFieldEnum = {

@@ -8,7 +8,7 @@
  */
 import { prisma } from './db';
 import { NotFoundError } from './errors';
-import { fromDecimal } from './money';
+import { fromDecimal, sumThb } from './money';
 import type { OrderStatus } from './order-state';
 import { createPickupToken } from './pickup-token';
 
@@ -18,6 +18,8 @@ export interface OrderItemView {
   name: string;
   barcode: string | null;
   quantity: number;
+  /** How many of `quantity` have already been refunded, across every credit note. */
+  refundedQuantity: number;
   unitPrice: number;
   totalPrice: number;
 }
@@ -53,6 +55,10 @@ export interface OrderView {
    * round trip per row is how a list of fifty becomes a slow screen.
    */
   creditNoteNumber: string | null;
+  /** How many credit notes this sale carries — one per refund visit. */
+  creditNoteCount: number;
+  /** Everything given back so far, across every note. */
+  refundedThb: number;
   createdAt: Date;
   confirmedAt: Date | null;
   readyAt: Date | null;
@@ -89,11 +95,26 @@ export interface OrderListView {
 }
 
 const fullInclude = {
-  items: { include: { product: { select: { name: true, barcode: true } } }, orderBy: { id: 'asc' as const } },
+  items: {
+    include: {
+      product: { select: { name: true, barcode: true } },
+      /*
+       * What has already gone back on each line, so a screen can offer what is left
+       * rather than what was sold. Without it the refund dialog would have to ask a
+       * second question, and a till that asks two questions mid-sale is a till
+       * somebody refunds the wrong line from.
+       */
+      refunded_on: { select: { quantity: true } },
+    },
+    orderBy: { id: 'asc' as const },
+  },
   payments: { orderBy: { id: 'asc' as const } },
   customer: { select: { id: true, full_name: true, phone: true, points_balance: true } },
   cashier: { select: { id: true, full_name: true } },
-  credit_note: { select: { document_number: true } },
+  credit_notes: {
+    select: { document_number: true, sequence: true, final_amount: true },
+    orderBy: { sequence: 'asc' as const },
+  },
 };
 
 /** One order with its lines, payments, and parties. */
@@ -119,7 +140,16 @@ export async function loadOrderView(orderId: string): Promise<OrderView> {
     pickupPin: order.pickup_pin,
     pickupExpiresAt: order.pickup_expires_at,
     cancelReason: order.cancel_reason,
-    creditNoteNumber: order.credit_note?.document_number ?? null,
+    /*
+     * The latest note, not the only one: a bill can be refunded in pieces, and a
+     * screen with room for one reference should show the most recent document. The
+     * full history is `creditNoteHistoryFor`.
+     */
+    creditNoteNumber: order.credit_notes.at(-1)?.document_number ?? null,
+    creditNoteCount: order.credit_notes.length,
+    refundedThb: sumThb(
+      order.credit_notes.map((note) => fromDecimal(note.final_amount as never)),
+    ),
     createdAt: order.created_at,
     confirmedAt: order.confirmed_at,
     readyAt: order.ready_at,
@@ -140,6 +170,7 @@ export async function loadOrderView(orderId: string): Promise<OrderView> {
       name: item.product.name,
       barcode: item.product.barcode,
       quantity: item.quantity,
+      refundedQuantity: item.refunded_on.reduce((total, line) => total + line.quantity, 0),
       unitPrice: fromDecimal(item.unit_price),
       totalPrice: fromDecimal(item.total_price),
     })),

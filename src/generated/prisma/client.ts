@@ -137,6 +137,14 @@ export type payments = Prisma.paymentsModel
  */
 export type credit_notes = Prisma.credit_notesModel
 /**
+ * Model credit_note_items
+ * *
+ *  * One line of a credit note, and how much of it went back.
+ *  * Quantity lives here rather than on the order line because a line can be returned
+ *  * in more than one visit: three units sold, one back on Monday and two on Friday.
+ */
+export type credit_note_items = Prisma.credit_note_itemsModel
+/**
  * Model payment_intents
  * *
  *  * A PromptPay QR issued for one amount, and what became of it.
