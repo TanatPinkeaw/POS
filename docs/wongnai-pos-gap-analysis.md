@@ -66,7 +66,7 @@ that does not want its sales data in somebody else's cloud).
 | Partial confirmation (drop a line, release its stock) | ✅ | ❌ | ours only |
 | 4-digit pickup PIN + hold deadline | ✅ | `[U]` | |
 | **Pickup QR code** | ✅ | ✅ `[C]` | SRS asks for PIN **and** QR; both now, side by side on the customer's order (ADR 0006) |
-| **Outbound customer notification** | ❌ | ✅ `[C]` | ours is in-app + Web Notifications only |
+| **Outbound customer notification** | ✅ | ✅ `[C]` | an outbox written with the order, sent by a worker the shop runs — LINE for the shop, SMS/webhook for the customer (ADR 0007) |
 
 ### Back office
 
@@ -154,13 +154,18 @@ worth recording:
 Remaining, and small: no automatic *outbound* refund, because pushing money back
 needs bank API onboarding rather than code.
 
-### 4.2 Notification the customer can actually receive — parity
+### 4.2 Notification the customer can actually receive — done
 
-Our in-app socket alert only reaches somebody with the page open. Theirs pushes
-through LINE. For a pre-order shop this is the difference between a customer
-knowing their order is ready and a customer standing outside. Shape: a
-notification outbox table with a pluggable channel (LINE Notify / SMS), retried,
-with the in-app path staying as the fallback.
+Our in-app socket alert only reached somebody with the page open; theirs pushes
+through LINE. Both halves now exist: the customer's collection code goes to their
+phone on a webhook channel, and the shop gets a note about a new pre-order on LINE
+or by SMS — written in the same transaction as the order, retried on a schedule,
+and abandoned visibly when a gateway is misconfigured (ADR 0007).
+
+What is still missing is the *routing* rather than the delivery: `line` can only
+address the shop's own group, because a LINE user id is not something this system
+captures from a customer. Members would need to hand one over, which is a consent
+question before it is a schema one.
 
 ### 4.3 Pickup QR — done
 
@@ -227,8 +232,10 @@ Stated here rather than implied anywhere above:
 1. ~~**Void / refund + credit notes** (§4.1)~~ — **done**, ADR 0004. The only item
    on this list where *not* building it means a shop cannot legally trade.
    **Partial and per-line refunds** are now the top of the correctness list.
-2. **Notification outbox with a real channel** (§4.2). Half of the pre-order
-   feature is "the customer finds out", and today they do not.
+2. ~~**Notification outbox with a real channel** (§4.2)~~ — **done**, ADR 0007.
+   Messages are written with the fact that produced them and sent by a worker the
+   shop runs, so half of the pre-order feature — "the customer finds out" — no
+   longer depends on somebody looking at a screen.
 3. ~~**Pickup QR** (§4.3)~~ — **done**, ADR 0006. What it surfaced is now the
    urgent item: **a shop cannot create a member** (§4.3a), and without one there
    is nobody who can place the pre-order the QR collects.

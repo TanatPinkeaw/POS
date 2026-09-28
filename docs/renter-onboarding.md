@@ -181,6 +181,33 @@ Money only ever leaves through an open drawer or by hand in your banking app; th
 script never sends anything out. If your bank does not send notification email,
 keep confirming transfers by hand with a supervisor PIN — nothing else breaks.
 
+### 6.2 Telling people things outside the browser
+
+By default everything is in the app: the board chimes, the customer's order screen
+updates live, and if nobody is looking at a screen then nobody hears. If you want a
+message to actually leave the shop:
+
+1. Put `NOTIFY_CHANNEL` and your destination in `.env` — see the note under
+   `NOTIFY_CHANNEL` in `.env.example`.
+   - `NOTIFY_CHANNEL="line"` with `NOTIFY_STAFF_TO` = your LINE group id. This
+     reaches the *shop*. A LINE group cannot reach a customer, so collection codes
+     are never sent this way.
+   - `NOTIFY_CHANNEL="webhook"` with `NOTIFY_WEBHOOK_URL` = your SMS gateway or a
+     small script of your own. This is the one that reaches a **customer's phone**,
+     and the shop's own messages go to `NOTIFY_STAFF_TO`.
+2. Run the worker on something always on: `npm run notify:worker -- --watch` (or
+   `npm run notify:worker` from cron once a minute).
+
+Two messages go out: the shop gets a note when a pre-order arrives, and the
+customer gets their pickup PIN and hold deadline when their parcel is packed. Set
+nothing and nothing is queued — the app keeps working exactly as it does now.
+
+If your gateway stops accepting messages, the worker retries on a schedule (about
+1, 5, 15, 60 and 360 minutes) and then **gives up**, leaving the reason from your
+provider on the dashboard under *ข้อความแจ้งเตือนที่ส่งไม่ออก*. That is a
+configuration problem, not a lost order: the order itself is unaffected, and the
+customer still sees everything in the app.
+
 ---
 
 ## 7. Backups and upgrades
@@ -228,7 +255,8 @@ Recorded here so nobody discovers it during service:
   place a pre-order until members are created for it. Ask us to do it directly, or
   wait for the member sign-up screen.
 - No customer-facing online ordering — members can pre-order from inside the app.
-- No outbound SMS/LINE notifications; alerts are in-app and on-screen only.
+- Notifications are off until you configure a channel (§6.2), and a LINE channel
+  reaches the shop's own group only — not a customer's phone.
 - No product image upload, no shop logo upload (yet).
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.

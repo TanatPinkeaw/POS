@@ -245,8 +245,10 @@ both halves SSH again.
 The design-system migration is **finished**, and so is the money work that followed
 it: a paid bill can be reversed with a credit note behind it (ADR 0004), an
 incoming transfer can close its own bill from the shop's own bank notification with
-no payment provider (ADR 0005), and a pre-order is handed over with either a scanned
-QR or the PIN beside it (ADR 0006). All sixteen routes are on `src/components/ds/`,
+no payment provider (ADR 0005), a pre-order is handed over with either a scanned QR
+or the PIN beside it (ADR 0006), and the messages that used to need somebody
+watching a screen are queued with the fact that produced them and sent by a worker
+the shop runs (ADR 0007). All sixteen routes are on `src/components/ds/`,
 the vendored Hope UI theme is deleted, `ui:audit` keeps it that way, `route:audit`
 walks all sixteen screens, and `acceptance` drives the renter journey **including a
 refund, a machine-confirmed transfer and a pre-order collected by code** — all in
@@ -281,12 +283,14 @@ Open threads, roughly in the order worth doing:
 2. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-3. **Notification outbox with a real channel** (gap analysis §4.2). The bridge
-   proves the shop can carry facts outward; the same bridge pattern is half of what
-   a LINE/SMS notifier needs.
+3. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
+   not. A LINE push needs a LINE user id, this system stores only phone numbers,
+   and asking members for one is a consent decision before it is a schema change.
+   Until then `line` means the shop's own group, and customers get SMS or a
+   webhook.
 4. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
 Known product gaps are listed at the end of `README.md` (no way to create a member,
-partial refunds, overtime approval, outbound notifications, multiple branches,
+partial refunds, overtime approval, LINE addresses for customers, multiple branches,
 product images, production hardening).

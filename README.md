@@ -189,11 +189,12 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 529 tests across 37 files: unit + integration
+npm test                # 573 tests across 41 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 82 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
+npm run notify:worker   # sends the queued messages, once (cron) or with --watch
 ```
 
 `npm run acceptance` is the one that proves an *installation* works, which the
@@ -249,6 +250,35 @@ three roles, placing a pre-order, confirming it, collecting it with a PIN,
 reconciling the drawer, downloading all four SRS §8 workbooks (asserting the
 xlsx content type, the ZIP magic bytes, and that a cashier is refused), and then
 clocking the cashier in and out against the roster.
+
+### Telling people things (SRS §3, §4.2)
+
+Alerts used to be in-app only: whoever was not looking at the screen heard nothing.
+Two things now leave the building, and both are written **in the same transaction**
+as the order they are about (`notifications`, ADR 0007):
+
+| Moment | Who is told | What it says |
+| --- | --- | --- |
+| A pre-order is placed | The shop's own destination | The order number, the customer, the size and the money |
+| An order is packed | The customer's phone | The order number, their pickup PIN, and when the hold ends (Bangkok time) |
+
+Delivery is off until a channel is configured, and **off means nothing is queued at
+all** — a shop with no gateway gets no rows to clean up, and the in-app path it has
+always had keeps working. `NOTIFY_CHANNEL=line` addresses a LINE user id or group
+id; `NOTIFY_CHANNEL=webhook` POSTs `{ to, text, kind }` to the shop's own gateway.
+
+A customer's collection code is never pushed to LINE, and that is a decision rather
+than an oversight: a LINE id is not a phone number, so the only id available is the
+shop's own group, and a room full of staff phones must not hold the codes that
+release parcels (`src/lib/notify-message.ts`, `tests/notify-message.test.ts`).
+
+Sending is `npm run notify:worker` — once for cron, or `--watch`. It claims each
+message by moving its next attempt forward *before* sending, so two workers cannot
+double-send and a worker killed mid-send leaves a row that comes back. Failures are
+retried on a fixed schedule (1, 5, 15, 60, 360 minutes) and then **abandoned** with
+the gateway's own words attached, which is what the dashboard's undelivered card
+shows — a shop whose URL is wrong finds out from the screen rather than from a
+customer who was never told.
 
 ### Collecting a pre-order (SRS §3)
 
@@ -542,6 +572,7 @@ goes through them.
 | `docs/adr/0004-credit-notes-and-refunds.md` | Reversing a paid sale: the credit-note series, the refund leg, and why money is signed by direction. |
 | `docs/adr/0005-automatic-transfer-confirmation.md` | Closing a bill from the shop's own bank notification, and why the matcher refuses when it is not certain. |
 | `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
+| `docs/adr/0007-notification-outbox.md` | The notification outbox: written with the fact, sent by a worker the shop runs, and why a customer's code never goes to the shop's LINE group. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
@@ -559,8 +590,10 @@ Deferred deliberately, and listed here rather than discovered during service:
   staff screen only makes employees and admins, so nobody can be added as a
   member — and a pre-order requires one. Found while testing the pickup code, and
   now the first thing standing between a new shop and its pre-order screen.
-- **Outbound notifications.** Alerts are in-app and Web Notifications only, so a
-  customer who closes the page hears nothing.
+- **Customer messages on LINE.** The shop's own group can be reached, but a
+  customer's collection code cannot: a LINE push needs a LINE user id, and this
+  system does not capture one. SMS/webhook reaches the customer's phone today.
+  See ADR 0007 decision 3.
 - **Multi-branch and a second register.** One shop per deployment, and receipt
   issuance serialises on the shop row (ADR 0002 §4) — correct for one till.
 - **Product images and a shop logo.** `products.image_url` and `shops.logo_url`

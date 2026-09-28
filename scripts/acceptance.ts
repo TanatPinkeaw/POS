@@ -34,8 +34,9 @@
  *   npm run acceptance -- --keep            leave the scratch schema to inspect
  *   npm run acceptance -- --base-url URL    check a server that is already running
  */
-import { spawnSync, type ChildProcess } from 'node:child_process';
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { createServer } from 'node:http';
 
 import { hashPassword } from '../src/lib/password';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
@@ -944,6 +945,13 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     dismissTrail.entries[0],
   );
 
+  /*
+   * Section 12 asserts on the code issued in section 11, so it is carried across
+   * rather than re-derived: a message that names *a* PIN is not the same as one
+   * that names the customer's own, and the second is the only useful property.
+   */
+  let packedPickupPin: string | null = null;
+
   /* ------------------------- 11. a pre-order, collected by QR */
   section('11. A pre-order the customer collects by QR');
 
@@ -1010,6 +1018,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       pickupPin: string;
       pickupExpiresAt: string;
     }>(`/api/v1/orders/${placed.orderId}/ready`, { method: 'POST' });
+    packedPickupPin = packed.pickupPin;
     check('packing it issues a 4-digit PIN', /^\d{4}$/.test(packed.pickupPin ?? ''), packed.pickupPin);
     check(
       'and a hold deadline in the future',
@@ -1149,6 +1158,184 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
+  /* ---------------- 12. the shop hears about it without watching a screen */
+  section('12. A message that leaves the building');
+
+  if (seedGuardUrl === null) {
+    console.log(
+      '  • skipped: the delivery leg needs the scratch schema (not available with --base-url)',
+    );
+  } else {
+    /*
+     * A gateway the run owns. Pointing NOTIFY_WEBHOOK_URL at a service would make
+     * this leg a test of somebody else's uptime and somebody else's credentials;
+     * a listener on the loopback interface proves the same thing — the shop's own
+     * process posts the message it promised to post — with nothing to sign up for.
+     */
+    const received: { to?: string; text?: string; kind?: string }[] = [];
+    const gateway = createServer((request, response) => {
+      const chunks: Buffer[] = [];
+      request.on('data', (chunk: Buffer) => chunks.push(chunk));
+      request.on('end', () => {
+        try {
+          received.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+        } catch {
+          received.push({ text: 'unparseable' });
+        }
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end('{"ok":true}');
+      });
+    });
+
+    const port = await freePort(3311);
+    await new Promise<void>((resolve) => gateway.listen(port, '127.0.0.1', resolve));
+    const gatewayUrl = `http://127.0.0.1:${port}/notify`;
+
+    /**
+     * One pass of the real worker, against the real database.
+     *
+     * Asynchronous on purpose, and that is not a style choice: `spawnSync` blocks
+     * this process's event loop for as long as the worker runs, and the gateway
+     * above is a listener *in this process*. Blocked, it accepts the connection and
+     * never answers, so the worker times out reaching a server that is sitting
+     * right there — which is exactly what this leg did the first time it was run,
+     * and what it would have gone on doing while reporting "the worker failed".
+     */
+    const runWorker = async (
+      url: string,
+    ): Promise<{ status: number | null; output: string }> => {
+      const child = spawn('npx tsx scripts/notify-worker.ts', {
+        shell: true,
+        env: {
+          ...process.env,
+          DATABASE_URL: seedGuardUrl,
+          NOTIFY_CHANNEL: 'webhook',
+          NOTIFY_WEBHOOK_URL: url,
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      let output = '';
+      child.stdout?.on('data', (chunk: Buffer) => {
+        output += chunk.toString('utf8');
+      });
+      child.stderr?.on('data', (chunk: Buffer) => {
+        output += chunk.toString('utf8');
+      });
+
+      const status = await new Promise<number | null>((resolve) => {
+        child.once('close', (code) => resolve(code));
+      });
+      return { status, output };
+    };
+
+    try {
+      const pass = await runWorker(gatewayUrl);
+      check('the worker runs and exits cleanly', pass.status === 0, pass.output.slice(-400));
+
+      const kinds = received.map((message) => message.kind).sort();
+      check(
+        'both messages left the building: the shop’s and the customer’s',
+        kinds.join(',') === 'order_ready,pre_order_placed',
+        kinds,
+      );
+
+      const ready = received.find((message) => message.kind === 'order_ready');
+      check(
+        'the customer’s message went to the customer, with their own PIN in it',
+        ready?.to === MEMBER.phone && ready?.text?.includes(packedPickupPin ?? '\u0000') === true,
+        ready,
+      );
+
+      const placedMessage = received.find((message) => message.kind === 'pre_order_placed');
+      check(
+        'the shop’s note went to the shop and names the order',
+        placedMessage?.to === ADMIN.phone && (placedMessage?.text ?? '').includes('PO-'),
+        placedMessage,
+      );
+
+      /*
+       * The queue has to be *empty*, not merely quiet: a worker that delivered
+       * everything but left the rows pending would send all of it again on the
+       * next pass, which is how one order becomes three text messages.
+       */
+      const after = await scratchClient(seedGuardUrl);
+      const statuses = await (async () => {
+        try {
+          await after.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+          const rows = await after.query<{ status: string; count: string }>(
+            'SELECT "status"::text AS status, COUNT(*)::text AS count FROM "notifications" GROUP BY "status"',
+          );
+          return rows.rows;
+        } finally {
+          await after.end();
+        }
+      })();
+      check(
+        'every queued message is recorded as sent',
+        statuses.length === 1 && statuses[0]?.status === 'sent' && statuses[0]?.count === '2',
+        statuses,
+      );
+
+      const again = await runWorker(gatewayUrl);
+      check(
+        'a second pass sends nothing, so a retry cannot double-send',
+        again.status === 0 && received.length === 2,
+        `received ${received.length}`,
+      );
+
+      /*
+       * And the failure path, which is the half a shop actually discovers. The
+       * message is put back the way a shop would after fixing its configuration,
+       * the worker is pointed at a port nothing listens on, and the run asserts
+       * that the failure is *recorded* — with the gateway's own words — rather
+       * than swallowed by a script that exits with a stack trace.
+       */
+      const requeue = await scratchClient(seedGuardUrl);
+      try {
+        await requeue.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+        await requeue.query(
+          `UPDATE "notifications" SET "status" = 'pending', "attempts" = 0, "sent_at" = NULL,
+                  "next_attempt_at" = now()
+           WHERE "kind" = 'order_ready'`,
+        );
+      } finally {
+        await requeue.end();
+      }
+
+      const broken = await runWorker('http://127.0.0.1:9/notify');
+      check('a gateway that is not there does not crash the worker', broken.status === 0, broken.output.slice(-200));
+      check(
+        'and the failure is written down, so somebody can find it',
+        broken.output.includes('Could not reach'),
+        broken.output.trim().split('\n').slice(-3).join(' '),
+      );
+
+      const failures = await scratchClient(seedGuardUrl);
+      const failedRow = await (async () => {
+        try {
+          await failures.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+          const rows = await failures.query<{ last_error: string | null; attempts: number; status: string }>(
+            `SELECT "last_error", "attempts", "status"::text AS status FROM "notifications"
+             WHERE "kind" = 'order_ready'`,
+          );
+          return rows.rows[0];
+        } finally {
+          await failures.end();
+        }
+      })();
+      check(
+        'the failed message is still queued, with the error attached',
+        failedRow?.status === 'pending' &&
+          failedRow.attempts === 1 &&
+          (failedRow.last_error ?? '').includes('127.0.0.1:9'),
+        failedRow,
+      );
+    } finally {
+      await new Promise<void>((resolve) => gateway.close(() => resolve()));
+    }
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -1180,6 +1367,15 @@ async function main(): Promise<void> {
   if (!process.env.PAYMENT_WEBHOOK_SECRET) {
     process.env.PAYMENT_WEBHOOK_SECRET = ACCEPT_BRIDGE_SECRET;
   }
+
+  /*
+   * And this run configures its own notification channel, for the same reason: a
+   * journey that depended on the renter's gateway would either fail or — worse —
+   * pass by having queued nothing at all, because a shop with no channel is
+   * *designed* to queue nothing. Section 12 then sends through it.
+   */
+  process.env.NOTIFY_CHANNEL = 'webhook';
+  process.env.NOTIFY_STAFF_TO = ADMIN.phone;
 
   console.log('');
   console.log('POS — virgin deployment acceptance run');
