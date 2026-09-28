@@ -188,7 +188,7 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 415 tests across 29 files: unit + integration
+npm test                # 439 tests across 30 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 48 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 16 screens render, and render styled
@@ -306,11 +306,12 @@ endpoint that says so.
 | §6.2 cash drawer | `src/lib/shifts.ts` (pure) + `src/lib/cash-shifts.ts` (persistence) |
 | §8 Excel exports | `src/lib/reports.ts` (queries) + `src/lib/report-spec.ts` (columns/formatting) + `src/lib/excel.ts` (rendering) |
 | §2 RBAC | `src/lib/roles.ts`, enforced in `src/proxy.ts` **and** every route handler |
+| Reversal of a paid sale (beyond the SRS) | `src/lib/credit-notes.ts` (the transaction) + `src/lib/order-state.ts` (the `refund` edge) — ADR 0004 |
 
 The domain rules are split into **pure functions** (loyalty, settlement, the
 state machine, the discrepancy formula) and **persistence** modules. That split
-is why 40 of the tests need no database at all, and why the money rules can be
-checked without a running server.
+is why 267 of the 439 tests need no database at all, and why the money rules can
+be checked without a running server.
 
 ---
 
@@ -328,6 +329,8 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | `/admin/products` → categories | Categories are createable at last, and deleting one that still has products is refused by the database. |
 | `/admin/products` → import | CSV or `.xlsx` catalogue import: a preview that writes nothing, a downloadable template, and its own `REASON_IMPORT` audit entries. |
 | `GET /api/v1/orders/{id}/receipt` | Reprint data, read from the order's own snapshot columns, so a 2026 receipt still shows 7% in 2027. |
+| `POST /api/v1/orders/{id}/refund` | Reverse a whole paid bill and issue a credit note. Supervisor PIN required, always. |
+| `GET /api/v1/orders/{id}/credit-note` | Reprint data for that credit note — the sibling of the receipt route. |
 
 Two database-enforced invariants carry most of the weight:
 
@@ -342,7 +345,62 @@ not balance rather than a rounding nit.
 
 **This is not a compliance certification.** The receipt layout follows the usual
 Thai retail format, but whether it satisfies the Revenue Department is the shop's
-accountant's call. There is no void or credit-note flow yet.
+accountant's call. What the software *does* now provide is the paper trail that
+question turns on: see below.
+
+### Reversing a paid sale — credit notes
+
+The SRS has no void, refund or credit-note concept anywhere, and a gapless receipt
+series with no way to reverse one is a gap a tax-invoice-issuing shop cannot live
+with. `docs/adr/0004-credit-notes-and-refunds.md` is the decision; this is what it
+means in practice.
+
+**One credit note per receipt, for the whole bill.** Not per line and not for a
+free-form amount: an amount that matches no bill is a document that proves
+nothing, and a tax invoice is reversed by a credit note that names it in full. A
+receipt therefore has at most one credit note (`UNIQUE (order_id)`), and
+`refunded` is a terminal order status — a second refund has nowhere to go, and
+the database refuses it even if two requests race past the state machine.
+
+**The number comes from the shop's own series.** `shops.credit_note_prefix` and
+`shops.credit_note_running_number` mirror the receipt columns, allocated in the
+transaction that writes the note, so a credit-note series is as gapless as the
+receipt series it reverses — and a refused refund burns no number. It is a
+*separate* series: `CN-2026-000001` does not consume `FR-2026-000042`.
+
+**Money only leaves in one of two ways**, and the credit note records which:
+
+- **Out of an open drawer.** The refund writes a `payments` row with
+  `direction = 'refund'` against the current shift, which *reduces* that drawer's
+expected cash — the cashier counting at close finds the money already accounted
+  for rather than a mystery shortage. With no drawer open the refund is refused
+  with `NO_OPEN_SHIFT`, exactly as a cash sale would be.
+- **By hand in the banking app.** The leg carries no `shift_id` at all, because
+  it never touched a till. Writing it against a shift would invent a discrepancy
+  for money that no cashier handled.
+
+No refund is ever *sent* automatically: pushing money back out needs bank API
+onboarding, which is the shop's decision and its paperwork, not a feature flag.
+
+**Money is stored positive and signed by `direction`.** `payments` keeps
+`CHECK (amount > 0)`, so a refund leg is not a negative row; it is a positive row
+whose direction says which way the money went. Every aggregate then has to decide
+what it means, and it cannot do so by accident — which is the point. Cash in the
+drawer nets refunds; gross takings do not, because a bill paid on Monday and
+refunded on Friday belongs in Monday's takings *and* in Friday's refunds.
+
+**Stock comes back through the same primitives.** Every unit on the bill returns
+to `stock_qty` (never to a reservation — a refunded sale's goods go on the shelf)
+as a `pos_refund` stock movement, so the SRS §4.3 adjustment log explains it in
+its own words. Points are reversed too, and **clamped**: a customer who has
+already spent the points their purchase earned does not have their refund blocked
+by a negative balance. The unclawable remainder is recorded on the note as
+`points_forgiven` rather than silently dropped.
+
+The whole reversal is audited as `refund_order`, naming the cashier who was at
+the till and the supervisor whose PIN allowed it — the same shape as a staff
+cancel. Rewriting the original receipt is never an option: its number is already
+in somebody's hands, so the credit note is a second document that references it.
 
 ---
 
@@ -381,15 +439,18 @@ goes through them.
 | `docs/renter-onboarding.md` | The operator's runbook: install, the wizard, the daily routine, backups, recovery. |
 | `docs/adr/0001-schema-deviations-from-srs.md` | Every place the database departs from SRS §7, and why. |
 | `docs/adr/0002-shop-identity-and-vat.md` | Shop identity, VAT and gapless receipt numbering — a requirement the SRS never states. |
+| `docs/adr/0004-credit-notes-and-refunds.md` | Reversing a paid sale: the credit-note series, the refund leg, and why money is signed by direction. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
 
 Deferred deliberately, and listed here rather than discovered during service:
 
-- **Void / refund and credit notes.** The largest *correctness* gap left: receipt
-  numbers are gapless and un-reusable and an order can be cancelled, but a
-  cancelled tax invoice has no credit-note document behind it.
+- **Partial refunds and per-line returns.** A refund reverses the whole bill
+  (ADR 0004 decision 2). Returning one line of a three-line sale, or refunding
+  only part of what was paid, is not expressible yet — and doing it properly
+  means the credit note stops mirroring its invoice and starts *itemising* the
+  part it reverses.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Pickup QR codes.** SRS §3 asks for a PIN *and* a QR; only the PIN exists, and

@@ -114,6 +114,7 @@ email in this system; recovery is a SQL statement (see §8).
 | Handover | `/pos` → รับสินค้า | The customer's 4-digit PIN finds their order. |
 | Clock in / out | `/pos/attendance` | One button. Hours are computed by the database. |
 | Close the drawer | `/pos` → ปิดลิ้นชัก | Count the cash and type it in. The screen shows the expected amount and names any discrepancy as short, over, or balanced. |
+| Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Hands the whole bill back and issues a credit note. Always needs a supervisor PIN, even for the owner. |
 | Reports | `/admin/reports` | Four Excel workbooks, per date range. |
 | Roster & timesheet | `/admin/schedules` | Roster shifts per employee per day; the timesheet shows lateness and overtime. |
 
@@ -128,10 +129,26 @@ email in this system; recovery is a SQL statement (see §8).
 - **Receipt numbers never repeat and never skip.** Do not edit
   `shops.receipt_running_number` by hand. If you must, back up first and know that
   a gap in a receipt series is the thing an auditor asks about.
-- **No void or credit note yet.** You can cancel an order, but a cancelled VAT
-  invoice has no credit-note document in this version. A shop that has already
-  issued tax invoices should ask its accountant how to handle that before relying
-  on this system for them.
+- **A refund issues a credit note.** One note per receipt, for the *whole* bill:
+  the customer gets all the money back and every line goes back on the shelf.
+  Returning one item out of three is not supported yet, so if a shop needs that,
+  refund everything and ring the rest up again as a new sale.
+- **Credit-note numbers are gapless too, and separate from receipts.** They live
+  in their own series (`CN-<year>-000001`), so a refund never consumes a receipt
+  number and vice versa. Do not edit `shops.credit_note_running_number` by hand.
+- **Money only comes out of an open drawer, or out of your own bank app.**
+  Refunding in cash with no drawer open is refused — open one first. If you
+  transferred the money back from your banking app instead, record the refund as
+  a transfer: that way it does not pretend to have come out of the till.
+- **Every refund needs a supervisor PIN and a reason.** The reason is printed on
+  the credit note and cannot be skipped; it is the only written record of why the
+  money left.
+- **Loyalty points are reversed, but never to a negative balance.** If the
+  customer already spent the points that purchase earned, the refund still goes
+  through and the difference is shown on the credit note as forgiven. The refund
+  is never blocked by points.
+- **Still ask your accountant.** The credit-note layout follows the usual Thai
+  format, but whether it satisfies the Revenue Department is their call.
 
 ---
 
@@ -172,7 +189,9 @@ that `migrate dev` would propose dropping.
 
 Recorded here so nobody discovers it during service:
 
-- No void/refund approval flow and no credit notes.
+- No partial refunds or per-line returns: a refund reverses the whole bill.
+- No way to *send* a refund automatically — cash goes back out of an open drawer,
+  or you transfer it yourself from your banking app.
 - No customer-facing online ordering — members can pre-order from inside the app.
 - No outbound SMS/LINE notifications; alerts are in-app and on-screen only.
 - No product image upload, no shop logo upload (yet).

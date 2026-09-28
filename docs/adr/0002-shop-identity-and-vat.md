@@ -137,10 +137,11 @@ wizard closes — and has no way in. The two rows are written together.
   Thai retail practice (shop name, branch, tax id, receipt number, date, line
   items, base, VAT, total). Whether a given shop's documents satisfy the Revenue
   Department is its accountant's call. This encodes the *format*, not an opinion.
-- **No void / credit note.** Receipt numbers are gapless and un-reusable and an
-  order can be cancelled, but there is no credit-note document for a cancelled
-  VAT invoice. This is the next correctness gap on the list, and it is not
-  papered over by reusing the original number.
+- ~~**No void / credit note.**~~ **Closed by ADR 0004.** Receipt numbers are
+  gapless and un-reusable, which is right — and it means the only honest way to
+  reverse an invoice is a second document that references it. That document now
+  exists (its own series, its own tax snapshot, a supervisor's PIN behind it), and
+  the original number is still never reused.
 - **No logo upload.** `shops.logo_url` exists and the settings screen reads it;
   nothing writes it yet.
 - **No multi-shop or multi-branch** (decision 1).
@@ -152,4 +153,7 @@ wizard closes — and has no way in. The two rows are written together.
   bottleneck.
 - The shop becomes VAT-registered mid-year → new orders must carry the new rate
   while old receipts reprint at the old one. Both already hold.
-- A renter asks "how do I refund this?" → the credit-note gap above.
+- ~~A renter asks "how do I refund this?"~~ → **triggered, and answered by ADR
+  0004.** The next schema trigger in this family is a shop asking to *send the
+  refund automatically*, which needs a PSP relationship rather than a schema
+  change — see ADR 0004 decision 4.

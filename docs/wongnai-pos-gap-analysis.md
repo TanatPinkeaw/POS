@@ -1,6 +1,6 @@
 # Where this system stands against Wongnai POS
 
-**Written:** 2026-09-27
+**Written:** 2026-09-27 · **Updated:** 2026-09-28 (§4.1 closed by ADR 0004)
 **Compared:** this repository (SRS + implementation) against Wongnai POS
 (LINE MAN Wongnai).
 
@@ -13,10 +13,11 @@ read from this repository, not from memory.
 
 ## 0. The recommendation in one line
 
-Our pre-order and inventory core is stronger than theirs, but a VAT-registered
-shop cannot be served end to end yet, because **a cancelled tax invoice has no
-credit-note document**. Fix void/refund before any competitive feature work; it is
-a correctness gap, not a feature gap.
+Our pre-order and inventory core is stronger than theirs, and the one gap that
+stopped a VAT-registered shop from being served end to end — **a reversed sale with
+no credit-note document behind it** — is closed (§4.1, ADR 0004). What is left at
+the top of the list is the notification channel, which is parity rather than
+correctness.
 
 ---
 
@@ -50,7 +51,7 @@ that does not want its sales data in somebody else's cloud).
 | Receipt print and reprint | ✅ | ✅ `[C]` | reprint reads the order's own snapshot columns |
 | **VAT on the receipt** | ✅ | `[U]` | derived out of the shelf price, rate snapshotted per sale |
 | **Gapless receipt numbering** | ✅ | `[U]` | column bumped in-transaction, so a rollback cannot burn a number |
-| **Void / refund / credit note** | ❌ | ✅ `[C]` | **our largest gap — §4.1** |
+| **Void / refund / credit note** | ✅ | ✅ `[C]` | whole-bill refund + gapless `CN` series; partial/per-line returns still absent |
 | QR payment generate + verify at the till | ❌ | ✅ `[C]` | theirs locks and verifies the bill amount |
 | Split bill per seat | ➖ | ✅ `[C]` | a restaurant concept |
 | Loyalty points | ✅ | `[U]` | accrued and redeemed with a ledger |
@@ -114,17 +115,39 @@ that does not want its sales data in somebody else's cloud).
 
 ## 4. Where we are behind, in the order it matters
 
-### 4.1 Void / refund and credit notes — correctness
+### 4.1 Void / refund and credit notes — **closed**
 
-Today: receipt numbers never repeat and never skip, and an order can be cancelled
-— but there is **no credit-note document** for a cancelled VAT invoice, and the
-original number is correctly never reused. A shop that has issued tax invoices has
-no compliant way to reverse one. This is why it ranks above every feature.
+Built. Receipt numbers never repeat and never skip, an order can be cancelled, and
+a **paid** bill can now be reversed with a credit-note document behind it — which
+is the thing a tax-invoice-issuing shop actually needs. `docs/adr/0004-credit-notes-and-refunds.md`
+is the decision record.
 
-Shape of the fix: a `credit_notes` table with its own gapless series, a refund
-that writes negative payment legs against the *open* drawer (or refuses if none is
-open), stock returned through `adjustStock` with its own reason, and a reprintable
-document that references the original receipt number.
+What landed, against the shape predicted here: a `credit_notes` table with its own
+gapless series (`UNIQUE (order_id)`, so one note per receipt and a second refund
+is impossible even under a race); a ``refund`` edge out of ``completed`` and a
+terminal ``refunded`` status; one money leg, positive, with
+`payments.direction = 'refund'` rather than a negative amount (the
+`CHECK (amount > 0)` that made this a schema decision is still true); stock
+returned through `returnRefundedStock` as a `pos_refund` movement, so §4.3's
+adjustment log explains it; a supervisor PIN bound to the order id; and a
+reprintable document that names the invoice it reverses.
+
+Two things did **not** come out the way this section first guessed, and both are
+worth recording:
+
+- **The money does not have to come out of a drawer.** Writing the leg against the
+  open shift is right when cash is handed over at the counter, and that path
+  refuses with `NO_OPEN_SHIFT` when nothing is open. But a shop that transfers the
+  money back from its banking app would have had a false shortage recorded against
+  a cashier who never touched it, so a refund leg may instead carry no `shift_id`
+  at all, and the credit note says which of the two happened.
+- **The refund is the whole bill.** Per-line and free-form-amount reversals were
+  the other candidate; they are a bigger feature (the note stops mirroring its
+  invoice and starts itemising a part of it) and are now the head of the gap list
+  in `README.md`.
+
+Remaining, and small: no automatic *outbound* refund, because pushing money back
+needs bank API onboarding rather than code.
 
 ### 4.2 Notification the customer can actually receive — parity
 
@@ -182,8 +205,9 @@ Stated here rather than implied anywhere above:
 
 **Correctness first — this is not discretionary:**
 
-1. **Void / refund + credit notes** (§4.1). The only item on this list where
-   *not* building it means a shop cannot legally trade.
+1. ~~**Void / refund + credit notes** (§4.1)~~ — **done**, ADR 0004. The only item
+   on this list where *not* building it means a shop cannot legally trade.
+   **Partial and per-line refunds** are now the top of the correctness list.
 2. **Notification outbox with a real channel** (§4.2). Half of the pre-order
    feature is "the customer finds out", and today they do not.
 3. **Pickup QR** (§4.3). Already in the SRS, already a dependency, small.

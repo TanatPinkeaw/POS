@@ -87,7 +87,7 @@ tried and hurt, and several are enforced by a test or a check.
 7. **Pure logic and persistence stay in separate modules.** State machines,
    pricing and the loyalty/discount maths are pure functions in `src/lib/*-rules`
    or alongside their domain; the database lives in a separate module. That split
-   is why 40-odd tests need no database at all.
+   is why 267 of the 439 tests need no database at all.
 8. **Every route handler funnels through `withApi` and stamps its own
    authorisation.** The role always comes from the signed session token, never
    from a request body. `src/proxy.ts` decides which *area* an unauthenticated
@@ -124,6 +124,22 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   (`src/lib/vat.ts`). A breakdown off by one satang is a document that does not
   balance, not a rounding nit.
 - **Receipt numbers are gapless and un-reusable**, serialised on the shop row.
+  Credit notes have their own gapless series (`shops.credit_note_running_number`),
+  allocated in the same transaction, so a refund that is refused burns no number
+  and a credit note never consumes a receipt number.
+- **`payments.amount` is always positive**, and `payments.direction`
+  (`sale`/`refund`) carries the sign. `CHECK (amount > 0)` therefore still holds
+  for a refund leg — so every aggregate over `payments` must say what it means:
+  drawer cash nets refunds, gross takings do not, and a report's payment-method
+  column filters `direction = 'sale'`. A sum that forgot `direction` is the bug
+  this column exists to make visible.
+- **`CHECK ((direction = 'refund') = (credit_note_id IS NOT NULL))` on
+  `payments`** — money cannot leave without a document behind it, and an ordinary
+  sale cannot claim a credit note.
+- **`UNIQUE (order_id)` on `credit_notes`** — one credit note per receipt, so a
+  second refund is impossible even when two requests race past `canTransition`.
+  `refunded` is a terminal order status (`src/lib/order-state.ts`), and the only
+  edge into it is `refund` out of `completed`.
 
 ---
 
@@ -210,26 +226,29 @@ both halves SSH again.
 
 ## Where to pick up
 
-The design-system migration is **finished**: all sixteen routes are on
-`src/components/ds/`, the vendored Hope UI theme is deleted, and `ui:audit`
-keeps it that way. 415 tests across 29 files pass, `ui:audit` covers 239 files
-under `src/`, `route:audit` walks all sixteen screens, and `acceptance` drives
-the renter journey — all four green, all four in CI.
+The design-system migration is **finished**, and so is the money work that
+followed it: a paid bill can be reversed with a credit note behind it (ADR 0004).
+All sixteen routes are on `src/components/ds/`, the vendored Hope UI theme is
+deleted, `ui:audit` keeps it that way, 439 tests across 30 files pass, `route:audit`
+walks all sixteen screens, and `acceptance` drives the renter journey **including a
+refund** — all four green, all four in CI.
 
 Open threads, roughly in the order worth doing:
 
-1. **Void, refund and credit notes** — the largest *correctness* gap. Receipt
-   numbers are gapless and un-reusable and an order can be cancelled, but a shop
-   that has issued a tax invoice has no compliant way to reverse one. The schema
-   facts that make it a real design decision are recorded in
-   `docs/wongnai-pos-gap-analysis.md` §4.1.
+1. **Partial and per-line refunds.** A refund reverses the whole bill today, which
+   is what a tax invoice needs but not what a customer returning one item out of
+   three asks for. The shape is a credit note that itemises the part it reverses
+   rather than mirroring its invoice, and it is the head of the gap list in
+   `README.md`.
 2. **Zero-cost automatic transfer confirmation.** The ingress already exists —
    `POST /api/v1/payments/intents/[ref]/confirm` with `x-payment-secret` — and
    what is missing is the bridge that reads the shop's own bank notification and
-   the record for money that arrived with no bill behind it.
+   the record for money that arrived with no bill behind it. (There is no refund
+   counterpart by design: money leaves through an open drawer or by hand in the
+   banking app, never by an automated transfer.)
 3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
-Known product gaps are listed at the end of `README.md` (void and credit notes,
-overtime approval, pickup QR, outbound notifications, multiple branches, product
-images, production hardening).
+Known product gaps are listed at the end of `README.md` (partial refunds, overtime
+approval, pickup QR, outbound notifications, multiple branches, product images,
+production hardening).
