@@ -54,6 +54,31 @@ export { Prisma }
  */
 export type shops = Prisma.shopsModel
 /**
+ * Model number_blocks
+ * *
+ *  * A range of the shop's numbers lent to a device (ADR 0019).
+ *  *
+ *  * A browser cannot bump `receipt_running_number` inside the sale's transaction, so a
+ *  * device that may lose its connection is handed a range in advance and issues from it
+ *  * itself. This row is that loan: which series, which numbers, who it went to, and how
+ *  * far it got.
+ *  *
+ *  * Four properties are deliberate, and three of them are the database's rather than a
+ *  * convention's:
+ *  * * `day` is set on the call-number series and null on the receipt series — a CHECK
+ *  *   says so. Call numbers restart every Bangkok day; the tax series does not.
+ *  * * **At most one open block per series (per day)** is a partial unique index, so two
+ *  *   devices racing to borrow the same day's numbers cannot both win.
+ *  * * `reported_at` and `cancelled_at` exclude each other, and a cancelled block may not
+ *  *   have been used. A block with usage is *reported* (how far it got); a block nobody
+ *  *   touched is *cancelled* (all of it comes back). Stating both in CHECKs is what stops
+ *  *   a later screen from inventing a third state.
+ *  * * `last_used_number` is advanced by every bill the device issues, whether it reached
+ *  *   the server at the time or is replaying later — which is what makes the freeze in
+ *  *   `allocateReceiptNumber` correct rather than merely cautious.
+ */
+export type number_blocks = Prisma.number_blocksModel
+/**
  * Model users
  * 
  */

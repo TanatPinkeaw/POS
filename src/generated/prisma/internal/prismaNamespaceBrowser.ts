@@ -52,6 +52,7 @@ export const AnyNull = runtime.AnyNull
 
 export const ModelName = {
   shops: 'shops',
+  number_blocks: 'number_blocks',
   users: 'users',
   categories: 'categories',
   products: 'products',
@@ -116,6 +117,23 @@ export const ShopsScalarFieldEnum = {
 } as const
 
 export type ShopsScalarFieldEnum = (typeof ShopsScalarFieldEnum)[keyof typeof ShopsScalarFieldEnum]
+
+
+export const Number_blocksScalarFieldEnum = {
+  id: 'id',
+  series: 'series',
+  day: 'day',
+  from_number: 'from_number',
+  to_number: 'to_number',
+  last_used_number: 'last_used_number',
+  device_label: 'device_label',
+  opened_by: 'opened_by',
+  opened_at: 'opened_at',
+  reported_at: 'reported_at',
+  cancelled_at: 'cancelled_at'
+} as const
+
+export type Number_blocksScalarFieldEnum = (typeof Number_blocksScalarFieldEnum)[keyof typeof Number_blocksScalarFieldEnum]
 
 
 export const UsersScalarFieldEnum = {

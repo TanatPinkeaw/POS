@@ -36,7 +36,7 @@ If a step needs a terminal, a file edit or a support message, it is not done.
 
 | | Today | What it means here |
 | --- | --- | --- |
-| Tenant key | 20 models, **zero** `shopId` columns | Tenancy is not a column; it is a schema (ADR 0016 §1) |
+| Tenant key | 21 models, **zero** `shopId` columns | Tenancy is not a column; it is a schema (ADR 0016 §1) |
 | `shops` | `id @default(1)` + `CHECK (id = 1)` | Stays literally true *inside* each shop's schema |
 | `src/lib/db.ts` | builds the client from `DATABASE_URL`, honours and validates `?schema=` | The per-shop seam already exists and is already exercised by the suite |
 | Callers | **40 files** import the single `prisma` | The seam must be invisible to them, or this is a rewrite |

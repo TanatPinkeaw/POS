@@ -20,9 +20,10 @@ import type { shops } from '../generated/prisma/client';
 
 import { bangkokDateString, bangkokParts, dateColumnFromDay } from './bangkok-time';
 import { prisma } from './db';
-import { ConflictError } from './errors';
+import { ConflictError, SeriesReservedError } from './errors';
 import type { Db } from './inventory';
 import { fromDecimal } from './money';
+import type { NumberKind } from './number-block';
 import { normalisePromptPayId, type PromptPayIdType } from './promptpay';
 import {
   DEFAULT_SUPERVISOR_DISCOUNT_LIMIT,
@@ -204,6 +205,18 @@ export async function loadVatSettings(db: Db = prisma): Promise<ShopVatSettings>
  * The cost is that receipt issuance serialises on the shop row. That is a real
  * tradeoff and a deliberate one — it is correct for one till, and it is the
  * thing to revisit before a shop runs two registers (ADR 0002).
+ *
+ * **The freeze (ADR 0019).** While a device is holding unreported numbers from this
+ * series, nothing here may allocate: the device will report the *last number it
+ * printed*, and the counter is set back to it, so a number issued in between could not
+ * be placed in the series afterwards. That is why the condition travels inside the
+ * statement rather than being checked beside it — a check and an update that can be
+ * interleaved are two chances to issue a number into a reserved range. The partial
+ * index on `number_blocks` is the same predicate, so asking costs nothing.
+ *
+ * Offline the till is the allocator (it holds the block), which is what leaves this path
+ * for a sale that arrives without a device number at all: a shop that has never borrowed
+ * numbers, the acceptance scripts, and the office.
  */
 export async function allocateReceiptNumber(
   db: Db,
@@ -213,11 +226,25 @@ export async function allocateReceiptNumber(
     UPDATE "shops"
        SET "receipt_running_number" = "receipt_running_number" + 1
      WHERE "id" = ${SHOP_ROW_ID}
+       AND NOT EXISTS (
+         SELECT 1 FROM "number_blocks" b
+          WHERE b."series" = 'receipt'
+            AND b."reported_at" IS NULL
+            AND b."cancelled_at" IS NULL
+       )
     RETURNING *
   `;
 
   const row = rows[0];
   if (!row) {
+    /*
+     * No shop at all, or a frozen series. The two are told apart because they mean
+     * completely different things to whoever is at the till: one is a deployment that
+     * was never set up, the other is a bill that has to wait for a sync.
+     */
+    if (await isSeriesReserved(db, 'receipt')) {
+      throw new SeriesReservedError('receipt');
+    }
     return null;
   }
 
@@ -266,15 +293,48 @@ export async function allocateQueueNumber(
            END,
            "queue_running_day" = ${day}::date
      WHERE "id" = ${SHOP_ROW_ID}
+       AND NOT EXISTS (
+         SELECT 1 FROM "number_blocks" b
+          WHERE b."series" = 'queue'
+            AND b."day" = ${day}::date
+            AND b."reported_at" IS NULL
+            AND b."cancelled_at" IS NULL
+       )
     RETURNING "queue_running_number"
   `;
 
   const row = rows[0];
   if (!row) {
+    /*
+     * Null here is "this bill gets no call number", not an error, and that is a
+     * deliberate asymmetry with the receipt series: a tax invoice without a number
+     * cannot be issued at all, while a customer can be handed their drink with a slip
+     * that has no number on it. The block that caused it is a visible open row, and the
+     * bill is otherwise ordinary.
+     */
     return null;
   }
 
   return { value: Number(row.queue_running_number), day: dateColumnFromDay(day) };
+}
+
+/**
+ * Whether a device is holding unreported numbers from one of the shop's series
+ * (ADR 0019).
+ *
+ * Asked by the allocators above, and by the screens that have to show a shop why it
+ * cannot sell: an open block is a fact about the shop, not a private detail of the device
+ * that holds it.
+ */
+export async function isSeriesReserved(db: Db, series: NumberKind): Promise<boolean> {
+  const rows = await db.$queryRaw<{ present: number }[]>`
+    SELECT 1 AS present FROM "number_blocks"
+     WHERE "series" = ${series}::"number_series"
+       AND "reported_at" IS NULL
+       AND "cancelled_at" IS NULL
+     LIMIT 1
+  `;
+  return rows.length > 0;
 }
 
 /**

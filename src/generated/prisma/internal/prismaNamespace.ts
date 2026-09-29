@@ -398,6 +398,7 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 
 export const ModelName = {
   shops: 'shops',
+  number_blocks: 'number_blocks',
   users: 'users',
   categories: 'categories',
   products: 'products',
@@ -432,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -507,6 +508,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.shopsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ShopsCountAggregateOutputType> | number
+        }
+      }
+    }
+    number_blocks: {
+      payload: Prisma.$number_blocksPayload<ExtArgs>
+      fields: Prisma.number_blocksFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.number_blocksFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.number_blocksFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>
+        }
+        findFirst: {
+          args: Prisma.number_blocksFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.number_blocksFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>
+        }
+        findMany: {
+          args: Prisma.number_blocksFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>[]
+        }
+        create: {
+          args: Prisma.number_blocksCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>
+        }
+        createMany: {
+          args: Prisma.number_blocksCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.number_blocksCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>[]
+        }
+        delete: {
+          args: Prisma.number_blocksDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>
+        }
+        update: {
+          args: Prisma.number_blocksUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>
+        }
+        deleteMany: {
+          args: Prisma.number_blocksDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.number_blocksUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.number_blocksUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>[]
+        }
+        upsert: {
+          args: Prisma.number_blocksUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$number_blocksPayload>
+        }
+        aggregate: {
+          args: Prisma.Number_blocksAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNumber_blocks>
+        }
+        groupBy: {
+          args: Prisma.number_blocksGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Number_blocksGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.number_blocksCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Number_blocksCountAggregateOutputType> | number
         }
       }
     }
@@ -1984,6 +2059,23 @@ export const ShopsScalarFieldEnum = {
 export type ShopsScalarFieldEnum = (typeof ShopsScalarFieldEnum)[keyof typeof ShopsScalarFieldEnum]
 
 
+export const Number_blocksScalarFieldEnum = {
+  id: 'id',
+  series: 'series',
+  day: 'day',
+  from_number: 'from_number',
+  to_number: 'to_number',
+  last_used_number: 'last_used_number',
+  device_label: 'device_label',
+  opened_by: 'opened_by',
+  opened_at: 'opened_at',
+  reported_at: 'reported_at',
+  cancelled_at: 'cancelled_at'
+} as const
+
+export type Number_blocksScalarFieldEnum = (typeof Number_blocksScalarFieldEnum)[keyof typeof Number_blocksScalarFieldEnum]
+
+
 export const UsersScalarFieldEnum = {
   id: 'id',
   email: 'email',
@@ -2433,6 +2525,20 @@ export type ListEnumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'number_series'
+ */
+export type Enumnumber_seriesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'number_series'>
+    
+
+
+/**
+ * Reference to a field of type 'number_series[]'
+ */
+export type ListEnumnumber_seriesFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'number_series[]'>
+    
+
+
+/**
  * Reference to a field of type 'user_role'
  */
 export type Enumuser_roleFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'user_role'>
@@ -2821,6 +2927,7 @@ export interface PrismaClientOptionsWithAdapter extends PrismaClientBaseOptions 
 export type PrismaClientOptions = PrismaClientOptionsWithAccelerateUrl | PrismaClientOptionsWithAdapter
 export type GlobalOmitConfig = {
   shops?: Prisma.shopsOmit
+  number_blocks?: Prisma.number_blocksOmit
   users?: Prisma.usersOmit
   categories?: Prisma.categoriesOmit
   products?: Prisma.productsOmit

@@ -67,6 +67,25 @@ export class ConflictError extends DomainError {
   }
 }
 
+/**
+ * A series cannot be allocated from because a device is holding numbers it has not
+ * reported yet (ADR 0019).
+ *
+ * A 409 rather than a 500, and a Thai message rather than an English one: this reaches a
+ * counter, and what the person at it needs is what to do next. The machine-readable half
+ * is `series`, because a screen may want to say which of the two series is held.
+ */
+export class SeriesReservedError extends DomainError {
+  constructor(readonly series: 'receipt' | 'queue') {
+    super(
+      'เลขชุดนี้ถูกยืมให้เครื่องที่ยังไม่รายงาน — ต้องซิงค์เครื่องนั้นก่อน หรือให้ผู้ดูแลปิดชุดเลข',
+      'SERIES_RESERVED',
+      409,
+      { series },
+    );
+  }
+}
+
 /** The caller is authenticated but lacks permission. */
 export class ForbiddenError extends DomainError {
   constructor(message = 'You do not have permission to perform this action') {

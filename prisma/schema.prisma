@@ -85,7 +85,70 @@ model shops {
   updated_at                    DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
 }
 
+// ----------------------------------------------------- offline number blocks
+
+/**
+ * A range of the shop's numbers lent to a device (ADR 0019).
+ *
+ * A browser cannot bump `receipt_running_number` inside the sale's transaction, so a
+ * device that may lose its connection is handed a range in advance and issues from it
+ * itself. This row is that loan: which series, which numbers, who it went to, and how
+ * far it got.
+ *
+ * Four properties are deliberate, and three of them are the database's rather than a
+ * convention's:
+ * * `day` is set on the call-number series and null on the receipt series — a CHECK
+ *   says so. Call numbers restart every Bangkok day; the tax series does not.
+ * * **At most one open block per series (per day)** is a partial unique index, so two
+ *   devices racing to borrow the same day's numbers cannot both win.
+ * * `reported_at` and `cancelled_at` exclude each other, and a cancelled block may not
+ *   have been used. A block with usage is *reported* (how far it got); a block nobody
+ *   touched is *cancelled* (all of it comes back). Stating both in CHECKs is what stops
+ *   a later screen from inventing a third state.
+ * * `last_used_number` is advanced by every bill the device issues, whether it reached
+ *   the server at the time or is replaying later — which is what makes the freeze in
+ *   `allocateReceiptNumber` correct rather than merely cautious.
+ */
+model number_blocks {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  series           number_series
+  day              DateTime?     @db.Date
+  from_number      Int
+  to_number        Int
+  last_used_number Int?
+  device_label     String        @db.VarChar(60)
+  opened_by        String        @db.Uuid
+  opened_at        DateTime      @default(now()) @db.Timestamptz(6)
+  reported_at      DateTime?     @db.Timestamptz(6)
+  cancelled_at     DateTime?     @db.Timestamptz(6)
+  /**
+   * Who closed it: the device reporting itself, or the admin resolving a loose end after
+   * a tablet never came back. Two different acts with the same shape, and the one that
+   * matters months later is the second — somebody said out loud that the numbers had
+   * stopped there, and the series moved on that word.
+   */
+  closed_by        String?       @db.Uuid
+
+  opener users  @relation("number_block_opener", fields: [opened_by], references: [id], onDelete: Restrict)
+  closer users? @relation("number_block_closer", fields: [closed_by], references: [id], onDelete: Restrict)
+
+  @@index([series, opened_at])
+}
+
 // ---------------------------------------------------------------- enums
+
+/**
+ * Which of the shop's numbered series a block was lent from (ADR 0019).
+ * An enum rather than a string for the reason every other machine in this file is one,
+ * plus a concrete one: the freeze compares against a literal series in the same
+ * statement that allocates, and a mistyped series there would freeze nothing at all.
+ */
+enum number_series {
+  /** The tax-invoice series: gapless, per year, serialised on the shop row. */
+  receipt
+  /** The call number: short, restarting every Bangkok day (ADR 0017). */
+  queue
+}
 
 enum user_role {
   member
@@ -339,6 +402,8 @@ model users {
   credit_notes_issued credit_notes[]       @relation("credit_note_issuer")
   credit_notes_approved credit_notes[]     @relation("credit_note_approver")
   inbound_dismissals  inbound_payments[]   @relation("inbound_dismisser")
+  number_blocks       number_blocks[]      @relation("number_block_opener")
+  blocks_closed       number_blocks[]      @relation("number_block_closer")
 }
 
 // ---------------------------------------------------------------- catalog

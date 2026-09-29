@@ -34,6 +34,11 @@ const TABLES = [
   'time_logs',
   'work_schedules',
   'cash_shifts',
+  // Borrowed numbers (ADR 0019) name the user who opened them, and — the real reason to
+  // list them — outlive the call that made them: a leftover open block would freeze the
+  // next test's series, so a sale there would fail for a reason that has nothing to do
+  // with what it was testing.
+  'number_blocks',
   'products',
   'categories',
   'users',

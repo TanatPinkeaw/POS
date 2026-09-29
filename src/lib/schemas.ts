@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { AUDIT_ACTIONS, AUDIT_PAGE_SIZE_MAX } from './audit-view';
 import { isClock, isLocalDateTime, isValidCalendarDay } from './bangkok-time';
+import { MAX_BLOCK_SIZE } from './number-block';
 import { REPORT_TYPES } from './report-spec';
 import { PROMPTPAY_ID_TYPES, normalisePromptPayId } from './promptpay';
 import { PIN_LENGTH, SUPERVISOR_ACTIONS } from './supervisor-view';
@@ -292,6 +293,36 @@ export const confirmOrderSchema = z.object({
 export const fulfilmentActionSchema = z.object({
   action: z.enum(['mark_ready', 'collect']),
 });
+
+/**
+ * A device asking to borrow a range of numbers (ADR 0019).
+ *
+ * The size is capped by the same constant the pure module uses, because a borrowed block
+ * freezes the shop's series until it is reported and a large one is therefore a mistake
+ * with consequences rather than a harmless request.
+ */
+export const openNumberBlockSchema = z.object({
+  series: z.enum(['receipt', 'queue']),
+  day: z
+    .string()
+    .refine(isValidCalendarDay, 'A call-number block names a calendar day')
+    .nullish(),
+  size: z.number().int().min(1).max(MAX_BLOCK_SIZE),
+  deviceLabel: z.string().trim().min(1).max(60),
+});
+
+/**
+ * Closing a borrowed range: how far a device got, or that it printed nothing.
+ *
+ * One payload for both moves, because they are one decision — a block either has used
+ * numbers or it has none, and the migration's CHECK constraints say the same thing. A
+ * cancel that carried a `lastUsed` would be a caller describing a state that cannot
+ * exist.
+ */
+export const closeNumberBlockSchema = z.discriminatedUnion('action', [
+  z.object({ action: z.literal('report'), lastUsed: z.number().int().positive() }),
+  z.object({ action: z.literal('cancel') }),
+]);
 
 export const completeOrderSchema = z.object({
   shiftId: z.number().int().positive(),

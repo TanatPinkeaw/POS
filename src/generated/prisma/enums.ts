@@ -9,6 +9,14 @@
 * 🟢 You can import this file directly.
 */
 
+export const number_series = {
+  receipt: 'receipt',
+  queue: 'queue'
+} as const
+
+export type number_series = (typeof number_series)[keyof typeof number_series]
+
+
 export const user_role = {
   member: 'member',
   employee: 'employee',

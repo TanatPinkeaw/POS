@@ -251,6 +251,16 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   Credit notes have their own gapless series (`shops.credit_note_running_number`),
   allocated in the same transaction, so a refund that is refused burns no number
   and a credit note never consumes a receipt number.
+- **A series a device is holding numbers from cannot be allocated from at all**
+  (`number_blocks`, ADR 0019). A device that may lose its connection borrows a range
+  in advance, and while a block is open the shop's series is **frozen**: the condition
+  travels inside the same `UPDATE` that allocates, and the partial unique indexes are
+  the same predicate. Reporting a block sets the counter back to the last number
+  actually printed — which is what keeps the series gapless — and cancelling one puts
+  it back before the range. At most one open block per series, and one per day for
+  call numbers. A device that holds numbers is the allocator for its own bills, online
+  sales included: a number issued *beside* a borrowed range could never be placed in
+  the series afterwards.
 - **`payments.amount` is always positive**, and `payments.direction`
   (`sale`/`refund`) carries the sign. `CHECK (amount > 0)` therefore still holds
   for a refund leg — so every aggregate over `payments` must say what it means:

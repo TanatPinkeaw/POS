@@ -6,7 +6,7 @@ product is going to be.
 
 **Context.** Everything in this repository assumes exactly one shop. `shops` is a
 singleton — `id Int @id @default(1)` with `CHECK (id = 1)` — and **no other table carries
-a shop key at all**: 20 models, and not one occurrence of `shopId` or `shop_id` between
+a shop key at all**: 21 models, and not one occurrence of `shopId` or `shop_id` between
 them. That is not an oversight, it is what makes the load-bearing invariants *facts rather
 than checks*: the gapless receipt and credit-note series are serialised on that one shop
 row, a phone number or a barcode is unique because there is only one shop to be unique

@@ -622,14 +622,6 @@ export type productsUncheckedUpdateManyWithoutCategoryNestedInput = {
   deleteMany?: Prisma.productsScalarWhereInput | Prisma.productsScalarWhereInput[]
 }
 
-export type NullableIntFieldUpdateOperationsInput = {
-  set?: number | null
-  increment?: number
-  decrement?: number
-  multiply?: number
-  divide?: number
-}
-
 export type productsCreateNestedOneWithoutStock_logsInput = {
   create?: Prisma.XOR<Prisma.productsCreateWithoutStock_logsInput, Prisma.productsUncheckedCreateWithoutStock_logsInput>
   connectOrCreate?: Prisma.productsCreateOrConnectWithoutStock_logsInput
