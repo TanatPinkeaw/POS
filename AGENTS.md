@@ -40,6 +40,7 @@ Three authenticated areas and three public surfaces:
 | `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
 | `npm run build` / `npm run start` | Production build, then the same custom server. | — |
 | `npm run verify` | `typecheck` → `ui:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
+| `npm run verify:all` | That gate, then everything that needs a built, served app: `acceptance` → `route:audit` → `limiter:race`, in that order, stopping at the first failure. One build, made by the journey and reused. What CI runs. | Postgres |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run route:audit` | Builds, serves, and checks that every one of the 17 screens renders a page whose CSS defines every class on it. | Postgres |
@@ -214,9 +215,16 @@ Then, for anything a person will look at:
   scratch schema, and drives the whole journey.
 
 **CI runs all of it** (`.github/workflows/verify.yml`): `verify` in one job, then
-`acceptance` + `route:audit --skip-build` in a second, each with a PostgreSQL 17
-service. Node is pinned by `.nvmrc` and `engines.node`, so the version the suite
-runs on is the version a renter is told to install.
+`acceptance` + `route:audit --skip-build` + `limiter:race --skip-build` in a second,
+each with a PostgreSQL 17 service. Node is pinned by `.nvmrc` and `engines.node`, so
+the version the suite runs on is the version a renter is told to install.
+
+Locally the same thing is **one command**, `npm run verify:all`: it runs those four in
+dependency order — nothing is built for the first, the journey builds once, and the
+last two walk the artefact it produced — and stops at the first failure, because every
+later gate would be measuring a commit that is already known to be broken. It is the
+release check; `verify` alone is the inner loop. The two jobs and this command are
+deliberately the same set, so CI cannot go green on something this does not run.
 
 ---
 

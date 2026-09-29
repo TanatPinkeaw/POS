@@ -99,7 +99,8 @@ Three decisions are worth knowing before changing anything here:
 | `npm run route:audit` | Builds, serves, and opens all 17 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with nothing fetched from another origin. |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
-| `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. |
+| `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. The inner loop. |
+| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit` and `limiter:race` against the one build the journey makes — stopping at the first failure. The release check, and what CI runs. |
 
 The migration is **finished**: every one of the 16 routes is on the design system
 and the vendored theme is gone — no Bootstrap classes, no Bootstrap JavaScript, no
@@ -188,15 +189,24 @@ products the seed creates are what `npm run smoke` drives.
 ## Verifying it works
 
 ```bash
+npm run verify:all     # every gate, in order, one command — this is the release check
+
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm test                # 663 tests across 46 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 17 screens render, and render styled
+npm run limiter:race    # two servers against one database share one limit
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
 ```
+
+`npm run verify:all` is those gates in dependency order and nothing new: types and
+tests first, because nothing is built for them; then the journey, which builds once;
+then the audit and the race, both against that one artefact, because a release check
+should be checking one build rather than three. It stops at the first failure, and it
+is what the two CI jobs run between them.
 
 `npm run acceptance` is the one that proves an *installation* works, which the
 smoke test structurally cannot: its personas are seeded accounts, so it

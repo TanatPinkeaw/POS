@@ -5,13 +5,18 @@ name: verify
 # `verify` is the gate a change has to pass before it is worth a person's time:
 # types, the design-system audit, the colour ramp, and the unit and integration
 # suites. `journeys` is the part that only means something when the whole thing is
-# built and served — the renter's journey from an empty schema, and every screen
-# rendering styled. They are split rather than chained so a failing unit test
-# reports in a couple of minutes instead of after a Next build.
+# built and served — the renter's journey from an empty schema, every screen
+# rendering styled, and two servers sharing one rate-limit bucket. They are split
+# rather than chained so a failing unit test reports in a couple of minutes instead
+# of after a Next build.
+#
+# Both jobs are what `npm run verify:all` runs locally, in this order, sharing one
+# build. Edit one and edit the other: a gate that only exists on one of them is a
+# gate the other will happily report green without.
 #
 # PostgreSQL is a service in both jobs, not an optional extra: the integration
-# tests truncate real tables, and `acceptance` and `route:audit` each migrate their
-# own scratch schema. Nothing in this suite mocks the database.
+# tests truncate real tables, and each of the three served scripts migrates its own
+# scratch schema. Nothing in this suite mocks the database.
 
 on:
   push:
@@ -114,3 +119,8 @@ jobs:
       # screen. Its own scratch schema on a different port, so the two cannot
       # collide however their order changes.
       - run: npm run route:audit -- --skip-build
+
+      # Two servers against one database, spending the same cashier's burst from
+      # both — the deployment ADR 0012 exists for. Same scratch schema and port
+      # story as the audit above, and the same reuse of the build.
+      - run: npm run limiter:race -- --skip-build
