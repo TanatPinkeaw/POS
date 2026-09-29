@@ -94,9 +94,14 @@ fast ones. The table therefore holds at most a couple of hours of buckets.
 
 ## Consequences
 
-- A restart forgets nothing, and two processes enforce one limit between them. Both are
-  asserted: `tests/rate-limit.test.ts` re-imports the module to simulate a restart, and
-  reads the row directly to prove the spent attempt is not in the process.
+- A restart forgets nothing, and two processes enforce one limit between them. All
+  three properties are asserted, at three levels: `tests/rate-limit.test.ts` re-imports
+  the module to stand in for a restart, races twenty attempts at one bucket to prove the
+  lock holds, and reads the row directly to prove the spent attempt is not in the
+  process; and `npm run limiter:race` starts **two real servers** on one database and
+  spends one burst from both. That last one is the deployment this ADR was written for —
+  a per-process limiter shows up there as twice the capacity, which is a number rather
+  than a paragraph.
 - Every guarded door now costs one query. On the doors that charge before the work —
   setup, pairing, the webhook, enrolment — it is the first thing the request does; on
   login it runs only after a failed bcrypt compare, which is orders of magnitude slower

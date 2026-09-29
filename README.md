@@ -97,6 +97,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Rasterises the mark into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run route:audit` | Builds, serves, and opens all 17 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with nothing fetched from another origin. |
+| `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. |
 
@@ -189,7 +190,7 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 662 tests across 46 files: unit + integration
+npm test                # 663 tests across 46 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 17 screens render, and render styled
@@ -626,7 +627,9 @@ The policy is pure and unit-tested (`src/lib/rate-limit-policy.ts`); the buckets
 in the shop's own database, so **a restart forgets nothing and two processes enforce one
 limit between them** rather than one each. Nothing about a bucket is in the process:
 spending an attempt is an upsert that takes a row lock, and the clock is the database's,
-because that is the only clock several processes agree on. Who a request is from is the
+because that is the only clock several processes agree on. `npm run limiter:race` proves
+it the only way that counts: two servers, one database, the same cashier signed in at
+both, and one burst spent between them rather than one each. Who a request is from is the
 address the **socket** reports, with `X-Forwarded-For` believed only when that socket is
 itself private, so a caller cannot pick its own bucket by sending a header. When a burst trips, the trail gets **one** row (`rate_limited`) naming the door,
 the address and the account that was guessed at — one, not one per refusal, because this

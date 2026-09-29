@@ -49,6 +49,7 @@ Three authenticated areas and three public surfaces:
 | `npm run db:seed:demo` | Seeds demo data. Refuses unless the shop is unconfigured. | Throwaway DB |
 | `npm run smoke` | End-to-end checks over real HTTP. | A running server |
 | `npm run acceptance` | The whole renter journey from an empty schema, including a refund and a bank notification; serves the production build itself. | Postgres |
+| `npm run limiter:race` | Starts **two** servers on one scratch schema, signs the same cashier in at both, and races them at one rated door — the proof that the shared buckets (ADR 0012) are one limit rather than one each. `-- --skip-build`, `-- --keep`. | Postgres |
 | `npm run bank:bridge` | Reads the shop's own bank notification mailbox and posts what it finds to the app. `-- --file <eml>` parses a saved one and prints what it would post. | An IMAP mailbox, or none with `--file` |
 
 ---
@@ -177,7 +178,9 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   only clock several processes agree on. The arithmetic stays in the pure module;
   do not express the refill in SQL, or the numbers get a second home. A key is
   truncated to `MAX_BUCKET_KEY_LENGTH` because it is a primary key, and an
-  unreachable store lets the caller through (ADR 0012 decision 5). The policy is
+  unreachable store lets the caller through (ADR 0012 decision 5).
+  `npm run limiter:race` is what proves the sharing across two real server
+  processes — do not move the buckets back into the process. The policy is
   keyed by the address the *socket* reports; `X-Forwarded-For` is believed only
   when that address is private. `src/server.ts` stamps `x-client-address` and overwrites
   whatever the caller sent — never trust an inbound copy. Only the first refusal of

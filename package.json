@@ -25,6 +25,7 @@
     "smoke": "tsx scripts/smoke-test.ts",
     "acceptance": "tsx scripts/acceptance.ts",
     "route:audit": "tsx scripts/route-audit.ts",
+    "limiter:race": "tsx scripts/rate-limit-race.ts",
     "bank:bridge": "tsx scripts/bank-bridge.ts",
     "notify:worker": "tsx scripts/notify-worker.ts",
     "brand:palette": "tsx scripts/brand-palette.ts",

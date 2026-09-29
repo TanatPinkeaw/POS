@@ -125,6 +125,42 @@ describe('charging an attempt', () => {
   });
 });
 
+describe('attempts that race for one bucket', () => {
+  it('lets no more than the capacity through, however many spend it at once', async () => {
+    const policy = RATE_LIMIT_POLICIES.member_create;
+    const request = requestFrom('203.0.113.9');
+    const attempts = policy.capacity * 2;
+
+    /*
+     * The claim ADR 0012 was written to make true. When the buckets were a `Map` in one
+     * process this race had a single spender and nothing to prove; with the state in a
+     * table, these are concurrent transactions on one row, and the only thing keeping
+     * the count honest is the lock the upsert takes.
+     *
+     * A store that read and wrote without one lets several of them through on the same
+     * token — which is how "each process is half as strict" shows up as a *number*
+     * rather than a paragraph.
+     */
+    const allowed = await Promise.all(
+      Array.from({ length: attempts }, () =>
+        chargeRateLimit(request, 'member_create', 'cashier-1').then(
+          () => true,
+          () => false,
+        ),
+      ),
+    );
+
+    const through = allowed.filter(Boolean).length;
+
+    // Exact, not a bound: refill is one token a minute, so earning an extra attempt
+    // would take a race that ran for a minute, and none of the refused attempts can
+    // have been a *store* failure — those resolve (`chargeRateLimit` fails open), which
+    // is what makes this assertion catch a limiter that stopped limiting, not just one
+    // that stopped locking.
+    expect(through).toBe(policy.capacity);
+  });
+});
+
 describe('what a trip writes down', () => {
   it('records one row for a burst, however many attempts follow it', async () => {
     const request = requestFrom('203.0.113.9');
