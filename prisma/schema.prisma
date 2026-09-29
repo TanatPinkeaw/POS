@@ -123,6 +123,21 @@ enum payment_method {
   mixed
 }
 
+/**
+ * Where a paid order's goods are (ADR 0018).
+ * Beside `order_status`, never inside it: `completed` is what every report counts,
+ * and a sale's money is finished the moment it is paid, whatever the drink is
+ * doing. Null means "no goods to wait for" — a pre-order, whose handover is the
+ * moment it is paid for, and every bill that predates this machine.
+ * An enum rather than a string, for the reason `audit_action` is one: a state
+ * machine whose vocabulary can drift silently is not a state machine.
+ */
+enum fulfilment_state {
+  preparing
+  ready
+  collected
+}
+
 enum stock_movement_type {
   manual_adjust
   pos_sale
@@ -530,6 +545,13 @@ model orders {
    */
   queue_number      Int?
   queue_day         DateTime?    @db.Date
+  /**
+   * Where the goods are, for a walk-in sale (ADR 0018).
+   * Set to `preparing` by `createPosSale` — the bill is paid and the drink is
+   * being made — and advanced by the bar tapping a ticket. `ready_at`, which a
+   * pre-order already uses for the same fact, is the instant this reaches `ready`.
+   */
+  fulfilment        fulfilment_state?
   points_earned     Int          @default(0)
   points_redeemed   Int          @default(0)
   cancel_reason     String?
@@ -566,6 +588,13 @@ model orders {
    * pre-orders that carry no number do not collide here.
    */
   @@unique([queue_day, queue_number])
+  /**
+   * The board's query: today's bills whose goods are not handed over yet. A plain
+   * index rather than a partial one — Prisma cannot express `WHERE fulfilment IS
+   * NOT NULL`, and the column is null for every pre-order, so the index is small
+   * for what it is worth having on the busiest table in the shop.
+   */
+  @@index([fulfilment])
 }
 
 model order_items {

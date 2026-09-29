@@ -37,6 +37,18 @@ export function notifyOrderUpdated(
   }
 }
 
+/**
+ * The call board changed: a ticket appeared, was made, or was collected.
+ *
+ * A bare nudge, and every screen that hears it reads the board again — the bar's
+ * screen has a session, and a board rebuilt from a payload is a board that drifts
+ * the first time one event is missed. The customer screen is the exception and gets
+ * the board itself, because it has nobody to ask: see `broadcastReadyBoard`.
+ */
+export function notifyQueueChanged(): void {
+  emitToStaff(REALTIME_EVENTS.queueUpdated, {});
+}
+
 /** A product's counters moved; customers see availability change live. */
 export function notifyStockChanged(payload: StockEventPayload): void {
   emitToEveryone(REALTIME_EVENTS.stockUpdated, payload);

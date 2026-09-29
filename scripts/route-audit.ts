@@ -5,7 +5,7 @@
  * and that the walk covers every page file in `src/app`. This is the part that
  * cannot be proven from a string: build the app, serve the production build
  * against a schema that has just been set up the way a renter would set it up,
- * open all seventeen screens with the session each one needs, and check the CSS
+ * open all eighteen screens with the session each one needs, and check the CSS
  * that came back actually defines the markup.
  *
  * Why it is worth a whole script rather than six assertions in `acceptance.ts`:
@@ -107,8 +107,8 @@ interface Fetched {
  * Fetches a page, following redirects by hand.
  *
  * By hand because the walk has to know *where* a request ended up: fifteen of
- * these seventeen paths redirect to `/login` when handed no session, so a check
- * that only looked at the status code would call the login page seventeen
+ * these eighteen paths redirect to `/login` when handed no session, so a check
+ * that only looked at the status code would call the login page eighteen
  * different screens. `redirect: 'follow'` would hide the chain and
  * `redirect: 'error'` would hide the page.
  */
@@ -326,7 +326,7 @@ async function main(): Promise<void> {
 }
 
 /**
- * Creates everything the seventeen screens need to render *with content*.
+ * Creates everything the eighteen screens need to render *with content*.
  *
  * Through the API wherever an API exists, because that is the path a renter
  * takes and it keeps this script from depending on internals. The two things it

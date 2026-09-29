@@ -2130,6 +2130,7 @@ export const OrdersScalarFieldEnum = {
   receipt_number: 'receipt_number',
   queue_number: 'queue_number',
   queue_day: 'queue_day',
+  fulfilment: 'fulfilment',
   points_earned: 'points_earned',
   points_redeemed: 'points_redeemed',
   cancel_reason: 'cancel_reason',
@@ -2554,6 +2555,20 @@ export type Enumorder_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$Pri
  * Reference to a field of type 'order_status[]'
  */
 export type ListEnumorder_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'order_status[]'>
+    
+
+
+/**
+ * Reference to a field of type 'fulfilment_state'
+ */
+export type Enumfulfilment_stateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'fulfilment_state'>
+    
+
+
+/**
+ * Reference to a field of type 'fulfilment_state[]'
+ */
+export type ListEnumfulfilment_stateFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'fulfilment_state[]'>
     
 
 

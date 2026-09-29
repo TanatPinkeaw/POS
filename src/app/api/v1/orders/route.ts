@@ -8,7 +8,7 @@ import { roundThb } from '@/lib/money';
 import { findIntent } from '@/lib/payment-intents';
 import { listOrderViews } from '@/lib/order-view';
 import { createPosSale, placePreOrder } from '@/lib/orders';
-import { notifyNewPreOrder, notifyOrderUpdated } from '@/lib/notify';
+import { notifyNewPreOrder, notifyOrderUpdated, notifyQueueChanged } from '@/lib/notify';
 import { createOrderSchema, orderListQuerySchema } from '@/lib/schemas';
 import { supervisorDiscountLimit } from '@/lib/shop';
 import { requireApproval } from '@/lib/supervisor';
@@ -108,6 +108,12 @@ export async function POST(request: Request): Promise<Response> {
       });
       await broadcastStockFor(summary.lines.map((line) => line.productId));
       await broadcastPointsFor(body.customerId);
+      /*
+       * The bar's board gains a ticket the instant the bill is paid — the number is
+       * already on the customer's slip, so a board that showed it a minute later
+       * would be a board the bar stops trusting (ADR 0018).
+       */
+      notifyQueueChanged();
 
       return summary;
     }

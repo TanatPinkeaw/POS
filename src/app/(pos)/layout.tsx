@@ -4,6 +4,7 @@ import { requireShellUser } from '@/lib/shell';
 
 const POS_NAV: NavItem[] = [
   { href: '/pos', label: 'ขายหน้าร้าน', icon: 'cart' },
+  { href: '/pos/queue', label: 'คิวเครื่องดื่ม', icon: 'bell' },
   { href: '/pos/preorders', label: 'พรีออเดอร์', icon: 'receipt', badgedByPreOrders: true },
   { href: '/pos/attendance', label: 'ลงเวลาทำงาน', icon: 'clock' },
 ];

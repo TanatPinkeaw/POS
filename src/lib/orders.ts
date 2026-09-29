@@ -45,8 +45,13 @@ import { SYSTEM_USER_ID } from './system-user';
 import type { TenderLine } from './tender';
 import { computeVat, type VatBreakdown } from './vat';
 
-/** Long enough for 50 concurrent settlements to queue on one product's row lock. */
-const TRANSACTION_OPTIONS = { timeout: 30_000, maxWait: 30_000 } as const;
+/**
+ * Long enough for 50 concurrent settlements to queue on one product's row lock.
+ *
+ * Exported because the call board's writes take the same transactions, and a second
+ * copy of a timeout would be a second answer to how long a shop will wait.
+ */
+export const TRANSACTION_OPTIONS = { timeout: 30_000, maxWait: 30_000 } as const;
 
 export interface CartLine {
   productId: string;
@@ -442,6 +447,13 @@ export async function createPosSale(input: {
          */
         queue_number: call?.value ?? null,
         queue_day: call?.day ?? null,
+        /*
+         * And the ticket starts its life being made (ADR 0018). This is the only
+         * transaction in which the bill was paid, so it is the only place that can
+         * say the goods are owed — a ticket written anywhere else could exist for a
+         * bill that was never settled.
+         */
+        fulfilment: 'preparing',
       },
     });
 

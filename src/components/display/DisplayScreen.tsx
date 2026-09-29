@@ -250,23 +250,51 @@ export function DisplayScreen() {
         </section>
       ) : null}
 
-      {!paying && !selling && state.ready && state.ready.orders.length > 0 ? (
+      {!paying &&
+      !selling &&
+      ((state.ready?.calls.length ?? 0) > 0 || (state.ready?.orders.length ?? 0) > 0) ? (
         <section className={styles.stage}>
-          <p className={styles.instruction}>พร้อมรับของแล้ว</p>
-          <ul className={styles.readyList}>
-            {state.ready.orders.map((order) => (
-              <li key={order.orderNumber} className={styles.readyItem}>
-                <span className={styles.readyNumber}>{order.orderNumber}</span>
-                <span className={styles.readyWho}>
-                  {order.customerInitial ?? ''} · {bangkokTimeString(new Date(order.readyAt))}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/*
+           * The walk-in calls first, and biggest: these are numbers somebody is
+           * being called by right now, and the customer looking for theirs has
+           * been waiting since before they sat down (ADR 0018). A pre-order below
+           * them is a parcel to collect, which has already been waited for.
+           */}
+          {(state.ready?.calls.length ?? 0) > 0 ? (
+            <>
+              <p className={styles.instruction}>เรียกคิวแล้ว</p>
+              <ul className={styles.callList} data-testid="display-calls">
+                {state.ready?.calls.map((number) => (
+                  <li key={number} className={styles.callNumber}>
+                    {number}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          {(state.ready?.orders.length ?? 0) > 0 ? (
+            <>
+              <p className={styles.instruction}>พร้อมรับของแล้ว</p>
+              <ul className={styles.readyList}>
+                {state.ready?.orders.map((order) => (
+                  <li key={order.orderNumber} className={styles.readyItem}>
+                    <span className={styles.readyNumber}>{order.orderNumber}</span>
+                    <span className={styles.readyWho}>
+                      {order.customerInitial ?? ''} · {bangkokTimeString(new Date(order.readyAt))}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
         </section>
       ) : null}
 
-      {!paying && !selling && (state.ready?.orders.length ?? 0) === 0 ? (
+      {!paying &&
+      !selling &&
+      (state.ready?.orders.length ?? 0) === 0 &&
+      (state.ready?.calls.length ?? 0) === 0 ? (
         <section className={`${styles.stage} ${styles.idle}`}>
           {/*
            * The logo is plain `<img>` rather than `next/image`: the shop's logo is

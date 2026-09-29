@@ -105,7 +105,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
-| `npm run route:audit` | Builds, serves, and opens all 17 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
+| `npm run route:audit` | Builds, serves, and opens all 18 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
@@ -207,7 +207,7 @@ npm run doc:audit       # the documents still name the commands that exist
 npm test                # 718 tests across 50 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
-npm run route:audit     # all 17 screens render, and render styled
+npm run route:audit     # all 18 screens render, and render styled
 npm run limiter:race    # two servers against one database share one limit
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -459,6 +459,7 @@ endpoint that says so.
 | §2 RBAC | `src/lib/roles.ts`, enforced in `src/proxy.ts` **and** every route handler |
 | Reversal of a paid sale (beyond the SRS) | `src/lib/credit-notes.ts` (the transaction) + `src/lib/refund-plan.ts` (the arithmetic) + `src/lib/order-state.ts` (the `refund` edge) — ADRs 0004, 0008 |
 | §3 pickup QR | `src/lib/pickup-token.ts` (the signed code), `pickup-scan.ts` (what the counter typed), rendered on the customer's order — ADR 0006 |
+| The drink queue (beyond the SRS) | `src/lib/queue-number.ts` (what a number looks like, pure) + `src/lib/fulfilment-state.ts` (the machine, pure) + `src/lib/fulfilment.ts` (the board and the taps), printed on the receipt, tapped at `/pos/queue`, called on `/display` — ADRs 0017, 0018 |
 
 The domain rules are split into **pure functions** (loyalty, settlement, the state
 machine, the discrepancy formula, what the counter just scanned) and
@@ -722,7 +723,8 @@ goes through them.
 | `docs/adr/0014-product-photos-are-links.md` | Product photos as links to wherever the shop keeps its pictures: the allowlist in front of them, why `route:audit` stopped watching `<img>`, and what that gives up. |
 | `docs/adr/0015-the-app-mark-is-supplied-artwork.md` | The platform mark as the shop's own artwork, committed: the letter that exists only as a tone (so a one-colour trace of it loses the letter), why the app icons are a resample rather than a drawing, and the plate the dark theme needs instead of a tint. |
 | `docs/adr/0016-hosted-multi-tenant.md` | The rental as a hosted service: a schema per shop in one database, a control plane in `public`, a per-request seam with no default client, Google for the owner and phone-plus-password for the counter — and the invariants it deliberately does not spend. |
-| `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, the day that resets inside the statement that bumps it, and the board that is round 2. |
+| `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, and the day that resets inside the statement that bumps it. |
+| `docs/adr/0018-the-board-that-calls-a-number.md` | The drink queue: a second state machine beside the order's status (because `completed` is what the money counts), the board the bar taps through, why only ready numbers reach the customer screen, and today as the board's horizon. |
 | `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
@@ -748,9 +750,7 @@ Deferred deliberately, and listed here rather than discovered during service:
   the bytes: no upload, no file this deployment holds, no resizing of what the link
   returns, and a photo host that goes down shows placeholders.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
-  audit-log viewer are in — see below.)- **A call-number board and the state behind it.** A walk-in bill now carries the number a customer is called by, and their slip prints it (ADR 0017) — but nothing
-  shows it to the room yet, and nothing records that a drink is still being made: a
-  walk-in sale is paid and `completed` in the same instant. The decided direction is
-  that staff advance the bill (making → ready → handed over) and `/display` shows
-  those numbers, with that state beside `orders.status` rather than inside it.
+  audit-log viewer are in — see below.)- **Waiting times as a report.** A walk-in ticket now records both when it was paid for
+  and when the goods were ready (ADR 0018), so how long customers actually wait is a fact
+  the database holds — and no screen or workbook reads it yet.
 - **A reconciliation screen over a date range.** The dashboard reconciles *today*: what the bank confirmed against what closed a bill, with the transfers left over. Comparing a week or a month against a statement is still two screens; it is also still the only way to find a bill from last week by its number.

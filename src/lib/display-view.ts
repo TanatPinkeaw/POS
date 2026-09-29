@@ -57,7 +57,25 @@ export interface DisplayReadyOrder {
 
 export interface DisplayReadyPayload {
   orders: DisplayReadyOrder[];
+  /**
+   * The walk-in numbers that have just been called, newest first (ADR 0018).
+   *
+   * Only numbers that are *ready*: a ticket still being made is deliberately absent,
+   * because a call board showing numbers nobody is calling teaches customers to
+   * stop reading it. A bare string is all a screen needs — no order id, no customer,
+   * no money — which is what keeps this contract as narrow as the rest of the file.
+   */
+  calls: string[];
 }
+
+/**
+ * How many called numbers the screen shows at once.
+ *
+ * Eight, because it has to be readable from across a room on a screen paired from
+ * a settings page: more than that and the type shrinks past the point where the
+ * customer standing farthest away can read the one number that is theirs.
+ */
+export const DISPLAY_CALL_LIMIT = 8;
 
 /**
  * A paired screen, as the settings screen lists it.

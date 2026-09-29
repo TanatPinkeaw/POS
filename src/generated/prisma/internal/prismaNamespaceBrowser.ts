@@ -264,6 +264,7 @@ export const OrdersScalarFieldEnum = {
   receipt_number: 'receipt_number',
   queue_number: 'queue_number',
   queue_day: 'queue_day',
+  fulfilment: 'fulfilment',
   points_earned: 'points_earned',
   points_redeemed: 'points_redeemed',
   cancel_reason: 'cancel_reason',

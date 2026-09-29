@@ -1,0 +1,94 @@
+/*
+ * The bar's board (ADR 0018).
+ *
+ * Two columns that stay side by side down to a narrow tablet, because the whole
+ * point of the screen is to be glanced at: "what is being made" and "what is
+ * waiting" are one look, and stacking them puts the second below the fold on the
+ * device that exists to answer both at once.
+ *
+ * No sizes of its own — this runs at the till's `touch` density, so every figure
+ * and every gap comes from the density tokens and the same control is the same
+ * size here as in the register beside it.
+ */
+.board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: var(--ln-space-4);
+  align-items: start;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+}
+
+.columnTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ln-space-2);
+  margin: 0;
+  font-size: var(--ln-size-lg);
+}
+
+.count {
+  font-size: var(--ln-size-sm);
+  font-weight: 400;
+  color: var(--ln-text-muted);
+}
+
+.empty {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ticket {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+}
+
+.ticketHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+/*
+ * The call number, and the reason this screen exists. Tabular figures so that
+ * `014` and `014` in two tickets line up in the same column — a board whose digits
+ * shift sideways as the numbers change is a board somebody misreads.
+ */
+.number {
+  font-size: var(--ln-size-3xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.elapsed {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-muted);
+}
+
+.items {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+  overflow-wrap: anywhere;
+}

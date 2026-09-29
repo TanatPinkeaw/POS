@@ -10,6 +10,9 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { buildDisplayState, buildIdlePayload, buildReadyPayload } from '@/lib/display-broadcast';
+import { DISPLAY_CALL_LIMIT } from '@/lib/display-view';
+import { collectTicket, markTicketReady } from '@/lib/fulfilment';
+import { createPosSale } from '@/lib/orders';
 import { prisma, resetDatabase, seedOpenShift, seedPeople, seedProduct, seedShop, type TestPeople } from './helpers/test-db';
 
 let people: TestPeople;
@@ -176,5 +179,64 @@ describe('the state a screen fetches on arrival', () => {
     expect(state.idle.shopName).toBe('ร้านทดสอบ');
     expect(state.idle.sessionOpen).toBe(true);
     expect(state.ready.orders.map((order) => order.orderNumber)).toEqual([orderNumber]);
+  });
+});
+
+describe('the called numbers on the customer screen', () => {
+  /**
+   * A walk-in sale through the real sale path, so the ticket it mints is the one a
+   * shop makes. The `completedSale` helper above writes its row directly and
+   * deliberately carries no ticket — which is the very fact that keeps it off this
+   * board, and the reason this uses a different one.
+   */
+  async function sellOne(productId: string, shiftId: number): Promise<string> {
+    const sale = await createPosSale({
+      cashierId: people.employeeId,
+      shiftId,
+      lines: [{ productId, quantity: 1 }],
+      customerId: null,
+      settlement: { cash: 100 },
+    });
+    return sale.orderId;
+  }
+
+  it('carries a number only once somebody has called it', async () => {
+    await seedShop();
+    const shiftId = await seedOpenShift(people.employeeId);
+    const product = await seedProduct({ salePrice: 100, stockQty: 5 });
+    const orderId = await sellOne(product.id, shiftId);
+
+    // Paid, and `001` is already printed on the customer's slip — but it is not on
+    // this screen yet, because nobody is calling it yet. A board that shows numbers
+    // before they are called teaches customers to stop reading it (ADR 0018 §6).
+    expect((await buildReadyPayload()).calls).toEqual([]);
+
+    await markTicketReady(orderId);
+    expect((await buildReadyPayload()).calls).toEqual(['001']);
+
+    await collectTicket(orderId);
+    expect((await buildReadyPayload()).calls).toEqual([]);
+  });
+
+  it('shows the newest call first, and only as many as fit', async () => {
+    await seedShop();
+    const shiftId = await seedOpenShift(people.employeeId);
+    const product = await seedProduct({ salePrice: 100, stockQty: 20 });
+
+    const sold: string[] = [];
+    for (let index = 0; index < DISPLAY_CALL_LIMIT + 2; index += 1) {
+      sold.push(await sellOne(product.id, shiftId));
+    }
+    for (const orderId of sold) {
+      await markTicketReady(orderId);
+    }
+
+    const { calls } = await buildReadyPayload();
+
+    expect(calls).toHaveLength(DISPLAY_CALL_LIMIT);
+    // Newest first: the number just called is the one its customer is looking for.
+    expect(calls[0]).toBe(String(sold.length).padStart(3, '0'));
+    // And the oldest has aged off the screen rather than shrinking the type.
+    expect(calls).not.toContain('002'.padStart(3, '0'));
   });
 });

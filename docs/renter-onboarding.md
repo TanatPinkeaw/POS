@@ -156,6 +156,14 @@ registration gets found — and all three are cheap to fix before the shop is bu
    in a shop that is registered for VAT and one that is not, and it is not the invoice
    number beside it: the invoice number is the document's name and never resets. A
    reprint of a bill carries the same call number as the slip in the customer's hand.
+
+   Then open **คิวเครื่องดื่ม** (`/pos/queue`): every bill you have just closed is on it,
+   under **กำลังทำ**, with its number and what has to be made. Tap **เสร็จแล้ว** when the
+   drink is done and the number moves to **พร้อมรับ** and appears on the customer screen —
+   that is the moment you call it out. Tap **รับแล้ว** as you hand it over and it leaves
+   the board. The board only ever shows today: anything left on it is gone at midnight,
+   so a slip that was never collected does not sit on the screen in front of tomorrow's
+   customers.
 6. Rung the wrong bill? **คืนเงินบิลนี้** on the receipt — tick the lines coming back, or
    leave them blank to hand the whole bill back. A refund always asks for a supervisor
    PIN and a reason: set the PIN at `/admin/staff` before the first shift, because

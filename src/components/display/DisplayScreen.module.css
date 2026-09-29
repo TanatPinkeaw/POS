@@ -216,6 +216,36 @@
   font-size: var(--ln-size-sm);
 }
 
+/* ------------------------------------------------------------------- calls */
+
+/*
+ * The walk-in numbers that have just been called (ADR 0018).
+ *
+ * The largest type on the screen, because this is the one thing a customer reads
+ * from wherever they chose to sit — across the room, at an angle, over the top of
+ * somebody's shoulder. `clamp` rather than a density token for the same reason the
+ * rest of this file uses it: a display is whatever screen the shop plugged in, so
+ * its type scales with the viewport rather than with the density of the tablet on
+ * the counter.
+ */
+.callList {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--ln-space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.callNumber {
+  font-size: clamp(2.5rem, 7vw, 6rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+
 /* ------------------------------------------------------------------ pairing */
 
 .pairCard {

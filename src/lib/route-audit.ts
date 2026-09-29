@@ -48,9 +48,9 @@ export interface RouteSpec {
    * The path the request must end on — the path itself for a screen that just
    * renders, and the redirect target for one that does not.
    *
-   * This is what stops the audit from passing vacuously: sixteen of these seventeen
+   * This is what stops the audit from passing vacuously: seventeen of these eighteen
    * screens redirect to `/login` when they are handed no session, so "it
-   * answered 200" would otherwise mean "the login page is styled" seventeen times
+   * answered 200" would otherwise mean "the login page is styled" eighteen times
    * over. Pinning the landing path also makes the table a live assertion about
    * `roles.ts` and the proxy — a front door that sends a manager to the till
    * fails here rather than passing as a styled page.
@@ -62,7 +62,7 @@ export interface RouteSpec {
 /**
  * Every screen this application serves, and how to reach it.
  *
- * Sixteen distinct paths; the root is listed four times because it is a
+ * Seventeen distinct paths; the root is listed four times because it is a
  * role-aware redirect and the interesting part of it is where each role lands.
  */
 export const ROUTE_WALK: readonly RouteSpec[] = [
@@ -83,12 +83,13 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/admin/staff', area: 'admin', session: 'admin', landsOn: '/admin/staff', label: 'the staff screen' },
   { path: '/pos', area: 'pos', session: 'cashier', landsOn: '/pos', label: 'the register' },
   { path: '/pos/attendance', area: 'pos', session: 'cashier', landsOn: '/pos/attendance', label: 'attendance' },
+  { path: '/pos/queue', area: 'pos', session: 'cashier', landsOn: '/pos/queue', label: 'the drink queue' },
   { path: '/pos/preorders', area: 'pos', session: 'cashier', landsOn: '/pos/preorders', label: 'the pre-order board' },
   { path: '/shop/products', area: 'shop', session: 'member', landsOn: '/shop/products', label: 'the member catalogue' },
   { path: '/shop/orders', area: 'shop', session: 'member', landsOn: '/shop/orders', label: 'the member orders' },
 ];
 
-/** The distinct paths in the walk — what "seventeen routes" means. */
+/** The distinct paths in the walk — what "eighteen routes" means. */
 export function routePaths(walk: readonly RouteSpec[] = ROUTE_WALK): string[] {
   return [...new Set(walk.map((entry) => entry.path))];
 }

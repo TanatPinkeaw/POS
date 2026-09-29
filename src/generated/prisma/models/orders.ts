@@ -69,6 +69,7 @@ export type OrdersMinAggregateOutputType = {
   receipt_number: string | null
   queue_number: number | null
   queue_day: Date | null
+  fulfilment: $Enums.fulfilment_state | null
   points_earned: number | null
   points_redeemed: number | null
   cancel_reason: string | null
@@ -98,6 +99,7 @@ export type OrdersMaxAggregateOutputType = {
   receipt_number: string | null
   queue_number: number | null
   queue_day: Date | null
+  fulfilment: $Enums.fulfilment_state | null
   points_earned: number | null
   points_redeemed: number | null
   cancel_reason: string | null
@@ -127,6 +129,7 @@ export type OrdersCountAggregateOutputType = {
   receipt_number: number
   queue_number: number
   queue_day: number
+  fulfilment: number
   points_earned: number
   points_redeemed: number
   cancel_reason: number
@@ -182,6 +185,7 @@ export type OrdersMinAggregateInputType = {
   receipt_number?: true
   queue_number?: true
   queue_day?: true
+  fulfilment?: true
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
@@ -211,6 +215,7 @@ export type OrdersMaxAggregateInputType = {
   receipt_number?: true
   queue_number?: true
   queue_day?: true
+  fulfilment?: true
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
@@ -240,6 +245,7 @@ export type OrdersCountAggregateInputType = {
   receipt_number?: true
   queue_number?: true
   queue_day?: true
+  fulfilment?: true
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
@@ -356,6 +362,7 @@ export type OrdersGroupByOutputType = {
   receipt_number: string | null
   queue_number: number | null
   queue_day: Date | null
+  fulfilment: $Enums.fulfilment_state | null
   points_earned: number
   points_redeemed: number
   cancel_reason: string | null
@@ -408,6 +415,7 @@ export type ordersWhereInput = {
   receipt_number?: Prisma.StringNullableFilter<"orders"> | string | null
   queue_number?: Prisma.IntNullableFilter<"orders"> | number | null
   queue_day?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
+  fulfilment?: Prisma.Enumfulfilment_stateNullableFilter<"orders"> | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
@@ -445,6 +453,7 @@ export type ordersOrderByWithRelationInput = {
   receipt_number?: Prisma.SortOrderInput | Prisma.SortOrder
   queue_number?: Prisma.SortOrderInput | Prisma.SortOrder
   queue_day?: Prisma.SortOrderInput | Prisma.SortOrder
+  fulfilment?: Prisma.SortOrderInput | Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -486,6 +495,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   is_vat_invoice?: Prisma.BoolFilter<"orders"> | boolean
   queue_number?: Prisma.IntNullableFilter<"orders"> | number | null
   queue_day?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
+  fulfilment?: Prisma.Enumfulfilment_stateNullableFilter<"orders"> | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
@@ -523,6 +533,7 @@ export type ordersOrderByWithAggregationInput = {
   receipt_number?: Prisma.SortOrderInput | Prisma.SortOrder
   queue_number?: Prisma.SortOrderInput | Prisma.SortOrder
   queue_day?: Prisma.SortOrderInput | Prisma.SortOrder
+  fulfilment?: Prisma.SortOrderInput | Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -560,6 +571,7 @@ export type ordersScalarWhereWithAggregatesInput = {
   receipt_number?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
   queue_number?: Prisma.IntNullableWithAggregatesFilter<"orders"> | number | null
   queue_day?: Prisma.DateTimeNullableWithAggregatesFilter<"orders"> | Date | string | null
+  fulfilment?: Prisma.Enumfulfilment_stateNullableWithAggregatesFilter<"orders"> | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntWithAggregatesFilter<"orders"> | number
   points_redeemed?: Prisma.IntWithAggregatesFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
@@ -587,6 +599,7 @@ export type ordersCreateInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -624,6 +637,7 @@ export type ordersUncheckedCreateInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -657,6 +671,7 @@ export type ordersUpdateInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -694,6 +709,7 @@ export type ordersUncheckedUpdateInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -729,6 +745,7 @@ export type ordersCreateManyInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -756,6 +773,7 @@ export type ordersUpdateManyMutationInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -785,6 +803,7 @@ export type ordersUncheckedUpdateManyInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -829,6 +848,7 @@ export type ordersCountOrderByAggregateInput = {
   receipt_number?: Prisma.SortOrder
   queue_number?: Prisma.SortOrder
   queue_day?: Prisma.SortOrder
+  fulfilment?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
@@ -870,6 +890,7 @@ export type ordersMaxOrderByAggregateInput = {
   receipt_number?: Prisma.SortOrder
   queue_number?: Prisma.SortOrder
   queue_day?: Prisma.SortOrder
+  fulfilment?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
@@ -899,6 +920,7 @@ export type ordersMinOrderByAggregateInput = {
   receipt_number?: Prisma.SortOrder
   queue_number?: Prisma.SortOrder
   queue_day?: Prisma.SortOrder
+  fulfilment?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
@@ -1023,6 +1045,10 @@ export type Enumorder_statusFieldUpdateOperationsInput = {
   set?: $Enums.order_status
 }
 
+export type NullableEnumfulfilment_stateFieldUpdateOperationsInput = {
+  set?: $Enums.fulfilment_state | null
+}
+
 export type ordersCreateNestedOneWithoutItemsInput = {
   create?: Prisma.XOR<Prisma.ordersCreateWithoutItemsInput, Prisma.ordersUncheckedCreateWithoutItemsInput>
   connectOrCreate?: Prisma.ordersCreateOrConnectWithoutItemsInput
@@ -1130,6 +1156,7 @@ export type ordersCreateWithoutCustomerInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1165,6 +1192,7 @@ export type ordersUncheckedCreateWithoutCustomerInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1208,6 +1236,7 @@ export type ordersCreateWithoutCashierInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1243,6 +1272,7 @@ export type ordersUncheckedCreateWithoutCashierInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1307,6 +1337,7 @@ export type ordersScalarWhereInput = {
   receipt_number?: Prisma.StringNullableFilter<"orders"> | string | null
   queue_number?: Prisma.IntNullableFilter<"orders"> | number | null
   queue_day?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
+  fulfilment?: Prisma.Enumfulfilment_stateNullableFilter<"orders"> | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
@@ -1350,6 +1381,7 @@ export type ordersCreateWithoutItemsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1386,6 +1418,7 @@ export type ordersUncheckedCreateWithoutItemsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1434,6 +1467,7 @@ export type ordersUpdateWithoutItemsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1470,6 +1504,7 @@ export type ordersUncheckedUpdateWithoutItemsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1502,6 +1537,7 @@ export type ordersCreateWithoutPaymentsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1538,6 +1574,7 @@ export type ordersUncheckedCreateWithoutPaymentsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1586,6 +1623,7 @@ export type ordersUpdateWithoutPaymentsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1622,6 +1660,7 @@ export type ordersUncheckedUpdateWithoutPaymentsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1654,6 +1693,7 @@ export type ordersCreateWithoutCredit_notesInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1690,6 +1730,7 @@ export type ordersUncheckedCreateWithoutCredit_notesInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1738,6 +1779,7 @@ export type ordersUpdateWithoutCredit_notesInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1774,6 +1816,7 @@ export type ordersUncheckedUpdateWithoutCredit_notesInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1806,6 +1849,7 @@ export type ordersCreateWithoutPayment_intentsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1842,6 +1886,7 @@ export type ordersUncheckedCreateWithoutPayment_intentsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1890,6 +1935,7 @@ export type ordersUpdateWithoutPayment_intentsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1926,6 +1972,7 @@ export type ordersUncheckedUpdateWithoutPayment_intentsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1958,6 +2005,7 @@ export type ordersCreateWithoutNotificationsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1994,6 +2042,7 @@ export type ordersUncheckedCreateWithoutNotificationsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2042,6 +2091,7 @@ export type ordersUpdateWithoutNotificationsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2078,6 +2128,7 @@ export type ordersUncheckedUpdateWithoutNotificationsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2110,6 +2161,7 @@ export type ordersCreateWithoutPoint_transactionsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2146,6 +2198,7 @@ export type ordersUncheckedCreateWithoutPoint_transactionsInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2194,6 +2247,7 @@ export type ordersUpdateWithoutPoint_transactionsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2230,6 +2284,7 @@ export type ordersUncheckedUpdateWithoutPoint_transactionsInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2263,6 +2318,7 @@ export type ordersCreateManyCustomerInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2291,6 +2347,7 @@ export type ordersCreateManyCashierInput = {
   receipt_number?: string | null
   queue_number?: number | null
   queue_day?: Date | string | null
+  fulfilment?: $Enums.fulfilment_state | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2318,6 +2375,7 @@ export type ordersUpdateWithoutCustomerInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2353,6 +2411,7 @@ export type ordersUncheckedUpdateWithoutCustomerInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2387,6 +2446,7 @@ export type ordersUncheckedUpdateManyWithoutCustomerInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2414,6 +2474,7 @@ export type ordersUpdateWithoutCashierInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2449,6 +2510,7 @@ export type ordersUncheckedUpdateWithoutCashierInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2483,6 +2545,7 @@ export type ordersUncheckedUpdateManyWithoutCashierInput = {
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  fulfilment?: Prisma.NullableEnumfulfilment_stateFieldUpdateOperationsInput | $Enums.fulfilment_state | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2588,6 +2651,7 @@ export type ordersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   receipt_number?: boolean
   queue_number?: boolean
   queue_day?: boolean
+  fulfilment?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2626,6 +2690,7 @@ export type ordersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   receipt_number?: boolean
   queue_number?: boolean
   queue_day?: boolean
+  fulfilment?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2657,6 +2722,7 @@ export type ordersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   receipt_number?: boolean
   queue_number?: boolean
   queue_day?: boolean
+  fulfilment?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2688,6 +2754,7 @@ export type ordersSelectScalar = {
   receipt_number?: boolean
   queue_number?: boolean
   queue_day?: boolean
+  fulfilment?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2698,7 +2765,7 @@ export type ordersSelectScalar = {
   cancelled_at?: boolean
 }
 
-export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "points_earned" | "points_redeemed" | "cancel_reason" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
+export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "fulfilment" | "points_earned" | "points_redeemed" | "cancel_reason" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
 export type ordersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customer?: boolean | Prisma.orders$customerArgs<ExtArgs>
   cashier?: boolean | Prisma.orders$cashierArgs<ExtArgs>
@@ -2769,6 +2836,14 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
      */
     queue_number: number | null
     queue_day: Date | null
+    /**
+     * *
+     *    * Where the goods are, for a walk-in sale (ADR 0018).
+     *    * Set to `preparing` by `createPosSale` — the bill is paid and the drink is
+     *    * being made — and advanced by the bar tapping a ticket. `ready_at`, which a
+     *    * pre-order already uses for the same fact, is the instant this reaches `ready`.
+     */
+    fulfilment: $Enums.fulfilment_state | null
     points_earned: number
     points_redeemed: number
     cancel_reason: string | null
@@ -3226,6 +3301,7 @@ export interface ordersFieldRefs {
   readonly receipt_number: Prisma.FieldRef<"orders", 'String'>
   readonly queue_number: Prisma.FieldRef<"orders", 'Int'>
   readonly queue_day: Prisma.FieldRef<"orders", 'DateTime'>
+  readonly fulfilment: Prisma.FieldRef<"orders", 'fulfilment_state'>
   readonly points_earned: Prisma.FieldRef<"orders", 'Int'>
   readonly points_redeemed: Prisma.FieldRef<"orders", 'Int'>
   readonly cancel_reason: Prisma.FieldRef<"orders", 'String'>

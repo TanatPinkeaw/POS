@@ -48,6 +48,15 @@ export const payment_method = {
 export type payment_method = (typeof payment_method)[keyof typeof payment_method]
 
 
+export const fulfilment_state = {
+  preparing: 'preparing',
+  ready: 'ready',
+  collected: 'collected'
+} as const
+
+export type fulfilment_state = (typeof fulfilment_state)[keyof typeof fulfilment_state]
+
+
 export const stock_movement_type = {
   manual_adjust: 'manual_adjust',
   pos_sale: 'pos_sale',

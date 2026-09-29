@@ -531,6 +531,13 @@ export type Enumorder_statusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumorder_statusFilter<$PrismaModel> | $Enums.order_status
 }
 
+export type Enumfulfilment_stateNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.fulfilment_state | Prisma.Enumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  in?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumfulfilment_stateNullableFilter<$PrismaModel> | $Enums.fulfilment_state | null
+}
+
 export type Enumorder_typeWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.order_type | Prisma.Enumorder_typeFieldRefInput<$PrismaModel>
   in?: $Enums.order_type[] | Prisma.ListEnumorder_typeFieldRefInput<$PrismaModel>
@@ -549,6 +556,16 @@ export type Enumorder_statusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumorder_statusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumorder_statusFilter<$PrismaModel>
+}
+
+export type Enumfulfilment_stateNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.fulfilment_state | Prisma.Enumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  in?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumfulfilment_stateNullableWithAggregatesFilter<$PrismaModel> | $Enums.fulfilment_state | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumfulfilment_stateNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumfulfilment_stateNullableFilter<$PrismaModel>
 }
 
 export type Enumpayment_methodFilter<$PrismaModel = never> = {
@@ -1158,6 +1175,13 @@ export type NestedEnumorder_statusFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumorder_statusFilter<$PrismaModel> | $Enums.order_status
 }
 
+export type NestedEnumfulfilment_stateNullableFilter<$PrismaModel = never> = {
+  equals?: $Enums.fulfilment_state | Prisma.Enumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  in?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumfulfilment_stateNullableFilter<$PrismaModel> | $Enums.fulfilment_state | null
+}
+
 export type NestedEnumorder_typeWithAggregatesFilter<$PrismaModel = never> = {
   equals?: $Enums.order_type | Prisma.Enumorder_typeFieldRefInput<$PrismaModel>
   in?: $Enums.order_type[] | Prisma.ListEnumorder_typeFieldRefInput<$PrismaModel>
@@ -1176,6 +1200,16 @@ export type NestedEnumorder_statusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumorder_statusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumorder_statusFilter<$PrismaModel>
+}
+
+export type NestedEnumfulfilment_stateNullableWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.fulfilment_state | Prisma.Enumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  in?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  notIn?: $Enums.fulfilment_state[] | Prisma.ListEnumfulfilment_stateFieldRefInput<$PrismaModel> | null
+  not?: Prisma.NestedEnumfulfilment_stateNullableWithAggregatesFilter<$PrismaModel> | $Enums.fulfilment_state | null
+  _count?: Prisma.NestedIntNullableFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumfulfilment_stateNullableFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumfulfilment_stateNullableFilter<$PrismaModel>
 }
 
 export type NestedEnumpayment_methodFilter<$PrismaModel = never> = {

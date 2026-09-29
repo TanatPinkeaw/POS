@@ -55,7 +55,9 @@ Recorded so a session starts from the truth rather than from the last commit mes
 - **Everything the SRS specifies is implemented and verified** — §1 to §8, mapped to
   code in README's *How the SRS maps onto the code*.
 - **Beyond the spec**, because a shop needs it: a call number on every walk-in bill,
-  printed as the loudest thing on the receipt (ADR 0017); VAT with gapless tax-invoice numbering
+  printed as the loudest thing on the receipt, with a state machine the bar taps through
+  and the number called on the customer screen (ADRs 0017, 0018); VAT with gapless
+  tax-invoice numbering
   (ADR 0002), credit notes and per-line refunds (ADRs 0004, 0008), a transfer that
   closes its own bill from the shop's own bank notification with no payment provider
   (ADR 0005), customer accounts created at the counter (ADRs 0010, 0011), a notification
@@ -90,7 +92,7 @@ Three authenticated areas and three public surfaces:
 | Area | Prefix | Screens |
 | --- | --- | --- |
 | Manager | `/admin/*` | dashboard, products, audit, reports, schedules, settings, staff, customers |
-| Till | `/pos/*` | the register, attendance, pre-orders |
+| Till | `/pos/*` | the register, the drink queue, attendance, pre-orders |
 | Customer | `/shop/*` | catalogue, orders |
 | Public | — | `/login`, `/setup` (first run), `/display` (customer screen) |
 
@@ -144,7 +146,7 @@ owner.
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
-| `npm run route:audit` | Builds, serves, and checks that every one of the 17 screens renders a page whose CSS defines every class on it. | Postgres |
+| `npm run route:audit` | Builds, serves, and checks that every one of the 18 screens renders a page whose CSS defines every class on it. | Postgres |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the app icons. `-- --preview` prints them as text. | — |
 | `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
@@ -361,7 +363,7 @@ This has bitten every round of UI verification. In order of preference:
 2. **The sandboxed browser may not reach the host at all** — loopback, the LAN
    IP, the Tailscale IP and `host.docker.internal` can all fail with
    `chrome-error` while the public internet loads fine. When that happens, run
-   `npm run route:audit`: it fetches each of the seventeen routes from the built
+   `npm run route:audit`: it fetches each of the eighteen routes from the built
    server, collects the stylesheets each one links, and asserts that every class
    in the HTML is defined in that CSS. Do not re-write that check by hand — the
    first hand-written version is what caught the vendored theme's Google Fonts
@@ -409,9 +411,9 @@ from the shop's own bank notification with
 no payment provider (ADR 0005), a pre-order is handed over with either a scanned QR
 or the PIN beside it (ADR 0006), and the messages that used to need somebody
 watching a screen are queued with the fact that produced them and sent by a worker
-the shop runs (ADR 0007). All seventeen routes are on `src/components/ds/`,
+the shop runs (ADR 0007). All eighteen routes are on `src/components/ds/`,
 the vendored Hope UI theme is deleted, `ui:audit` keeps it that way, `route:audit`
-walks all seventeen screens, and `acceptance` drives the renter journey **including a
+walks all eighteen screens, and `acceptance` drives the renter journey **including a
 refund, a machine-confirmed transfer and a pre-order collected by code** — all in
 CI. The test count lives in `README.md` and in the `verify` output; do not quote it
 from here, it drifts.

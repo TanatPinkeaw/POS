@@ -9,12 +9,14 @@
  */
 import { prisma } from './db';
 import {
+  DISPLAY_CALL_LIMIT,
   initialOf,
   type DisplayCartPayload,
   type DisplayIdlePayload,
   type DisplayReadyOrder,
   type DisplayReadyPayload,
 } from './display-view';
+import { listQueueTickets } from './fulfilment';
 import { listOrderViews } from './order-view';
 import { emitToDisplays } from './realtime';
 import { REALTIME_EVENTS } from './realtime-events';
@@ -83,7 +85,19 @@ export async function buildReadyPayload(): Promise<DisplayReadyPayload> {
     readyAt: (order.readyAt ?? order.createdAt).toISOString(),
   }));
 
-  return { orders };
+  /*
+   * The walk-in calls, read from the same board the bar works off and filtered to
+   * what is actually collectable. Newest first, because a customer who has just
+   * heard their number looks for it at the top, and capped, because a screen in the
+   * middle of a room has to stay readable from the far side of it (ADR 0018).
+   */
+  const calls = (await listQueueTickets())
+    .filter((ticket) => ticket.state === 'ready')
+    .slice(-DISPLAY_CALL_LIMIT)
+    .reverse()
+    .map((ticket) => ticket.queueNumber);
+
+  return { orders, calls };
 }
 
 /** The shop's own name and a couple of best sellers, for an idle screen. */

@@ -38,6 +38,14 @@ export const REALTIME_EVENTS = {
   paymentClosed: 'payment:closed',
   /** A pre-order became collectable, for the board on the customer screen. */
   displayReady: 'display:ready',
+  /**
+   * A call ticket appeared or moved, for the bar's screen at the till.
+   *
+   * A bare nudge rather than the board itself: unlike a customer display, the till
+   * holds a session and can read the board again, and a screen built from an event
+   * payload drifts the first time one event is missed.
+   */
+  queueUpdated: 'queue:updated',
 } as const;
 
 export type RealtimeEventName = (typeof REALTIME_EVENTS)[keyof typeof REALTIME_EVENTS];

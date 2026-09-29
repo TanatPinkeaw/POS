@@ -281,6 +281,18 @@ export const confirmOrderSchema = z.object({
   removeItemIds: z.array(z.string().min(1)).optional(),
 });
 
+/**
+ * The call board's one control (ADR 0018).
+ *
+ * The two values are the state machine's own action names — the edges out of
+ * `preparing` and `ready` in `fulfilment-state.ts` — rather than a free string, so
+ * an unknown tap is refused at the edge instead of arriving at the machine as a
+ * programming mistake.
+ */
+export const fulfilmentActionSchema = z.object({
+  action: z.enum(['mark_ready', 'collect']),
+});
+
 export const completeOrderSchema = z.object({
   shiftId: z.number().int().positive(),
   settlement: settlementSchema,
