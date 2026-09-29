@@ -191,7 +191,7 @@ npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm test                # 655 tests across 46 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 133 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 135 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 17 screens render, and render styled
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -209,7 +209,7 @@ that the demo seed now *refuses* to touch the configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 133 of its
+or that quietly began fetching a font from another origin passes all 135 of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.
@@ -300,15 +300,24 @@ without paying for it**, which is the one capability here worth inventing an ide
 to get — so the screen that hands one out says so: creating a customer is audited,
 and so is every later change to how that account signs in. Renaming one is not,
 because the value of a trail is in being narrow. `docs/adr/0010-member-accounts.md`
-is the decision.
+is the decision; `docs/adr/0011-counter-enrolment.md` is the counter's half of it.
 
-The manager types a name, a phone number and a **temporary** password and reads it
-to the customer, which is the only flow that works in a shop with no email address
-on file and no app on the customer's phone. Uniqueness runs across every role and
-survives punctuation (`080-000-0002` and `0800000002` are one number), because a
-cashier whose number was reused by a customer would silently stop being able to sign
-in. Points are displayed and never edited: a balance is the sum of a ledger, and a
-text field that could write one is a text field that can invent a liability.
+Somebody types a name, a phone number and a **temporary** password and reads it to
+the customer, which is the only flow that works in a shop with no email address on
+file and no app on the customer's phone. There are two doors to that form, and the
+difference between them is who is standing where: a manager at `/admin/members`,
+which also lists customers and can edit or close an account, and **the till**, where
+`/pos` → *สมัครสมาชิกใหม่* opens the same enrolment as a dialog over the bill. The
+basket survives it, and the customer is attached to the bill it closes — a cashier
+enrols somebody and keeps selling. Editing stays behind the admin gate: adding a
+customer is a counter act, changing how one signs in is not.
+
+Uniqueness runs across every role and survives punctuation (`080-000-0002` and
+`0800000002` are one number), because a cashier whose number was reused by a customer
+would silently stop being able to sign in — and the refusal says so in Thai, which is
+the one failure this flow actually meets at a counter. Points are displayed and never
+edited: a balance is the sum of a ledger, and a text field that could write one is a
+text field that can invent a liability.
 
 The list is loaded whole and filtered in the browser, with the customer's points and
 order count alongside the date they joined. Closing an account stops them signing in
@@ -432,7 +441,7 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | `/setup` + `POST /api/v1/setup` | The wizard: shop, VAT and the first administrator, written in one transaction. Refuses with 409 once a shop exists. |
 | `/admin/settings` | Shop name, branch, tax id, VAT registration and rate, inclusive vs exclusive pricing, receipt prefix and footer, plus the **next receipt number**. |
 | `/admin/staff` | Staff accounts, created from the app rather than from SQL. The last administrator cannot be deactivated. |
-| `POST /api/v1/members` + `/admin/members` | Enrolling a customer at the counter, with a temporary password they change themselves later, plus a searchable list and their points. Admin-only; the till's own lookup stays read-only. |
+| `POST /api/v1/members` + `/admin/members` | Enrolling a customer, with a temporary password they change themselves later, plus a searchable list, their points and deactivation. Reachable from the till (`/pos`) as a dialog over the bill and from the back office as a screen; editing an account stays admin-only. |
 | `/admin/products` → categories | Categories are createable at last, and deleting one that still has products is refused by the database. |
 | `/admin/products` → import | CSV or `.xlsx` catalogue import: a preview that writes nothing, a downloadable template, and its own `REASON_IMPORT` audit entries. |
 | `GET /api/v1/orders/{id}/receipt` | Reprint data, read from the order's own snapshot columns, so a 2026 receipt still shows 7% in 2027. |
@@ -661,6 +670,7 @@ goes through them.
 | `docs/adr/0008-partial-refunds.md` | Per-line refunds: the note itemises, several notes per invoice, and why the closing note takes the remainder. |
 | `docs/adr/0009-rate-limiting.md` | The limiter on the doors that need no session: a token bucket per process, who a request is from, and why only the first refusal is written down. |
 | `docs/adr/0010-member-accounts.md` | Customer accounts: a credential created at the counter, phone numbers unique across every role, and points that are shown but never edited. |
+| `docs/adr/0011-counter-enrolment.md` | The till enrols its own customers: one route a role wider, a dialog over the bill rather than a screen, and the 403 that moved to `PATCH`. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet

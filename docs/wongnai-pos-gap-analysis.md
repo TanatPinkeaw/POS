@@ -193,9 +193,12 @@ member self-registration with an OTP — because that needs a messaging account,
 consent story and an unpaid attacker's playground of fake accounts, while a shop that
 already knows the customer can hand them a credential in ten seconds.
 
-The remaining gap is the *counter*: enrolling a customer is back-office only, and the
-till is where shops actually do it. That is a POS screen decision (§4.4's surface),
-not a missing API — `POST /api/v1/members` exists and is admin-only.
+The counter is covered as well (ADR 0011): `/pos` carries *สมัครสมาชิกใหม่* beside the
+member search, and it opens the same enrolment as a dialog over the bill — so a
+cashier adds the customer in front of them without losing a half-rung basket, and the
+customer lands on that bill when it closes. `POST /api/v1/members` is now
+`['employee', 'admin']`; editing an account stayed admin-only, because adding one is a
+counter act and changing how one signs in is not.
 
 ### 4.4 A till that survives a flaky connection — operational risk
 
@@ -251,10 +254,10 @@ Stated here rather than implied anywhere above:
    shop runs, so half of the pre-order feature — "the customer finds out" — no
    longer depends on somebody looking at a screen.
 3. ~~**Pickup QR** (§4.3)~~ — **done**, ADR 0006, and the gap it surfaced is closed
-   too: **a shop can create a member** (§4.3a, ADR 0010), so the pre-order the QR
-   collects can actually be placed by somebody the shop enrolled. What is left of
-   that thread is the counter-side form, which is a POS screen rather than a
-   missing capability.
+   too: **a shop can create a member** (§4.3a, ADR 0010) — from the back office and,
+   since ADR 0011, from the till itself. The thread is finished: the pre-order the QR
+   collects can be placed by somebody the shop enrolled, and the enrolling can happen
+   where the customer is standing.
 
 **Then the things that keep a growing shop:**
 

@@ -295,18 +295,13 @@ Open threads, roughly in the order worth doing:
 1. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-2. **A cashier-side "add customer".** Enrolling one works (ADR 0010) but only from
-   the back office, while the counter is where customers actually ask. That is a POS
-   screen decision — does it interrupt the basket, who types the temporary password
-   — and the API is already there behind an admin-only check.
-3. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
+2. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
    not. A LINE push needs a LINE user id, this system stores only phone numbers,
    and asking members for one is a consent decision before it is a schema change.
    Until then `line` means the shop's own group, and customers get SMS or a
    webhook.
-4. **A `/design` reference route** that renders every primitive with its tokens,
+3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 
-Known product gaps are listed at the end of `README.md` (a counter-side customer
-form, overtime approval, LINE addresses for customers, multiple branches, product
-images, RTL, object storage).
+Known product gaps are listed at the end of `README.md` (overtime approval, LINE
+addresses for customers, multiple branches, product images, RTL, object storage).

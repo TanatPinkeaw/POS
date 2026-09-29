@@ -81,12 +81,12 @@ const CASHIER = { fullName: 'มาลี เหลี่ยมนอก', phone
 /**
  * The customer in section 11.
  *
- * Inserted as a fixture rather than through the app, and that is a finding, not a
- * convenience: **the API has no way to create a member.** Staff accounts are made
- * by an admin (section 4), and a pre-order requires `requireRole(['member'])`, so a
- * shop that has just installed this software has nobody who can place one. The
- * journey below still drives every step through HTTP — this row is the starting
- * condition, the same way the setup wizard is.
+ * These are the details the *intent* is built from, not a row: an earlier version
+ * inserted this account with SQL, because no route created members and a shop that
+ * had just installed the software therefore had nobody who could place a pre-order.
+ * The manager now enrols them through the API (ADR 0010), and the cashier enrols a
+ * second one at the till (ADR 0011) — so every account this journey uses is made by
+ * somebody the journey itself signed in.
  */
 const MEMBER = { fullName: 'สมชาย เหลี่ยมนอก', phone: '0800000302', password: 'accept-member-1' };
 
@@ -1154,14 +1154,52 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     duplicated.status,
   );
 
-  const cashierEnrols = await cashier.request('/api/v1/members', {
+  /*
+   * The counter enrols its own customer (ADR 0011). This check used to assert the
+   * opposite — a 403 — and opening it up is the change: shops do this at the till,
+   * and a cashier who has to walk to the back office is a cashier who does not.
+   */
+  const enrolledByCashier = await cashier.call<MemberDto>('/api/v1/members', {
     method: 'POST',
-    body: { fullName: 'โดยแคชเชียร์', phone: '0800000999', password: MEMBER.password },
+    body: {
+      fullName: 'โดยแคชเชียร์',
+      phone: '0800000999',
+      password: 'accept-counter-1',
+    },
   });
   check(
-    'a cashier cannot enrol a customer from the till (403)',
-    cashierEnrols.status === 403,
-    cashierEnrols.status,
+    'a cashier enrols a customer from the till',
+    enrolledByCashier.phone === '0800000999' && enrolledByCashier.isActive,
+    enrolledByCashier,
+  );
+
+  /*
+   * The account the till made is a *customer*, and that is asserted the only way it
+   * means anything: by signing in as them. The role is never read from a request
+   * body, so the widest thing this route can mint is a member — and a route that
+   * could mint a cashier would be a route to the drawer.
+   */
+  const counterCustomer = new Session(() => base);
+  await counterCustomer.login({ identifier: '0800000999', password: 'accept-counter-1' });
+  const counterCustomerMe = await counterCustomer.call<{ role: string }>('/api/v1/auth/me');
+  check(
+    'and the account it created is a customer, not staff',
+    counterCustomerMe.role === 'member',
+    counterCustomerMe.role,
+  );
+
+  /*
+   * Adding a customer is a counter act; editing one is office work. The 403 the
+   * journey used to look for did not disappear — it moved one method over.
+   */
+  const cashierEdits = await cashier.request(`/api/v1/members/${enrolledByCashier.id}`, {
+    method: 'PATCH',
+    body: { fullName: 'เปลี่ยนชื่อจากหน้าแคชเชียร์' },
+  });
+  check(
+    'a cashier still cannot edit a customer account (403)',
+    cashierEdits.status === 403,
+    cashierEdits.status,
   );
 
   const member = new Session(() => base);

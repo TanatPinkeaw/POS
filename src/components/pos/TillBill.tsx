@@ -1,8 +1,11 @@
 'use client';
 
-import { Button, Icon, InlineNotice, Money, TextField } from '@/components/ds';
+import { useState } from 'react';
+
+import { Button, Icon, InlineNotice, Money, TextField, useToast } from '@/components/ds';
 import { formatThb } from '@/lib/money';
 
+import { MemberEnrolDialog } from './MemberEnrolDialog';
 import type { Till } from './useTill';
 import styles from './Till.module.css';
 
@@ -27,6 +30,8 @@ export function TillBill({
   taxLabel: string | null;
 }) {
   const lineCount = till.lines.reduce((sum, line) => sum + line.quantity, 0);
+  const toast = useToast();
+  const [enrolOpen, setEnrolOpen] = useState(false);
 
   return (
     <section className={styles.pane} aria-label="บิลปัจจุบัน">
@@ -117,6 +122,27 @@ export function TillBill({
                 ค้นหา
               </Button>
             </div>
+
+            {/*
+             * The counter's own way in (ADR 0011), placed under the search box
+             * because that is the order a cashier meets it in: type the number,
+             * find nobody, enrol them — and the number they typed travels into the
+             * dialog with them, so it cannot end up on a different account than the
+             * one they searched for. Hidden once a customer is attached: the bill
+             * has one, and a second would silently replace the first.
+             */}
+            {till.member === null ? (
+              <div style={{ marginTop: 'var(--ln-space-2)' }}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon="plus"
+                  onClick={() => setEnrolOpen(true)}
+                >
+                  สมัครสมาชิกใหม่
+                </Button>
+              </div>
+            ) : null}
 
             {till.memberError ? <InlineNotice tone="danger">{till.memberError}</InlineNotice> : null}
 
@@ -211,6 +237,27 @@ export function TillBill({
           รับชำระเงิน · {formatThb(till.due)}
         </Button>
       </div>
+
+      {/*
+       * A dialog rather than a trip to `/admin/members`: the bill stays mounted
+       * behind it, so an unfinished basket survives the detour — and the customer
+       * lands on *this* bill when it closes, which is the whole reason somebody
+       * would enrol them mid-queue.
+       */}
+      <MemberEnrolDialog
+        open={enrolOpen}
+        initialPhone={till.memberQuery}
+        onClose={() => setEnrolOpen(false)}
+        onEnrolled={(member) => {
+          till.attachMember(member);
+          setEnrolOpen(false);
+          toast.show({
+            title: `สมัครสมาชิกให้ ${member.fullName} แล้ว`,
+            body: 'บอกรหัสผ่านชั่วคราวกับลูกค้าตอนนี้ — ผูกเข้าบิลนี้เรียบร้อยแล้ว',
+            tone: 'success',
+          });
+        }}
+      />
     </section>
   );
 }

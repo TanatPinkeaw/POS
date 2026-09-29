@@ -392,6 +392,23 @@ export function useTill({
     setUsePoints(false);
   }, []);
 
+  /**
+   * Puts a customer on the open bill.
+   *
+   * Shared by the phone lookup and the counter enrolment (ADR 0011), because both
+   * end in the same state and a second copy of it is where "enrolled somebody and
+   * then rang up a sale for nobody" would come from. The search box is emptied
+   * because its job is done — the attached customer is shown on their own row
+   * above it, and leaving the digits there invites a second search for the person
+   * who is already on the bill.
+   */
+  const attachMember = useCallback((found: TillMember): void => {
+    setMember(found);
+    setMemberQuery('');
+    setMemberError(null);
+    setUsePoints(false);
+  }, []);
+
   const findMember = useCallback(async (): Promise<void> => {
     setMemberError(null);
     try {
@@ -402,12 +419,11 @@ export function useTill({
         setMemberError('ไม่พบสมาชิกเบอร์นี้');
         return;
       }
-      setMember(found[0]!);
-      setUsePoints(false);
+      attachMember(found[0]!);
     } catch (caught) {
       setMemberError(caught instanceof Error ? caught.message : 'ค้นหาสมาชิกไม่สำเร็จ');
     }
-  }, [memberQuery]);
+  }, [attachMember, memberQuery]);
 
   /**
    * Issues a QR for the amount that will be transferred.
@@ -686,6 +702,7 @@ export function useTill({
     setMemberQuery,
     memberError,
     findMember,
+    attachMember,
     setMember,
     usePoints,
     setUsePoints,

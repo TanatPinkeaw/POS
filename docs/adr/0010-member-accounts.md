@@ -70,6 +70,11 @@ is how most Thai shops actually do it — is a *different* decision with its own
 questions (does it interrupt the basket? who types the password?), and it belongs on
 the POS screen rather than smuggled in here.
 
+**Later:** that decision was taken in ADR 0011, which opened `POST` to
+`['employee', 'admin']` and put an enrolment dialog over the bill. What survives from
+this decision is the half drawn from the other side — `PATCH` is still admin-only, and
+the till's own `GET` projection is still four fields.
+
 ### 6. Points are shown and never edited
 
 The screen displays the balance and the order count, and there is no field to change
@@ -95,7 +100,8 @@ with its own audit action.
 
 ## Known gaps, stated rather than discovered
 
-- **A cashier cannot enrol a customer at the till.** Decision 5.
+- ~~**A cashier cannot enrol a customer at the till.**~~ Done in ADR 0011, which is
+  where the counter-side flow's own gaps now live.
 - **No self-service sign-up, and no password reset by the customer.** A customer who
   forgets their password telephones the shop, and a manager sets a new temporary one.
   The obvious improvement is letting a member change their own password from `/shop/*`,

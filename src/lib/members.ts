@@ -51,7 +51,7 @@ function throwDuplicatedAccount(
 ): never {
   if (isUniqueViolation(error)) {
     throw new ConflictError(
-      `An account already exists for ${phone}${email ? ` or ${email}` : ''}`,
+      `มีบัญชีที่ใช้ ${phone}${email ? ` หรือ ${email}` : ''} อยู่แล้ว — ลองใช้เบอร์อื่น`,
       'DUPLICATE_ACCOUNT',
     );
   }
