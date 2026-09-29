@@ -119,6 +119,11 @@ sudo install -d -o pos -g pos /var/backups/pos
 sudo install -m 644 deploy/systemd/*.service deploy/systemd/*.timer /etc/systemd/system/
 sudo systemctl daemon-reload
 
+# Let systemd read them before trusting them: a typo in a directive is a service
+# that silently never starts. These units have never been loaded by a real systemd
+# anywhere, so this is the first time it happens.
+sudo systemd-analyze verify /etc/systemd/system/pos*.service /etc/systemd/system/pos-backup.timer
+
 sudo systemctl enable --now pos.service pos-backup.timer
 
 # Only once the matching `.env` keys are in place, or skip them: an unconfigured
@@ -370,7 +375,7 @@ sequence is a minute or two on a mini-PC, most of it `npm ci`.
 | `npm` not found when the service starts | Node was installed with nvm, which the service account cannot see. Install Node system-wide; `command -v npm` as that user should print `/usr/bin/npm` or `/usr/local/bin/npm`. |
 | Run by hand works, `systemctl start` fails | Read `journalctl -u pos -n 50`. Usual causes: the account cannot write `/opt/pos` (root-owned files from a root `git pull`), or `.env` is missing or unreadable. |
 | `pos-bank` failed with `BANK_AMOUNT_REGEX is not set` | Exactly what it says; enable it only after runbook §6.1 is configured. |
-| `pos-backup` failed with `pg_dump is not installed` | `apt install postgresql-client` (or `dnf install postgresql`). |
+| `pos-backup` failed with `pg_dump is not installed` | `apt install postgresql-client-17` for a 17 server (or `dnf install postgresql17`); the version has to match, and a mismatch reads as `aborting because of server version mismatch`. |
 | A backup wrote nothing | `npm run backup` refuses an empty dump and says so; the journal line names the database it targeted, so a `DATABASE_URL` pointing at the wrong one is visible there. |
 | The timer never ran | `systemctl list-timers pos-backup.timer` (is it enabled?), and `timedatectl` (is the host's clock sane? `Persistent=true` will catch up a missed run, but not a clock three years behind). |
 | `/display` will not pair | The customer display needs the same reachable URL as the till — it is a second device, so §4 applies to it too. Generate the code at `/admin/settings`. |

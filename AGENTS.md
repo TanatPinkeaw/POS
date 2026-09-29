@@ -64,9 +64,10 @@ Recorded so a session starts from the truth rather than from the last commit mes
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no
   browser end-to-end test in CI (`route:audit` stands in for one — see Traps), the
   restore in `docs/homelab-deploy.md` §7 is a recipe that no script, check or CI job
-  rehearses, and there is no experience of real data volume in reports or analytics.
-  "Green" means *correct as far as the tests reach*; it does not mean a shop has used
-  it.
+  rehearses, nothing has ever loaded `deploy/systemd/` — those units were reviewed by
+  reading, never by `systemd-analyze verify` or a real boot — and there is no
+  experience of real data volume in reports or analytics. "Green" means *correct as
+  far as the tests reach*; it does not mean a shop has used it.
 
 ---
 
