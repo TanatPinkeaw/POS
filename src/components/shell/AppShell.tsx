@@ -27,6 +27,7 @@ import { BRAND } from '@/brand/brand';
 import { BrandMark } from '@/brand/BrandMark';
 import { Avatar, Icon, Menu, MenuItem, MenuLabel, MenuSeparator } from '@/components/ds';
 import type { IconName } from '@/components/ds';
+import { activeNavHref } from '@/lib/nav-active';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import { ROLE_LABEL } from '@/lib/roles';
 import { playPreOrderChime, primeAudio } from '@/lib/sound';
@@ -168,6 +169,17 @@ export function AppShell({
 
   const onTill = variant === 'till';
 
+  /*
+   * Which item is current, worked out once for the whole nav. A per-link test cannot
+   * get this right on its own: `/pos` is a prefix of `/pos/preorders`, so the till and
+   * the pre-order board would both light up (and both announce themselves as the
+   * current page). `activeNavHref` picks the deepest match; see its doc comment.
+   */
+  const activeHref = activeNavHref(
+    pathname,
+    nav.map((item) => item.href),
+  );
+
   const sidebar = (
     <nav className={styles.sidebar} aria-label="เมนูหลัก">
       <Link href={nav[0]?.href ?? '/'} className={styles.brand}>
@@ -186,7 +198,7 @@ export function AppShell({
 
       <div className={styles.nav}>
         {nav.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = item.href === activeHref;
           const showBadge = item.badgedByPreOrders && preOrderAlert > 0;
 
           return (
@@ -255,7 +267,7 @@ export function AppShell({
             </Link>
             <div className={styles.nav}>
               {nav.map((item) => {
-                const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                const active = item.href === activeHref;
                 return (
                   <Link
                     key={item.href}
