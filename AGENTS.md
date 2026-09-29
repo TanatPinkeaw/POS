@@ -37,8 +37,10 @@ file in summary:
 3. **The shop's documents are part of the system.** `README.md` is the product
    document; `docs/renter-onboarding.md` is the operator's runbook — plain English prose
    wrapped around the Thai labels a counter actually sees — for the person installing
-   the shop and then running it. A new button, a new refusal, or a thing this version
-   stops doing is a change to that runbook too.
+   the shop and then running it; `docs/homelab-deploy.md` is how the shop's own box
+   keeps working across a reboot, and the units under `deploy/systemd/` are the
+   deployment rather than an example of one. A new button, a new refusal, a new
+   command, or a thing this version stops doing is a change to those too.
 4. **Commits are the trail** — the message says *why* the change is right rather than
    what moved. Commits land on `main` in this checkout; the owner decides what goes to
    `origin`, and nothing is pushed, merged or deployed on your own initiative.
@@ -61,9 +63,10 @@ Recorded so a session starts from the truth rather than from the last commit mes
   RTL, object storage, and a reconciliation over a date range rather than a day.
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no
   browser end-to-end test in CI (`route:audit` stands in for one — see Traps), the
-  runbook's backup section is a `pg_dump` line with no restore ever rehearsed against
-  it, and there is no experience of real data volume in reports or analytics. "Green"
-  means *correct as far as the tests reach*; it does not mean a shop has used it.
+  restore in `docs/homelab-deploy.md` §7 is a recipe that no script, check or CI job
+  rehearses, and there is no experience of real data volume in reports or analytics.
+  "Green" means *correct as far as the tests reach*; it does not mean a shop has used
+  it.
 
 ---
 
@@ -143,6 +146,7 @@ owner.
 | `npm run acceptance` | The whole renter journey from an empty schema, including a refund and a bank notification; serves the production build itself. | Postgres |
 | `npm run limiter:race` | Starts **two** servers on one scratch schema, signs the same cashier in at both, and races them at one rated door — the proof that the shared buckets (ADR 0012) are one limit rather than one each. `-- --skip-build`, `-- --keep`. | Postgres |
 | `npm run bank:bridge` | Reads the shop's own bank notification mailbox and posts what it finds to the app. `-- --file <eml>` parses a saved one and prints what it would post. | An IMAP mailbox, or none with `--file` |
+| `npm run backup` | One compressed `pg_dump` of the shop's database, then a prune of what aged out. Watched by `deploy/systemd/pos-backup.timer`; `-- --list`, `-- --dir`, `-- --keep`. | `pg_dump` on PATH |
 
 ---
 

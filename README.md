@@ -98,6 +98,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run route:audit` | Builds, serves, and opens all 17 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with nothing fetched from another origin. |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
+| `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. The inner loop. |
 | `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit` and `limiter:race` against the one build the journey makes — stopping at the first failure. The release check, and what CI runs. |
@@ -193,7 +194,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 663 tests across 46 files: unit + integration
+npm test                # 677 tests across 47 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 17 screens render, and render styled
@@ -681,6 +682,7 @@ goes through them.
 | --- | --- |
 | `system_requirements_document.md` | The specification this implements. |
 | `docs/renter-onboarding.md` | The operator's runbook: install, the wizard, the daily routine, backups, recovery. |
+| `docs/homelab-deploy.md` | Running it on a box at home: the systemd units in `deploy/systemd/`, the TLS the secure cookie requires before a second device works, the backup timer, the restore drill, and upgrades. |
 | `docs/adr/0001-schema-deviations-from-srs.md` | Every place the database departs from SRS §7, and why. |
 | `docs/adr/0002-shop-identity-and-vat.md` | Shop identity, VAT and gapless receipt numbering — a requirement the SRS never states. |
 | `docs/adr/0004-credit-notes-and-refunds.md` | Reversing a paid sale: the credit-note series, the refund leg, and why money is signed by direction. |

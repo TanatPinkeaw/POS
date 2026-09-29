@@ -1,0 +1,30 @@
+# Writes one dump of the shop's database and prunes what has aged out.
+#
+# Driven by `pos-backup.timer`, and deliberately not enabled on its own — enabling
+# both would take a second backup a day. There is no [Install] section for that
+# reason: run it by hand as the same user when you want one before an upgrade,
+#   sudo -iu pos
+#   npm run backup
+[Unit]
+Description=POS database backup
+Documentation=file:/opt/pos/docs/homelab-deploy.md
+
+[Service]
+Type=oneshot
+User=pos
+Group=pos
+WorkingDirectory=/opt/pos
+# Somewhere that is not the database's disk, which is the whole point of a backup.
+# Create it owned by this user first:
+#   sudo install -d -o pos -g pos /var/backups/pos
+Environment=BACKUP_DIR=/var/backups/pos
+Environment=BACKUP_KEEP_DAYS=14
+# `npm run backup` rather than pg_dump directly, so the command the timer runs and
+# the command the runbook (§7) gives an operator are the same one. It needs
+# postgresql-client installed on this machine.
+ExecStart=/usr/bin/env npm run backup
+# A shop's database is small; a dump that runs for ten minutes means something else
+# is wrong, and the timer should report that rather than hold the unit open.
+TimeoutStartSec=600
+NoNewPrivileges=true
+PrivateTmp=true

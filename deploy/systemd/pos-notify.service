@@ -1,0 +1,29 @@
+# Sends the messages the app queued: `npm run notify:worker -- --watch`.
+#
+# Optional, and pointless until a channel is configured in `.env` — with no
+# NOTIFY_CHANNEL the worker wakes every 30 seconds, finds nothing, and goes back to
+# sleep. Enable it only with NOTIFY_CHANNEL and its destination set (runbook §6.2).
+[Unit]
+Description=POS notification worker
+Documentation=file:/opt/pos/docs/homelab-deploy.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pos
+Group=pos
+WorkingDirectory=/opt/pos
+ExecStart=/usr/bin/env npm run notify:worker -- --watch
+# It retries its own deliveries on a schedule (about 1, 5, 15, 60, 360 minutes) and
+# only exits when the process or the database is wrong. RestartSec is longer than the
+# default start-rate window, so a crash loop keeps retrying rather than stopping at
+# five attempts — the queue is the shop's notifications, not a cache.
+Restart=always
+RestartSec=30
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -43,6 +43,12 @@ npm run dev
 
 and open **http://localhost:3000**.
 
+> **Running this on a home server rather than the machine in front of you?**
+> `npm run dev` is the developer's loop. For a box that has to come back after a
+> reboot and be reachable from the tablet at the counter, see
+> [`docs/homelab-deploy.md`](homelab-deploy.md) — the systemd units, the TLS the
+> login needs before a second device works, and the daily backup timer.
+
 > **No demo data is installed.** The installer deliberately stops before that,
 > because a shop that is about to trade must not start with 30 fake products.
 > Demo data is opt-in, and only ever on a throwaway database: `npm run db:seed:demo`.
@@ -244,13 +250,23 @@ customer still sees everything in the app.
 
 ```bash
 # Back up. Do this daily; it is one file.
-pg_dump -h localhost -U pos_app pos_dev > backup-$(date +%Y%m%d).sql
+npm run backup          # add -- --list to see what is already there
 
 # Upgrade to a newer version.
 git pull
 npm install
 npm run db:deploy      # applies new migrations
 ```
+
+`npm run backup` writes a compressed dump of the shop's database and drops anything
+older than 14 days. It reads the connection out of `.env` itself, so there is no
+password to type and nothing to remember, and the dump is plain SQL, so `gunzip | psql`
+is all a restore needs. By default it writes into `backups/` beside the checkout — which
+is the same disk as the database, so it says so, and `-- --dir /srv/pos-backups` (or
+`BACKUP_DIR`) is how you point it at another disk and copy that somewhere else. If this
+machine is the one that serves the shop, `docs/homelab-deploy.md` §7 turns the same
+command into a nightly timer that writes to `/var/backups/pos`, and has the restore
+drill; **run that drill once before you need it.**
 
 Use **`npm run db:deploy`** (`prisma migrate deploy`), never `prisma migrate dev`.
 Parts of the schema — the `work_hours` generated column, several `CHECK`
@@ -270,6 +286,9 @@ that `migrate dev` would propose dropping.
 | Forgot the administrator password | Reset it from the database, replacing the phone number and hash. Generate a hash, then: `UPDATE users SET password_hash = '<hash>' WHERE phone = '08xxxxxxxx';` |
 | A sale is refused with "drawer is not open" | Open the drawer first (`/pos` → เปิดลิ้นชัก). This is deliberate: cash must belong to a drawer. |
 | Imported stock twice | Stock was added twice, as documented. Correct it with a stock adjustment (`REASON_CORRECTION`) so the audit trail explains it. |
+| Signing in works on this machine but not on a tablet | The production session cookie is `Secure`, so it is only stored over `https://` — browsers exempt `localhost`, which is why the server itself works and the tablet does not. The deployment needs a secure URL; see `docs/homelab-deploy.md` §4. |
+| `pg_dump: command not found` from `npm run backup` | Only the PostgreSQL client is missing. `apt install postgresql-client` (Windows: it comes with the installer). |
+| The app is not running after a reboot | Nothing starts it yet. `docs/homelab-deploy.md` §3 installs it as a service that comes back on its own. |
 
 ---
 

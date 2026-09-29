@@ -1,0 +1,43 @@
+# The till server: Next and Socket.io on one listener, in production mode.
+#
+# Install with docs/homelab-deploy.md §3. The checkout paths below say /opt/pos; if
+# yours is somewhere else, change them in every unit at once:
+#   grep -rl /opt/pos deploy/systemd | xargs sed -i 's#/opt/pos#/srv/pos#'
+[Unit]
+Description=POS till server (Next + Socket.io)
+Documentation=file:/opt/pos/docs/homelab-deploy.md
+After=network-online.target
+Wants=network-online.target
+# The start-rate limiter is off on purpose: this machine *is* the till, and a boot
+# where PostgreSQL wins the race by a second must not leave the shop with a dead
+# service and a `failed` unit that nobody looks at until opening time.
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=pos
+Group=pos
+WorkingDirectory=/opt/pos
+# `.env` is loaded by src/lib/env.ts relative to WorkingDirectory, and a real
+# environment variable wins over it (verified against `process.loadEnvFile`), so
+# whatever is set here is what the process binds. The value the installer writes is
+# `localhost`, which is unreachable from the tablet at the counter — this line is
+# what makes the till answer the rest of the LAN. It cannot produce a broken link:
+# HOSTNAME is read in exactly one place, `src/server.ts`'s listener.
+Environment=NODE_ENV=production
+Environment=HOSTNAME=0.0.0.0
+Environment=PORT=3000
+# `npm run start`, not tsx directly, so this unit cannot drift from the command the
+# repo documents. npm sitting in front of the real process is normally bad for
+# signals; KillMode=control-group, the systemd default, is why it is not one here —
+# SIGTERM reaches every process in the cgroup, and src/server.ts closes its listener
+# and exits within five seconds.
+ExecStart=/usr/bin/env npm run start
+Restart=always
+RestartSec=5
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

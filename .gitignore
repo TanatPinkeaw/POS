@@ -11,6 +11,9 @@ dist/
 # Local product image uploads are runtime data, not source.
 public/uploads/
 
+# `npm run backup` writes here when told no other directory. A dump of the shop's
+# database must never be committed, so the default location is ignored outright.
+backups/
 
 *.log
 npm-debug.log*

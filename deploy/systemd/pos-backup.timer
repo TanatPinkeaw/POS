@@ -1,0 +1,19 @@
+# Daily, at 02:30 in Bangkok — before the shop opens, not in the middle of the day.
+#
+# The timezone is in the calendar expression rather than left to the host, because a
+# HomeLab is very often on UTC and 02:30 UTC is 09:30 here: a backup taken after
+# opening, on top of the trading day. If your systemd rejects the suffix (very old
+# versions only), drop ` Asia/Bangkok` and set the host instead:
+#   sudo timedatectl set-timezone Asia/Bangkok
+[Unit]
+Description=POS database backup, daily
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 Asia/Bangkok
+# A HomeLab box is switched off at night often enough that a missed run is the normal
+# case, not the exception. Persistent=true takes the backup when the machine comes
+# back rather than skipping the day.
+Persistent=true
+
+[Install]
+WantedBy=timers.target
