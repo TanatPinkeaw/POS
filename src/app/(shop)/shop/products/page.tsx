@@ -11,7 +11,9 @@ import { fromDecimal } from '@/lib/money';
  *
  * `category_id` is loaded alongside the name so the aisle headings can wear the
  * category's own colour (`CategoryChip`), which is what makes a shop with twenty
- * aisles browsable rather than one long list of product names.
+ * aisles browsable rather than one long list of product names. `image_url` rides
+ * along for the tile's photo — a link the shop pasted, not a file this deployment
+ * stores (ADR 0014).
  */
 export default async function ShopProductsPage() {
   const session = await getSessionUser();
@@ -43,6 +45,7 @@ export default async function ShopProductsPage() {
     }),
     categoryId: product.category_id,
     categoryName: product.category?.name ?? null,
+    imageUrl: product.image_url,
   }));
 
   return (

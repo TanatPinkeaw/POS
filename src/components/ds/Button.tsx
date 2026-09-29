@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
+import { Loader } from './Feedback';
 import { Icon } from './Icon';
 import type { IconName } from './icons';
 import styles from './Button.module.css';
@@ -69,7 +70,7 @@ export function Button({
       disabled={disabled || loading}
       aria-busy={loading || undefined}
     >
-      {loading ? <span className={styles.spinner} aria-hidden="true" /> : null}
+      {loading ? <Loader /> : null}
       {!loading && icon ? <Icon name={icon} size={size === 'lg' ? 22 : 18} /> : null}
       {children ? <span className={styles.label}>{children}</span> : null}
       {iconAfter && !loading ? <Icon name={iconAfter} size={size === 'lg' ? 22 : 18} /> : null}

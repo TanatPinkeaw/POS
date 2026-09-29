@@ -14,10 +14,25 @@ const TONE_ICON: Record<Tone, IconName> = {
   brand: 'info',
 };
 
+/**
+ * The busy shape on its own: three concentric polygons turning at three speeds.
+ *
+ * A primitive rather than a private detail of `Spinner`, because two controls need
+ * it without any words — a button that is working, and a screen that has not painted
+ * yet — and two copies of three `clip-path` polygons are two shapes that can drift
+ * apart. It is the same argument that keeps the mark's geometry in one string.
+ *
+ * Decorative by construction (`aria-hidden`), so it always travels with a label:
+ * `Spinner` supplies one, and `Button` keeps its own name visible while it works.
+ */
+export function Loader() {
+  return <span className={styles.loader} aria-hidden="true" />;
+}
+
 export function Spinner({ label = 'กำลังโหลด…' }: { label?: string }) {
   return (
     <span className={styles.spinnerRow} role="status">
-      <span className={styles.spinner} aria-hidden="true" />
+      <Loader />
       <span className={styles.spinnerLabel}>{label}</span>
     </span>
   );

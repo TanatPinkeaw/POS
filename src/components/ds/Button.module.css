@@ -158,24 +158,9 @@
   color: #ffffff;
 }
 
-/* ------------------------------------------------------------------ spinner */
-
 /*
- * CurrentColor, so one spinner works on a filled button and an outlined one.
- * The negative margin pulls it into the gap instead of shifting the label when it
- * appears, which is what stops a busy button from twitching.
+ * The busy shape is not in this file any more. It was a second copy of a ring, this
+ * one with `currentColor` so it worked on a filled button and an outlined one; it is
+ * now the shared `Loader` from `Feedback.module.css`, which a button and a screen
+ * that has not painted yet both draw. Two descriptions of one shape is how they drift.
  */
-.spinner {
-  width: 1em;
-  height: 1em;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: var(--ln-radius-pill);
-  animation: ln-spin 640ms linear infinite;
-}
-
-@keyframes ln-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}

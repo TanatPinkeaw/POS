@@ -60,7 +60,7 @@ describe('reading a rendered page', () => {
       <link rel="preload" as="style" href="/_next/static/css/a.css"/>
       <link rel="stylesheet" href="/_next/static/css/b.css"/>
       <link rel="preload" as="script" href="/_next/static/chunks/x.js"/>
-      <link rel="icon" href="/icon.svg"/>
+      <link rel="icon" href="/favicon.ico"/>
     `;
 
     // The error boundary's sheet is preloaded on every route (ADR 0003), and a
@@ -137,6 +137,24 @@ describe('references that leave the deployment', () => {
       'https://cdn.example.com/app.css',
       '//fonts.googleapis.com/x.js',
     ]);
+  });
+
+  it('lets a product photo come from wherever the shop keeps its pictures', () => {
+    // ADR 0014. The photo is the shop's own data — a Nextcloud folder, its
+    // hosting, its drive — and a picture that fails to load costs one tile its
+    // placeholder. The script and the stylesheet are this deployment's own, and a
+    // failure there costs the whole screen.
+    const found = offSiteReferences(
+      {
+        html: `
+          <img src="https://drive.example.stream/s/abc123/preview" alt=""/>
+          <link rel="stylesheet" href="https://cdn.example.com/app.css"/>
+        `,
+      },
+      ORIGIN,
+    );
+
+    expect(found.map((entry) => entry.url)).toEqual(['https://cdn.example.com/app.css']);
   });
 
   it('catches the @import that made the self-hosted fonts a lie', () => {

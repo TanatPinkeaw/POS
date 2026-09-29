@@ -17,6 +17,16 @@ export interface OrderItemView {
   productId: string;
   name: string;
   barcode: string | null;
+  /**
+   * The product's picture, wherever the shop keeps it (ADR 0014).
+   *
+   * It rides on the order line because the line is where a photo is worth the most:
+   * the pre-order board lists what has to go in a bag, and "which bag on the shelf is
+   * this order's" is a question an order number cannot answer and a picture can. Null
+   * on every product the shop has not given a link to, and the screen draws its
+   * placeholder instead.
+   */
+  imageUrl: string | null;
   quantity: number;
   /** How many of `quantity` have already been refunded, across every credit note. */
   refundedQuantity: number;
@@ -97,7 +107,7 @@ export interface OrderListView {
 const fullInclude = {
   items: {
     include: {
-      product: { select: { name: true, barcode: true } },
+      product: { select: { name: true, barcode: true, image_url: true } },
       /*
        * What has already gone back on each line, so a screen can offer what is left
        * rather than what was sold. Without it the refund dialog would have to ask a
@@ -169,6 +179,7 @@ export async function loadOrderView(orderId: string): Promise<OrderView> {
       productId: item.product_id,
       name: item.product.name,
       barcode: item.product.barcode,
+      imageUrl: item.product.image_url,
       quantity: item.quantity,
       refundedQuantity: item.refunded_on.reduce((total, line) => total + line.quantity, 0),
       unitPrice: fromDecimal(item.unit_price),

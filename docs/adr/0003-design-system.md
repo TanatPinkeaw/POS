@@ -28,9 +28,10 @@ existed:
 ### 1. The brand is the platform's; the shop's identity is the shop's
 
 `src/brand/brand.ts` holds the name (เหลี่ยมนอก / Liam Nong), the copy, and the
-mark geometry. It appears on the sign-in screen, the wizard, the sidebar lockup,
-the error pages and the documentation — **and never on a receipt, a reprint or a
-customer-facing page**, which carry the renter's name and (soon) their logo.
+mark. It appears on the sign-in screen, the wizard, the sidebar lockup, the error
+pages and the documentation — **and never on a receipt, a reprint or a
+customer-facing page**, which carry the renter's name and their own logo
+(`shops.logo_url`, drawn on `/display`).
 
 The sidebar deliberately shows *both*: our mark, the shop's name as the title.
 That is how self-hosted shop software reads — the platform's mark, the shop's

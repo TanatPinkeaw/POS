@@ -30,7 +30,10 @@ file in summary:
    being true is *deleted*, and nothing catches it for you: the README kept *an
    audit-log viewer* on its not-built list for the twenty commits after `/admin/audit`
    shipped, and `docs/renter-onboarding.md` still refused a partial refund in writing
-   two ADRs after a partial refund worked. No gate reads a document.
+   two ADRs after a partial refund worked. `npm run doc:audit` is the one gate that does
+   read a document, and only the command lists: a script no document runs, or a
+   document running a command that does not exist. Neither example above is that, which
+   is why both needed a person.
 2. **"Green" is a measurement, not a belief.** `npm run verify:all` runs every gate in
    dependency order, and the numbers come out of that output — never out of a document.
    The counts in `README.md` have drifted twice from being quoted rather than run.
@@ -59,8 +62,9 @@ Recorded so a session starts from the truth rather than from the last commit mes
   limiter on the doors worth guessing at, whose buckets are shared between processes
   (ADRs 0009, 0012).
 - **Deliberately not built**: README's *Not built yet* — overtime approval and leave,
-  LINE addresses for customers, multiple branches, a second register, product images,
-  RTL, object storage, and a reconciliation over a date range rather than a day.
+  LINE addresses for customers, multiple branches, a second register, **storing** a
+  product image (a photo is a link now — ADR 0014), RTL, object storage, and a
+  reconciliation over a date range rather than a day.
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no
   browser end-to-end test in CI (`route:audit` stands in for one — see Traps), the
   restore in `docs/homelab-deploy.md` §7 is a recipe that no script, check or CI job
@@ -134,13 +138,14 @@ owner.
 | `npm run setup` | Writes `.env`, creates the role and both databases, migrates. Idempotent. | Postgres superuser prompt |
 | `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
 | `npm run build` / `npm run start` | Production build, then the same custom server. | — |
-| `npm run verify` | `typecheck` → `ui:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
+| `npm run verify` | `typecheck` → `ui:audit` → `doc:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
 | `npm run verify:all` | That gate, then everything that needs a built, served app: `acceptance` → `route:audit` → `limiter:race`, in that order, stopping at the first failure. One build, made by the journey and reused. What CI runs. | Postgres |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
+| `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
 | `npm run route:audit` | Builds, serves, and checks that every one of the 17 screens renders a page whose CSS defines every class on it. | Postgres |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
-| `npm run brand:icons` | Rasterises the mark into the app icons. `-- --preview` prints them as text. | — |
+| `npm run brand:icons` | Resamples `public/brand-mark.png` into the app icons. `-- --preview` prints them as text. | — |
 | `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
 | `npm run db:seed:demo` | Seeds demo data. Refuses unless the shop is unconfigured. | Throwaway DB |
 | `npm run smoke` | End-to-end checks over real HTTP. | A running server |
@@ -148,6 +153,16 @@ owner.
 | `npm run limiter:race` | Starts **two** servers on one scratch schema, signs the same cashier in at both, and races them at one rated door — the proof that the shared buckets (ADR 0012) are one limit rather than one each. `-- --skip-build`, `-- --keep`. | Postgres |
 | `npm run bank:bridge` | Reads the shop's own bank notification mailbox and posts what it finds to the app. `-- --file <eml>` parses a saved one and prints what it would post. | An IMAP mailbox, or none with `--file` |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, then a prune of what aged out. Watched by `deploy/systemd/pos-backup.timer`; `-- --list`, `-- --dir`, `-- --keep`. | `pg_dump` on PATH |
+
+The table stops at what a shop or a renter runs. The maintenance loop is the rest:
+`npm run db:migrate` is `prisma migrate dev` and belongs on a development machine
+only — the box runs `npm run db:deploy`; `npm run db:studio` opens Prisma Studio; and
+`npm run db:test:prepare` builds the schema `TEST_DATABASE_URL` points at, which is
+what `npm run db:setup` calls. The suite has two slices for the inner loop, `npm run
+test:unit` (the pure money and state machines) and `npm run test:integration` (real
+Postgres), plus `npm run test:watch`. They are written down because `npm run doc:audit`
+fails when a script is named by no document — which is also what keeps these two lists
+from drifting apart.
 
 ---
 
@@ -292,10 +307,10 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
 ## Verification: what "green" means
 
 `npm run verify` must pass, and it is not optional: `typecheck` + `ui:audit` +
-`brand:palette --check` + `test`. If you changed the schema, regenerate and
-commit `src/generated/prisma/` (it is tracked; the `/generated/prisma` line in
-`.gitignore` is a different path). If you changed an anchor colour, run
-`npm run brand:palette` and commit `src/design/tokens.css`.
+`doc:audit` + `brand:palette --check` + `test`. If you changed the schema,
+regenerate and commit `src/generated/prisma/` (it is tracked; the
+`/generated/prisma` line in `.gitignore` is a different path). If you changed an
+anchor colour, run `npm run brand:palette` and commit `src/design/tokens.css`.
 
 Then, for anything a person will look at:
 
@@ -408,16 +423,26 @@ versions type-check and both refuse the request; only one is readable at a count
 
 Open threads, roughly in the order worth doing:
 
-1. **A reconciliation over a range.** The dashboard reconciles today — confirmed
+1. **A restore that a machine rehearses.** §7 of `docs/homelab-deploy.md` is a recipe
+   performed by hand, and nothing runs it — so the one procedure a shop needs to have
+   worked before it needs it is the one with no measurement behind it. Restoring last
+   night's dump into a scratch schema and counting the rows would move it off the
+   *Where it stands* gap list, and belongs in `verify:all` beside the other gates that
+   start a server.
+2. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-2. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
+3. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
    not. A LINE push needs a LINE user id, this system stores only phone numbers,
    and asking members for one is a consent decision before it is a schema change.
    Until then `line` means the shop's own group, and customers get SMS or a
    webhook.
-3. **A `/design` reference route** that renders every primitive with its tokens,
+4. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
+5. **A command that prints where this checkout stands** — branch, how much of it is
+   unpushed, and the last gate's numbers — so the round after this one starts from a
+   measurement instead of a remembered one. The state a session begins with is
+   currently reconstructed by four commands typed from memory.
 
 Known product gaps are listed at the end of `README.md` (overtime approval, LINE
 addresses for customers, multiple branches, product images, RTL, object storage).

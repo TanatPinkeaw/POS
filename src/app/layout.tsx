@@ -60,11 +60,11 @@ export const metadata: Metadata = {
   // A phone number on a page is not a link to dial it; shop phone numbers are
   // data, and iOS's auto-detection turns them into links that swallow taps.
   formatDetection: { telephone: false },
+  // No SVG icon on purpose. The mark is a shaded raster (ADR 0015), so an SVG one
+  // could only be a second, flatter drawing of it — and the tab would be the one
+  // place the product looked different from its own sidebar.
   icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
+    icon: [{ url: '/icon-192.png', sizes: '192x192', type: 'image/png' }],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
   },
 };

@@ -209,6 +209,13 @@ html:root {
   --ln-brand-soft: color-mix(in srgb, var(--ln-brand-50) 60%, transparent);
   --ln-brand-soft-border: var(--ln-brand-200);
   --ln-brand-ring: color-mix(in srgb, var(--ln-brand-600) 35%, transparent);
+  /*
+   * The ground under the app mark (ADR 0015). Transparent here: the artwork's ink
+   * is a deep olive that clears a light surface on its own, so the sidebar and the
+   * sign-in lockup show the picture and nothing else. It is a token rather than a
+   * rule in the mark's own stylesheet so the theme stays a property of this file.
+   */
+  --ln-brand-plate: transparent;
 
   --ln-success: #19794a;
   --ln-success-soft: #e7f5ee;
@@ -373,6 +380,14 @@ html:has(body.dark) {
   --ln-brand-soft: color-mix(in srgb, var(--ln-brand-300) 16%, transparent);
   --ln-brand-soft-border: color-mix(in srgb, var(--ln-brand-300) 40%, transparent);
   --ln-brand-ring: color-mix(in srgb, var(--ln-brand-300) 45%, transparent);
+  /*
+   * The mark needs a light ground here rather than a light *ink*: the artwork has
+   * one rendering, it is a raster, and its deep olive reaches only about 2:1
+   * against the shell — so the ground moves instead (ADR 0015). The lightest brand
+   * step is the same colour every app icon is plated with, which is what keeps the
+   * sidebar and the tab looking like one product on a dark desktop.
+   */
+  --ln-brand-plate: var(--ln-brand-50);
 
   /*
    * Two of these are louder than a dark theme usually sets them, and that is a

@@ -13,6 +13,7 @@ import {
   SearchField,
   SplitPane,
   Stack,
+  Thumb,
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiPost } from '@/lib/client-api';
@@ -30,6 +31,7 @@ export interface ShopProduct {
   availableQty: number;
   categoryId: number | null;
   categoryName: string | null;
+  imageUrl: string | null;
 }
 
 interface Placed {
@@ -49,6 +51,10 @@ interface Placed {
  * for the same reason the till's bill does: the products must not move under the
  * customer's thumb as the list they are building gets longer. Grouped by aisle,
  * with the aisle's own colour, so a market with twenty categories is browsable.
+ *
+ * The photo is the same one the counter sees, from the same link (ADR 0014): a
+ * customer choosing from a picture and a cashier scanning a barcode are looking at
+ * the same goods, and the shop should not have to describe them twice.
  */
 export function ShopCatalog({ initialProducts }: { initialProducts: ShopProduct[] }) {
   const [products, setProducts] = useState(initialProducts);
@@ -220,6 +226,7 @@ export function ShopCatalog({ initialProducts }: { initialProducts: ShopProduct[
                       return (
                         <div className={styles.tile} key={product.id} data-sold-out={soldOut}>
                           <div className={styles.head}>
+                            <Thumb url={product.imageUrl} size="md" />
                             <span className={styles.name}>{product.name}</span>
                             <Money amount={product.salePrice} />
                           </div>

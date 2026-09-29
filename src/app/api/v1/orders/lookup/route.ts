@@ -10,6 +10,12 @@ import { handoverLookupSchema } from '@/lib/schemas';
  *
  * Staff-only, because it deliberately returns an order belonging to somebody
  * else — the whole point of a handover counter.
+ *
+ * The lines carry the photo and the id, which is the whole of what the handover
+ * dialog draws beyond the amounts (ADR 0014). It matters that this projection
+ * matches `/api/v1/orders/:id` on those two fields: a counter that looked the order
+ * up by PIN and a counter that opened it by id are the same counter, and finding the
+ * bag by sight is the reason the photo is on the line at all.
  */
 export async function POST(request: Request): Promise<Response> {
   return withApi(async () => {
@@ -39,8 +45,10 @@ export async function POST(request: Request): Promise<Response> {
           }
         : null,
       items: order.items.map((item) => ({
+        id: String(item.id),
         productId: item.product_id,
         name: item.product.name,
+        imageUrl: item.product.image_url,
         quantity: item.quantity,
         unitPrice: Number(item.unit_price),
         totalPrice: Number(item.total_price),

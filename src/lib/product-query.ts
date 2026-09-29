@@ -23,15 +23,15 @@ import { toProductView, type ProductView, type ProductRow } from './product-view
 /**
  * The shape the browser gets: Decimals become numbers, availability is derived.
  *
- * Structurally the client-safe view plus the two fields only the back office has
- * any use for — the cost price and the image — so a till that receives this DTO and
- * a till that receives a `ProductView` can share every component that draws a
- * product tile.
+ * Structurally the client-safe view plus the fields only the back office has any use
+ * for — the cost price and the description — so a till that receives this DTO and a
+ * till that receives a `ProductView` can share every component that draws a product
+ * tile. The image link is in neither of those two groups any more: the tiles draw it,
+ * so it lives in `ProductView` itself (ADR 0014).
  */
 export interface ProductDto extends ProductView {
   description: string | null;
   costPrice: number;
-  imageUrl: string | null;
 }
 
 /**
@@ -110,13 +110,11 @@ export function toProductDto(
   product: ProductRow & {
     description: string | null;
     cost_price: unknown;
-    image_url: string | null;
   },
 ): ProductDto {
   return {
     ...toProductView(product),
     description: product.description,
     costPrice: fromDecimal(product.cost_price as never),
-    imageUrl: product.image_url,
   };
 }

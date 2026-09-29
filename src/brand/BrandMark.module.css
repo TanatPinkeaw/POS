@@ -1,0 +1,21 @@
+/*
+ * The mark's stylesheet, and it is this short on purpose: the shape is a file, so
+ * the only decision left to CSS is what the ink sits on.
+ *
+ * That decision is a token rather than a rule here. `--ln-brand-plate` is
+ * transparent on the light theme, where the artwork's deep olive clears its surface
+ * by a wide margin, and the lightest brand step under `body.dark`, where the same
+ * ink lands near 2:1 against the shell. A component that branches on the theme is
+ * exactly what `tokens.css` exists to prevent, and a logo is no exception.
+ *
+ * There is no padding and no size rule: the plate's padding is the artwork's own,
+ * since the drawing sits inside two thirds of the file's edge, and the mark is
+ * 28–46 px depending on where it is put — so the caller's `size` is the whole
+ * layout story, and a density token would be inventing a control out of a picture.
+ */
+
+.mark {
+  display: block;
+  background: var(--ln-brand-plate);
+  border-radius: var(--ln-radius-sm);
+}

@@ -12,8 +12,10 @@
  * CSS that was actually served.
  *
  * So the rule is stated as one sentence: *every class in the HTML of a route is
- * defined by a stylesheet that route loads, and neither references an origin
- * other than this one.* Three properties are worth more than cleverness:
+ * defined by a stylesheet that route loads, and no code, stylesheet or font
+ * references an origin other than this one.* A product photo is the exception, and
+ * deliberately so — see `offSiteReferences`. Three properties are worth more than
+ * cleverness:
  *
  *   * **The route list is data.** Sixteen paths across four areas, each with the
  *     session it needs and the path it must land on. That table is also the only
@@ -292,12 +294,28 @@ export function definedClasses(css: string): Set<string> {
 /**
  * Absolute references in a document, and whether they leave this deployment.
  *
- * This is the narrow, useful question: a stylesheet may not fetch anything from
- * another origin. It is not a general "no third-party anything" rule — an `<a
- * href>` to somewhere on the internet is a link a shop may legitimately print —
- * but a `src`, a `url()`, an `@import` or a `@font-face` that leaves the host is
- * a page that breaks when the shop's internet connection does, and a receipt
+ * This is the narrow, useful question: **code, stylesheets and fonts** may not come
+ * from another origin. It is not a general "no third-party anything" rule — an `<a
+ * href>` to somewhere on the internet is a link a shop may legitimately print — but a
+ * `<script>`, a `<link>`, a `url()`, an `@import` or an `@font-face` that leaves the
+ * host is a page that breaks when the shop's internet connection does, and a receipt
  * that phones Google before it prints.
+ *
+ * **An `<img>` is not in that list (ADR 0014).** A product photo is the shop's own
+ * data, and the shop keeps its pictures where its pictures already are — a Nextcloud
+ * folder in the same homelab, its hosting, its drive — which is another origin by
+ * definition. Two reasons the trade is worth taking:
+ *
+ *   * A stylesheet that fails leaves an unstyled, unusable screen; a photo that fails
+ *     leaves one tile with a placeholder in it, because `Thumb` draws the glyph on
+ *     `onError`. The failure modes are not the same size.
+ *   * The only alternative is keeping the bytes here, which needs an upload route, a
+ *     place to put a file and a backup that covers it — a decision this repository has
+ *     deliberately deferred (README, *Not built yet*), and one that would make photos
+ *     a feature a shop waits for instead of a link it pastes.
+ *
+ * What is given up is stated where it belongs, in ADR 0014's gaps: a hardcoded
+ * off-site image in a component now passes this check, and nothing else looks at it.
  */
 export function offSiteReferences(
   input: { html?: string; css?: string },
@@ -318,7 +336,7 @@ export function offSiteReferences(
     }
   };
 
-  for (const match of html.matchAll(/<(?:script|link|img|iframe|source)\b[^>]*\b(?:src|href)="([^"]+)"/g)) {
+  for (const match of html.matchAll(/<(?:script|link|iframe|source)\b[^>]*\b(?:src|href)="([^"]+)"/g)) {
     if (match[1]) {
       record(match[1], 'html');
     }

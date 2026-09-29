@@ -17,6 +17,10 @@
 }
 
 .name {
+  /* Grows between the photo and the price, so a long Thai name wraps inside the
+   * tile instead of pushing the price off the row. */
+  flex: 1;
+  min-width: 0;
   font-weight: 600;
   /* Thai product names are long and unbreakable; two lines is the budget. */
   display: -webkit-box;

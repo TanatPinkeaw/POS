@@ -104,10 +104,19 @@
   color: var(--ln-text-subtle);
 }
 
+/*
+ * The catalogue grid, sized around the photo rather than around the text.
+ *
+ * A tile here is roughly four times the area it used to be, and that is a deliberate
+ * trade: a dense grid fits more names on the screen, and a photo grid lets an operator
+ * recognise a product without reading one. At a counter the second is worth the
+ * scrolling — "the bag with the green label" is faster than "อ่านชื่อไทย 4 บรรทัด" —
+ * but it is a trade, and a shop with eight hundred products may want it back.
+ */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
-  gap: var(--ln-space-2);
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--ln-space-3);
 }
 
 /*
@@ -120,8 +129,7 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--ln-space-1);
-  min-height: 76px;
+  gap: var(--ln-space-2);
   padding: var(--ln-space-3);
   padding-left: calc(var(--ln-space-3) + 3px);
   border: 1px solid var(--ln-border);
@@ -183,7 +191,16 @@
   color: var(--ln-text-subtle);
 }
 
+/*
+ * The photo takes the tile's full width and the name sits under it, so the picture is
+ * the thing the eye lands on — the shape of a shelf, not of a spreadsheet.
+ */
+.tilePhoto {
+  display: block;
+}
+
 .tileName {
+  min-width: 0;
   font-size: var(--ln-size-base);
   font-weight: 600;
   display: -webkit-box;

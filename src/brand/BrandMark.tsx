@@ -1,82 +1,54 @@
 /**
  * The เหลี่ยมนอก mark and wordmark.
  *
- * Inline SVG rather than a font icon or an image file, for three reasons that all
- * come from the rest of this codebase: the app must render offline, it must not
- * pull an icon dependency for two shapes, and `currentColor` means the mark takes
- * the surrounding text colour — including in dark mode — with no second asset.
+ * An `<img>` rather than the inline SVG this was, because the mark *is* a picture:
+ * a shaded screen with the letter drawn on it in a light tone, which is not
+ * something one filled path can describe (ADR 0015 — the trace that stood in for
+ * it kept the highlight and lost the letter). Sizing it here and pointing it at a
+ * same-origin file keeps the sidebar, the tab icon and the installed icon on one
+ * description of the mark, which is why `MARK` is read from `./brand` rather than
+ * a filename typed into this file.
  *
- * The geometry is read from `./brand` so the sidebar, the favicon and the app
- * icons cannot disagree about what the mark is.
+ * `Thumb` (`src/components/ds/Thumb.tsx`) is the primitive for a shop's own
+ * *content* images: it lazy-loads, and it falls back to a placeholder icon when a
+ * photo URL dies. Neither behaviour belongs on a mark that is above the fold and
+ * ships with the app, so this is a plain `<img>` with a stylesheet for the one
+ * thing a raster needs and geometry did not — the ground under it.
  */
 import { BRAND, MARK } from './brand';
 
+import styles from './BrandMark.module.css';
+
 export function BrandMark({
   size = 30,
-  /** Draws a solid plate behind the mark — for app icons and dark surfaces. */
-  plate = false,
-  plateColor,
+  /**
+   * The accessible name. Left out where the mark sits beside the name in text,
+   * which is decoration: a screen reader announcing the product twice is worse
+   * than it saying nothing.
+   */
   title,
   className,
 }: {
   size?: number;
-  plate?: boolean;
-  plateColor?: string;
   title?: string;
   className?: string;
 }) {
-  /** The colour the mark is cut out of a plate in. */
-  const knockout = '#ffffff';
-
   return (
-    <svg
-      className={className}
+    <img
+      className={`${styles.mark} ${className ?? ''}`}
+      src={MARK.src}
       width={size}
       height={size}
-      viewBox={MARK.viewBox}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      role={title ? 'img' : 'presentation'}
+      alt={title ?? ''}
       aria-hidden={title ? undefined : true}
-    >
-      {title ? <title>{title}</title> : null}
-      {plate ? <rect x="0" y="0" width="40" height="40" rx="9" fill={plateColor ?? 'currentColor'} /> : null}
-      {/*
-       * Plated: the same two shapes, knocked out of a brand plate. Both are drawn
-       * in the knockout colour rather than in the plate colour, so the chip of
-       * corner that sits *outside* the frame still reads at 16 px — a plate-coloured
-       * triangle on a plate-coloured background is an invisible shape.
-       */}
-      {plate ? (
-        <>
-          <path
-            d={MARK.frame}
-            stroke={knockout}
-            strokeWidth="3"
-            strokeLinejoin="round"
-            fill="none"
-          />
-          <path d={MARK.corner} fill={knockout} />
-        </>
-      ) : (
-        <>
-          <path
-            d={MARK.frame}
-            stroke="currentColor"
-            strokeWidth="3"
-            strokeLinejoin="round"
-            fill="none"
-          />
-          <path d={MARK.corner} fill="currentColor" />
-        </>
-      )}
-    </svg>
+    />
   );
 }
 
 /**
- * Mark plus name. The sidebar shows this on wide viewports and collapses to the
- * mark alone when it is a rail.
+ * Mark plus name. The mark is the product the shop runs on and the name beside it
+ * is the product's own, which is the one place the two are allowed to be the same
+ * thing.
  */
 export function Wordmark({
   size = 30,

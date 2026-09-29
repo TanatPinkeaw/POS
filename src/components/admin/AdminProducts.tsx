@@ -16,6 +16,7 @@ import {
   SelectField,
   Stack,
   TextField,
+  Thumb,
   type Column,
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
@@ -33,6 +34,8 @@ export interface AdminProduct {
   stockQty: number;
   reservedQty: number;
   availableQty: number;
+  /** A link to the picture, wherever the shop keeps it — not a file we hold. */
+  imageUrl: string | null;
   isActive: boolean;
 }
 
@@ -55,6 +58,7 @@ const EMPTY_PRODUCT = {
   costPrice: '',
   salePrice: '',
   stockQty: '',
+  imageUrl: '',
 };
 
 /**
@@ -70,6 +74,14 @@ const EMPTY_PRODUCT = {
  * screen — where `DataTable` has already turned the row into a card — it lands in
  * the middle of the card's fields. In a dialog the three inputs have room, Escape
  * closes it, and the reason selector cannot be missed.
+ *
+ * The photo is a **link**, in a dialog of its own, and the wording says so. Nothing
+ * here stores a file: a shop pastes the https link of a picture that already lives
+ * somewhere it backs up — its own Nextcloud, its hosting, its drive — and this screen
+ * keeps the link, previews it, and shows the same picture on the till and the
+ * storefront (ADR 0014). That is why the field is editable after the fact rather than
+ * only at creation: a catalogue of two hundred products gets its pictures entered
+ * long after the products themselves.
  */
 export function AdminProducts({
   initialProducts,
@@ -86,6 +98,8 @@ export function AdminProducts({
   const [saving, setSaving] = useState(false);
   const [adjustment, setAdjustment] = useState({ delta: '', reason: 'REASON_RESTOCK', note: '' });
   const [newProduct, setNewProduct] = useState(EMPTY_PRODUCT);
+  const [editingImage, setEditingImage] = useState<AdminProduct | null>(null);
+  const [imageDraft, setImageDraft] = useState('');
 
   /*
    * Server props win on every re-render of the page.
@@ -176,12 +190,43 @@ export function AdminProducts({
         costPrice: Number(newProduct.costPrice || 0),
         salePrice: Number(newProduct.salePrice || 0),
         stockQty: Number(newProduct.stockQty || 0),
+        imageUrl: newProduct.imageUrl.trim() || null,
       });
       setNotice(`เพิ่มสินค้า "${newProduct.name}" แล้ว`);
       setNewProduct(EMPTY_PRODUCT);
       await reload();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'เพิ่มสินค้าไม่สำเร็จ');
+    }
+  }
+
+  /**
+   * The one write this screen makes to a single field, and it is `PATCH` on purpose:
+   * an empty box clears the picture rather than being refused, because "remove the
+   * photo" is a thing a shop asks for and a form that cannot express it sends
+   * somebody to the database.
+   */
+  async function saveImage(): Promise<void> {
+    if (!editingImage) {
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await apiPatch(`/api/v1/products/${editingImage.id}`, {
+        imageUrl: imageDraft.trim() || null,
+      });
+      setNotice(
+        imageDraft.trim()
+          ? `บันทึกลิงก์รูปของ \"${editingImage.name}\" แล้ว`
+          : `เอารูปของ \"${editingImage.name}\" ออกแล้ว`,
+      );
+      setEditingImage(null);
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'บันทึกรูปไม่สำเร็จ');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -201,12 +246,21 @@ export function AdminProducts({
       header: 'สินค้า',
       cardLabel: 'สินค้า',
       render: (product) => (
-        <>
-          <span>{product.name}</span>
-          {product.barcode ? (
-            <span className="ln-mono ln-muted">{product.barcode}</span>
-          ) : null}
-        </>
+        /*
+         * The photo is inside the name cell rather than a column of its own: a
+         * table column per picture would give every row the height of the largest
+         * one, and the picture is a recognition aid for the name beside it, not a
+         * fact to compare down a column.
+         */
+        <span className="ln-row">
+          <Thumb url={product.imageUrl} size="sm" />
+          <span className="ln-break">
+            {product.name}
+            {product.barcode ? (
+              <span className="ln-mono ln-muted"> {product.barcode}</span>
+            ) : null}
+          </span>
+        </span>
       ),
     },
     {
@@ -279,6 +333,17 @@ export function AdminProducts({
           >
             ปรับสต็อก
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setError(null);
+              setImageDraft(product.imageUrl ?? '');
+              setEditingImage(product);
+            }}
+          >
+            รูปสินค้า
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => void toggleActive(product)}>
             {product.isActive ? 'ปิด' : 'เปิด'}
           </Button>
@@ -290,7 +355,9 @@ export function AdminProducts({
   return (
     <Stack gap="lg">
       {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
-      {error && !adjusting ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+      {error && !adjusting && !editingImage ? (
+        <InlineNotice tone="danger">{error}</InlineNotice>
+      ) : null}
 
       <Card title="เพิ่มสินค้าใหม่" subtitle="กรอกเท่าที่มี ที่เหลือแก้ทีหลังได้">
         <Stack gap="md">
@@ -347,6 +414,16 @@ export function AdminProducts({
               className="ln-num"
               value={newProduct.stockQty}
               onChange={(event) => setNewProduct({ ...newProduct, stockQty: event.target.value })}
+            />
+          </FieldRow>
+
+          <FieldRow columns={2}>
+            <TextField
+              id="np-image"
+              label="ลิงก์รูปสินค้า"
+              help="วางลิงก์ https ของรูป (เช่นจาก Nextcloud ของร้าน) — ระบบเก็บลิงก์ ไม่ได้เก็บไฟล์"
+              value={newProduct.imageUrl}
+              onChange={(event) => setNewProduct({ ...newProduct, imageUrl: event.target.value })}
             />
           </FieldRow>
 
@@ -441,6 +518,41 @@ export function AdminProducts({
             value={adjustment.note}
             onChange={(event) => setAdjustment({ ...adjustment, note: event.target.value })}
           />
+        </Stack>
+      </Overlay>
+
+      <Overlay
+        open={editingImage !== null}
+        onClose={() => setEditingImage(null)}
+        title={editingImage ? `รูปสินค้า · ${editingImage.name}` : ''}
+        description="วางลิงก์ https ของรูป — ระบบเก็บลิงก์ไว้ ไม่ได้เก็บไฟล์รูป"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditingImage(null)} disabled={saving}>
+              ยกเลิก
+            </Button>
+            <Button loading={saving} onClick={() => void saveImage()}>
+              บันทึก
+            </Button>
+          </>
+        }
+      >
+        <Stack gap="md">
+          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+          <TextField
+            id="edit-image"
+            label="ลิงก์รูปสินค้า"
+            help="เว้นว่างเพื่อเอารูปออก"
+            placeholder="https://drive.example.com/s/xxxx/preview"
+            value={imageDraft}
+            onChange={(event) => setImageDraft(event.target.value)}
+          />
+          {/*
+           * The preview is the whole point of the dialog: a link that returns a login
+           * page, a link to a folder rather than a file, and a link that is simply
+           * wrong all look the same as a good one until something tries to draw it.
+           */}
+          <Thumb url={imageDraft} size="lg" />
         </Stack>
       </Overlay>
     </Stack>

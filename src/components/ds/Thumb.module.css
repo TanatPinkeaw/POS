@@ -1,0 +1,60 @@
+/*
+ * A product photo, or its placeholder.
+ *
+ * The three fixed sizes come from the control tokens, so the same tile is a 40 px
+ * photo on the till's touch density and a 28 px one in the back office — the point of
+ * the density tokens is that no screen has to decide this for itself (rule 4). `fill`
+ * is the exception and is explained where it is declared.
+ */
+
+.thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  overflow: hidden;
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  /* The placeholder sits on the recessed surface, so an empty tile reads as "no
+   * picture here" rather than as a picture that is still loading. */
+  background: var(--ln-surface-2);
+  color: var(--ln-text-subtle);
+}
+
+.size_sm {
+  width: var(--ln-control-h-sm);
+  height: var(--ln-control-h-sm);
+}
+
+.size_md {
+  width: var(--ln-control-h);
+  height: var(--ln-control-h);
+}
+
+.size_lg {
+  width: var(--ln-control-h-lg);
+  height: var(--ln-control-h-lg);
+}
+
+/*
+ * The one size that is not a token, and the reason is that it belongs to its caller:
+ * a till tile hands the photo the whole tile width and a 4:3 shape, so the tile — and
+ * therefore the grid — decides how big the picture is, rather than the picture
+ * deciding how big the tile has to be. `contain` on the placeholder's face keeps the
+ * glyph from being stretched by a wide tile.
+ */
+.size_fill {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--ln-radius-md);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* `cover` rather than `contain`: these are photos of goods, and a letterboxed
+   * product on a counter screen is harder to recognise than a cropped one. */
+  object-fit: cover;
+}

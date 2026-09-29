@@ -12,7 +12,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 import { listAuditLogs } from '@/lib/audit';
 import { RateLimitedError } from '@/lib/errors';
 import { chargeRateLimit, rateLimitBucketCount, resetRateLimits } from '@/lib/rate-limit';
-import { RATE_LIMIT_POLICIES } from '@/lib/rate-limit-policy';
+import { RATE_LIMIT_POLICIES, bucketKey } from '@/lib/rate-limit-policy';
 
 import { prisma, resetDatabase } from './helpers/test-db';
 
@@ -38,6 +38,31 @@ async function spendAndRefuse(
     await chargeRateLimit(request, policy, scope);
   }
   return chargeRateLimit(request, policy, scope).catch((error: unknown) => error);
+}
+
+/**
+ * Leaves a bucket spent and not yet refusing — the state a burst ends in.
+ *
+ * Written directly rather than by spending the burst, because `inbound_notification`
+ * is the one policy whose refill can outrun its own capacity. It allows 120 attempts
+ * a minute, which is a token every 500 ms, and 120 spends against a real database
+ * take about 900 ms — so the attempt after the burst meets a bucket that has already
+ * refilled and is allowed through. The test then measured the machine, failing here
+ * and passing on a faster one. What belongs to this file is the *row* a trip writes;
+ * the arithmetic of `tripped` is pinned without a database in
+ * `rate-limit-policy.test.ts`.
+ */
+async function emptyBucket(
+  policy: keyof typeof RATE_LIMIT_POLICIES,
+  address: string,
+  scope?: string,
+): Promise<void> {
+  await prisma.$executeRaw`
+    INSERT INTO "rate_limit_buckets" ("bucket_key", "tokens", "updated_at", "refusing")
+    VALUES (${bucketKey(policy, address, scope)}, 0, now(), false)
+    ON CONFLICT ("bucket_key") DO UPDATE
+      SET "tokens" = 0, "updated_at" = now(), "refusing" = false
+  `;
 }
 
 beforeEach(async () => {
@@ -184,7 +209,11 @@ describe('what a trip writes down', () => {
   });
 
   it('names the door and the address, and nobody as the actor', async () => {
-    await spendAndRefuse(requestFrom('203.0.113.9'), 'inbound_notification');
+    await emptyBucket('inbound_notification', '203.0.113.9');
+
+    await expect(
+      chargeRateLimit(requestFrom('203.0.113.9'), 'inbound_notification'),
+    ).rejects.toThrow(RateLimitedError);
 
     const trail = await listAuditLogs({ action: 'rate_limited' });
     expect(trail[0]?.actor).toBeNull();

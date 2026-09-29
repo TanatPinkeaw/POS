@@ -71,8 +71,16 @@ setup wizard, the sidebar, the error pages. It never appears on a receipt, a
 reprint or a customer-facing page — those carry the *renter's* brand, which is
 what `shops` exists for (ADR 0002).
 
+The **mark** no longer draws what the name means. It is the artwork the shop
+supplied — one committed PNG, `public/brand-mark.png`, drawn as it is on the
+platform chrome and resampled into every app icon — so restyling it is replacing
+that file and running `npm run brand:icons`, not a change to a component. The name
+is copy and the mark is a picture, so the two are allowed to say different things.
+ADR 0015 has the measurements, the trace that was tried and lost the letter in it,
+and what carrying a raster costs.
+
 ```
-src/brand/          brand.ts (names, copy, mark geometry) · BrandMark · Wordmark
+src/brand/          brand.ts (names, copy, the mark file) · BrandMark · Wordmark
 src/design/         tokens.css · base.css · brand-page.module.css
 src/components/ds/  the component library screens are migrating onto
 ```
@@ -94,16 +102,17 @@ Three decisions are worth knowing before changing anything here:
 | Command | What it does |
 | --- | --- |
 | `npm run brand:palette` | Regenerates the ramp from the seed. `-- --check` fails if stale. |
-| `npm run brand:icons` | Rasterises the mark into the PNG/ICO app icons. `-- --preview` prints them as text. |
+| `npm run brand:icons` | Resamples `public/brand-mark.png` into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
-| `npm run route:audit` | Builds, serves, and opens all 17 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with nothing fetched from another origin. |
+| `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
+| `npm run route:audit` | Builds, serves, and opens all 17 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
-| `npm run verify` | `typecheck` + `ui:audit` + palette-up-to-date + `test`. The inner loop. |
+| `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
 | `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit` and `limiter:race` against the one build the journey makes — stopping at the first failure. The release check, and what CI runs. |
 
-The migration is **finished**: every one of the 16 routes is on the design system
+The migration is **finished**: every route is on the design system
 and the vendored theme is gone — no Bootstrap classes, no Bootstrap JavaScript, no
 `--bs-*` variables, nothing left to restyle. `npm run ui:audit` asserts that rather
 than assuming it, which is what makes the removal an event instead of a hope.
@@ -194,7 +203,8 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 677 tests across 47 files: unit + integration
+npm run doc:audit       # the documents still name the commands that exist
+npm test                # 718 tests across 50 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 17 screens render, and render styled
@@ -208,6 +218,13 @@ tests first, because nothing is built for them; then the journey, which builds o
 then the audit and the race, both against that one artefact, because a release check
 should be checking one build rather than three. It stops at the first failure, and it
 is what the two CI jobs run between them.
+
+`npm run doc:audit` is the smallest gate and the one with the longest reach: it holds
+every script in `package.json` against the documents that are meant to mention it, in
+both directions — a script nobody wrote down, and a document still running a command
+that was renamed away. That second one is the reason it exists: a runbook naming a
+command that no longer exists fails at the counter rather than in CI, and this is the
+cheapest place to move the failure to.
 
 `npm run acceptance` is the one that proves an *installation* works, which the
 smoke test structurally cannot: its personas are seeded accounts, so it
@@ -364,6 +381,13 @@ A bad or expired code is a **422** with a readable message, not a 500 — a stal
 is not something "going wrong on our side". The board the queue looks at carries
 neither the PIN nor the code, and that is pinned by a test over the serialised
 payload rather than field by field (ADR 0006 §6).
+
+Whichever credential was used, the dialog that opens lists each line with the
+product's photo when the shop has given it one (ADR 0014). That is the moment the
+counter has to answer "which of these bags on the shelf is this order's", and it is
+the one question an order number cannot answer at all and a photo answers at a
+glance — so both projection routes that serve that dialog, the lookup by credential
+and the read by id, carry the same two fields per line.
 
 ### Reports and exports (SRS §8)
 
@@ -694,6 +718,9 @@ goes through them.
 | `docs/adr/0010-member-accounts.md` | Customer accounts: a credential created at the counter, phone numbers unique across every role, and points that are shown but never edited. |
 | `docs/adr/0011-counter-enrolment.md` | The till enrols its own customers: one route a role wider, a dialog over the bill rather than a screen, and the 403 that moved to `PATCH`. |
 | `docs/adr/0012-shared-rate-limit-store.md` | The limiter's buckets as rows in the shop's own database: what a restart, a second process and an unreachable database each mean for a limit. |
+| `docs/adr/0013-command-lists-checked-against-package-json.md` | The command lists as a gate: what counts as a document, why a mention is enough, and the prose it deliberately still leaves to a person. |
+| `docs/adr/0014-product-photos-are-links.md` | Product photos as links to wherever the shop keeps its pictures: the allowlist in front of them, why `route:audit` stopped watching `<img>`, and what that gives up. |
+| `docs/adr/0015-the-app-mark-is-supplied-artwork.md` | The platform mark as the shop's own artwork, committed: the letter that exists only as a tone (so a one-colour trace of it loses the letter), why the app icons are a resample rather than a drawing, and the plate the dark theme needs instead of a tint. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
@@ -708,8 +735,10 @@ Deferred deliberately, and listed here rather than discovered during service:
   See ADR 0007 decision 3.
 - **Multi-branch and a second register.** One shop per deployment, and receipt
   issuance serialises on the shop row (ADR 0002 §4) — correct for one till.
-- **Product images and a shop logo.** `products.image_url` and `shops.logo_url`
-  exist; there is no upload and no storage.
+- **Storing a product image.** A photo is a link the shop pastes (ADR 0014) and it
+  draws on the till tile, the storefront and the back office — but nothing here keeps
+  the bytes: no upload, no file this deployment holds, no resizing of what the link
+  returns, and a photo host that goes down shows placeholders.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
   audit-log viewer are in — see below.)
 - **A reconciliation screen over a date range.** The dashboard reconciles *today*:

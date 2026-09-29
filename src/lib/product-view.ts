@@ -9,6 +9,11 @@
  * `categoryKey` is derived, not stored: it is the aisle colour (see
  * `categoryColorKey`), sent alongside the data so the grid can colour a tile
  * without shipping the whole palette table to the client.
+ *
+ * `imageUrl` is here rather than in `ProductDto` because the tiles draw it: the till
+ * and the storefront show the same photo the back office entered, and a field a tile
+ * renders cannot be a back-office secret (ADR 0014). What the photo *is* — a link to
+ * another host — is decided in `image-url.ts`, not here.
  */
 import { availableQty } from './inventory';
 import { fromDecimal } from './money';
@@ -27,6 +32,8 @@ export interface ProductView {
   reservedQty: number;
   /** What can actually be sold: stock minus what pre-orders have reserved. */
   availableQty: number;
+  /** A link to the picture, wherever the shop keeps it. Not necessarily renderable. */
+  imageUrl: string | null;
   isActive: boolean;
 }
 
@@ -40,6 +47,7 @@ export interface ProductRow {
   sale_price: unknown;
   stock_qty: number;
   reserved_qty: number;
+  image_url: string | null;
   is_active: boolean;
 }
 
@@ -58,6 +66,7 @@ export function toProductView(product: ProductRow): ProductView {
       stock_qty: product.stock_qty,
       reserved_qty: product.reserved_qty,
     }),
+    imageUrl: product.image_url,
     isActive: product.is_active,
   };
 }

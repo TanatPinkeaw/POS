@@ -17,6 +17,7 @@ import {
   Stack,
   StatusPill,
   TextField,
+  Thumb,
   Toolbar,
   type Column,
 } from '@/components/ds';
@@ -49,7 +50,16 @@ interface OrderDetail {
   finalAmountThb: number;
   pickupPin: string | null;
   customer: { id: string; fullName: string; phone: string; pointsBalance: number } | null;
-  items: { id: string; productId: string; name: string; quantity: number; unitPrice: number; totalPrice: number }[];
+  items: {
+    id: string;
+    productId: string;
+    name: string;
+    /** The product's photo, or null — see the board's note on why the line shows one. */
+    imageUrl: string | null;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+  }[];
 }
 
 /** SRS §3 Phase 1 deadline; the server is the authority, this is the display. */
@@ -78,6 +88,12 @@ function minutesLeft(createdAt: string, now: number): number {
  * order's fate — confirming (possibly dropping a damaged item) and handing over
  * (taking money) — happen in dialogs, where the line items and the amounts have
  * room to be checked before anything is committed.
+ *
+ * Both of those dialogs list each line with the product's photo, when the shop has
+ * one (ADR 0014). That is the moment the question is "which of these bags on the
+ * shelf is this order's" — the order number answers nothing, the name answers it
+ * slowly, and the picture answers it at a glance, which is the whole difference on a
+ * counter with three orders waiting.
  *
  * Cancelling asks first. It releases reserved stock and texts a customer who is
  * already on their way, and it is one tap away from "ยืนยัน" on the same card.
@@ -460,8 +476,8 @@ export function PreOrderBoard() {
       >
         <ul className={styles.lines}>
           {confirming?.items.map((item) => (
-            <li className={styles.line} key={item.id}>
-              <label className={styles.pick}>
+            <li className={styles.lineItem} key={item.id}>
+              <label className={`${styles.pick} ${styles.pickLine}`}>
                 <input
                   type="checkbox"
                   checked={removeIds.includes(item.id)}
@@ -473,7 +489,8 @@ export function PreOrderBoard() {
                     )
                   }
                 />
-                <span>
+                <Thumb url={item.imageUrl} size="sm" />
+                <span className={styles.lineName}>
                   ตัดออก: {item.name} × {item.quantity}
                 </span>
               </label>
@@ -512,8 +529,9 @@ export function PreOrderBoard() {
 
           <ul className={styles.lines}>
             {handover?.items.map((item) => (
-              <li className={styles.line} key={item.id}>
-                <span className="ln-break">
+              <li className={styles.lineItem} key={item.id}>
+                <Thumb url={item.imageUrl} size="sm" />
+                <span className={`${styles.lineName} ln-break`}>
                   {item.name} × {item.quantity}
                 </span>
                 <Money amount={item.totalPrice} />

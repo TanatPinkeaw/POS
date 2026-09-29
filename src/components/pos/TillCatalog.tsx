@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { Button, SearchField, Spinner, Tabs } from '@/components/ds';
+import { Button, SearchField, Spinner, Tabs, Thumb } from '@/components/ds';
 import { formatThb } from '@/lib/money';
 
 import type { Till } from './useTill';
@@ -33,6 +33,14 @@ export interface CatalogueCategory {
  * turns paging from a defect into a feature: without it, the end of a page reads as
  * the end of the catalogue, which is exactly how a shop with 201 products used to
  * lose the 201st.
+ *
+ * A tile is built around the product's photo (ADR 0014): the picture takes the tile's
+ * whole width, the name sits under it, and the price and the count stay in the band
+ * along the bottom. That makes a tile about four times the area it used to be and puts
+ * far fewer of them on the screen at once — a trade, and a deliberate one. Recognising
+ * "the bag with the green label" in a glance beats reading four lines of Thai on a
+ * washed-out counter screen, and the operator who would rather scan the barcode still
+ * has the scan field, which never loses focus.
  */
 export function TillCatalog({
   till,
@@ -109,6 +117,9 @@ export function TillCatalog({
                   onClick={() => till.addProduct(product)}
                   title={`${product.name} · ${product.categoryName ?? 'ไม่ระบุหมวดหมู่'}`}
                 >
+                  <span className={styles.tilePhoto}>
+                    <Thumb url={product.imageUrl} size="fill" />
+                  </span>
                   <span className={styles.tileName}>{product.name}</span>
                   <span className={styles.tileFoot}>
                     <span className={styles.tilePrice}>{formatThb(product.salePrice)}</span>

@@ -46,6 +46,7 @@ export default async function AdminProductsPage() {
       stock_qty: product.stock_qty,
       reserved_qty: product.reserved_qty,
     }),
+    imageUrl: product.image_url,
     isActive: product.is_active,
   }));
 

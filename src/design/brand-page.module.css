@@ -35,7 +35,13 @@
   display: flex;
   align-items: center;
   gap: var(--ln-space-3);
-  color: var(--ln-brand);
+  /*
+   * The brand colour used to be set here, and it was there for one reason: the mark
+   * was an inline SVG in `currentColor`, so this was how the lockup tinted it. The
+   * mark is a raster now (ADR 0015) and takes no colour from its surroundings, and
+   * both children below set their own — so the declaration had nothing left to do but
+   * tell the next reader that the mark can be tinted. It cannot.
+   */
 }
 
 .lockupText {

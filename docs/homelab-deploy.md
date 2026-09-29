@@ -251,8 +251,8 @@ Three commands from this repo that should **not** be run against this deployment
   develop on, before the upgrade in §8.
 - `npm run db:seed:demo` — the demo seed, on a live shop, by name.
 
-`npm run verify` is safe on the box: it type-checks, audits the source and runs the
-suite against `pos_test`, and touches no build output.
+`npm run verify` is safe on the box: it type-checks, audits the source and the command
+lists, runs the suite against `pos_test`, and touches no build output.
 
 ---
 
@@ -290,6 +290,12 @@ a database whose name looks like a test database (`--force` overrides that), and
 its own half-written file with it when it fails. `pg_dump`, `psql` and plain `gunzip`
 can read the result — the dump is ordinary SQL on purpose, so it is still restorable
 on a day this repository is not around.
+
+It is the **database**, and only the database. Product photos are links to the shop's
+own file host — the homelab's Nextcloud, for the reference installation — so they are
+not in the dump (ADR 0014): whatever backs that host up is what covers them. Point the
+operator at both, because a restored shop with a catalogue of placeholders is a
+restore that looks like it worked.
 
 `pos-backup.timer` runs it at 02:30 Bangkok with `Persistent=true` and a 14-day
 retention (`BACKUP_KEEP_DAYS` in `pos-backup.service`; `--keep 0` never deletes). The files land in

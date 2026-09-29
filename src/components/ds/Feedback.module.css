@@ -21,13 +21,72 @@
   color: var(--ln-text-muted);
 }
 
-.spinner {
-  width: 1.1em;
-  height: 1.1em;
-  border: 2px solid currentColor;
-  border-right-color: transparent;
-  border-radius: var(--ln-radius-pill);
-  animation: ln-spin 640ms linear infinite;
+/*
+ * The busy shape: three concentric polygons turning at three speeds.
+ *
+ * `currentColor` at three strengths rather than three fixed colours, for the same
+ * reason the button's own copy of this shape used to be currentColor: one loader has
+ * to sit inside a filled brand button, on a card, and on the dark theme without a
+ * second asset — and the innermost polygon is the strongest, which keeps the
+ * brightest-for-smallest relationship the artwork has.
+ *
+ * Three durations rather than the artwork's own, which is the one thing about it
+ * that could not be taken as given: the outer ring turns once every six seconds, and
+ * a busy indicator that has not visibly moved within a second reads as a hung
+ * screen. The ratios are kept and divided by about four.
+ *
+ * Sized in `em`, so it is 16px beside a till's body text and 12px in a compact back
+ * office row, with no screen choosing a pixel value for itself.
+ */
+.loader {
+  display: inline-grid;
+  width: 1em;
+  height: 1em;
+  background: color-mix(in srgb, currentColor 35%, transparent);
+  clip-path: polygon(
+    100% 50%,
+    85.36% 85.36%,
+    50% 100%,
+    14.64% 85.36%,
+    0% 50%,
+    14.64% 14.64%,
+    50% 0%,
+    85.36% 14.64%
+  );
+  animation: ln-spin 1.4s linear infinite;
+}
+
+/*
+ * Both inner polygons are one grid cell, and are inset by a margin rather than given
+ * a width — which is what keeps the three concentric at any size instead of only at
+ * the one they were drawn at.
+ */
+.loader::before,
+.loader::after {
+  content: '';
+  grid-area: 1 / 1;
+}
+
+.loader::before {
+  margin: 10%;
+  background: color-mix(in srgb, currentColor 60%, transparent);
+  clip-path: polygon(
+    100% 50%,
+    81.17% 89.09%,
+    38.87% 98.75%,
+    4.95% 71.69%,
+    4.95% 28.31%,
+    38.87% 1.25%,
+    81.17% 10.91%
+  );
+  animation: ln-spin 2.3s linear infinite;
+}
+
+.loader::after {
+  margin: 20%;
+  background: currentColor;
+  clip-path: polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%, 25% 6.7%, 75% 6.7%);
+  animation: ln-spin 0.7s linear infinite reverse;
 }
 
 .spinnerLabel {

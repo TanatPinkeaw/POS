@@ -8,14 +8,17 @@
  * surfaces carry the renter's identity, which is why `shops` exists at all
  * (ADR 0002).
  *
- * The mark's geometry lives here rather than inside the component because two
- * very different renderers need it: React (inline SVG) and the icon generator
- * (a canvas rasteriser that produces the PNG app icons). Duplicating the path
- * data would let the favicon drift from the sidebar.
+ * The mark lives here rather than inside the component because two very
+ * different consumers need it: React, which draws the artwork on every platform
+ * surface, and the icon generator, which resamples the same file into the PNG
+ * app icons. Naming it once is what stops the tab icon drifting from the sidebar.
  *
  * "เหลี่ยมนอก" is literally *the square outside* — the corner that has come off
- * the box. The mark draws exactly that: a square frame whose top-right corner is
- * cut away, with the removed corner sitting just outside it.
+ * the box. The name still means that; the mark no longer draws it, because the
+ * mark is the artwork the shop supplied (ADR 0015). The name is copy and the mark
+ * is a picture, so the two are allowed to say different things — what they may not
+ * do is disagree by accident, which is why the file is one constant rather than a
+ * path string in one component and a filename in a script.
  */
 
 export const BRAND = {
@@ -36,6 +39,11 @@ export const BRAND = {
 
 /**
  * The brand palette: seven chosen colours, lightest first.
+ *
+ * The lightest of them is also the ground the app mark is drawn on where a surface
+ * is dark (`--ln-brand-plate`, ADR 0015), and the plate of every app icon — the
+ * artwork's ink is a deep olive, so it needs a light ground the way the old
+ * white-on-olive icon needed a dark one.
  *
  * `npm run brand:palette` writes these into the 50–600 steps of the ramp verbatim
  * and derives only the three steps below them, so changing the brand is an edit to
@@ -76,18 +84,25 @@ export const BRAND_SEED = '#556b2f';
 export const THEME_COLOR = { light: BRAND_SEED, dark: '#12131C' } as const;
 
 /**
- * The mark, as path data on a 40×40 grid.
+ * The mark, as the artwork file itself.
  *
- * A 40-unit box with 8 units of padding keeps the detached corner inside the
- * viewBox, and the 4.2-unit diagonal offset between the frame and the corner is
- * what keeps them legible as two shapes rather than a smear at 16 px.
+ * 500×500 PNG, RGBA, committed in `public/` — the supplied Pictorial Mark, with
+ * its shading intact. Its content is a screen with the letter drawn on it in a
+ * light tone, and that is why it is a raster: the letter has no outline of its own
+ * to trace, so any one-colour vector of this picture is a silhouette that loses
+ * the letter outright (ADR 0015).
+ *
+ * The two fields are one string in two forms — a URL for the browser, a path for
+ * the icon generator — because a commit that changes one and not the other is the
+ * drift this constant exists to prevent. `file` is derived so it cannot be.
  */
+const MARK_SRC = '/brand-mark.png';
+
 export const MARK = {
-  viewBox: '0 0 40 40',
-  /** The square, missing its top-right corner: a chamfer from (24,8) to (32,16). */
-  frame: 'M8 8 H24 L32 16 V32 H8 Z',
-  /** The corner that came off, floating just outside that chamfer. */
-  corner: 'M27 5 H35 V13 Z',
+  /** What the browser asks for. */
+  src: MARK_SRC,
+  /** The same file on disk, for `npm run brand:icons`. */
+  file: `public${MARK_SRC}`,
 } as const;
 
 /** Where the brand appears, so a new screen cannot pick its own answer. */

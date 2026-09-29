@@ -1091,7 +1091,10 @@ export async function findOrderForHandover(input: {
   if (orderId) {
     const byId = await prisma.orders.findFirst({
       where: { id: orderId, status: 'ready_for_pickup' },
-      include: { items: { include: { product: { select: { name: true } } } }, customer: true },
+      include: {
+        items: { include: { product: { select: { name: true, image_url: true } } } },
+        customer: true,
+      },
     });
     if (byId) {
       return byId;
@@ -1104,7 +1107,10 @@ export async function findOrderForHandover(input: {
       ...(input.pin ? { pickup_pin: input.pin } : {}),
       ...(input.phone ? { customer: { phone: input.phone } } : {}),
     },
-    include: { items: { include: { product: { select: { name: true } } } }, customer: true },
+    include: {
+      items: { include: { product: { select: { name: true, image_url: true } } } },
+      customer: true,
+    },
     orderBy: { ready_at: 'desc' },
   });
 }

@@ -68,10 +68,38 @@
   gap: var(--ln-space-2);
 }
 
+/*
+ * A line of an order: its photo, its name, its money.
+ *
+ * Centred rather than baseline-aligned, because the photo is a box and a box on a
+ * baseline sits below the text it belongs to. The total row keeps `.line`, where
+ * baseline alignment is exactly what lines two amounts up.
+ */
+.lineItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+/* Grows inside the row, so a long Thai name wraps instead of pushing the price out. */
+.lineName {
+  flex: 1;
+  min-width: 0;
+}
+
 /* A native checkbox with its label, so the tap target is the whole sentence. */
 .pick {
   display: flex;
   align-items: flex-start;
   gap: var(--ln-space-2);
   cursor: pointer;
+}
+
+/* A pick row that also carries a photo, where the box and the picture centre on
+ * each other rather than the picture hanging below the label. */
+.pickLine {
+  align-items: center;
+  flex: 1;
+  min-width: 0;
 }

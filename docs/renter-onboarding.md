@@ -106,6 +106,9 @@ email in this system; recovery is a SQL statement (see §8).
      recorded in the stock history — it is not an overwrite, so importing the same
      file twice adds the stock twice. Import once.
    - A row with a problem is skipped and reported; the rest of the file still goes in.
+   - `URL รูปภาพ` (optional) is a **link**, not a file: paste the https link of a
+     picture the shop already keeps somewhere backed up. See §9 for what "link"
+     means here.
 5. **Print a test receipt** — make one 1 THB test sale (see §5.1), then reprint it
    from the dashboard to check alignment and paper width.
 
@@ -118,10 +121,11 @@ email in this system; recovery is a SQL statement (see §8).
 | Start the day | `/pos` → เปิดลิ้นชัก | Enter the float (starting cash). A sale is refused without an open drawer, because cash that belongs to no drawer cannot be reconciled. |
 | Sell | `/pos` | Scan or tap, choose the payment method, take the money, hand over change. |
 | Pre-orders | `/pos/preorders` | Four columns: new → confirmed → ready → collected. A pre-order **reserves stock when it is placed**, so the stock is gone even before the customer arrives. |
-| Handover | `/pos/preorders` → ค้นหา | **Scan the customer's QR**, or type their 4-digit PIN, or their phone number — one box takes all three. The QR is on the customer's own order screen, under that order. |
+| Handover | `/pos/preorders` → ค้นหา | **Scan the customer's QR**, or type their 4-digit PIN, or their phone number — one box takes all three. The QR is on the customer's own order screen, under that order. The dialog that opens lists each line with the product's photo (if you gave it one), which is how you tell which bag on the shelf is this order's. |
 | Clock in / out | `/pos/attendance` | One button. Hours are computed by the database. |
 | Close the drawer | `/pos` → ปิดลิ้นชัก | Count the cash and type it in. The screen shows the expected amount and names any discrepancy as short, over, or balanced. |
 | Refund a bill | `/pos` → คืนเงินบิลนี้, or `/admin/dashboard` → คืนเงิน on the row | Tick the lines coming back and how many of each — or leave it blank to hand the whole bill back. The credit note itemises exactly what it reverses, and the customer can come back later for the rest. Always needs a supervisor PIN, even for the owner. |
+| Product photos | `/admin/products` → **รูปสินค้า** | Paste an https link to a picture you already keep (your Nextcloud, your hosting) — there is a live preview, and an empty box removes the photo. The same link appears on the till tile and in the shop's catalogue. Nothing is uploaded: see §9. |
 | Reports | `/admin/reports` | Four Excel workbooks, per date range. |
 | Roster & timesheet | `/admin/schedules` | Roster shifts per employee per day; the timesheet shows lateness and overtime. |
 | Enrol a customer | `/pos` → *สมัครสมาชิกใหม่*, or `/admin/members` | Name, phone number and a temporary password you read to them. At the till it opens as a dialog **over the bill**: the basket is not lost, the number you just searched for comes with you, and the customer is attached to that bill when it closes — so enrolling somebody mid-queue does not stall the sale. The phone number is what they sign in with, so ask before you type — and it must not be one a staff account already uses. |
@@ -269,6 +273,12 @@ machine is the one that serves the shop, `docs/homelab-deploy.md` §7 turns the 
 command into a nightly timer that writes to `/var/backups/pos`, and has the restore
 drill; **run that drill once before you need it.**
 
+It is the **database only** — and that is worth knowing before you rely on it. Product
+photos are links to the shop's own file host (ADR 0014), not rows, so nothing here
+dumps them: they are covered by whatever backs that host up. For the reference
+installation the pictures live in the homelab's Nextcloud, so its backup is what stands
+between the shop and a catalogue of placeholders.
+
 Use **`npm run db:deploy`** (`prisma migrate deploy`), never `prisma migrate dev`.
 Parts of the schema — the `work_hours` generated column, several `CHECK`
 constraints, the order-number sequence — exist only in hand-written migration SQL
@@ -302,7 +312,15 @@ Recorded here so nobody discovers it during service:
 - No customer-facing online ordering — members can pre-order from inside the app.
 - Notifications are off until you configure a channel (§6.2), and a LINE channel
   reaches the shop's own group only — not a customer's phone.
-- No product image upload, no shop logo upload (yet).
+- **No image upload.** A product photo is a *link* (ADR 0014): you paste the https
+  link of a picture that already lives somewhere, and this system draws it on the
+  till, the shop's catalogue and the back office. It cannot hold the file, resize it
+  or check what is at the other end — a link that returns a login page shows a
+  placeholder — and **the picture is not in `npm run backup`**, because it is not in
+  this database. Whatever backs up the place you keep the picture is what protects it.
+  A link to your file host's *preview* is better than one to the original file: the
+  host then does the resizing. The shop logo is the same idea, set in
+  `/admin/settings`.
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.
 - No offline mode: the till needs the network it is served from.
