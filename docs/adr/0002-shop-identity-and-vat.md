@@ -45,6 +45,13 @@ whoever reads the DDL rather than the decision record.
 **Consequence, stated plainly:** there is no `shop_id` on the other dozen tables
 and no multi-branch support. A second branch is a second deployment.
 
+> **Partly superseded by ADR 0016.** The singleton is still what a *shop's* schema
+> looks like — one shop per schema, with the primary key refusing a second row — but the
+> rental is moving to many shops on one box, so "a second branch is a second
+> deployment" no longer holds for the hosted shape. What is below is why the singleton
+> survives into ADR 0016 instead of being deleted by it: the receipt series, the
+> per-shop uniqueness and this race protection all come free from it.
+
 ### 2. Tax facts are snapshotted onto the order, never recomputed
 
 Five columns on `orders` — `net_amount`, `vat_amount`, `vat_rate_used`,

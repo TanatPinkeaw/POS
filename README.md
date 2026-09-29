@@ -721,6 +721,8 @@ goes through them.
 | `docs/adr/0013-command-lists-checked-against-package-json.md` | The command lists as a gate: what counts as a document, why a mention is enough, and the prose it deliberately still leaves to a person. |
 | `docs/adr/0014-product-photos-are-links.md` | Product photos as links to wherever the shop keeps its pictures: the allowlist in front of them, why `route:audit` stopped watching `<img>`, and what that gives up. |
 | `docs/adr/0015-the-app-mark-is-supplied-artwork.md` | The platform mark as the shop's own artwork, committed: the letter that exists only as a tone (so a one-colour trace of it loses the letter), why the app icons are a resample rather than a drawing, and the plate the dark theme needs instead of a tint. |
+| `docs/adr/0016-hosted-multi-tenant.md` | The rental as a hosted service: a schema per shop in one database, a control plane in `public`, a per-request seam with no default client, Google for the owner and phone-plus-password for the counter — and the invariants it deliberately does not spend. |
+| `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet
@@ -733,6 +735,11 @@ Deferred deliberately, and listed here rather than discovered during service:
   customer's collection code cannot: a LINE push needs a LINE user id, and this
   system does not capture one. SMS/webhook reaches the customer's phone today.
   See ADR 0007 decision 3.
+- **The hosted rental.** A shop signing itself up with Google and getting its own
+  space on a box we run, instead of a shop installing this on its own machine. The
+  direction is decided and written down (ADR 0016) and the order of work is
+  `docs/hosted-release-plan.md`; nothing of it is built, so every install today is
+  still one shop per deployment (ADR 0002 §1).
 - **Multi-branch and a second register.** One shop per deployment, and receipt
   issuance serialises on the shop row (ADR 0002 §4) — correct for one till.
 - **Storing a product image.** A photo is a link the shop pastes (ADR 0014) and it
