@@ -43,11 +43,12 @@ npm run dev
 
 and open **http://localhost:3000**.
 
-> **Running this on a home server rather than the machine in front of you?**
+> **Putting this on a Linux server rather than the machine in front of you?**
 > `npm run dev` is the developer's loop. For a box that has to come back after a
 > reboot and be reachable from the tablet at the counter, see
 > [`docs/homelab-deploy.md`](homelab-deploy.md) — the systemd units, the TLS the
-> login needs before a second device works, and the daily backup timer.
+> login needs before a second device works, and the daily backup timer. Both halves
+> of that guide assume Linux with systemd.
 
 > **No demo data is installed.** The installer deliberately stops before that,
 > because a shop that is about to trade must not start with 30 fake products.
@@ -287,7 +288,7 @@ that `migrate dev` would propose dropping.
 | A sale is refused with "drawer is not open" | Open the drawer first (`/pos` → เปิดลิ้นชัก). This is deliberate: cash must belong to a drawer. |
 | Imported stock twice | Stock was added twice, as documented. Correct it with a stock adjustment (`REASON_CORRECTION`) so the audit trail explains it. |
 | Signing in works on this machine but not on a tablet | The production session cookie is `Secure`, so it is only stored over `https://` — browsers exempt `localhost`, which is why the server itself works and the tablet does not. The deployment needs a secure URL; see `docs/homelab-deploy.md` §4. |
-| `pg_dump: command not found` from `npm run backup` | Only the PostgreSQL client is missing. `apt install postgresql-client` (Windows: it comes with the installer). |
+| `pg_dump: command not found` from `npm run backup` | Only the PostgreSQL client is missing: `apt install postgresql-client-17` for a 17 server (the plain package is usually a version behind, which fails differently — `aborting because of server version mismatch`). Windows gets one with the PostgreSQL installer. |
 | The app is not running after a reboot | Nothing starts it yet. `docs/homelab-deploy.md` §3 installs it as a service that comes back on its own. |
 
 ---

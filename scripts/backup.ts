@@ -148,7 +148,8 @@ async function dump(
       const code = (result.error as NodeJS.ErrnoException).code;
       throw new Error(
         code === 'ENOENT'
-          ? 'pg_dump is not installed. On Debian/Ubuntu: apt install postgresql-client'
+          ? 'pg_dump is not installed. On Debian/Ubuntu install a client that matches ' +
+            "the server's major version — apt install postgresql-client-17 for a 17 server"
           : `could not run pg_dump: ${result.error.message}`,
       );
     }

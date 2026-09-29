@@ -21,12 +21,39 @@ It does not cover several branches, a second register, or a hosted deployment �
 | Linux | Anything systemd-based: Debian/Ubuntu, Fedora, Arch, Proxmox LXC. |
 | Node.js 22 or newer | Installed **system-wide** — `apt`/`dnf`, or [NodeSource](https://github.com/nodesource/distributions). Not nvm: the service account has no shell profile, so nvm's node is not on its `PATH`. |
 | PostgreSQL 17 | On the same box is the normal case. |
-| `postgresql-client` | Provides `pg_dump`, which §7 needs. Easier to install now than at 02:30. |
+| `postgresql-client` | Provides `pg_dump`, which §7 needs — and it has to be the version that matches the server's major release. Easier to install now than at 02:30. |
 | A static LAN address | DHCP is fine but a fixed lease is better, because the till URL ends up in bookmarks and on the customer display. |
 | TLS for anything that is not the box itself | This is not optional and not obvious — §4. |
 
 Two cores and a couple of gigabytes is a comfortable shop. The app is one Node
 process; PostgreSQL is the part that wants memory.
+
+The deployment target is a Linux server with systemd; the dev machine being Windows
+changes nothing about the units below.
+
+### If PostgreSQL is already running on that server
+
+A HomeLab usually has one, and three things follow from it:
+
+- **`pg_dump` must match the server's major version.** The distribution's default
+  client is often one release behind, and that fails with `aborting because of server
+  version mismatch`. Install the matching one — for a 17 server, `postgresql-client-17`
+  from the [PGDG repository](https://www.postgresql.org/download/linux/debian/), not
+  the plain `postgresql-client`.
+- **A containerised database has no client on the host at all.** Either install one
+  (the same version rule, against the container's version) or dump from inside the
+  container, which means giving up the timer and the checks in `npm run backup`:
+
+  `docker exec <container> pg_dump -U pos_app -d pos_dev | gzip > pos-$(date +%F).sql.gz`
+
+  That is the pipe whose failure mode `scripts/backup.ts` exists to avoid — the
+  compressor's exit code hides a writer that died — so check the file is not empty.
+- **`npm run setup` talks to `localhost:5432` and nowhere else.** The host and port are
+  constants in `scripts/setup.ts`, so a database on another port — a second instance,
+  or a container published as 5433 — means writing `.env` by hand with the right
+  `DATABASE_URL` and then `npm run db:generate && npm run db:deploy` instead of the
+  installer. The installer also connects as the superuser, and asks for that password
+  once.
 
 ---
 
