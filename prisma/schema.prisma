@@ -56,6 +56,17 @@ model shops {
    */
   credit_note_prefix            String             @default("CN") @db.VarChar(10)
   credit_note_running_number    BigInt             @default(0)
+  /**
+   * The day's call-number counter (ADR 0017) — a short number a customer can hear
+   * across a counter, which is a different job from the receipt series above: it
+   * restarts every Bangkok day and it is not a tax document.
+   * `queue_running_day` is what "the day" means, and comparing it inside the same
+   * statement that bumps the counter is what makes a midnight sale take 1 rather
+   * than 847. It is a `Date` rather than a timestamp because the day is the whole
+   * comparison — no time of day is ever read from it.
+   */
+  queue_running_number          Int                @default(0)
+  queue_running_day             DateTime?          @db.Date
   receipt_footer                String?
   logo_url                      String?
   /**
@@ -506,6 +517,19 @@ model orders {
   vat_rate_used     Decimal?     @db.Decimal(5, 2)
   is_vat_invoice    Boolean      @default(false)
   receipt_number    String?      @unique @db.VarChar(30)
+  /**
+   * The number the customer is called by (ADR 0017): 1, 2, 3 … within one Bangkok
+   * day, on walk-in sales only. Null on a pre-order, whose handover already has
+   * its own identifiers — the bill number and the 4-digit PIN — and whose goods
+   * are in the customer's hands by the time its bill is closed, so a call number
+   * would be a number nobody ever calls.
+   * `queue_day` is stored beside it rather than derived from `created_at` so the
+   * pair can carry a unique index: `created_at` is an instant, and the day the
+   * customer heard is Bangkok's, so the two disagree for the seven hours after
+   * local midnight.
+   */
+  queue_number      Int?
+  queue_day         DateTime?    @db.Date
   points_earned     Int          @default(0)
   points_redeemed   Int          @default(0)
   cancel_reason     String?
@@ -533,6 +557,15 @@ model orders {
   @@index([status])
   @@index([created_at])
   @@index([order_type, status])
+  /**
+   * One bill per number per day, stated where it cannot be forgotten. The
+   * allocation already serialises on the shop row; this is the guarantee behind
+   * that serialisation, because two bills sharing a number means calling one
+   * customer to another's order — a failure that looks like a mistake by the
+   * staff rather than like a bug. Nulls are distinct in PostgreSQL, so the
+   * pre-orders that carry no number do not collide here.
+   */
+  @@unique([queue_day, queue_number])
 }
 
 model order_items {

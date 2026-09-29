@@ -38,6 +38,7 @@ export type ShopsAvgAggregateOutputType = {
   vat_rate: runtime.Decimal | null
   receipt_running_number: number | null
   credit_note_running_number: number | null
+  queue_running_number: number | null
   supervisor_discount_limit_thb: runtime.Decimal | null
 }
 
@@ -46,6 +47,7 @@ export type ShopsSumAggregateOutputType = {
   vat_rate: runtime.Decimal | null
   receipt_running_number: bigint | null
   credit_note_running_number: bigint | null
+  queue_running_number: number | null
   supervisor_discount_limit_thb: runtime.Decimal | null
 }
 
@@ -64,6 +66,8 @@ export type ShopsMinAggregateOutputType = {
   receipt_running_number: bigint | null
   credit_note_prefix: string | null
   credit_note_running_number: bigint | null
+  queue_running_number: number | null
+  queue_running_day: Date | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -88,6 +92,8 @@ export type ShopsMaxAggregateOutputType = {
   receipt_running_number: bigint | null
   credit_note_prefix: string | null
   credit_note_running_number: bigint | null
+  queue_running_number: number | null
+  queue_running_day: Date | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -112,6 +118,8 @@ export type ShopsCountAggregateOutputType = {
   receipt_running_number: number
   credit_note_prefix: number
   credit_note_running_number: number
+  queue_running_number: number
+  queue_running_day: number
   receipt_footer: number
   logo_url: number
   promptpay_id: number
@@ -128,6 +136,7 @@ export type ShopsAvgAggregateInputType = {
   vat_rate?: true
   receipt_running_number?: true
   credit_note_running_number?: true
+  queue_running_number?: true
   supervisor_discount_limit_thb?: true
 }
 
@@ -136,6 +145,7 @@ export type ShopsSumAggregateInputType = {
   vat_rate?: true
   receipt_running_number?: true
   credit_note_running_number?: true
+  queue_running_number?: true
   supervisor_discount_limit_thb?: true
 }
 
@@ -154,6 +164,8 @@ export type ShopsMinAggregateInputType = {
   receipt_running_number?: true
   credit_note_prefix?: true
   credit_note_running_number?: true
+  queue_running_number?: true
+  queue_running_day?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -178,6 +190,8 @@ export type ShopsMaxAggregateInputType = {
   receipt_running_number?: true
   credit_note_prefix?: true
   credit_note_running_number?: true
+  queue_running_number?: true
+  queue_running_day?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -202,6 +216,8 @@ export type ShopsCountAggregateInputType = {
   receipt_running_number?: true
   credit_note_prefix?: true
   credit_note_running_number?: true
+  queue_running_number?: true
+  queue_running_day?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -313,6 +329,8 @@ export type ShopsGroupByOutputType = {
   receipt_running_number: bigint
   credit_note_prefix: string
   credit_note_running_number: bigint
+  queue_running_number: number
+  queue_running_day: Date | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -360,6 +378,8 @@ export type shopsWhereInput = {
   receipt_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   credit_note_prefix?: Prisma.StringFilter<"shops"> | string
   credit_note_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
+  queue_running_number?: Prisma.IntFilter<"shops"> | number
+  queue_running_day?: Prisma.DateTimeNullableFilter<"shops"> | Date | string | null
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
@@ -384,6 +404,8 @@ export type shopsOrderByWithRelationInput = {
   receipt_running_number?: Prisma.SortOrder
   credit_note_prefix?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
+  queue_running_day?: Prisma.SortOrderInput | Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -411,6 +433,8 @@ export type shopsWhereUniqueInput = Prisma.AtLeast<{
   receipt_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   credit_note_prefix?: Prisma.StringFilter<"shops"> | string
   credit_note_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
+  queue_running_number?: Prisma.IntFilter<"shops"> | number
+  queue_running_day?: Prisma.DateTimeNullableFilter<"shops"> | Date | string | null
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
@@ -435,6 +459,8 @@ export type shopsOrderByWithAggregationInput = {
   receipt_running_number?: Prisma.SortOrder
   credit_note_prefix?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
+  queue_running_day?: Prisma.SortOrderInput | Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -467,6 +493,8 @@ export type shopsScalarWhereWithAggregatesInput = {
   receipt_running_number?: Prisma.BigIntWithAggregatesFilter<"shops"> | bigint | number
   credit_note_prefix?: Prisma.StringWithAggregatesFilter<"shops"> | string
   credit_note_running_number?: Prisma.BigIntWithAggregatesFilter<"shops"> | bigint | number
+  queue_running_number?: Prisma.IntWithAggregatesFilter<"shops"> | number
+  queue_running_day?: Prisma.DateTimeNullableWithAggregatesFilter<"shops"> | Date | string | null
   receipt_footer?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
@@ -491,6 +519,8 @@ export type shopsCreateInput = {
   receipt_running_number?: bigint | number
   credit_note_prefix?: string
   credit_note_running_number?: bigint | number
+  queue_running_number?: number
+  queue_running_day?: Date | string | null
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -515,6 +545,8 @@ export type shopsUncheckedCreateInput = {
   receipt_running_number?: bigint | number
   credit_note_prefix?: string
   credit_note_running_number?: bigint | number
+  queue_running_number?: number
+  queue_running_day?: Date | string | null
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -539,6 +571,8 @@ export type shopsUpdateInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
+  queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -563,6 +597,8 @@ export type shopsUncheckedUpdateInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
+  queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -587,6 +623,8 @@ export type shopsCreateManyInput = {
   receipt_running_number?: bigint | number
   credit_note_prefix?: string
   credit_note_running_number?: bigint | number
+  queue_running_number?: number
+  queue_running_day?: Date | string | null
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -611,6 +649,8 @@ export type shopsUpdateManyMutationInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
+  queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -635,6 +675,8 @@ export type shopsUncheckedUpdateManyInput = {
   receipt_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   credit_note_prefix?: Prisma.StringFieldUpdateOperationsInput | string
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
+  queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -659,6 +701,8 @@ export type shopsCountOrderByAggregateInput = {
   receipt_running_number?: Prisma.SortOrder
   credit_note_prefix?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
+  queue_running_day?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -673,6 +717,7 @@ export type shopsAvgOrderByAggregateInput = {
   vat_rate?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
   supervisor_discount_limit_thb?: Prisma.SortOrder
 }
 
@@ -691,6 +736,8 @@ export type shopsMaxOrderByAggregateInput = {
   receipt_running_number?: Prisma.SortOrder
   credit_note_prefix?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
+  queue_running_day?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -715,6 +762,8 @@ export type shopsMinOrderByAggregateInput = {
   receipt_running_number?: Prisma.SortOrder
   credit_note_prefix?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
+  queue_running_day?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -729,6 +778,7 @@ export type shopsSumOrderByAggregateInput = {
   vat_rate?: Prisma.SortOrder
   receipt_running_number?: Prisma.SortOrder
   credit_note_running_number?: Prisma.SortOrder
+  queue_running_number?: Prisma.SortOrder
   supervisor_discount_limit_thb?: Prisma.SortOrder
 }
 
@@ -768,6 +818,10 @@ export type BigIntFieldUpdateOperationsInput = {
   divide?: bigint | number
 }
 
+export type NullableDateTimeFieldUpdateOperationsInput = {
+  set?: Date | string | null
+}
+
 export type NullableEnumpromptpay_id_typeFieldUpdateOperationsInput = {
   set?: $Enums.promptpay_id_type | null
 }
@@ -793,6 +847,8 @@ export type shopsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   receipt_running_number?: boolean
   credit_note_prefix?: boolean
   credit_note_running_number?: boolean
+  queue_running_number?: boolean
+  queue_running_day?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -817,6 +873,8 @@ export type shopsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   receipt_running_number?: boolean
   credit_note_prefix?: boolean
   credit_note_running_number?: boolean
+  queue_running_number?: boolean
+  queue_running_day?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -841,6 +899,8 @@ export type shopsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   receipt_running_number?: boolean
   credit_note_prefix?: boolean
   credit_note_running_number?: boolean
+  queue_running_number?: boolean
+  queue_running_day?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -865,6 +925,8 @@ export type shopsSelectScalar = {
   receipt_running_number?: boolean
   credit_note_prefix?: boolean
   credit_note_running_number?: boolean
+  queue_running_number?: boolean
+  queue_running_day?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -874,7 +936,7 @@ export type shopsSelectScalar = {
   updated_at?: boolean
 }
 
-export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "credit_note_prefix" | "credit_note_running_number" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
+export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "credit_note_prefix" | "credit_note_running_number" | "queue_running_number" | "queue_running_day" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
 
 export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "shops"
@@ -902,6 +964,18 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
      */
     credit_note_prefix: string
     credit_note_running_number: bigint
+    /**
+     * *
+     *    * The day's call-number counter (ADR 0017) — a short number a customer can hear
+     *    * across a counter, which is a different job from the receipt series above: it
+     *    * restarts every Bangkok day and it is not a tax document.
+     *    * `queue_running_day` is what "the day" means, and comparing it inside the same
+     *    * statement that bumps the counter is what makes a midnight sale take 1 rather
+     *    * than 847. It is a `Date` rather than a timestamp because the day is the whole
+     *    * comparison — no time of day is ever read from it.
+     */
+    queue_running_number: number
+    queue_running_day: Date | null
     receipt_footer: string | null
     logo_url: string | null
     /**
@@ -1357,6 +1431,8 @@ export interface shopsFieldRefs {
   readonly receipt_running_number: Prisma.FieldRef<"shops", 'BigInt'>
   readonly credit_note_prefix: Prisma.FieldRef<"shops", 'String'>
   readonly credit_note_running_number: Prisma.FieldRef<"shops", 'BigInt'>
+  readonly queue_running_number: Prisma.FieldRef<"shops", 'Int'>
+  readonly queue_running_day: Prisma.FieldRef<"shops", 'DateTime'>
   readonly receipt_footer: Prisma.FieldRef<"shops", 'String'>
   readonly logo_url: Prisma.FieldRef<"shops", 'String'>
   readonly promptpay_id: Prisma.FieldRef<"shops", 'String'>

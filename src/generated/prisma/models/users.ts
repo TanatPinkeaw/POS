@@ -664,10 +664,6 @@ export type Enumuser_roleFieldUpdateOperationsInput = {
   set?: $Enums.user_role
 }
 
-export type NullableDateTimeFieldUpdateOperationsInput = {
-  set?: Date | string | null
-}
-
 export type usersCreateNestedOneWithoutStock_logsInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutStock_logsInput, Prisma.usersUncheckedCreateWithoutStock_logsInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutStock_logsInput

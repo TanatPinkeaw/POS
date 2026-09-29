@@ -150,6 +150,12 @@ registration gets found — and all three are cheap to fix before the shop is bu
    one), the receipt number, your tax ID and the VAT line if the shop is registered,
    then the total. This is the moment to go back to Settings and fix the receipt prefix
    if it is wrong.
+
+   The big number above everything else is the **call number** — the number you shout
+   when the drink is ready. It starts at 1 every morning and goes up all day, the same
+   in a shop that is registered for VAT and one that is not, and it is not the invoice
+   number beside it: the invoice number is the document's name and never resets. A
+   reprint of a bill carries the same call number as the slip in the customer's hand.
 6. Rung the wrong bill? **คืนเงินบิลนี้** on the receipt — tick the lines coming back, or
    leave them blank to hand the whole bill back. A refund always asks for a supervisor
    PIN and a reason: set the PIN at `/admin/staff` before the first shift, because

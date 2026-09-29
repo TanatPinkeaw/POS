@@ -32,6 +32,12 @@ export interface ReceiptData {
   orderNumber: string;
   /** The gapless invoice number, when the sale issued a tax document. */
   receiptNumber: string | null;
+  /**
+   * The number the customer is called by (ADR 0017), already printed the way it
+   * will be called out — `037`, not `37`. Null on a pre-order and on any bill
+   * closed before the first round of call numbers existed.
+   */
+  queueNumber: string | null;
   isVatInvoice: boolean;
   vatRatePercent: number | null;
   netThb: number;
@@ -89,6 +95,19 @@ export function Receipt({
       </header>
 
       <p className={styles.title}>{title}</p>
+
+      {/*
+        The call number sits above the document's own number rather than beside
+        it. Everything below this point is a record of a transaction; this is the
+        one figure on the page that is not, and a customer holds this slip while
+        their drink is being made, reading it from wherever they sat down.
+      */}
+      {data.queueNumber ? (
+        <div className={styles.call} data-testid="receipt-queue">
+          <span className={styles.callLabel}>คิวที่</span>
+          <span className={styles.callNumber}>{data.queueNumber}</span>
+        </div>
+      ) : null}
 
       <div className={styles.row}>
         <span className={styles.rowLabel}>เลขที่</span>

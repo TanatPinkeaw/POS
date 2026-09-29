@@ -16,6 +16,7 @@ import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ConflictError, NotFoundError } from '@/lib/errors';
 import { fromDecimal } from '@/lib/money';
+import { formatQueueNumber } from '@/lib/queue-number';
 import { loadShop } from '@/lib/shop';
 import { UNCONFIGURED_SHOP } from '@/lib/shop-view';
 
@@ -88,6 +89,13 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       receipt: {
         orderNumber: order.order_number,
         receiptNumber: order.receipt_number,
+        /*
+         * Formatted here, from the stored integer, so a reprint carries the same
+         * `037` the customer was called by rather than a bare `37` that no longer
+         * matches the slip in their hand (ADR 0017).
+         */
+        queueNumber:
+          order.queue_number === null ? null : formatQueueNumber(order.queue_number),
         isVatInvoice: order.is_vat_invoice,
         vatRatePercent: order.vat_rate_used === null ? null : fromDecimal(order.vat_rate_used),
         netThb: fromDecimal(order.net_amount),

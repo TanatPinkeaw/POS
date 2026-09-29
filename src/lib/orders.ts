@@ -7,6 +7,7 @@
  * reservation is rolled back with it.
  */
 import { recordAudit } from './audit';
+import { dateColumnFromDay } from './bangkok-time';
 import { prisma } from './db';
 import { optionalNumberEnv } from './env';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
@@ -38,7 +39,8 @@ import { canTransition, type OrderStatus } from './order-state';
 import { verifyPickupToken } from './pickup-token';
 import { applyPointChange } from './points';
 import { buildSettlement, type SettlementBreakdown, type SettlementRequest } from './settlement';
-import { allocateReceiptNumber, loadVatSettings } from './shop';
+import { formatQueueNumber } from './queue-number';
+import { allocateQueueNumber, allocateReceiptNumber, loadVatSettings } from './shop';
 import { SYSTEM_USER_ID } from './system-user';
 import type { TenderLine } from './tender';
 import { computeVat, type VatBreakdown } from './vat';
@@ -89,6 +91,12 @@ export interface OrderSummary {
   /** The taxable base and the tax itself, as snapshotted on the order. */
   netThb: number;
   vatThb: number;
+  /**
+   * The number the customer is called by, printed as it will be shouted (ADR 0017).
+   * A walk-in sale always has one; a pre-order never does, because its handover
+   * happens at the moment it is paid for.
+   */
+  queueNumber: string | null;
 }
 
 /** SRS §3 Phase 1: how long an unconfirmed pre-order may live. */
@@ -395,13 +403,23 @@ export async function createPosSale(input: {
     const earned = input.customerId ? computePointsEarned(settlement.paidAmountThb) : 0;
     const orderNumber = await nextOrderNumber(tx);
     /*
+     * One instant for the whole sale, taken here rather than read again at each
+     * step. The receipt series is stamped with its Bangkok year and the call
+     * number with its Bangkok day, and a sale ringing up at midnight must not name
+     * yesterday's year beside today's number — which is what happens when each of
+     * those reads the clock for itself.
+     */
+    const at = new Date();
+    /*
      * Tax is resolved before any stock moves. Allocating the receipt number
      * takes the shop row's lock, and taking it before the product rows gives
      * every sale the same lock order — so two registers cannot deadlock against
      * each other, one holding the shop row while it waits for a product the
-     * other holds.
+     * other holds. The call number is allocated from the same row, in the same
+     * phase and for the same reason.
      */
-    const tax = await resolveSaleTax(tx, finalAmount, new Date());
+    const tax = await resolveSaleTax(tx, finalAmount, at);
+    const call = await allocateQueueNumber(tx, at);
 
     const order = await tx.orders.create({
       data: {
@@ -416,7 +434,14 @@ export async function createPosSale(input: {
         ...taxColumns(tax),
         points_earned: earned,
         points_redeemed: settlement.pointsRedeemed,
-        completed_at: new Date(),
+        completed_at: at,
+        /*
+         * Walk-in only, and stated here rather than inferred later from
+         * `order_type`: this is the path where a customer waits for their goods,
+         * so this is where the number that waits with them is minted.
+         */
+        queue_number: call?.value ?? null,
+        queue_day: call?.day ?? null,
       },
     });
 
@@ -524,6 +549,7 @@ export async function createPosSale(input: {
       pointsRedeemed: settlement.pointsRedeemed,
       lines: lineSummaries(priced),
       ...taxSummary(tax),
+      queueNumber: call ? formatQueueNumber(call.value) : null,
     };
   }, TRANSACTION_OPTIONS);
 }
@@ -823,6 +849,13 @@ export async function completeOrder(input: {
     const discountTotal = roundThb(fromDecimal(order.discount_amount) + settlement.discountThb);
     const finalAmount = roundThb(amountDue - settlement.discountThb);
     const earned = order.customer_id ? computePointsEarned(settlement.paidAmountThb) : 0;
+    /*
+     * The sale is taxed like any other, and deliberately gets no call number: a
+     * collected pre-order's goods are in the customer's hands by the time this
+     * runs, so a number to wait for would be a number nobody ever calls. Its
+     * handover already has two identifiers — the bill number and the PIN it was
+     * collected with (ADR 0017).
+     */
     const tax = await resolveSaleTax(tx, finalAmount, new Date());
 
     for (const item of order.items) {
@@ -904,6 +937,7 @@ export async function completeOrder(input: {
         totalPrice: fromDecimal(item.total_price),
       })),
       ...taxSummary(tax),
+      queueNumber: null,
     };
   }, TRANSACTION_OPTIONS);
 }

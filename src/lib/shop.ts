@@ -18,7 +18,7 @@
  */
 import type { shops } from '../generated/prisma/client';
 
-import { bangkokParts } from './bangkok-time';
+import { bangkokDateString, bangkokParts, dateColumnFromDay } from './bangkok-time';
 import { prisma } from './db';
 import { ConflictError } from './errors';
 import type { Db } from './inventory';
@@ -229,6 +229,52 @@ export async function allocateReceiptNumber(
     ),
     shop: toShopView(row),
   };
+}
+
+/**
+ * Reserves the next call number for the day, or null when no shop is set up.
+ *
+ * Same serialisation as `allocateReceiptNumber`, and for the same reason: the
+ * counter is bumped by an `UPDATE … RETURNING` inside the caller's transaction, so
+ * a sale that rolls back restores the counter with it and no customer is called by
+ * a number that was never handed out.
+ *
+ * The day rollover is decided *inside* that statement rather than by reading the
+ * row and comparing in TypeScript. A read-then-write would need `SELECT … FOR
+ * UPDATE` on the row every sale already touches, and — the real reason — "is this
+ * the same day?" and "bump the counter" would then be two statements that can be
+ * interleaved by another register. Here they are one, so the number this returns
+ * belongs to the day it names. Only *which* day is a database question that has to
+ * be asked in the database; what the number looks like is the pure rule in
+ * `queue-number.ts`, which is also what the receipt and the board print from.
+ *
+ * Left unformatted on purpose: this returns what the columns store — the integer
+ * and the Bangkok day as a `@db.Date` value — and formatting happens where the
+ * number is shown to somebody.
+ */
+export async function allocateQueueNumber(
+  db: Db,
+  at: Date = new Date(),
+): Promise<{ value: number; day: Date } | null> {
+  const day = bangkokDateString(at);
+
+  const rows = await db.$queryRaw<{ queue_running_number: number }[]>`
+    UPDATE "shops"
+       SET "queue_running_number" = CASE
+             WHEN "queue_running_day" = ${day}::date THEN "queue_running_number" + 1
+             ELSE 1
+           END,
+           "queue_running_day" = ${day}::date
+     WHERE "id" = ${SHOP_ROW_ID}
+    RETURNING "queue_running_number"
+  `;
+
+  const row = rows[0];
+  if (!row) {
+    return null;
+  }
+
+  return { value: Number(row.queue_running_number), day: dateColumnFromDay(day) };
 }
 
 /**

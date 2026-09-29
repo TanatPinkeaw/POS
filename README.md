@@ -722,6 +722,7 @@ goes through them.
 | `docs/adr/0014-product-photos-are-links.md` | Product photos as links to wherever the shop keeps its pictures: the allowlist in front of them, why `route:audit` stopped watching `<img>`, and what that gives up. |
 | `docs/adr/0015-the-app-mark-is-supplied-artwork.md` | The platform mark as the shop's own artwork, committed: the letter that exists only as a tone (so a one-colour trace of it loses the letter), why the app icons are a resample rather than a drawing, and the plate the dark theme needs instead of a tint. |
 | `docs/adr/0016-hosted-multi-tenant.md` | The rental as a hosted service: a schema per shop in one database, a control plane in `public`, a per-request seam with no default client, Google for the owner and phone-plus-password for the counter — and the invariants it deliberately does not spend. |
+| `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, the day that resets inside the statement that bumps it, and the board that is round 2. |
 | `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
@@ -747,7 +748,9 @@ Deferred deliberately, and listed here rather than discovered during service:
   the bytes: no upload, no file this deployment holds, no resizing of what the link
   returns, and a photo host that goes down shows placeholders.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
-  audit-log viewer are in — see below.)
-- **A reconciliation screen over a date range.** The dashboard reconciles *today*:
-  what the bank confirmed against what closed a bill, with the transfers left
-  over. Comparing a week or a month against a statement is still two screens.
+  audit-log viewer are in — see below.)- **A call-number board and the state behind it.** A walk-in bill now carries the number a customer is called by, and their slip prints it (ADR 0017) — but nothing
+  shows it to the room yet, and nothing records that a drink is still being made: a
+  walk-in sale is paid and `completed` in the same instant. The decided direction is
+  that staff advance the bill (making → ready → handed over) and `/display` shows
+  those numbers, with that state beside `orders.status` rather than inside it.
+- **A reconciliation screen over a date range.** The dashboard reconciles *today*: what the bank confirmed against what closed a bill, with the transfers left over. Comparing a week or a month against a statement is still two screens; it is also still the only way to find a bill from last week by its number.

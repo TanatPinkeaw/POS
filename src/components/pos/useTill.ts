@@ -60,6 +60,8 @@ export interface SaleResult {
   orderId: string;
   orderNumber: string;
   receiptNumber: string | null;
+  /** The number the customer is called by, printed as it is called (ADR 0017). */
+  queueNumber: string | null;
   isVatInvoice: boolean;
   vatRatePercent: number | null;
   subtotalThb: number;

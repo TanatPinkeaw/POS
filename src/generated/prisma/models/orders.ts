@@ -33,6 +33,7 @@ export type OrdersAvgAggregateOutputType = {
   net_amount: runtime.Decimal | null
   vat_amount: runtime.Decimal | null
   vat_rate_used: runtime.Decimal | null
+  queue_number: number | null
   points_earned: number | null
   points_redeemed: number | null
 }
@@ -44,6 +45,7 @@ export type OrdersSumAggregateOutputType = {
   net_amount: runtime.Decimal | null
   vat_amount: runtime.Decimal | null
   vat_rate_used: runtime.Decimal | null
+  queue_number: number | null
   points_earned: number | null
   points_redeemed: number | null
 }
@@ -65,6 +67,8 @@ export type OrdersMinAggregateOutputType = {
   vat_rate_used: runtime.Decimal | null
   is_vat_invoice: boolean | null
   receipt_number: string | null
+  queue_number: number | null
+  queue_day: Date | null
   points_earned: number | null
   points_redeemed: number | null
   cancel_reason: string | null
@@ -92,6 +96,8 @@ export type OrdersMaxAggregateOutputType = {
   vat_rate_used: runtime.Decimal | null
   is_vat_invoice: boolean | null
   receipt_number: string | null
+  queue_number: number | null
+  queue_day: Date | null
   points_earned: number | null
   points_redeemed: number | null
   cancel_reason: string | null
@@ -119,6 +125,8 @@ export type OrdersCountAggregateOutputType = {
   vat_rate_used: number
   is_vat_invoice: number
   receipt_number: number
+  queue_number: number
+  queue_day: number
   points_earned: number
   points_redeemed: number
   cancel_reason: number
@@ -138,6 +146,7 @@ export type OrdersAvgAggregateInputType = {
   net_amount?: true
   vat_amount?: true
   vat_rate_used?: true
+  queue_number?: true
   points_earned?: true
   points_redeemed?: true
 }
@@ -149,6 +158,7 @@ export type OrdersSumAggregateInputType = {
   net_amount?: true
   vat_amount?: true
   vat_rate_used?: true
+  queue_number?: true
   points_earned?: true
   points_redeemed?: true
 }
@@ -170,6 +180,8 @@ export type OrdersMinAggregateInputType = {
   vat_rate_used?: true
   is_vat_invoice?: true
   receipt_number?: true
+  queue_number?: true
+  queue_day?: true
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
@@ -197,6 +209,8 @@ export type OrdersMaxAggregateInputType = {
   vat_rate_used?: true
   is_vat_invoice?: true
   receipt_number?: true
+  queue_number?: true
+  queue_day?: true
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
@@ -224,6 +238,8 @@ export type OrdersCountAggregateInputType = {
   vat_rate_used?: true
   is_vat_invoice?: true
   receipt_number?: true
+  queue_number?: true
+  queue_day?: true
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
@@ -338,6 +354,8 @@ export type OrdersGroupByOutputType = {
   vat_rate_used: runtime.Decimal | null
   is_vat_invoice: boolean
   receipt_number: string | null
+  queue_number: number | null
+  queue_day: Date | null
   points_earned: number
   points_redeemed: number
   cancel_reason: string | null
@@ -388,6 +406,8 @@ export type ordersWhereInput = {
   vat_rate_used?: Prisma.DecimalNullableFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFilter<"orders"> | boolean
   receipt_number?: Prisma.StringNullableFilter<"orders"> | string | null
+  queue_number?: Prisma.IntNullableFilter<"orders"> | number | null
+  queue_day?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
@@ -423,6 +443,8 @@ export type ordersOrderByWithRelationInput = {
   vat_rate_used?: Prisma.SortOrderInput | Prisma.SortOrder
   is_vat_invoice?: Prisma.SortOrder
   receipt_number?: Prisma.SortOrderInput | Prisma.SortOrder
+  queue_number?: Prisma.SortOrderInput | Prisma.SortOrder
+  queue_day?: Prisma.SortOrderInput | Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -445,6 +467,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   order_number?: string
   receipt_number?: string
+  queue_day_queue_number?: Prisma.ordersQueue_dayQueue_numberCompoundUniqueInput
   AND?: Prisma.ordersWhereInput | Prisma.ordersWhereInput[]
   OR?: Prisma.ordersWhereInput[]
   NOT?: Prisma.ordersWhereInput | Prisma.ordersWhereInput[]
@@ -461,6 +484,8 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   vat_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   vat_rate_used?: Prisma.DecimalNullableFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFilter<"orders"> | boolean
+  queue_number?: Prisma.IntNullableFilter<"orders"> | number | null
+  queue_day?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
@@ -477,7 +502,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   payment_intents?: Prisma.Payment_intentsListRelationFilter
   credit_notes?: Prisma.Credit_notesListRelationFilter
   notifications?: Prisma.NotificationsListRelationFilter
-}, "id" | "order_number" | "receipt_number">
+}, "id" | "order_number" | "receipt_number" | "queue_day_queue_number">
 
 export type ordersOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -496,6 +521,8 @@ export type ordersOrderByWithAggregationInput = {
   vat_rate_used?: Prisma.SortOrderInput | Prisma.SortOrder
   is_vat_invoice?: Prisma.SortOrder
   receipt_number?: Prisma.SortOrderInput | Prisma.SortOrder
+  queue_number?: Prisma.SortOrderInput | Prisma.SortOrder
+  queue_day?: Prisma.SortOrderInput | Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -531,6 +558,8 @@ export type ordersScalarWhereWithAggregatesInput = {
   vat_rate_used?: Prisma.DecimalNullableWithAggregatesFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolWithAggregatesFilter<"orders"> | boolean
   receipt_number?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
+  queue_number?: Prisma.IntNullableWithAggregatesFilter<"orders"> | number | null
+  queue_day?: Prisma.DateTimeNullableWithAggregatesFilter<"orders"> | Date | string | null
   points_earned?: Prisma.IntWithAggregatesFilter<"orders"> | number
   points_redeemed?: Prisma.IntWithAggregatesFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
@@ -556,6 +585,8 @@ export type ordersCreateInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -591,6 +622,8 @@ export type ordersUncheckedCreateInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -622,6 +655,8 @@ export type ordersUpdateInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -657,6 +692,8 @@ export type ordersUncheckedUpdateInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -690,6 +727,8 @@ export type ordersCreateManyInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -715,6 +754,8 @@ export type ordersUpdateManyMutationInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -742,6 +783,8 @@ export type ordersUncheckedUpdateManyInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -762,6 +805,11 @@ export type ordersOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
 }
 
+export type ordersQueue_dayQueue_numberCompoundUniqueInput = {
+  queue_day: Date | string
+  queue_number: number
+}
+
 export type ordersCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   order_number?: Prisma.SortOrder
@@ -779,6 +827,8 @@ export type ordersCountOrderByAggregateInput = {
   vat_rate_used?: Prisma.SortOrder
   is_vat_invoice?: Prisma.SortOrder
   receipt_number?: Prisma.SortOrder
+  queue_number?: Prisma.SortOrder
+  queue_day?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
@@ -796,6 +846,7 @@ export type ordersAvgOrderByAggregateInput = {
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
   vat_rate_used?: Prisma.SortOrder
+  queue_number?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
 }
@@ -817,6 +868,8 @@ export type ordersMaxOrderByAggregateInput = {
   vat_rate_used?: Prisma.SortOrder
   is_vat_invoice?: Prisma.SortOrder
   receipt_number?: Prisma.SortOrder
+  queue_number?: Prisma.SortOrder
+  queue_day?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
@@ -844,6 +897,8 @@ export type ordersMinOrderByAggregateInput = {
   vat_rate_used?: Prisma.SortOrder
   is_vat_invoice?: Prisma.SortOrder
   receipt_number?: Prisma.SortOrder
+  queue_number?: Prisma.SortOrder
+  queue_day?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
@@ -861,6 +916,7 @@ export type ordersSumOrderByAggregateInput = {
   net_amount?: Prisma.SortOrder
   vat_amount?: Prisma.SortOrder
   vat_rate_used?: Prisma.SortOrder
+  queue_number?: Prisma.SortOrder
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
 }
@@ -1072,6 +1128,8 @@ export type ordersCreateWithoutCustomerInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1105,6 +1163,8 @@ export type ordersUncheckedCreateWithoutCustomerInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1146,6 +1206,8 @@ export type ordersCreateWithoutCashierInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1179,6 +1241,8 @@ export type ordersUncheckedCreateWithoutCashierInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1241,6 +1305,8 @@ export type ordersScalarWhereInput = {
   vat_rate_used?: Prisma.DecimalNullableFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFilter<"orders"> | boolean
   receipt_number?: Prisma.StringNullableFilter<"orders"> | string | null
+  queue_number?: Prisma.IntNullableFilter<"orders"> | number | null
+  queue_day?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
@@ -1282,6 +1348,8 @@ export type ordersCreateWithoutItemsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1316,6 +1384,8 @@ export type ordersUncheckedCreateWithoutItemsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1362,6 +1432,8 @@ export type ordersUpdateWithoutItemsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1396,6 +1468,8 @@ export type ordersUncheckedUpdateWithoutItemsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1426,6 +1500,8 @@ export type ordersCreateWithoutPaymentsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1460,6 +1536,8 @@ export type ordersUncheckedCreateWithoutPaymentsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1506,6 +1584,8 @@ export type ordersUpdateWithoutPaymentsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1540,6 +1620,8 @@ export type ordersUncheckedUpdateWithoutPaymentsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1570,6 +1652,8 @@ export type ordersCreateWithoutCredit_notesInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1604,6 +1688,8 @@ export type ordersUncheckedCreateWithoutCredit_notesInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1650,6 +1736,8 @@ export type ordersUpdateWithoutCredit_notesInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1684,6 +1772,8 @@ export type ordersUncheckedUpdateWithoutCredit_notesInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1714,6 +1804,8 @@ export type ordersCreateWithoutPayment_intentsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1748,6 +1840,8 @@ export type ordersUncheckedCreateWithoutPayment_intentsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1794,6 +1888,8 @@ export type ordersUpdateWithoutPayment_intentsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1828,6 +1924,8 @@ export type ordersUncheckedUpdateWithoutPayment_intentsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1858,6 +1956,8 @@ export type ordersCreateWithoutNotificationsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1892,6 +1992,8 @@ export type ordersUncheckedCreateWithoutNotificationsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -1938,6 +2040,8 @@ export type ordersUpdateWithoutNotificationsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1972,6 +2076,8 @@ export type ordersUncheckedUpdateWithoutNotificationsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2002,6 +2108,8 @@ export type ordersCreateWithoutPoint_transactionsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2036,6 +2144,8 @@ export type ordersUncheckedCreateWithoutPoint_transactionsInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2082,6 +2192,8 @@ export type ordersUpdateWithoutPoint_transactionsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2116,6 +2228,8 @@ export type ordersUncheckedUpdateWithoutPoint_transactionsInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2147,6 +2261,8 @@ export type ordersCreateManyCustomerInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2173,6 +2289,8 @@ export type ordersCreateManyCashierInput = {
   vat_rate_used?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: boolean
   receipt_number?: string | null
+  queue_number?: number | null
+  queue_day?: Date | string | null
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
@@ -2198,6 +2316,8 @@ export type ordersUpdateWithoutCustomerInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2231,6 +2351,8 @@ export type ordersUncheckedUpdateWithoutCustomerInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2263,6 +2385,8 @@ export type ordersUncheckedUpdateManyWithoutCustomerInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2288,6 +2412,8 @@ export type ordersUpdateWithoutCashierInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2321,6 +2447,8 @@ export type ordersUncheckedUpdateWithoutCashierInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2353,6 +2481,8 @@ export type ordersUncheckedUpdateManyWithoutCashierInput = {
   vat_rate_used?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
   is_vat_invoice?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_number?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  queue_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  queue_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2456,6 +2586,8 @@ export type ordersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   vat_rate_used?: boolean
   is_vat_invoice?: boolean
   receipt_number?: boolean
+  queue_number?: boolean
+  queue_day?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2492,6 +2624,8 @@ export type ordersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   vat_rate_used?: boolean
   is_vat_invoice?: boolean
   receipt_number?: boolean
+  queue_number?: boolean
+  queue_day?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2521,6 +2655,8 @@ export type ordersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   vat_rate_used?: boolean
   is_vat_invoice?: boolean
   receipt_number?: boolean
+  queue_number?: boolean
+  queue_day?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2550,6 +2686,8 @@ export type ordersSelectScalar = {
   vat_rate_used?: boolean
   is_vat_invoice?: boolean
   receipt_number?: boolean
+  queue_number?: boolean
+  queue_day?: boolean
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
@@ -2560,7 +2698,7 @@ export type ordersSelectScalar = {
   cancelled_at?: boolean
 }
 
-export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "points_earned" | "points_redeemed" | "cancel_reason" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
+export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "points_earned" | "points_redeemed" | "cancel_reason" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
 export type ordersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customer?: boolean | Prisma.orders$customerArgs<ExtArgs>
   cashier?: boolean | Prisma.orders$cashierArgs<ExtArgs>
@@ -2617,6 +2755,20 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     vat_rate_used: runtime.Decimal | null
     is_vat_invoice: boolean
     receipt_number: string | null
+    /**
+     * *
+     *    * The number the customer is called by (ADR 0017): 1, 2, 3 … within one Bangkok
+     *    * day, on walk-in sales only. Null on a pre-order, whose handover already has
+     *    * its own identifiers — the bill number and the 4-digit PIN — and whose goods
+     *    * are in the customer's hands by the time its bill is closed, so a call number
+     *    * would be a number nobody ever calls.
+     *    * `queue_day` is stored beside it rather than derived from `created_at` so the
+     *    * pair can carry a unique index: `created_at` is an instant, and the day the
+     *    * customer heard is Bangkok's, so the two disagree for the seven hours after
+     *    * local midnight.
+     */
+    queue_number: number | null
+    queue_day: Date | null
     points_earned: number
     points_redeemed: number
     cancel_reason: string | null
@@ -3072,6 +3224,8 @@ export interface ordersFieldRefs {
   readonly vat_rate_used: Prisma.FieldRef<"orders", 'Decimal'>
   readonly is_vat_invoice: Prisma.FieldRef<"orders", 'Boolean'>
   readonly receipt_number: Prisma.FieldRef<"orders", 'String'>
+  readonly queue_number: Prisma.FieldRef<"orders", 'Int'>
+  readonly queue_day: Prisma.FieldRef<"orders", 'DateTime'>
   readonly points_earned: Prisma.FieldRef<"orders", 'Int'>
   readonly points_redeemed: Prisma.FieldRef<"orders", 'Int'>
   readonly cancel_reason: Prisma.FieldRef<"orders", 'String'>

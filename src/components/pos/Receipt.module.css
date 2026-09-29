@@ -46,6 +46,36 @@
   margin: var(--ln-space-2) 0;
 }
 
+/*
+ * The call number (ADR 0017) — the loudest thing on the page, on purpose.
+ *
+ * Every other figure here is a fact about money that an accountant may read
+ * later; this one has to be readable by a customer sitting across the room right
+ * now, so it gets the largest size the receipt's 80mm width can carry and enough
+ * letter-spacing to be legible while the paper is held at arm's length.
+ * No `color` is set: it inherits, which is what makes it black on paper (where
+ * the sheet forces black) without naming a colour in two places.
+ */
+.call {
+  margin: var(--ln-space-1) 0 var(--ln-space-2);
+  text-align: center;
+}
+
+.callLabel {
+  display: block;
+  font-size: var(--ln-size-xs);
+  letter-spacing: 0.2em;
+  color: var(--ln-text-muted);
+}
+
+.callNumber {
+  display: block;
+  font-size: var(--ln-size-2xl);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
+}
+
 .row {
   display: flex;
   align-items: baseline;
@@ -92,7 +122,8 @@
   }
 
   .small,
-  .foot {
+  .foot,
+  .callLabel {
     color: #000000;
   }
 }

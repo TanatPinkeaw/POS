@@ -1970,6 +1970,8 @@ export const ShopsScalarFieldEnum = {
   receipt_running_number: 'receipt_running_number',
   credit_note_prefix: 'credit_note_prefix',
   credit_note_running_number: 'credit_note_running_number',
+  queue_running_number: 'queue_running_number',
+  queue_running_day: 'queue_running_day',
   receipt_footer: 'receipt_footer',
   logo_url: 'logo_url',
   promptpay_id: 'promptpay_id',
@@ -2126,6 +2128,8 @@ export const OrdersScalarFieldEnum = {
   vat_rate_used: 'vat_rate_used',
   is_vat_invoice: 'is_vat_invoice',
   receipt_number: 'receipt_number',
+  queue_number: 'queue_number',
+  queue_day: 'queue_day',
   points_earned: 'points_earned',
   points_redeemed: 'points_redeemed',
   cancel_reason: 'cancel_reason',
@@ -2400,20 +2404,6 @@ export type ListBigIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
- * Reference to a field of type 'promptpay_id_type'
- */
-export type Enumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'promptpay_id_type'>
-    
-
-
-/**
- * Reference to a field of type 'promptpay_id_type[]'
- */
-export type ListEnumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'promptpay_id_type[]'>
-    
-
-
-/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -2424,6 +2414,20 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'DateTime[]'
  */
 export type ListDateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime[]'>
+    
+
+
+/**
+ * Reference to a field of type 'promptpay_id_type'
+ */
+export type Enumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'promptpay_id_type'>
+    
+
+
+/**
+ * Reference to a field of type 'promptpay_id_type[]'
+ */
+export type ListEnumpromptpay_id_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'promptpay_id_type[]'>
     
 
 

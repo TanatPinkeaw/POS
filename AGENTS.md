@@ -54,7 +54,8 @@ Recorded so a session starts from the truth rather than from the last commit mes
 
 - **Everything the SRS specifies is implemented and verified** — §1 to §8, mapped to
   code in README's *How the SRS maps onto the code*.
-- **Beyond the spec**, because a shop needs it: VAT with gapless tax-invoice numbering
+- **Beyond the spec**, because a shop needs it: a call number on every walk-in bill,
+  printed as the loudest thing on the receipt (ADR 0017); VAT with gapless tax-invoice numbering
   (ADR 0002), credit notes and per-line refunds (ADRs 0004, 0008), a transfer that
   closes its own bill from the shop's own bank notification with no payment provider
   (ADR 0005), customer accounts created at the counter (ADRs 0010, 0011), a notification
@@ -238,6 +239,12 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
 - **Money is `DECIMAL(10,2)`; tax arithmetic is done in integer satang**
   (`src/lib/vat.ts`). A breakdown off by one satang is a document that does not
   balance, not a rounding nit.
+- **Call numbers restart every Bangkok day and never repeat inside one.**
+  `orders.queue_number` + `queue_day` are a pair with a unique index, so two bills
+  sharing a number is refused by the database rather than only by the allocation
+  being careful; the counter on the shop row resets in the same `UPDATE … RETURNING`
+  that bumps it, so a rolled-back sale burns no number. The day is stored, never
+  derived from `created_at` (ADR 0017).
 - **Receipt numbers are gapless and un-reusable**, serialised on the shop row.
   Credit notes have their own gapless series (`shops.credit_note_running_number`),
   allocated in the same transaction, so a refund that is refused burns no number
