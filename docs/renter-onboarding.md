@@ -99,7 +99,7 @@ email in this system; recovery is a SQL statement (see §8).
      recorded in the stock history — it is not an overwrite, so importing the same
      file twice adds the stock twice. Import once.
    - A row with a problem is skipped and reported; the rest of the file still goes in.
-5. **Print a test receipt** — make one 1 THB test sale (see §5), then reprint it
+5. **Print a test receipt** — make one 1 THB test sale (see §5.1), then reprint it
    from the dashboard to check alignment and paper width.
 
 ---
@@ -120,6 +120,32 @@ email in this system; recovery is a SQL statement (see §8).
 | Enrol a customer | `/pos` → *สมัครสมาชิกใหม่*, or `/admin/members` | Name, phone number and a temporary password you read to them. At the till it opens as a dialog **over the bill**: the basket is not lost, the number you just searched for comes with you, and the customer is attached to that bill when it closes — so enrolling somebody mid-queue does not stall the sale. The phone number is what they sign in with, so ask before you type — and it must not be one a staff account already uses. |
 | Check what happened | `/admin/audit` | Every gated action, newest first: who was at the till, whose PIN approved it, the amounts and the reasons. Nothing here can be edited or deleted, including by us — filter by action or by person. |
 
+### 5.1 The first sale, end to end
+
+The table above is the daily view. This is the same thing once, slowly, because the
+first sale is where a wrong receipt prefix, an unplugged printer or a missing VAT
+registration gets found — and all three are cheap to fix before the shop is busy.
+
+1. `/pos` → **เปิดลิ้นชัก** and type the float you are starting with. Nothing can be
+   sold before this: cash that belongs to no drawer cannot be reconciled.
+2. Scan a barcode or tap the product. The bill fills on the right, VAT already inside
+   the shelf price.
+3. Optional, and both are the same box on the bill: **ค้นหา** by phone number to attach
+   the customer, or **สมัครสมาชิกใหม่** to enrol one without leaving the sale.
+4. **รับชำระเงิน**. Choose **เงินสด**, **พร้อมเพย์** (a QR appears, locked to the bill's
+   amount), or **แบ่งจ่าย** for a transfer plus the rest in notes — a part-paid bill
+   computes the change against the cash share only. **ยืนยันรับเงิน** closes it.
+5. **พิมพ์ใบเสร็จ** and read the paper: the shop name (and the branch, if you set
+   one), the receipt number, your tax ID and the VAT line if the shop is registered,
+   then the total. This is the moment to go back to Settings and fix the receipt prefix
+   if it is wrong.
+6. Rung the wrong bill? **คืนเงินบิลนี้** on the receipt — tick the lines coming back, or
+   leave them blank to hand the whole bill back. A refund always asks for a supervisor
+   PIN and a reason: set the PIN at `/admin/staff` before the first shift, because
+   until one exists every refund is refused, including the owner's.
+7. End of the day: **ปิดลิ้นชัก**, count the notes and coins, and type the total in. The
+   screen names any difference as short, over or balanced, and it stays on the record.
+
 ---
 
 ## 6. Money and tax — what to know
@@ -131,10 +157,12 @@ email in this system; recovery is a SQL statement (see §8).
 - **Receipt numbers never repeat and never skip.** Do not edit
   `shops.receipt_running_number` by hand. If you must, back up first and know that
   a gap in a receipt series is the thing an auditor asks about.
-- **A refund issues a credit note.** One note per receipt, for the *whole* bill:
-  the customer gets all the money back and every line goes back on the shelf.
-  Returning one item out of three is not supported yet, so if a shop needs that,
-  refund everything and ring the rest up again as a new sale.
+- **A refund issues a credit note, and the note itemises what it reverses.** Tick the
+  lines coming back and how many of each — only those go onto the note and back onto
+  the shelf. Leave them blank to hand the whole bill back. One sale can collect several
+  notes over time, numbered 1, 2, 3 within the bill, and the invoice itself is never
+  rewritten: a partly-credited bill still reads as the bill that was issued, and only
+  becomes *refunded* once the notes have taken back everything on it.
 - **Credit-note numbers are gapless too, and separate from receipts.** They live
   in their own series (`CN-<year>-000001`), so a refund never consumes a receipt
   number and vice versa. Do not edit `shops.credit_note_running_number` by hand.

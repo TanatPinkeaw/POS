@@ -12,6 +12,61 @@ new and durable, put it in the file that owns it.
 
 ---
 
+## Who maintains this
+
+**The agent working in this repo is the one who develops and maintains this system.**
+Not a helper a developer calls in for a patch, and not a single session: the owner
+reads this same checkout, and each round of work starts cold with nothing carried over
+except what the repository says. Every document here is written for that reader — which
+is why an undocumented decision is a decision the next round re-litigates, and why a
+stale claim is worse than a missing one.
+
+Maintaining rather than patching is four obligations, and they are the rest of this
+file in summary:
+
+1. **The repository is the memory.** A durable decision goes into an ADR — numbered,
+   with the alternative it rejected and the gaps it knowingly left — and a behaviour
+   that changed goes into the file that owns it, in the same commit. A claim that stops
+   being true is *deleted*, and nothing catches it for you: the README kept *an
+   audit-log viewer* on its not-built list for the twenty commits after `/admin/audit`
+   shipped, and `docs/renter-onboarding.md` still refused a partial refund in writing
+   two ADRs after a partial refund worked. No gate reads a document.
+2. **"Green" is a measurement, not a belief.** `npm run verify:all` runs every gate in
+   dependency order, and the numbers come out of that output — never out of a document.
+   The counts in `README.md` have drifted twice from being quoted rather than run.
+3. **The shop's documents are part of the system.** `README.md` is the product
+   document; `docs/renter-onboarding.md` is the operator's runbook — plain English prose
+   wrapped around the Thai labels a counter actually sees — for the person installing
+   the shop and then running it. A new button, a new refusal, or a thing this version
+   stops doing is a change to that runbook too.
+4. **Commits are the trail** — the message says *why* the change is right rather than
+   what moved. Commits land on `main` in this checkout; the owner decides what goes to
+   `origin`, and nothing is pushed, merged or deployed on your own initiative.
+
+### Where it stands
+
+Recorded so a session starts from the truth rather than from the last commit message.
+
+- **Everything the SRS specifies is implemented and verified** — §1 to §8, mapped to
+  code in README's *How the SRS maps onto the code*.
+- **Beyond the spec**, because a shop needs it: VAT with gapless tax-invoice numbering
+  (ADR 0002), credit notes and per-line refunds (ADRs 0004, 0008), a transfer that
+  closes its own bill from the shop's own bank notification with no payment provider
+  (ADR 0005), customer accounts created at the counter (ADRs 0010, 0011), a notification
+  outbox the shop runs (ADR 0007), a pickup code the counter scans (ADR 0006), and a
+  limiter on the doors worth guessing at, whose buckets are shared between processes
+  (ADRs 0009, 0012).
+- **Deliberately not built**: README's *Not built yet* — overtime approval and leave,
+  LINE addresses for customers, multiple branches, a second register, product images,
+  RTL, object storage, and a reconciliation over a date range rather than a day.
+- **Not yet proven, and this is the honest half.** No shop has run this. There is no
+  browser end-to-end test in CI (`route:audit` stands in for one — see Traps), the
+  runbook's backup section is a `pg_dump` line with no restore ever rehearsed against
+  it, and there is no experience of real data volume in reports or analytics. "Green"
+  means *correct as far as the tests reach*; it does not mean a shop has used it.
+
+---
+
 ## What this is
 
 A single-shop, Thai-first point of sale: realtime, with atomic inventory
@@ -25,10 +80,46 @@ Three authenticated areas and three public surfaces:
 
 | Area | Prefix | Screens |
 | --- | --- | --- |
-| Manager | `/admin/*` | dashboard, products, audit, reports, schedules, settings, staff |
+| Manager | `/admin/*` | dashboard, products, audit, reports, schedules, settings, staff, customers |
 | Till | `/pos/*` | the register, attendance, pre-orders |
 | Customer | `/shop/*` | catalogue, orders |
 | Public | — | `/login`, `/setup` (first run), `/display` (customer screen) |
+
+---
+
+## Using it
+
+`docs/renter-onboarding.md` is the operator's guide: Thai, written for the person
+behind the counter, from install to the first sale and the daily routine. Read it before
+changing anything a counter sees — staying true is its whole job.
+
+From this side the useful question is a different one: how do you *see* a change? On a
+throwaway database, `npm run db:setup:demo` and then `npm run dev` — or the production
+build, which is what to verify against (see Traps) — and sign in as one of the seed's
+personas (README §3): the **admin** for anything involving money or people, the
+**employee** for the counter, the **member** for the pre-order side. `/display` is the
+customer-facing screen, paired from `/admin/settings`.
+
+Three loops cover the product:
+
+1. **A sale.** Open a drawer first (`เปิดลิ้นชัก`) — a sale is refused without an open
+   shift, because cash that belongs to no drawer cannot be reconciled. Scan or tap a
+   product; attach a customer with `ค้นหา` by phone, or `สมัครสมาชิกใหม่` to enrol one
+   without leaving the bill (ADR 0011). Take cash, PromptPay or a split, then close and
+   print. `คืนเงินบิลนี้` on the receipt reverses it, wholly or a line at a time.
+2. **A pre-order.** The customer orders from `/shop/products`, which **reserves the
+   stock the moment it is placed**; staff accept it, pack it — which mints the 4-digit
+   PIN and the hold deadline — and hand it over at `/pos/preorders` by scanning the QR
+   or typing the PIN or the phone number.
+3. **The manager's day.** `/admin/dashboard` reconciles today, confirming the bank's
+   transfers against the bills they closed; `/admin/products` carries the CSV/XLSX
+   import; `/admin/members` the customers; `/admin/reports` the four workbooks; and
+   `/admin/audit` every gated action with the name of whoever approved it.
+
+Two things stop a newcomer, and both are deliberate. An unconfigured deployment sends
+`/login` to `/setup`, and **no supervisor PIN is set by the seed**: until one is set at
+`/admin/staff`, an over-limit discount and every refund are refused — including for the
+owner.
 
 ---
 
