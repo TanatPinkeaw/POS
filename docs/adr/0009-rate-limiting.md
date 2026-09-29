@@ -26,6 +26,12 @@ balancer would have two independent limiters — each half as strict as configur
 limit against a *distributed* attack belongs in the reverse proxy in front of this; this
 is the backstop that stops one script from guessing its way in.
 
+**Later:** those costs were paid in ADR 0012, which moved the buckets into a table in
+the shop's own database — a restart forgets nothing, and two processes enforce one limit
+between them. What survives from this decision is the rest of it: the policy is still
+pure, the decision is still a token bucket, and a limit against a distributed attack is
+still the reverse proxy's job rather than this module's.
+
 ### 2. A token bucket, not a fixed window
 
 A caller with no history arrives with a full bucket, so the first request is never the
@@ -127,8 +133,9 @@ feature can be deleted and the worst outcome is a slower attack rather than an o
 
 - A password spray, a PIN spray across the admin list, and a brute-forced webhook secret
   all become slow, and all three leave one readable row saying they started.
-- Buckets are per process, so `npm run acceptance` and a restarted server start clean.
-  Nothing in the shop's normal day reaches any of these ceilings.
+- Buckets are rows now (ADR 0012), so a restarted server does *not* start clean — that
+  is the point of it — and the integration suite clears the table between tests.
+  Nothing in the shop's normal day reaches any of these ceilings either way.
 - The limiter's numbers are one table in a pure module, so tuning one is a one-line
   change with a test that pins the arithmetic rather than the number.
 - `Retry-After` is not sent as a header; the wait is in the error envelope's
@@ -139,7 +146,8 @@ feature can be deleted and the worst outcome is a slower attack rather than an o
 - **No limit on authenticated traffic**, apart from customer enrolment. Decision 3,
   and the exception is argued in ADR 0011 §6. A sale, a refund and a stock adjustment
   are all still uncounted, which is the position decision 3 takes on purpose.
-- **Nothing survives a restart, and nothing is shared between processes.** Decision 1.
+- ~~**Nothing survives a restart, and nothing is shared between processes.**~~ Closed
+  by ADR 0012: the buckets are shared rows, and its own gaps are recorded there.
 - **No per-account lockout of its own.** A password may be guessed ten times per fifteen
   minutes for one account, indefinitely. A real lockout needs an unlock path a shop can
   perform without a database console, which is a screen rather than a limiter.

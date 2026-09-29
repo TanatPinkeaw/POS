@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  MAX_BUCKET_KEY_LENGTH,
   RATE_LIMIT_POLICIES,
+  bucketKey,
   clientAddress,
   decide,
+  fullBucket,
   isPrivateAddress,
   type Bucket,
 } from '../src/lib/rate-limit-policy';
@@ -92,6 +95,16 @@ describe('a token bucket', () => {
     expect(first).toMatchObject({ allowed: false, tripped: true });
     expect(second).toMatchObject({ allowed: false, tripped: false });
     expect(third).toMatchObject({ allowed: false, tripped: false });
+  });
+
+  it('hands a caller with no history exactly the bucket the store would have created', () => {
+    const created = fullBucket(POLICY, START);
+
+    // The store writes this shape into the row it inserts (`rate-limit.ts`), so the
+    // two have to agree or a first-time caller would be charged twice — once by the
+    // INSERT and once by the decision that reads it back.
+    expect(created).toEqual({ tokens: POLICY.capacity, updatedAt: START, refusing: false });
+    expect(decide(created, POLICY, START)).toEqual(decide(undefined, POLICY, START));
   });
 
   it('marks a new burst again once the caller has been let back in', () => {
@@ -194,6 +207,23 @@ describe('deciding who a request is from', () => {
   it('names an unknown caller rather than sharing an empty key', () => {
     expect(clientAddress(null, null)).toBe('unknown');
     expect(clientAddress('', '')).toBe('unknown');
+  });
+
+  it('composes the bucket key from the door, the caller and the scope', () => {
+    expect(bucketKey('member_create', '203.0.113.9')).toBe('member_create|203.0.113.9');
+    expect(bucketKey('login_failure', '203.0.113.9', 'someone@shop.test')).toBe(
+      'login_failure|203.0.113.9|someone@shop.test',
+    );
+  });
+
+  it('caps an oversized key, so an absurd identifier cannot break the door it spends', () => {
+    const key = bucketKey('login_failure', '203.0.113.9', 'x'.repeat(5_000));
+
+    expect(key).toHaveLength(MAX_BUCKET_KEY_LENGTH);
+    // Truncated rather than hashed, and the direction is deliberate: two absurd
+    // identifiers sharing a prefix share a bucket, so the caller is limited a little
+    // sooner instead of walking around the limit that was meant to count them.
+    expect(bucketKey('login_failure', '203.0.113.9', 'x'.repeat(9_000))).toBe(key);
   });
 });
 

@@ -169,11 +169,17 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   the till's phone lookup working. Role is decided by the *surface* that writes the
   row (`members.ts`, `staff.ts`), never by a request body, and each refuses the
   other's accounts.
-- **The rate limiter's buckets live in the process, not in a table**
-  (`src/lib/rate-limit.ts`), so a restart forgets them and a second process would
-  be a second limiter. The policy is pure (`rate-limit-policy.ts`) and keyed by the
-  address the *socket* reports; `X-Forwarded-For` is believed only when that
-  address is private. `src/server.ts` stamps `x-client-address` and overwrites
+- **The rate limiter's buckets are rows in the shop's own database**
+  (`rate_limit_buckets`, ADR 0012), so a restart forgets nothing and two processes
+  enforce one limit between them. Spending one is an `ON CONFLICT DO UPDATE` that
+  takes a row lock — never a `SELECT … FOR UPDATE`, which finds nothing to lock the
+  first time — and both the decision and the row use the *database's* `now()`, the
+  only clock several processes agree on. The arithmetic stays in the pure module;
+  do not express the refill in SQL, or the numbers get a second home. A key is
+  truncated to `MAX_BUCKET_KEY_LENGTH` because it is a primary key, and an
+  unreachable store lets the caller through (ADR 0012 decision 5). The policy is
+  keyed by the address the *socket* reports; `X-Forwarded-For` is believed only
+  when that address is private. `src/server.ts` stamps `x-client-address` and overwrites
   whatever the caller sent — never trust an inbound copy. Only the first refusal of
   a burst is audited (`rate_limited`), because some of these doors are reachable
   without a session and a row per refusal would be a free way to fill the trail.

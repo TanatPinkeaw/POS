@@ -406,6 +406,7 @@ export const ModelName = {
   time_logs: 'time_logs',
   cash_shifts: 'cash_shifts',
   audit_logs: 'audit_logs',
+  rate_limit_buckets: 'rate_limit_buckets',
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
@@ -431,7 +432,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
+    modelProps: "shops" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1098,6 +1099,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.audit_logsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Audit_logsCountAggregateOutputType> | number
+        }
+      }
+    }
+    rate_limit_buckets: {
+      payload: Prisma.$rate_limit_bucketsPayload<ExtArgs>
+      fields: Prisma.rate_limit_bucketsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.rate_limit_bucketsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.rate_limit_bucketsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>
+        }
+        findFirst: {
+          args: Prisma.rate_limit_bucketsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.rate_limit_bucketsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>
+        }
+        findMany: {
+          args: Prisma.rate_limit_bucketsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>[]
+        }
+        create: {
+          args: Prisma.rate_limit_bucketsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>
+        }
+        createMany: {
+          args: Prisma.rate_limit_bucketsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.rate_limit_bucketsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>[]
+        }
+        delete: {
+          args: Prisma.rate_limit_bucketsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>
+        }
+        update: {
+          args: Prisma.rate_limit_bucketsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>
+        }
+        deleteMany: {
+          args: Prisma.rate_limit_bucketsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.rate_limit_bucketsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.rate_limit_bucketsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>[]
+        }
+        upsert: {
+          args: Prisma.rate_limit_bucketsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$rate_limit_bucketsPayload>
+        }
+        aggregate: {
+          args: Prisma.Rate_limit_bucketsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRate_limit_buckets>
+        }
+        groupBy: {
+          args: Prisma.rate_limit_bucketsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Rate_limit_bucketsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.rate_limit_bucketsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Rate_limit_bucketsCountAggregateOutputType> | number
         }
       }
     }
@@ -2024,6 +2099,16 @@ export const Audit_logsScalarFieldEnum = {
 export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
 
 
+export const Rate_limit_bucketsScalarFieldEnum = {
+  bucket_key: 'bucket_key',
+  tokens: 'tokens',
+  updated_at: 'updated_at',
+  refusing: 'refusing'
+} as const
+
+export type Rate_limit_bucketsScalarFieldEnum = (typeof Rate_limit_bucketsScalarFieldEnum)[keyof typeof Rate_limit_bucketsScalarFieldEnum]
+
+
 export const OrdersScalarFieldEnum = {
   id: 'id',
   order_number: 'order_number',
@@ -2427,6 +2512,20 @@ export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
 
 
 /**
+ * Reference to a field of type 'Float'
+ */
+export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
+    
+
+
+/**
+ * Reference to a field of type 'Float[]'
+ */
+export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
+    
+
+
+/**
  * Reference to a field of type 'order_type'
  */
 export type Enumorder_typeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'order_type'>
@@ -2549,20 +2648,6 @@ export type Enumnotification_statusFieldRefInput<$PrismaModel> = FieldRefInputTy
  * Reference to a field of type 'notification_status[]'
  */
 export type ListEnumnotification_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'notification_status[]'>
-    
-
-
-/**
- * Reference to a field of type 'Float'
- */
-export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
-    
-
-
-/**
- * Reference to a field of type 'Float[]'
- */
-export type ListFloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float[]'>
     
 
 /**
@@ -2725,6 +2810,7 @@ export type GlobalOmitConfig = {
   time_logs?: Prisma.time_logsOmit
   cash_shifts?: Prisma.cash_shiftsOmit
   audit_logs?: Prisma.audit_logsOmit
+  rate_limit_buckets?: Prisma.rate_limit_bucketsOmit
   orders?: Prisma.ordersOmit
   order_items?: Prisma.order_itemsOmit
   payments?: Prisma.paymentsOmit

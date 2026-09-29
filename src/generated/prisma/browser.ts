@@ -80,6 +80,29 @@ export type cash_shifts = Prisma.cash_shiftsModel
  */
 export type audit_logs = Prisma.audit_logsModel
 /**
+ * Model rate_limit_buckets
+ * *
+ *  * One rate limiter bucket, shared by every process (ADR 0012).
+ *  *
+ *  * The limiter's memory used to be a `Map` in the process, which was defensible for
+ *  * one listener and became two limiters the moment there were two — each half as
+ *  * strict as the configuration says, and both forgotten by a restart. A row per
+ *  * bucket is the smallest thing that fixes both, and this deployment already has the
+ *  * database.
+ *  *
+ *  * The key is the same string the policy layer composes (`policy|address` or
+ *  * `policy|address|scope`), so the row a caller is counted in is the row the pure
+ *  * decision reasons about. `tokens` is fractional on purpose: refill is continuous,
+ *  * so a bucket genuinely holds 3.4 attempts. `updated_at` is written with the
+ *  * *database's* clock, which is the only clock several processes agree on.
+ *  *
+ *  * No index beyond the primary key: the table is one row per caller who has been
+ *  * limited lately, and the sweep deletes by `updated_at` on a table small enough to
+ *  * scan. The column is wider than `MAX_BUCKET_KEY_LENGTH` so that cap can be raised
+ *  * without a migration.
+ */
+export type rate_limit_buckets = Prisma.rate_limit_bucketsModel
+/**
  * Model orders
  * 
  */

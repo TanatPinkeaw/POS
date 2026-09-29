@@ -60,6 +60,7 @@ export const ModelName = {
   time_logs: 'time_logs',
   cash_shifts: 'cash_shifts',
   audit_logs: 'audit_logs',
+  rate_limit_buckets: 'rate_limit_buckets',
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
@@ -230,6 +231,16 @@ export const Audit_logsScalarFieldEnum = {
 } as const
 
 export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
+
+
+export const Rate_limit_bucketsScalarFieldEnum = {
+  bucket_key: 'bucket_key',
+  tokens: 'tokens',
+  updated_at: 'updated_at',
+  refusing: 'refusing'
+} as const
+
+export type Rate_limit_bucketsScalarFieldEnum = (typeof Rate_limit_bucketsScalarFieldEnum)[keyof typeof Rate_limit_bucketsScalarFieldEnum]
 
 
 export const OrdersScalarFieldEnum = {

@@ -189,9 +189,9 @@ products the seed creates are what `npm run smoke` drives.
 ```bash
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
-npm test                # 655 tests across 46 files: unit + integration
+npm test                # 662 tests across 46 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 135 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 17 screens render, and render styled
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -209,7 +209,7 @@ that the demo seed now *refuses* to touch the configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 135 of its
+or that quietly began fetching a font from another origin passes all 140 of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.
@@ -245,8 +245,10 @@ was misread because of it — the application was right and the harness was lyin
 - **The limiter on the doors that need no session**, including that a bucket refills
   continuously rather than resetting a window, that nobody is ever told to wait zero
   seconds, that a dual-stack loopback is one caller rather than two, that a forged
-  `X-Forwarded-For` from a public address cannot mint a fresh bucket, and that a burst
-  of refused attempts writes exactly one row to the trail.
+  `X-Forwarded-For` from a public address cannot mint a fresh bucket, that a burst of
+  refused attempts writes exactly one row to the trail, that the spent attempt is in
+  the shared table rather than in the process that spent it, and that a restart still
+  refuses.
 - **Customer accounts**, including that the same phone number written with dashes is
   the same customer, that a number a cashier already holds is refused rather than
   stolen from them, that this screen cannot edit a staff account, and that creating
@@ -620,12 +622,13 @@ tills on one wifi are two budgets and signing out does not refill yours. The fai
 charged and the successes are free, so a shop behind one address cannot exhaust itself
 logging in at nine o'clock.
 
-The policy is pure and unit-tested (`src/lib/rate-limit-policy.ts`); the buckets live in
-the process, which is honest for one Node listener and stated as a limit rather than
-hidden — a second process would be a second limiter, each half as strict. Who a request
-is from is the address the **socket** reports, with `X-Forwarded-For` believed only when
-that socket is itself private, so a caller cannot pick its own bucket by sending a
-header. When a burst trips, the trail gets **one** row (`rate_limited`) naming the door,
+The policy is pure and unit-tested (`src/lib/rate-limit-policy.ts`); the buckets are rows
+in the shop's own database, so **a restart forgets nothing and two processes enforce one
+limit between them** rather than one each. Nothing about a bucket is in the process:
+spending an attempt is an upsert that takes a row lock, and the clock is the database's,
+because that is the only clock several processes agree on. Who a request is from is the
+address the **socket** reports, with `X-Forwarded-For` believed only when that socket is
+itself private, so a caller cannot pick its own bucket by sending a header. When a burst trips, the trail gets **one** row (`rate_limited`) naming the door,
 the address and the account that was guessed at — one, not one per refusal, because this
 is the one endpoint an unauthenticated caller could otherwise make write to the audit
 table for free.
@@ -672,9 +675,10 @@ goes through them.
 | `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
 | `docs/adr/0007-notification-outbox.md` | The notification outbox: written with the fact, sent by a worker the shop runs, and why a customer's code never goes to the shop's LINE group. |
 | `docs/adr/0008-partial-refunds.md` | Per-line refunds: the note itemises, several notes per invoice, and why the closing note takes the remainder. |
-| `docs/adr/0009-rate-limiting.md` | The limiter on the doors that need no session, and the one signed-in door that is counted: a token bucket per process, who a request is from, and why only the first refusal is written down. |
+| `docs/adr/0009-rate-limiting.md` | The limiter on the doors that need no session, and the one signed-in door that is counted: a token bucket, who a request is from, and why only the first refusal is written down. |
 | `docs/adr/0010-member-accounts.md` | Customer accounts: a credential created at the counter, phone numbers unique across every role, and points that are shown but never edited. |
 | `docs/adr/0011-counter-enrolment.md` | The till enrols its own customers: one route a role wider, a dialog over the bill rather than a screen, and the 403 that moved to `PATCH`. |
+| `docs/adr/0012-shared-rate-limit-store.md` | The limiter's buckets as rows in the shop's own database: what a restart, a second process and an unreachable database each mean for a limit. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
 ## Not built yet

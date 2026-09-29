@@ -217,9 +217,12 @@ rather than a screen, so it belongs before the shop needs it, not after.
 ### 4.6 Images, and the rest of the polish list
 
 Product images and a shop logo (columns exist, no upload), RTL, object storage.
-Cheap, visible, and each unlocks perceived quality. The audit-log viewer and the
-rate limiter are done (ADRs 0009 and the trail screen), and the limiter's
-per-process buckets are the gap that remains inside it — see decision 1 there.
+Cheap, visible, and each unlocks perceived quality. The audit-log viewer and the rate
+limiter are done (ADRs 0009 and the trail screen), and the limiter's buckets moved out
+of the process and into the shop's own database (ADR 0012), so a restart no longer
+forgives an attacker. What is left inside the limiter is what its known gaps say:
+nothing bounds the table from above, and a distributed attacker is the reverse proxy's
+problem rather than this module's.
 
 ---
 

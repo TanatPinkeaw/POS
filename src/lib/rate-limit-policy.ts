@@ -44,6 +44,49 @@ export interface RateLimitPolicy {
 }
 
 /**
+ * The longest a bucket key may be, in characters.
+ *
+ * Not decoration: since ADR 0012 the key is a *primary key in a table*, and a
+ * bounded key is what stops an oversized one from being a failed insert instead of
+ * a refusal. `login_failure` scopes by whatever identifier was typed, and
+ * `loginSchema` puts no ceiling on that — so without a cap here, a caller posting a
+ * megabyte of identifier could break the limiter rather than be counted by it.
+ *
+ * Truncated rather than hashed, and the direction is the point: two absurd
+ * identifiers sharing a prefix share a bucket, so the worst case is somebody
+ * limited slightly sooner than their own attempts alone would have. The column it
+ * lands in is wider (see the migration) so this can be raised without one.
+ */
+export const MAX_BUCKET_KEY_LENGTH = 200;
+
+/**
+ * The row a caller's attempts are counted in: the door, who they are, and whatever
+ * the door narrows them by.
+ *
+ * Here rather than in the store because ADR 0009 decision 1 already puts the key
+ * derivation in the pure module — it is policy, not storage: which callers share a
+ * bucket is the decision, and where the row lives is not.
+ */
+export function bucketKey(
+  name: RateLimitPolicyName,
+  address: string,
+  scope?: string,
+): string {
+  const key = scope ? `${name}|${address}|${scope}` : `${name}|${address}`;
+  return key.slice(0, MAX_BUCKET_KEY_LENGTH);
+}
+
+/**
+ * A bucket nobody has spent from yet: full, at rest, and not refusing.
+ *
+ * Named because two places have to agree on it — `decide` for a caller with no
+ * history, and the insert that creates a row for one (`rate-limit.ts`).
+ */
+export function fullBucket(policy: RateLimitPolicy, now: number): Bucket {
+  return { tokens: policy.capacity, updatedAt: now, refusing: false };
+}
+
+/**
  * The limits themselves.
  *
  * Every one of them is set to be invisible in normal use and only reachable by
@@ -160,8 +203,7 @@ export function decide(
   policy: RateLimitPolicy,
   now: number,
 ): Decision {
-  const full: Bucket = { tokens: policy.capacity, updatedAt: now, refusing: false };
-  const bucket = previous ?? full;
+  const bucket = previous ?? fullBucket(policy, now);
 
   const elapsed = Math.max(0, now - bucket.updatedAt);
   const perMs = policy.capacity / policy.windowMs;

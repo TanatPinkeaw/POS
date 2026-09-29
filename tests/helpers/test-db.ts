@@ -40,6 +40,10 @@ const TABLES = [
   // The shop is a singleton with no dependants, but it must be cleared between
   // tests: a leftover row would make the next test's deployment look configured.
   'shops',
+  // The limiter's buckets are rows now (ADR 0012), so they outlive the process that
+  // spent them. Without this a suite would inherit the previous run's spent bucket
+  // and be refused the request it was about to make.
+  'rate_limit_buckets',
 ];
 
 export { prisma };

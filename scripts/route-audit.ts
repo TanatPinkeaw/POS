@@ -12,7 +12,7 @@
  * the failure it catches is invisible to every other check. `acceptance` drives
  * the API and never reads a byte of HTML, so a screen whose module was renamed,
  * whose stylesheet was never imported, or that quietly began fetching a font
- * from a CDN, passes all 135 of its checks and ships unstyled. That is not a
+ * from a CDN, passes all 140 of its checks and ships unstyled. That is not a
  * thought experiment — the theme deletion left exactly such a bug behind, and it
  * was found by doing this by hand.
  *

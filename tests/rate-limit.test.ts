@@ -7,7 +7,7 @@
 // writes *one* row to the trail rather than one per refused request. The last of
 // those is the one worth a real database: it is the difference between a limiter
 // and an amplifier an attacker points at the audit table.
-import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { listAuditLogs } from '@/lib/audit';
 import { RateLimitedError } from '@/lib/errors';
@@ -42,13 +42,14 @@ async function spendAndRefuse(
 
 beforeEach(async () => {
   await resetDatabase();
-  // The store is module-level state, so a suite that did not clear it would
-  // inherit the previous test's spent buckets and fail for the wrong reason.
-  resetRateLimits();
+  // The buckets are rows in the shop's own database now (ADR 0012), so a suite that
+  // did not clear them would inherit the previous test's spent bucket — and now also
+  // the previous *run*'s, which is a flake nobody can reproduce locally.
+  await resetRateLimits();
 });
 
-afterEach(() => {
-  resetRateLimits();
+afterEach(async () => {
+  await resetRateLimits();
 });
 
 describe('charging an attempt', () => {
@@ -167,9 +168,46 @@ describe('the buckets themselves', () => {
     await chargeRateLimit(requestFrom('203.0.113.9'), 'pair_attempt');
     await chargeRateLimit(requestFrom('203.0.113.10'), 'pair_attempt');
 
-    expect(rateLimitBucketCount()).toBe(2);
-    resetRateLimits();
-    expect(rateLimitBucketCount()).toBe(0);
+    expect(await rateLimitBucketCount()).toBe(2);
+    await resetRateLimits();
+    expect(await rateLimitBucketCount()).toBe(0);
+  });
+
+  it('keeps a bucket in the database, where another process can see it', async () => {
+    await chargeRateLimit(requestFrom('203.0.113.9'), 'member_create', 'cashier-1');
+
+    const rows = await prisma.$queryRaw<{ bucket_key: string; tokens: number }[]>`
+      SELECT "bucket_key", "tokens" FROM "rate_limit_buckets"
+    `;
+
+    // Reading the table directly is the observable that makes the limiter shared:
+    // the spent attempt is in the row, not in the process that spent it, and the key
+    // is the one the pure module composes — which is what lets a second process find
+    // the same caller's attempts without being told about them.
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.bucket_key).toBe('member_create|203.0.113.9|cashier-1');
+    expect(rows[0]?.tokens).toBe(RATE_LIMIT_POLICIES.member_create.capacity - 1);
+  });
+
+  it('still refuses after a restart, because nothing about a spent bucket is in the process', async () => {
+    await spendAndRefuse(requestFrom('203.0.113.9'), 'member_create', 'cashier-1');
+
+    /*
+     * A restart is a fresh module instance, which is exactly what a limiter that
+     * kept its buckets in a `Map` could not survive. Re-importing is the closest a
+     * test can get to one, and it is an honest test of the property rather than of
+     * the implementation: nothing in-process is carried across it.
+     */
+    vi.resetModules();
+    const restarted = await import('@/lib/rate-limit');
+
+    const refused = await restarted
+      .chargeRateLimit(requestFrom('203.0.113.9'), 'member_create', 'cashier-1')
+      .catch((error: unknown) => error);
+
+    // Compared on the status rather than with `instanceof`, because the error class
+    // is one of the things the restart replaced.
+    expect((refused as { httpStatus?: number }).httpStatus).toBe(429);
   });
 
   it('would forget nothing that could still refuse, at the sweep`s age', async () => {
