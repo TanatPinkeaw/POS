@@ -175,8 +175,11 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   address the *socket* reports; `X-Forwarded-For` is believed only when that
   address is private. `src/server.ts` stamps `x-client-address` and overwrites
   whatever the caller sent — never trust an inbound copy. Only the first refusal of
-  a burst is audited (`rate_limited`), because the endpoint is reachable without a
-  session and a row per refusal would be a free way to fill the trail.
+  a burst is audited (`rate_limited`), because some of these doors are reachable
+  without a session and a row per refusal would be a free way to fill the trail.
+  The policies are the session-less doors plus one signed-in write,
+  `member_create`, which is keyed by the *account* rather than the address so two
+  cashiers on one wifi are two budgets (ADR 0011 §6).
 
 ---
 

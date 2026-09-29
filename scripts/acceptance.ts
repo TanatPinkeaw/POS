@@ -1650,6 +1650,100 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     limitedTrail.entries[0],
   );
 
+  /* ---------------- 14. a till that cannot mint accounts without limit */
+  section('14. A session that cannot enrol customers without limit');
+
+  /*
+   * Section 11 proved the counter may enrol a customer; this is the other half of
+   * that decision (ADR 0011 §6). What the door makes is a credential that reserves
+   * stock without paying for it, so its *volume* is bounded — where the volume of
+   * sales the same session rings up all day deliberately is not.
+   *
+   * Last, and after section 13, because it is the second policy to trip and the
+   * first one asserts the trail holds exactly its own row.
+   */
+  const cashierAccount = await cashier.call<{ id: string }>('/api/v1/auth/me');
+  const burstStatuses: number[] = [];
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const result = await cashier.request('/api/v1/members', {
+      method: 'POST',
+      body: {
+        fullName: `ลูกค้าระดม ${attempt + 1}`,
+        phone: `0810000${String(attempt).padStart(3, '0')}`,
+        password: 'accept-burst-1',
+      },
+    });
+    burstStatuses.push(result.status);
+    if (result.status === 429) {
+      break;
+    }
+  }
+
+  check(
+    'a session that enrols customers one after another is refused (429)',
+    burstStatuses.at(-1) === 429,
+    burstStatuses,
+  );
+  check(
+    'and it let a counter\u2019s worth through first, so the ceiling is not felt by people',
+    burstStatuses.filter((status) => status < 300).length >= 5,
+    burstStatuses.length,
+  );
+
+  /*
+   * Read off the body, as section 13 reads its own: the wait is in the envelope
+   * every client here already parses, and the till's dialog shows the sentence to
+   * the cashier verbatim.
+   */
+  const limitedEnrol = await fetch(`${base}/api/v1/members`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie: cashier.cookieHeader() },
+    body: JSON.stringify({
+      fullName: 'หลังถูกจำกัด',
+      phone: '08100000999',
+      password: 'accept-burst-1',
+    }),
+  });
+  const limitedEnrolBody = (await limitedEnrol.json()) as {
+    error?: { code?: string; retryAfterSeconds?: number };
+  };
+  check(
+    'and the refusal carries the wait the dialog already reads',
+    limitedEnrol.status === 429 &&
+      limitedEnrolBody.error?.code === 'RATE_LIMITED' &&
+      (limitedEnrolBody.error?.retryAfterSeconds ?? 0) > 0,
+    limitedEnrolBody.error,
+  );
+
+  /*
+   * The property that keeps this usable in a shop: the bucket is the *account*, so
+   * a cashier who has spent theirs has not stopped the manager's session — and two
+   * tills on the shop's one wifi are two budgets rather than one.
+   */
+  const managerEnrols = await admin.call<MemberDto>('/api/v1/members', {
+    method: 'POST',
+    body: {
+      fullName: 'โดยผู้จัดการ หลังแคชเชียร์ถูกจำกัด',
+      phone: '08100000998',
+      password: 'accept-burst-1',
+    },
+  });
+  check(
+    'and another account at the same shop is not locked out',
+    managerEnrols.phone === '08100000998',
+    managerEnrols.phone,
+  );
+
+  const enrolTrail = await admin.call<AuditPageDto>('/api/v1/audit?action=rate_limited');
+  const enrolRows = enrolTrail.entries.filter(
+    (entry) => entry.detail?.policy === 'member_create',
+  );
+  check(
+    'the enrolment burst is written to the trail once, naming the door and the account',
+    enrolRows.length === 1 && enrolRows[0]?.detail?.scope === cashierAccount.id,
+    enrolRows[0] ?? enrolTrail.total,
+  );
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`

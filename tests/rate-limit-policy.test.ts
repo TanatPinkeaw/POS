@@ -127,6 +127,7 @@ describe('the policy table', () => {
       'setup_attempt',
       'pair_attempt',
       'inbound_notification',
+      'member_create',
     ]);
 
     for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {
@@ -148,6 +149,21 @@ describe('the policy table', () => {
 
     expect(policy.capacity).toBeGreaterThanOrEqual(60);
     expect(policy.capacity).toBeLessThan(1_000);
+  });
+
+  it('caps enrolments as a burst a person cannot type, not as a daily quota', () => {
+    const policy = RATE_LIMIT_POLICIES.member_create;
+
+    // The whole point of the door: a handful of sign-ups back to back is normal,
+    // and a loop is not. It has to be a burst ceiling rather than a low quota, or
+    // the shop switches it off on its first busy Saturday.
+    expect(policy.capacity).toBeGreaterThanOrEqual(5);
+    expect(policy.capacity).toBeLessThanOrEqual(20);
+
+    // And it must refill in minutes rather than hours: at the steady rate, one
+    // enrolment a minute keeps a queue moving all day, so the ceiling is only ever
+    // met by somebody who is not typing.
+    expect(policy.windowMs / policy.capacity).toBeLessThanOrEqual(2 * 60_000);
   });
 });
 

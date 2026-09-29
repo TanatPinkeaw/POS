@@ -74,6 +74,20 @@ describe('charging an attempt', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('gives each signed-in account its own enrolment budget', async () => {
+    const request = requestFrom('127.0.0.1');
+
+    await spendAndRefuse(request, 'member_create', 'cashier-1');
+
+    // One shop, one address, two tills: the second cashier's budget is theirs, and
+    // the first one's is spent. Keying this by address instead would let whoever
+    // types fastest lock out the colleague standing next to them.
+    await expect(chargeRateLimit(request, 'member_create', 'cashier-2')).resolves.toBeUndefined();
+    await expect(chargeRateLimit(request, 'member_create', 'cashier-1')).rejects.toThrow(
+      RateLimitedError,
+    );
+  });
+
   it('keys on the address when no scope is given', async () => {
     const mine = requestFrom('203.0.113.9');
 

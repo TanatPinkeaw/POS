@@ -18,6 +18,10 @@
  *     two belong to different surfaces for the same reason the till's own
  *     customer lookup returns four fields and the back office sees the list.
  *
+ *     POST is also the one signed-in write with a rate limit on it (ADR 0011
+ *     §6): what it makes is a credential that can reserve stock without paying,
+ *     so the volume is bounded where the volume of sales deliberately is not.
+ *
  *     The customer list the admin screen shows is loaded server-side by the
  *     page, so there is no GET for it here — one projection is for a cashier,
  *     the other is for a manager, and a route that tried to be both would have
@@ -27,6 +31,7 @@ import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { createMember } from '@/lib/members';
+import { chargeRateLimit } from '@/lib/rate-limit';
 import { memberCreateSchema } from '@/lib/schemas';
 
 /**
@@ -75,6 +80,16 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   return withApi(async () => {
     const session = await requireRole(['employee', 'admin']);
+
+    /*
+     * Charged *before* the work, like the setup wizard and display pairing, because
+     * here the attempt is itself the thing being counted: what a loop spends is
+     * credentials, and each one costs a hash and can be used to reserve stock for
+     * free. The scope is the signed-in account rather than the address, so the
+     * bucket belongs to this till and a colleague on the same wifi keeps their own.
+     */
+    await chargeRateLimit(request, 'member_create', session.id);
+
     const body = await readJson(request, memberCreateSchema);
 
     return createMember({ ...body, actorId: session.id });

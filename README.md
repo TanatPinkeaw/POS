@@ -603,18 +603,22 @@ after five wrong tries for one admin, and nothing stopped an attacker walking th
 of admins five tries each. `docs/adr/0009-rate-limiting.md` is the decision.
 
 The limiter covers the five doors that need no session — signing in, supervisor
-approval, the setup wizard, display pairing, and the bank-notification webhook — and it
-is a **token bucket**, so a caller with no history arrives full, a burst is spent and
-refilled at a rate rather than locked out until a clock turns, and nothing has to be
-reset. Login counts two things, because they are two questions: wrong passwords for one
+approval, the setup wizard, display pairing, and the bank-notification webhook — plus
+one signed-in write, enrolling a customer, and it is a **token bucket**, so a caller
+with no history arrives full, a burst is spent and refilled at a rate rather than
+locked out until a clock turns, and nothing has to be reset. Login counts two things, because they are two questions: wrong passwords for one
 account (keyed by the address *and* the identifier, so guessing at one login cannot
 lock out the colleague beside it) and wrong passwords from one address, which is what a
 spray across many accounts spends.
 
 **A signed-in till is not limited**, deliberately: a cashier who can outrun the API is a
 performance problem, not a security one, and a ceiling a busy Saturday hits is one the
-shop switches off. The failures are charged and the successes are free, so a shop behind
-one address cannot exhaust itself logging in at nine o'clock.
+shop switches off. The single exception is enrolling a customer, because what that call
+produces is not a sale but a credential that can reserve stock without paying for it —
+ten in a row, then one a minute, with the budget belonging to the **account**, so two
+tills on one wifi are two budgets and signing out does not refill yours. The failures are
+charged and the successes are free, so a shop behind one address cannot exhaust itself
+logging in at nine o'clock.
 
 The policy is pure and unit-tested (`src/lib/rate-limit-policy.ts`); the buckets live in
 the process, which is honest for one Node listener and stated as a limit rather than
@@ -668,7 +672,7 @@ goes through them.
 | `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
 | `docs/adr/0007-notification-outbox.md` | The notification outbox: written with the fact, sent by a worker the shop runs, and why a customer's code never goes to the shop's LINE group. |
 | `docs/adr/0008-partial-refunds.md` | Per-line refunds: the note itemises, several notes per invoice, and why the closing note takes the remainder. |
-| `docs/adr/0009-rate-limiting.md` | The limiter on the doors that need no session: a token bucket per process, who a request is from, and why only the first refusal is written down. |
+| `docs/adr/0009-rate-limiting.md` | The limiter on the doors that need no session, and the one signed-in door that is counted: a token bucket per process, who a request is from, and why only the first refusal is written down. |
 | `docs/adr/0010-member-accounts.md` | Customer accounts: a credential created at the counter, phone numbers unique across every role, and points that are shown but never edited. |
 | `docs/adr/0011-counter-enrolment.md` | The till enrols its own customers: one route a role wider, a dialog over the bill rather than a screen, and the 403 that moved to `PATCH`. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |

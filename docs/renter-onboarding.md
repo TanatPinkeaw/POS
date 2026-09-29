@@ -258,9 +258,11 @@ Recorded here so nobody discovers it during service:
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.
 - No offline mode: the till needs the network it is served from.
-- No rate limiting on anything you are *signed in* to: the limiter counts attempts
-  on the doors that need no session (signing in, the supervisor PIN, the setup
-  wizard, display pairing, the bank webhook). Nothing there is a ceiling your own
-  till can reach, and typing a password wrong ten times in a quarter of an hour
-  will make you wait — one account at a time, so a colleague at the next till is
-  unaffected.
+- No rate limiting on anything you are *signed in* to, with one exception:
+  **enrolling customers**. Signing in, the supervisor PIN, the setup wizard,
+  display pairing and the bank webhook are counted because they need no session;
+  enrolling is counted because each one hands out an account that can reserve stock
+  without paying for it. Ten in a row, then one a minute, and the budget belongs to
+  the account — so a colleague at the next till is unaffected, and signing out does
+  not reset it. Nothing a person types reaches ten. A password typed wrong ten
+  times in a quarter of an hour still makes you wait, one account at a time.

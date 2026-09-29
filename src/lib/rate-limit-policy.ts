@@ -7,7 +7,8 @@
  * thousand wrong PINs a second is a thousand accounts times five tries, and a
  * password spray across every phone number in an address book is not a lockout at
  * all. That is the gap this fills, and it is deliberately narrow: the doors that
- * need no session, plus the two secrets worth guessing.
+ * need no session, the two secrets worth guessing, and one signed-in write that
+ * mints a credential rather than a sale.
  *
  * The state is a **token bucket**, and the shape was chosen for what it does at
  * the edges. A caller with no history arrives with a full bucket and is unaffected;
@@ -32,7 +33,8 @@ export type RateLimitPolicyName =
   | 'approval_failure'
   | 'setup_attempt'
   | 'pair_attempt'
-  | 'inbound_notification';
+  | 'inbound_notification'
+  | 'member_create';
 
 export interface RateLimitPolicy {
   /** Attempts that may be spent back to back, from an idle caller. */
@@ -89,6 +91,25 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * table faster than a person can notice.
    */
   inbound_notification: { capacity: 120, windowMs: 60_000 },
+  /**
+   * Enrolling customers — the one policy here on a door that wants a session
+   * (ADR 0011 §6).
+   *
+   * It is the exception because of what the door *makes*: every call mints a
+   * durable credential that can reserve stock without paying for it, and pays for a
+   * bcrypt hash to do it, so a loop against it is neither free nor harmless. A sale
+   * is not counted, and that is the point: it is the revenue the shop wants.
+   *
+   * Keyed by the signed-in account rather than by the address, and that is the
+   * point of the scope: two cashiers on the shop's one wifi are two people, and
+   * neither should be able to spend the other's budget. It also means signing out
+   * and back in does not mint a fresh bucket — the budget belongs to the account.
+   *
+   * Ten back to back, then one a minute. A person cannot type ten sign-ups into a
+   * form without pausing, and a queue keeps moving at one a minute all day, so the
+   * ceiling is invisible at the counter and still stops a script.
+   */
+  member_create: { capacity: 10, windowMs: 10 * 60_000 },
 };
 
 /** A caller's bucket, as it stands after the last decision about it. */

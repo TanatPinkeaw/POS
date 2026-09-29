@@ -38,9 +38,9 @@ Refill is continuous (`capacity ÷ windowMs`), which is what makes "one attempt 
 ninety seconds is fine, sixty in a second is not" expressible in two numbers rather than
 a data structure.
 
-### 3. The doors are the ones without a session
+### 3. The doors, and what a bucket is keyed by
 
-Five of them, and the scope is the point:
+Six of them, and the scope is the point:
 
 | Door | Policy | Keyed by |
 | --- | --- | --- |
@@ -49,6 +49,7 @@ Five of them, and the scope is the point:
 | `POST /api/v1/setup` | 10 / 1 hour | address |
 | `POST /api/v1/display/pair` | 20 / 15 min | address |
 | `POST /api/v1/payments/inbound` | 120 / 1 min | address |
+| `POST /api/v1/members` (ADR 0011 §6) | 10 / 10 min | address **and** the signed-in account |
 
 Two buckets on the login route, because they answer two different questions:
 `login_failure` is "is this account being guessed at" — keyed by the address *and* the
@@ -59,7 +60,16 @@ identifiers spends.
 **A signed-in till is not limited**, deliberately. A cashier who can outrun the API has
 a performance problem, not a security one, and the screen they are on is the shop's own
 revenue — a limiter there is a limiter that gets switched off. The doors that need no
-session, plus the two secrets worth guessing, is the honest line.
+session, plus the two secrets worth guessing, is the honest line — with one exception
+added afterwards and argued on its own terms.
+
+**The exception is customer enrolment** (ADR 0011 §6), and the distinction is what the
+call *makes* rather than who makes it: a sale is revenue the shop wants, whereas
+`POST /api/v1/members` mints a credential that can reserve stock without paying for it
+and pays for a bcrypt hash to do so. Ten back to back, then one a minute, keyed by the
+signed-in account — so two tills on the shop's one wifi are two budgets, and an
+operator cannot mint a fresh bucket by signing out. Nothing a person types into a
+sign-up form reaches ten.
 
 Two session-less endpoints are therefore *excluded*, and that is a decision rather than
 an oversight. `GET /api/v1/display/state` carries a paired device token rather than a
@@ -73,9 +83,10 @@ writes nothing. Neither guesses at a secret; both are read-only.
 Login and approvals charge *after* the attempt has already failed, which is the
 difference between a limiter that protects a shop and one that locks out an office on a
 Monday morning: charging every successful sign-in would mean one shared address behind a
-counter could exhaust itself logging in at nine o'clock. Setup, pairing and the webhook
-charge first, because there the attempt *is* the thing being counted — and for the
-webhook, the comparison is what the caller is guessing at.
+counter could exhaust itself logging in at nine o'clock. Setup, pairing, the webhook and
+customer enrolment charge first, because there the attempt *is* the thing being counted
+— for the webhook, the comparison is what the caller is guessing at, and for enrolment
+it is the credential a loop would produce.
 
 ### 5. Who a request is from is the socket, and only sometimes the header
 
@@ -125,7 +136,9 @@ feature can be deleted and the worst outcome is a slower attack rather than an o
 
 ## Known gaps, stated rather than discovered
 
-- **No limit on authenticated traffic.** Decision 3.
+- **No limit on authenticated traffic**, apart from customer enrolment. Decision 3,
+  and the exception is argued in ADR 0011 §6. A sale, a refund and a stock adjustment
+  are all still uncounted, which is the position decision 3 takes on purpose.
 - **Nothing survives a restart, and nothing is shared between processes.** Decision 1.
 - **No per-account lockout of its own.** A password may be guessed ten times per fifteen
   minutes for one account, indefinitely. A real lockout needs an unlock path a shop can

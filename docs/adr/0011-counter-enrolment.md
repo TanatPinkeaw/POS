@@ -77,25 +77,47 @@ and it was an English string — `An account already exists for …` — in thre
 (`members.ts`, `staff.ts`, `setup.ts`). A user-visible refusal is Thai by rule, so
 all three now say the same Thai sentence.
 
+### 6. The door is counted, unlike the till's other writes
+
+Enrolling is the first *signed-in* door with a rate limit on it, which ADR 0009
+decision 3 said the till would not have. That decision still holds for selling — a
+cashier who can outrun the API has a performance problem, not a security one — and
+the line between the two is not "authenticated or not" but **what the call makes**: a
+sale is revenue the shop wants, while this is a credential that can reserve stock
+without paying for it, plus a bcrypt hash of CPU to produce it.
+
+The policy is `member_create` — ten back to back, then one a minute, refilled
+continuously like every other bucket, so a queue keeps moving all day and the ceiling
+is only ever met by something that is not typing. It is keyed by the **signed-in
+account**, not the address: two cashiers on the shop's one wifi are two people, and
+neither should be able to spend the other's budget, while signing out and back in does
+not mint a fresh one because the budget belongs to the account.
+
+Nothing new was needed for the refusal to reach a person: the dialog prints the
+server's own Thai sentence, "พยายามหลายครั้งเกินไป — กรุณารออีก …", which every other
+rate-limited door already produces.
+
 ## Consequences
 
 - A cashier can serve the whole of the shop's product where they stand: enrol a
   customer, sell to them, attach the points. The acceptance journey's section 11 now
   enrols its second customer as the cashier, and then signs in as that account to
   prove it is a member rather than staff.
+- The limiter's policy table gains a seventh entry, and it is the only one keyed by
+the signed-in account rather than by the address — see decision 6.
 - The 403 the journey used to assert did not vanish; it moved one method over, to
   `PATCH /api/v1/members/{id}`.
 - No route was added, so `route:audit` still walks seventeen screens and the till's
   read-only `GET /api/v1/members` lookup is untouched.
-- The acceptance run is 135 checks rather than 133.
+- The acceptance run is 140 checks rather than 133.
 
 ## Known gaps, stated rather than discovered
 
-- **Nothing rate-limits enrolment.** The route needs a session, and every account it
-  creates is a credential that can reserve stock without paying, so a compromised
-  cashier session can create accounts as fast as it can type. The budget to defend is
-  real but small, and it is the same shape of missing policy as the other
-  authenticated write routes.
+- ~~**Nothing rate-limits enrolment.**~~ Closed by decision 6: ten in a burst, then
+  one a minute, per signed-in account. What is *not* capped is every other
+  authenticated write — a sale, a refund, a stock adjustment. That remains ADR 0009's
+  position, and it is still right: those are revenue and the work the shop is paying
+  for, not credentials.
 - **The customer leaves the counter with nothing on paper.** The password is spoken;
   there is no card, no receipt and no printed slip, so a customer who forgets it
   before changing it telephones the shop.
