@@ -4,17 +4,35 @@
 assumes a working network: taking money with no connection, and making the books
 right when it comes back. It came out of an interview, so the decisions below are the
 owner's and the reasoning behind them is in ADR 0019. The *vocabulary* is
-`CONTEXT.md`; the *state of the build* is `README.md`.
+`CONTEXT.md`; the *state of the build* is `README.md`.**Phases 1 and 2 are built, and so is the whole of phase 3 that is not a screen.** The three
+pure decision modules exist with their tests (`number-block.ts`, `offline-sale-rules.ts`,
+`sync-plan.ts`); the numbering protocol is on the server — `number_blocks`, the freeze
+inside the allocating `UPDATE`, and the borrow / report / cancel endpoints — **and the sale
+endpoint now accepts the numbers a device printed itself and judges them inside the block it
+borrowed** (`claimNumberFromBlock`, `tests/device-numbers.test.ts`). The till store exists
+(`till-store.ts`) with the device's own storage beneath it (`offline-db.ts`, IndexedDB) and
+the offline bill's arithmetic, all tested against an in-memory double.
 
-**Phases 1 and 2 are built; nothing else is.** The three pure decision modules exist with
-their tests (`number-block.ts`, `offline-sale-rules.ts`, `sync-plan.ts`), and so does the
-numbering protocol on the server — `number_blocks`, the freeze inside the allocating
-`UPDATE`, and the borrow / report / cancel endpoints. The device store and the replay do
-not exist, so a shop still cannot sell offline — and, until phase 3 lands, **a device must
-not borrow either** (see *Who allocates while a block is out*).
+**The till's writes go through the store too.** `useTill` keeps the snapshot (the catalogue
+it has seen, the shop's settings, the open drawer), the store decides server or device for
+every sale, an offline bill queues on the device with its own numbers and its own price, and
+the till says out loud what it is: `offlineNotice` above the basket, the pending count with
+how long the oldest has waited, and the refusal — in Thai, naming the next step — when the
+bills cannot be sent.
+
+The shop's own reserve is in place too: `products.offline_safety_qty` exists, the column's
+CHECK refuses a negative one, and `/admin/products` is where a shop sets it — so the device
+decides with the number the shop chose rather than a hardcoded zero.
+
+What is therefore **not** built is what still stands between this and a shop: **nothing
+borrows**, and the till refuses to sell offline for the honest reason that **it holds no
+numbers** (see *Who allocates while a block is out*). The replay does not exist either, so
+the reason not to borrow has changed rather than gone: a loan the device cannot settle
+leaves a shop that cannot sell online either.
+
 Anything this document names as a later command is written **without** the `npm run`
-prefix on purpose: `doc:audit` (ADR 0013) fails a document that runs a command which
-does not exist, and that gate is right.
+prefix on purpose: `doc:audit` (ADR 0013) fails a document that runs a command which does
+not exist, and that gate is right.
 
 **The shape in one paragraph.** A shop's internet drops today and the till does
 nothing — silently, mid-queue. This specification makes the till keep selling: it
@@ -175,13 +193,13 @@ pure modules, records are persistence modules.**
 
 | Module | Kind | Owns |
 | --- | --- | --- |
-| `offline-sale-rules.ts` | pure | Whether a basket may be closed offline, and every refusal as a typed reason |
+| `offline-sale-rules.ts` | pure | Whether a basket may be closed offline, every refusal as a typed reason, the price of a device sale, and the reserve inequality the shop sets per product (`products.offline_safety_qty`) |
 | `number-block.ts` | pure | Block arithmetic: what range a reservation is, what the next number is, what "used through N" means |
 | `sync-plan.ts` | pure | What to replay, in what order, what counts as done, what a refusal means for the queue |
-| `sale-instant.ts` | pure | Which day a bill belongs to, stated once (see below) |
-| `offline-db.ts` | persistence (device) | The IndexedDB adapter — no decisions, only storage |
-| `till-store.ts` | seam | Local vs server, refresh, queue, replay |
-| `number-blocks.ts` | persistence (server) | Reserve, report, resolve; the database facts behind the pure module |
+| `offline-db.ts` | persistence (device) | The IndexedDB adapter — no decisions, only storage. **Built** |
+| `till-store.ts` | seam | Local vs server, refresh, queue, replay. **Built**, and not yet called by a screen |
+| `number-blocks.ts` | persistence (server) | Reserve, report, resolve, and *claim* — the database facts behind the pure module. **Built** |
+| `sale-instant.ts` | pure | Which day a bill belongs to, stated once (see below). **Not built — the change is phase 4** |
 
 ### The numbering protocol — how a browser can issue a gapless number
 
@@ -228,8 +246,10 @@ The consequences, in the order they matter:
 
 - **A sale sent by a device that holds a block carries its own number**, and the server
   validates it (inside the open block, and not one the block has already used) instead of
-  allocating. Phase 3 wires that, and until it does **a device must not borrow** — a block
-  with no way to issue from it is a shop that cannot sell at all.
+  allocating. That is built: the walk-in sale takes a `deviceNumbers` claim and
+  `claimNumberFromBlock` judges it — open block, inside the range, at-or-behind-the-mark
+  refused. A device holding a block is therefore the allocator for its own online sales too,
+  and a device holding nothing keeps the server's allocation unchanged.
 - **A shop with nothing borrowed behaves exactly as it does today**: the server allocates.
   That is the path a first day of trading, the smoke checks and the acceptance journey all
   rely on, and this specification deliberately leaves it alone.
@@ -265,7 +285,11 @@ the only party who can say the money arrived.
 Online, "never oversell" is one conditional `UPDATE` (`src/lib/inventory.ts`). Offline
 it cannot be, because the tally is a snapshot. So the shop sets a **safety quantity**
 per product (default **0**, meaning no reserve), and the device may sell only while
-`snapshot_available − sold_offline − safety > 0`. A sync that finds the real stock
+`snapshot_available − sold_offline − safety > 0`. The number lives in
+`products.offline_safety_qty` and is set at `/admin/products` (`กันออฟไลน์`); it travels
+into the device's catalogue snapshot, and neither the online sale path nor the server's
+own oversell guard reads it — a reserve is a rule about what a *disconnected* device may
+promise, not a hold on the shelf. A sync that finds the real stock
 shorter than the device believed **accepts the bill** — the goods are in the
 customer's hands — lets stock go negative, and raises a correction task. The promise
 offline is therefore "no oversell beyond the shop's own reserve", and that sentence
@@ -306,8 +330,9 @@ continues.
 - `orders.client_ref` — `String? @unique`, the replay's identity.
 - `orders.sold_at` — `DateTime`, non-null, the instant the sale happened for the
   books (see above).
-- `products.offline_safety_qty` — `Int @default(0)`, the reserve the till may not
-  sell through while offline.
+- `products.offline_safety_qty` — `Int @default(0)` with a CHECK that it is not negative,
+  the reserve the till may not sell through while offline. **Built**, and editable at
+  `/admin/products` (`กันออฟไลน์`).
 - No new column on `shops`: the shop row's counters keep meaning what they mean, and
   "is a series frozen" is answered by the block rows.
 
@@ -352,9 +377,13 @@ are checked without a browser and without a server, the same way `refund-plan.ts
 offline screens have **no automated test**: the suite runs in a Node environment, and
 the repository refuses the dependency that would fake IndexedDB (rule 2). So the
 adapter is kept decision-free on purpose — every rule lives in the pure modules — and
-its correctness rests on `route:audit` (every rendered class is defined in the CSS the
-page loads) plus a human walking through an outage. `README.md`'s "not yet proven"
-list gains this line.
+`till-store.ts` takes its storage as a port, which is why the seam *is* tested
+(`tests/till-store.test.ts`) against an in-memory double: what is untested is one file
+that opens a database and reads a record. Its correctness otherwise rests on
+`route:audit` (every rendered class is defined in the CSS the page loads) plus a human
+walking through an outage. **`AGENTS.md`'s "not yet proven" list carries this line** —
+not `README.md`, whose list of the same kind is the *Not built yet* section and is about
+features rather than proof.
 
 ## Out of Scope
 
@@ -376,13 +405,19 @@ list gains this line.
 - **The order matters, and it is the order of the phases below, which the ticket list
   follows:**
 
-  1. The pure decisions and their tests. No browser, no schema. **Built.**
+  1. The pure decisions and their tests. No browser, no schema. **Built** — and grown twice
+     since: `offline-sale-rules.ts` also prices the offline bill, and `number-block.ts` also
+     judges a number the device printed (`claim`).
   2. The reservation protocol on the server and its migration: `number_blocks`, the freeze
      inside the allocating statement, borrow / report / cancel. Proven against real
      Postgres. **Built.**
   3. The device store and the offline sale: catalogue snapshot, cash bill, local number,
      the till's offline state — **and the sale endpoint accepting a device's own number,
-     which is the step that makes borrowing safe to use**.
+     which is the step that makes borrowing safe to use**. Built: the store, its storage,
+     the endpoint, the till wired through them, and `products.offline_safety_qty` with a
+     field at `/admin/products` — a sale is a server call or a device call, an offline bill
+     is priced and queued on the device with the shop's own reserve applied, and the till
+     states its own state.
   4. The replay: idempotency, the day-attribution change across the reports, the
      negative-stock task.
   5. The proof: `acceptance` extended, the runbook pages written, README's counts and

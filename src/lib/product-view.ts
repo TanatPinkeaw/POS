@@ -14,6 +14,11 @@
  * and the storefront show the same photo the back office entered, and a field a tile
  * renders cannot be a back-office secret (ADR 0014). What the photo *is* — a link to
  * another host — is decided in `image-url.ts`, not here.
+ *
+ * `offlineSafetyQty` is here for a different reason: the device's catalogue snapshot
+ * *is* the thing that decides whether it may sell this product with no network, and
+ * the snapshot is filled from this view. A reserve the back office sets but the till
+ * never receives would be a setting that does nothing (ADR 0019).
  */
 import { availableQty } from './inventory';
 import { fromDecimal } from './money';
@@ -32,6 +37,11 @@ export interface ProductView {
   reservedQty: number;
   /** What can actually be sold: stock minus what pre-orders have reserved. */
   availableQty: number;
+  /**
+   * How much of this product the till may not sell while it is offline (ADR 0019).
+   * Zero means no reserve. It is a device rule; nothing on the online sale path reads it.
+   */
+  offlineSafetyQty: number;
   /** A link to the picture, wherever the shop keeps it. Not necessarily renderable. */
   imageUrl: string | null;
   isActive: boolean;
@@ -47,6 +57,7 @@ export interface ProductRow {
   sale_price: unknown;
   stock_qty: number;
   reserved_qty: number;
+  offline_safety_qty: number;
   image_url: string | null;
   is_active: boolean;
 }
@@ -66,6 +77,7 @@ export function toProductView(product: ProductRow): ProductView {
       stock_qty: product.stock_qty,
       reserved_qty: product.reserved_qty,
     }),
+    offlineSafetyQty: product.offline_safety_qty,
     imageUrl: product.image_url,
     isActive: product.is_active,
   };

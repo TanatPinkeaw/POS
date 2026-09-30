@@ -127,6 +127,39 @@ export function spend(
   return { ok: true, value, block: { ...block, lastUsed: value } };
 }
 
+/** Why a number a device printed was not one it may use. */
+export type ClaimRefusal = 'malformed' | 'out_of_range' | 'already_used';
+
+/**
+ * Records a number the device printed from its own block.
+ *
+ * This is the other direction from `spend`: `spend` is the device asking what to print
+ * next, and this is the server being told what was printed. The two exist because a
+ * device that holds a block is the allocator for its own bills *online as well as
+ * offline* (ADR 0019, *Who allocates while a block is out*), so the sale endpoint
+ * receives a number rather than issuing one and has to judge it.
+ *
+ * Three ways to be wrong, and the third is the one that matters. `already_used` covers
+ * every number at or below the deepest one this block has recorded — not only that exact
+ * number — because a number below the mark is behind the series, and accepting it would
+ * hand two customers the same ticket.
+ */
+export function claim(
+  block: NumberBlock,
+  value: number,
+): { ok: true; block: NumberBlock } | { ok: false; reason: ClaimRefusal } {
+  if (!isWellFormedBlock(block)) {
+    return { ok: false, reason: 'malformed' };
+  }
+  if (!isPositiveWholeNumber(value) || value < block.from || value > block.to) {
+    return { ok: false, reason: 'out_of_range' };
+  }
+  if (block.lastUsed !== null && value <= block.lastUsed) {
+    return { ok: false, reason: 'already_used' };
+  }
+  return { ok: true, block: { ...block, lastUsed: value } };
+}
+
 /**
  * What the shop's counter must be set to when this block is reported.
  *

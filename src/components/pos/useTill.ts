@@ -25,10 +25,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
 import { firstName } from '@/lib/display-view';
 import { formatThb } from '@/lib/money';
+import { createDeviceStorage } from '@/lib/offline-db';
+import type { OfflineBasket, OfflineCatalogueEntry } from '@/lib/offline-sale-rules';
 import type { PaymentIntentView } from '@/lib/payment-intents-view';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import type { ProductView } from '@/lib/product-view';
+import type { ShopView } from '@/lib/shop-view';
 import { APPROVAL_HEADER, discountApprovalTarget } from '@/lib/supervisor-view';
+import {
+  createTillStore,
+  type TillSnapshot,
+  type TillStore,
+  type TillStoreState,
+} from '@/lib/till-store';
 import type { TenderLine } from '@/lib/tender';
 
 import { useRealtimeEvent } from '../realtime/RealtimeProvider';
@@ -57,7 +66,12 @@ export interface TillMember {
 }
 
 export interface SaleResult {
-  orderId: string;
+  /**
+   * Null for a bill the device closed with no connection: the server has never seen it, so
+   * there is no order to open, refund or reprint from the back office yet (phase 4 mints
+   * one when the queue is sent). The slip prints the device's own `OFF-…` reference.
+   */
+  orderId: string | null;
   orderNumber: string;
   receiptNumber: string | null;
   /** The number the customer is called by, printed as it is called (ADR 0017). */
@@ -92,6 +106,17 @@ function round2(amount: number): number {
 const PAGE_SIZE = 60;
 
 /**
+ * What the shop calls this device.
+ *
+ * Phase 4 asks the shop to name a device when it borrows numbers — the name is written on
+ * the loan, so an operator can see *which* till is holding a series. Until then the
+ * browser's own word for itself is the best identity available, and it is only ever shown
+ * to a person looking at the shop's own screens.
+ */
+const DEVICE_LABEL =
+  typeof navigator === 'undefined' ? 'เครื่องหน้าร้าน' : navigator.platform || 'เครื่องหน้าร้าน';
+
+/**
  * What the till asks for when an action is not the cashier's to take alone.
  *
  * Resolves to the approval token, or null when the supervisor walked away — in
@@ -108,6 +133,7 @@ export function useTill({
   initialProducts,
   initialTotal,
   shift,
+  shop,
   onSold,
   discountLimitThb,
   requestApproval,
@@ -115,6 +141,13 @@ export function useTill({
   initialProducts: ProductView[];
   initialTotal: number;
   shift: Shift | null;
+  /**
+   * The shop as the server rendered it, which is what the device keeps for offline use.
+   *
+   * Passed in rather than fetched: this page is already server-rendered with the shop's own
+   * settings, and a second read in the browser is a second answer to the same question.
+   */
+  shop: ShopView;
   /** Lets the drawer's totals refresh after a sale. */
   onSold: () => Promise<void> | void;
   /** Past this discount the cashier needs a supervisor's PIN. */
@@ -161,9 +194,123 @@ export function useTill({
   const [receivedCash, setReceivedCash] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [receipt, setReceipt] = useState<(SaleResult & { at: string }) | null>(null);
+  const [receipt, setReceipt] = useState<
+    (SaleResult & { at: string; offline?: boolean }) | null
+  >(null);
 
   const scanInput = useRef<HTMLInputElement | null>(null);
+
+  /**
+   * The device's own store: the one place that answers "server or device?" (ADR 0019).
+   *
+   * Built once and lazily, because it holds the snapshot and the queue in memory as well as
+   * on the device — a new one per render would forget both between keystrokes.
+   */
+  const storeRef = useRef<TillStore | null>(null);
+  if (storeRef.current === null) {
+    storeRef.current = createTillStore({
+      storage: createDeviceStorage(),
+      deviceLabel: DEVICE_LABEL,
+    });
+  }
+  const store = storeRef.current;
+
+  /** The device's own state: what it keeps, what is waiting, and whether it is online. */
+  const [offline, setOffline] = useState<TillStoreState | null>(null);
+  /** The last offline sale's warnings, in the device's own words — shown, not just logged. */
+  const [offlineWarning, setOfflineWarning] = useState<string | null>(null);
+
+  /**
+   * Everything this device has seen of the catalogue, by product.
+   *
+   * Accumulated rather than replaced by whatever page is on screen: the till pages the
+   * catalogue in sixty at a time with the filter applied on the server, so a device that had
+   * searched for "กาแฟ" and then lost its connection would otherwise hold nothing but coffee
+   * — and could not price the rest of the shelf.
+   */
+  const catalogueRef = useRef(new Map<string, OfflineCatalogueEntry>());
+
+  const remember = useCallback((items: readonly ProductView[]): void => {
+    for (const product of items) {
+      catalogueRef.current.set(product.id, {
+        productId: product.id,
+        name: product.name,
+        priceThb: product.salePrice,
+        /*
+         * `stock_qty − reserved_qty` as of this read — what was sellable then, which is what
+         * the shop's reserve is subtracted from. The reserve arrives with the catalogue row
+         * (`products.offline_safety_qty`, ADR 0019): a setting the back office made and the till
+         * never received would be a reserve that protects nothing.
+         */
+        available: product.availableQty,
+        safetyQty: product.offlineSafetyQty,
+        isActive: true,
+      });
+    }
+  }, []);
+
+  /**
+   * Writes the shop as the device just read it.
+   *
+   * The loans this device holds are carried through untouched: they are the store's own
+   * bookkeeping, and a screen that could invent or drop a borrowed range is a screen that can
+   * put a hole in a series.
+   */
+  const persistSnapshot = useCallback(async (): Promise<void> => {
+    await store.saveSnapshot({
+      capturedAt: new Date().toISOString(),
+      deviceLabel: DEVICE_LABEL,
+      shop: {
+        isVatRegistered: shop.isVatRegistered,
+        vatRatePercent: shop.vatRate,
+        pricesIncludeVat: shop.pricesIncludeVat,
+        receiptPrefix: shop.receiptPrefix,
+        supervisorDiscountLimitThb: shop.supervisorDiscountLimitThb,
+      },
+      catalogue: [...catalogueRef.current.values()],
+      shift: shift ? { id: shift.id, initialCashThb: shift.initialCashThb } : null,
+      heldBlocks: store.getState().snapshot?.heldBlocks ?? [],
+    });
+    setOffline(store.getState());
+  }, [shop, shift, store]);
+
+  /*
+   * Reads what the device kept, then learns about the network from the browser.
+   *
+   * `navigator.onLine` is a hint and not the truth — it reports the last thing the operating
+   * system knew — which is why a request that fails to arrive is what actually decides
+   * (see `till-store.ts`). What the events are for is the *good* news: a till that was
+   * offline must go back to trying the server, and only the browser can tell it.
+   */
+  useEffect(() => {
+    void (async () => {
+      await store.load();
+      if (typeof navigator !== 'undefined') {
+        store.setOnline(navigator.onLine);
+      }
+      setOffline(store.getState());
+    })();
+
+    const sync = (): void => {
+      store.setOnline(navigator.onLine);
+      setOffline(store.getState());
+    };
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, [store]);
+
+  // Written after every catalogue read and whenever the drawer or the shop changes, so the
+  // device is never more than one page-load out of date about what it can sell.
+  useEffect(() => {
+    if (!offline?.loaded) {
+      return;
+    }
+    void persistSnapshot();
+  }, [offline?.loaded, products, persistSnapshot]);
 
   /**
    * Live stock, from every other till and every reservation.
@@ -179,20 +326,31 @@ export function useTill({
     availableQty: number;
   }>(
     REALTIME_EVENTS.stockUpdated,
-    useCallback((payload) => {
-      setProducts((current) =>
-        current.map((product) =>
-          product.id === payload.productId
-            ? {
-                ...product,
-                stockQty: payload.stockQty,
-                reservedQty: payload.reservedQty,
-                availableQty: payload.availableQty,
-              }
-            : product,
-        ),
-      );
-    }, []),
+    useCallback(
+      (payload) => {
+        let changed: ProductView | null = null;
+        setProducts((current) =>
+          current.map((product) => {
+            if (product.id !== payload.productId) {
+              return product;
+            }
+            changed = {
+              ...product,
+              stockQty: payload.stockQty,
+              reservedQty: payload.reservedQty,
+              availableQty: payload.availableQty,
+            };
+            return changed;
+          }),
+        );
+        // And the device's copy moves with it: a page that went stale offline is a page that
+        // prices a shelf the shop has already sold.
+        if (changed) {
+          remember([changed]);
+        }
+      },
+      [remember],
+    ),
   );
 
   const loadPage = useCallback(
@@ -226,6 +384,7 @@ export function useTill({
         setProducts((current) =>
           options.offset && options.offset > 0 ? [...current, ...body.data] : body.data,
         );
+        remember(body.data);
         // `X-Total-Count` is how many matched the filter, not how many were sent —
         // it is what the grid footer uses to say "ยังมีอีก N รายการ" instead of the
         // list simply looking finished.
@@ -363,6 +522,9 @@ export function useTill({
           setError(`ไม่พบสินค้าที่ตรงกับ "${term}"`);
           return;
         }
+        // A scanned item is a sale the device may have to price with no connection, so it
+        // goes into the device's catalogue even if no page ever showed it.
+        remember([exact]);
         addProduct(exact);
         setSearch('');
       } catch (caught) {
@@ -371,7 +533,7 @@ export function useTill({
         scanInput.current?.focus();
       }
     },
-    [addProduct, products],
+    [addProduct, products, remember],
   );
 
   const setQuantity = useCallback((productId: string, quantity: number): void => {
@@ -622,32 +784,86 @@ export function useTill({
         points: pointsToRedeem,
       };
 
-      const result = await apiFetch<SaleResult>('/api/v1/orders', {
-        method: 'POST',
-        body: JSON.stringify({
-          type: 'pos_walkin',
-          shiftId: shift.id,
-          lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
-          customerId: member?.id ?? null,
-          discountThb: discountValue,
-          settlement,
-          ...(intentRef ? { intentRef } : {}),
-        }),
-        headers: approvalToken ? { [APPROVAL_HEADER]: approvalToken } : undefined,
+      /*
+       * The basket as the device judges it, which is a different question from what is
+       * sent: the device decides whether it may sell at all with no connection, while the
+       * body below is what the server is asked to record. `decideOfflineSale` answers the
+       * first, exhaustively and before anything is spent.
+       */
+      const basket: OfflineBasket = {
+        lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+        tender: tenderMode === 'cash' ? 'cash' : tenderMode === 'split' ? 'mixed' : 'promptpay',
+        memberAttached: member !== null,
+        pointsRedeemed: pointsValue,
+        discountThb: discountValue,
+      };
+
+      const outcome = await store.sell({
+        basket,
+        // The cash the cashier entered, or exactly the bill when they entered nothing — the
+        // device prices a cash sale and cannot draw a negative change.
+        receivedCash: received > 0 ? received : cashDue,
+        serverSale: (deviceNumbers) =>
+          apiFetch<SaleResult>('/api/v1/orders', {
+            method: 'POST',
+            body: JSON.stringify({
+              type: 'pos_walkin',
+              shiftId: shift.id,
+              lines: lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
+              customerId: member?.id ?? null,
+              discountThb: discountValue,
+              settlement,
+              ...(intentRef ? { intentRef } : {}),
+              // The numbers this device printed, when it is holding a borrowed range. Absent
+              // on a device that holds nothing, which is the server-allocates path.
+              ...(deviceNumbers ? { deviceNumbers } : {}),
+            }),
+            headers: approvalToken ? { [APPROVAL_HEADER]: approvalToken } : undefined,
+          }),
       });
 
-      // Stamped once, here: `Receipt` defaults to "now", and a re-render while the
-      // modal is open must not move the time printed on the document.
-      setReceipt({ ...result, at: new Date().toISOString() });
+      if (!outcome.ok) {
+        // Every reason at once, in the words the rules module wrote: a cashier at a counter
+        // fixes a basket rather than reading a stack trace.
+        setError(outcome.refusals.map((refusal) => refusal.message).join(' · '));
+        return null;
+      }
+
+      /*
+       * Stamped once, here: `Receipt` defaults to "now", and a re-render while the modal is
+       * open must not move the time printed on the document.
+       */
+      setReceipt({
+        ...outcome.receipt,
+        orderId: outcome.receipt.orderId ?? null,
+        at: new Date().toISOString(),
+        offline: outcome.where === 'device',
+      });
+      setOfflineWarning(
+        outcome.warnings.length > 0
+          ? outcome.warnings.map((warning) => warning.message).join(' · ')
+          : null,
+      );
       clearCart();
       setReceivedCash('');
       setSplitPromptpay('');
       setTenderMode('cash');
       consumedRef.current = null;
-      await onSold();
-      await reload();
+
+      if (outcome.where === 'server') {
+        await onSold();
+        await reload();
+      } else {
+        /*
+         * A device sale changed nothing the server knows about, so there is nothing to
+         * reload — and the drawer's figure on screen is the server's, which is now short by
+         * the cash in the drawer. The pending notice is the other half of that sum until the
+         * queue is sent (phase 4).
+         */
+        setOffline(store.getState());
+      }
       scanInput.current?.focus();
-      return result;
+      return outcome.receipt as SaleResult;
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : 'ชำระเงินไม่สำเร็จ กรุณาลองใหม่',
@@ -663,10 +879,13 @@ export function useTill({
     lines,
     member,
     onSold,
+    pointsValue,
     promptpayDue,
     received,
     reload,
     shift,
+    store,
+    tenderMode,
     usePoints,
   ]);
 
@@ -732,6 +951,12 @@ export function useTill({
     checkout,
     receipt,
     setReceipt,
+    // the device's own state (ADR 0019)
+    /** Null until the device has been read. `offlineNotice` turns it into words. */
+    offline,
+    /** The last sale's warnings — a call number that ran out, numbers that are nearly gone. */
+    offlineWarning,
+    setOfflineWarning,
   };
 }
 

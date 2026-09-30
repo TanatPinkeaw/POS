@@ -7,7 +7,7 @@
  * reservation is rolled back with it.
  */
 import { recordAudit } from './audit';
-import { dateColumnFromDay } from './bangkok-time';
+import { bangkokDateString, bangkokParts, dateColumnFromDay } from './bangkok-time';
 import { prisma } from './db';
 import { optionalNumberEnv } from './env';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
@@ -40,7 +40,15 @@ import { verifyPickupToken } from './pickup-token';
 import { applyPointChange } from './points';
 import { buildSettlement, type SettlementBreakdown, type SettlementRequest } from './settlement';
 import { formatQueueNumber } from './queue-number';
-import { allocateQueueNumber, allocateReceiptNumber, loadVatSettings } from './shop';
+import { claimNumberFromBlock } from './number-blocks';
+import {
+  allocateQueueNumber,
+  allocateReceiptNumber,
+  loadVatSettings,
+  lockShopRow,
+  SHOP_ROW_ID,
+} from './shop';
+import { formatReceiptNumber } from './shop-view';
 import { SYSTEM_USER_ID } from './system-user';
 import type { TenderLine } from './tender';
 import { computeVat, type VatBreakdown } from './vat';
@@ -247,6 +255,26 @@ interface SaleTax {
 }
 
 /**
+ * A number the till printed out of a block it borrowed (ADR 0019).
+ *
+ * Travels with the bill because the device — not the server — is the allocator for its
+ * own sales while it holds a loan, and the server's job is to check the number rather
+ * than to issue one (`claimNumberFromBlock`). `blockId` is not decoration: a bare `12`
+ * cannot be judged.
+ */
+export interface DeviceNumberClaim {
+  readonly blockId: string;
+  readonly value: number;
+}
+
+export interface DeviceNumbers {
+  /** The receipt series, on a shop that issues tax invoices. */
+  readonly receipt?: DeviceNumberClaim;
+  /** The day's call numbers. */
+  readonly call?: DeviceNumberClaim;
+}
+
+/**
  * Snapshots the shop's tax settings onto a sale.
  *
  * Called from inside the sale transaction and read through `db`, so the rate the
@@ -258,8 +286,18 @@ interface SaleTax {
  * already the amount the customer pays, so only the breakdown is new. The
  * pre-existing sale totals are untouched, which is why introducing VAT did not
  * move a single figure in the sale path's tests.
+ *
+ * A device that is holding a receipt block supplies the number instead of consuming one,
+ * which is why the tax step takes it: the tax invoice is the only thing that needs a
+ * receipt number, so the moment the decision to issue one is made is the moment the number
+ * has to be either claimed or allocated.
  */
-async function resolveSaleTax(db: Db, amountThb: number, at: Date): Promise<SaleTax> {
+async function resolveSaleTax(
+  db: Db,
+  amountThb: number,
+  at: Date,
+  deviceReceipt?: DeviceNumberClaim,
+): Promise<SaleTax> {
   const settings = await loadVatSettings(db);
 
   /*
@@ -283,6 +321,52 @@ async function resolveSaleTax(db: Db, amountThb: number, at: Date): Promise<Sale
     pricesIncludeVat: settings.pricesIncludeVat,
     isVatRegistered: settings.isVatRegistered,
   });
+
+  if (deviceReceipt) {
+    /*
+     * A device holds the receipts because it is the allocator for its own bills, so the
+     * sale that carries one must be a sale that issues a tax invoice — otherwise the
+     * number was spent on a document that never existed, and the series acquires the very
+     * hole the whole protocol is for. A shop that turned its VAT registration off while
+     * the till was offline can reach this, which is why it is refused with an
+     * explanation rather than silently accepted or silently re-allocated.
+     */
+    if (!breakdown.isVatInvoice) {
+      throw new ConflictError(
+        'เครื่องส่งเลขใบกำกับภาษีมา แต่บิลนี้ไม่ได้ออกใบกำกับภาษี ' +
+          '— การตั้งค่าภาษีของร้านอาจเปลี่ยนไป ต้องซิงค์เครื่องใหม่ก่อนขาย',
+        'DEVICE_RECEIPT_NUMBER_NOT_APPLICABLE',
+      );
+    }
+
+    const block = await claimNumberFromBlock(db, {
+      blockId: deviceReceipt.blockId,
+      kind: 'receipt',
+      value: deviceReceipt.value,
+    });
+
+    /*
+     * The prefix is read here rather than taken from `loadVatSettings`, which does not
+     * carry it — and the two reads are the same row inside the same transaction, so the
+     * document number the shop prints and the one this module records cannot disagree.
+     */
+    const shop = await db.shops.findUnique({
+      where: { id: SHOP_ROW_ID },
+      select: { receipt_prefix: true },
+    });
+
+    return {
+      breakdown,
+      receiptNumber: formatReceiptNumber(
+        shop?.receipt_prefix ?? '',
+        // The same Bangkok year `allocateReceiptNumber` stamps from the shop's row, taken
+        // from the one instant this sale was given.
+        bangkokParts(at).year,
+        deviceReceipt.value,
+      ),
+      vatRateUsed: breakdown.ratePercent,
+    };
+  }
 
   // Only a sale that may issue a tax invoice consumes a number from the series.
   const allocation = breakdown.isVatInvoice ? await allocateReceiptNumber(db, at) : null;
@@ -349,6 +433,31 @@ function lineSummaries(priced: PricedLine[]): OrderLineSummary[] {
 // ---------------------------------------------------------------- POS walk-in
 
 /**
+ * The day's call number, taken from the block the till is holding.
+ *
+ * The day check lives in `claimNumberFromBlock` — the block stores which day it was
+ * borrowed *for*, precisely so a device whose clock has drifted cannot spend tomorrow's
+ * numbers on today's customers. Which day that is comes from this sale's one instant,
+ * not from a second read of the clock: an offline bill replayed in the morning belongs to
+ * the day it was sold (phase 4 of the spec), and a number that was right when it was
+ * printed must not become wrong because the sync was late.
+ */
+async function claimCallNumber(
+  tx: Db,
+  claim: DeviceNumberClaim,
+  at: Date,
+): Promise<{ value: number; day: ReturnType<typeof dateColumnFromDay> }> {
+  const block = await claimNumberFromBlock(tx, {
+    blockId: claim.blockId,
+    kind: 'queue',
+    value: claim.value,
+    day: bangkokDateString(at),
+  });
+
+  return { value: claim.value, day: dateColumnFromDay(block.day!) };
+}
+
+/**
  * A walk-in sale: paid and completed immediately, with no reservation phase.
  *
  * Stock leaves `stock_qty` directly, because nothing was ever reserved.
@@ -383,8 +492,25 @@ export async function createPosSale(input: {
    * bill it paid for was rolled back, or the reverse.
    */
   intentRef?: string;
+  /**
+   * The numbers the till printed itself, because it is holding a borrowed block
+   * (ADR 0019). Absent for every sale that has not borrowed anything — the acceptance
+   * journey, the smoke checks, a shop's first day — which is the path this function
+   * allocated from before and still does.
+   */
+  deviceNumbers?: DeviceNumbers;
 }): Promise<OrderSummary> {
   return prisma.$transaction(async (tx) => {
+    /*
+     * The shop row is locked first, before any loan row, and that is a lock-order rule
+     * rather than a need for the counter — see `lockShopRow`. A device sale does touch
+     * both rows: it claims its number from the loan, and it may still allocate a call
+     * number from the shop's row when it holds no block for today.
+     */
+    if (input.deviceNumbers) {
+      await lockShopRow(tx);
+    }
+
     const priced = await priceCart(tx, input.lines);
     const subtotal = sumThb(priced.map((line) => line.totalPrice));
     const manualDiscount = roundThb(input.manualDiscountThb ?? 0);
@@ -423,8 +549,18 @@ export async function createPosSale(input: {
      * other holds. The call number is allocated from the same row, in the same
      * phase and for the same reason.
      */
-    const tax = await resolveSaleTax(tx, finalAmount, at);
-    const call = await allocateQueueNumber(tx, at);
+    const tax = await resolveSaleTax(tx, finalAmount, at, input.deviceNumbers?.receipt);
+    /*
+     * The call number is claimed when the till printed one from its own block, and
+     * allocated otherwise. A device that holds a block and *is* online can be in the
+     * second case on its first day past midnight — its blocks are today's and tomorrow's,
+     * and a sale at 00:05 with no block for the new day gets a number from the server, or
+     * none at all when the series is frozen. That is the same asymmetry the allocator
+     * already has: no call number is a slip without a number, never a lost sale.
+     */
+    const call = input.deviceNumbers?.call
+      ? await claimCallNumber(tx, input.deviceNumbers.call, at)
+      : await allocateQueueNumber(tx, at);
 
     const order = await tx.orders.create({
       data: {

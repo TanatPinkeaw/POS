@@ -87,6 +87,14 @@ export async function POST(request: Request): Promise<Response> {
         settlement: body.settlement,
         ...(approval ? { overDiscountApproval: { approverId: approval.approverId, limitThb } } : {}),
         ...(body.intentRef ? { intentRef: body.intentRef } : {}),
+        /*
+         * Passed straight through: a till holding a borrowed block printed this bill's
+         * numbers itself, and refusing to carry them would mean allocating a number
+         * beside a loan the freeze forbids — a 409 for a sale that already happened at
+         * the counter (ADR 0019). The endpoint is the one place that must not "fix up"
+         * a device's number; the validation inside the sale is.
+         */
+        ...(body.deviceNumbers ? { deviceNumbers: body.deviceNumbers } : {}),
       });
 
       // The customer's QR is spent and the bill is closed, so both screens stop

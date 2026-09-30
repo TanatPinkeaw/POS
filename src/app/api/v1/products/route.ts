@@ -81,6 +81,7 @@ export async function POST(request: Request): Promise<Response> {
         cost_price: body.costPrice,
         sale_price: body.salePrice,
         stock_qty: body.stockQty,
+        offline_safety_qty: body.offlineSafetyQty,
         image_url: body.imageUrl ?? null,
         is_active: body.isActive,
       },

@@ -22,7 +22,7 @@
  *    network is back.
  */
 import { nextAttemptAt } from './notify-retry';
-import type { OfflineBasketLine } from './offline-sale-rules';
+import type { OfflineSaleLine } from './offline-sale-rules';
 
 /**
  * A bill closed with no connection, waiting to be sent.
@@ -38,7 +38,13 @@ export interface QueuedBill {
   readonly soldAt: Date;
   /** The Bangkok day as the device computed it, kept so a disagreement is visible. */
   readonly soldDay: string;
-  readonly lines: readonly OfflineBasketLine[];
+  /**
+   * What was sold, at the prices the device charged. Priced rather than plain
+   * quantity-and-product because the customer paid *these* figures: a queue that carried
+   * only what was sold would let the replay re-price the bill from a catalogue that has
+   * moved on since, which is money quietly disagreeing with a slip.
+   */
+  readonly lines: readonly OfflineSaleLine[];
   /** What the customer actually paid, for the banner that says what is waiting. */
   readonly totalThb: number;
   readonly attempts: number;
@@ -61,9 +67,53 @@ export function dueForReplay(queue: readonly QueuedBill[], now: Date): QueuedBil
   return replayOrder(queue).filter((bill) => bill.nextAttemptAt.getTime() <= now.getTime());
 }
 
+/**
+ * Whether the server may touch the shop's series for this device right now.
+ *
+ * One predicate with two callers, because they are one fact: a number that has been
+ * printed but not yet recorded is a hole in the series the moment anything takes a
+ * number after it. So a device holding unsent bills **does not sell through the
+ * server and does not report its usage** — it keeps selling offline, extending the
+ * queue, until the queue is empty.
+ *
+ * That rule is what makes a report safe. A report says "I counted through N", and N is
+ * only true if every number up to N is on the server as a bill; reporting from a device
+ * that is still holding bills would hand the shop back a range whose middle is missing.
+ *
+ * The message is Thai and names the way out, because the till shows it: a cashier who
+ * is told "ส่งบิลที่ค้างก่อน" can act on it, and one who is told "offline" cannot.
+ */
+export function mayUseServer(queue: readonly QueuedBill[]): {
+  allowed: boolean;
+  message: string | null;
+} {
+  if (queue.length === 0) {
+    return { allowed: true, message: null };
+  }
+  return {
+    allowed: false,
+    message:
+      `มีบิลค้างส่ง ${queue.length} ใบ — ต้องส่งให้ครบก่อน ` +
+      'ไม่งั้นเลขบิลจะขาดช่วง',
+  };
+}
+
 /** The sequence to give the next bill printed on this device. */
 export function nextSequence(queue: readonly QueuedBill[]): number {
   return queue.reduce((highest, bill) => Math.max(highest, bill.sequence), 0) + 1;
+}
+
+/**
+ * The label a device-printed slip carries until the shop's own number reaches it.
+ *
+ * A bill closed offline has no `PO-…` number yet — the server mints that, and phase 4 is
+ * where it arrives. Printing nothing where a customer expects a reference is worse than
+ * printing this: `OFF-20260929-003` says the three things an operator needs — the day,
+ * that it has not been sent, and which bill on this device it was. It also gives the
+ * replay something to match against when the server's own number comes back.
+ */
+export function offlineOrderLabel(soldDay: string, sequence: number): string {
+  return `OFF-${soldDay.replace(/-/g, '')}-${String(sequence).padStart(3, '0')}`;
 }
 
 /**

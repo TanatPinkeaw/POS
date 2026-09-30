@@ -1,10 +1,22 @@
 # ADR 0019 — The till sells offline, and the sync owes the books
 
 **Status:** accepted (2026-09-29). The specification is `docs/offline-till-spec.md`; this
-ADR owns *why* it is shaped that way and what it knowingly gives up. Phases 1 and 2 of the
-five in the spec are built — the three pure decision modules, and the numbering protocol:
-`number_blocks`, the freeze inside the allocating statement, and the borrow / report /
-cancel endpoints. Nothing else is: a shop still cannot sell offline.
+ADR owns *why* it is shaped that way and what it knowingly gives up.
+
+Phases 1 and 2 of the five are built — the pure decision modules, and the numbering
+protocol: `number_blocks`, the freeze inside the allocating statement, and the borrow /
+report / cancel endpoints. So is everything in phase 3 that is not a screen: **the sale
+endpoint now carries and judges the numbers a device printed** (`deviceNumbers` on the
+walk-in sale, `claimNumberFromBlock` against the open block), the **till store**
+(`till-store.ts`) holds the local-vs-server decision, the **device's own storage**
+(`offline-db.ts`, IndexedDB) sits under it, and an offline bill is **priced on the device
+by the same `vat.ts`/`money.ts` the online sale uses**. The shop's reserve is real too
+(`products.offline_safety_qty`, with the column's CHECK refusing a negative one and a
+field at `/admin/products` to set it), so decision 3's safety quantity is the shop's own
+number rather than a hardcoded zero. The till is **wired through the store**: every sale is
+a server call or a device call, a device sale queues on the device and prints its own
+numbers, and the till says what it is (`offlineNotice`). What is not built: the replay.
+Nothing borrows, and a shop still cannot sell offline.
 
 **Context.** Every sale in this system needs the network. The catalogue is paged in, the
 member is looked up, the payment intent is opened, the sale is written, and — the part that
@@ -100,19 +112,42 @@ that would land inside a held range rather than issuing one out of order.
 
 ### Gaps this knowingly leaves open
 
-- **A device must not borrow yet.** The sale path does not accept a device's own number
-  until phase 3, so a block opened today would freeze the shop's series with no way to sell
-  from it. The endpoints exist and are tested; nothing calls them from a till.
+- **A device must not borrow yet, for a new reason.** The sale path *does* accept a
+  device's own number now, so a block can be issued from online. What is missing is the
+  other direction: a bill closed offline sits in the device's queue with no way to reach the
+  shop until the replay exists, and `mayUseServer` then keeps that device off the server for
+  selling at all (a number printed but unsent is a hole in the series the moment anything
+  takes a number after it). So a shop that borrowed today could sell offline once and then
+  be unable to sell online until phase 4's sync lands. Borrowing is wired with the replay,
+  not before it.
+- **The offline till's screens have no automated test either.** `route:audit` proves every
+  screen renders styled, and nothing proves a *behaviour*: no test in this repository has ever
+  loaded a browser. So the notice, the queue count and an offline sale are verified by reading
+  the code and by a human walking through an outage — the same standing gap the README records.
 - **The device adapter has no automated test.** The suite runs in a Node environment and the
   repository refuses the dependency that would fake IndexedDB, so the decisions all live in
-  pure modules and the adapter is kept decision-free. `route:audit` plus a human walking
-  through an outage is the whole proof for that layer.
+  pure modules and the adapter is kept decision-free. The *seam above it* is tested
+  (`tests/till-store.test.ts`) because the store takes its storage as a port; what is
+  untested is the file that opens a database and reads a record. `route:audit` plus a human
+  walking through an outage is the whole proof for that layer.
+- **The reserve protects a device from itself and nothing else.** `offline_safety_qty` is
+  read into the device's catalogue snapshot and consulted only by `offlineSellableQty`; the
+  server's own oversell guard never looks at it, so a reserve does not hold stock back from
+  an online sale, a pre-order or another till. That is the right scope for a rule about what
+  a *disconnected* device may promise, and it means a shop that wants stock kept back
+  altogether cannot express it with this number.
 - **A device whose clock is wrong names the wrong day.** The call-number block carries the
   day it is for, so the damage is bounded to the day the sale is filed under, and the sync
   flags the disagreement — it is not corrected.
 - **A block that runs out stops tax invoices.** The till may sell no VAT bill until it is
   online again; the shop's only lever is a larger block, and the runbook has to say so in
   plain Thai.
+- **An offline bill is recorded at the device's price, and phase 4 has to keep it.** The
+  queue carries `unitPrice` per line, because the customer paid those figures and re-pricing
+  the bill from a catalogue that moved on would be money disagreeing with a slip. The
+  replay's endpoint therefore has to accept a device-supplied price, with the catalogue's
+  own price logged beside it — that is the owner's "what the till sold at" (user story 29),
+  and it is a write path that does not exist yet.
 - **Two full days offline ends call numbers.** Bills keep being sold and are flagged as ones
   that got no number — an unfiled ticket, not an error state.
 - **The customer display is stale for the duration of the outage.**

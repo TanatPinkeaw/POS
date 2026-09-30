@@ -34,6 +34,8 @@ export interface AdminProduct {
   stockQty: number;
   reservedQty: number;
   availableQty: number;
+  /** How much of this product the till may not sell offline (ADR 0019). */
+  offlineSafetyQty: number;
   /** A link to the picture, wherever the shop keeps it — not a file we hold. */
   imageUrl: string | null;
   isActive: boolean;
@@ -58,6 +60,7 @@ const EMPTY_PRODUCT = {
   costPrice: '',
   salePrice: '',
   stockQty: '',
+  offlineSafetyQty: '',
   imageUrl: '',
 };
 
@@ -82,6 +85,13 @@ const EMPTY_PRODUCT = {
  * storefront (ADR 0014). That is why the field is editable after the fact rather than
  * only at creation: a catalogue of two hundred products gets its pictures entered
  * long after the products themselves.
+ *
+ * The same argument is why the offline reserve has a dialog of its own: it is set on a
+ * handful of products rather than on all of them, and it is the kind of number a shop
+ * arrives at after an outage rather than when it enters a catalogue. `กันสำรองออฟไลน์`
+ * is deliberately not part of the stock adjustment — a reserve is a promise about what
+ * the till *will not* sell, not a movement of goods, and putting it behind the same
+ * button would write it into `stock_logs` as though the shelf had changed (ADR 0019).
  */
 export function AdminProducts({
   initialProducts,
@@ -100,6 +110,8 @@ export function AdminProducts({
   const [newProduct, setNewProduct] = useState(EMPTY_PRODUCT);
   const [editingImage, setEditingImage] = useState<AdminProduct | null>(null);
   const [imageDraft, setImageDraft] = useState('');
+  const [editingReserve, setEditingReserve] = useState<AdminProduct | null>(null);
+  const [reserveDraft, setReserveDraft] = useState('');
 
   /*
    * Server props win on every re-render of the page.
@@ -190,6 +202,7 @@ export function AdminProducts({
         costPrice: Number(newProduct.costPrice || 0),
         salePrice: Number(newProduct.salePrice || 0),
         stockQty: Number(newProduct.stockQty || 0),
+        offlineSafetyQty: Number(newProduct.offlineSafetyQty || 0),
         imageUrl: newProduct.imageUrl.trim() || null,
       });
       setNotice(`เพิ่มสินค้า "${newProduct.name}" แล้ว`);
@@ -225,6 +238,40 @@ export function AdminProducts({
       await reload();
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'บันทึกรูปไม่สำเร็จ');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * Writes only the reserve, like the picture dialog writes only the picture.
+   *
+   * `PATCH` rather than the adjustment endpoint, and that is the load-bearing part: a
+   * reserve is not a movement of stock, so it must not leave a `stock_logs` row that
+   * says the shelf changed by a number it never changed by.
+   */
+  async function saveReserve(): Promise<void> {
+    if (!editingReserve) {
+      return;
+    }
+    const value = Number(reserveDraft === '' ? 0 : reserveDraft);
+    if (!Number.isInteger(value) || value < 0) {
+      setError('จำนวนกันสำรองต้องเป็นจำนวนเต็มตั้งแต่ 0 ขึ้นไป');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await apiPatch(`/api/v1/products/${editingReserve.id}`, { offlineSafetyQty: value });
+      setNotice(
+        value > 0
+          ? `ตั้งกันสำรองออฟไลน์ของ \"${editingReserve.name}\" เป็น ${value} ชิ้นแล้ว`
+          : `เอาที่กันสำรองออฟไลน์ของ \"${editingReserve.name}\" ออกแล้ว`,
+      );
+      setEditingReserve(null);
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'บันทึกกันสำรองไม่สำเร็จ');
     } finally {
       setSaving(false);
     }
@@ -307,6 +354,19 @@ export function AdminProducts({
       ),
     },
     {
+      key: 'offlineReserve',
+      header: 'กันออฟไลน์',
+      align: 'end',
+      /* A zero is shown as a dash because it is the default: a table of 200 zeroes hides
+       * the three products the shop actually reserved. */
+      render: (product) =>
+        product.offlineSafetyQty > 0 ? (
+          <span className="ln-num">{product.offlineSafetyQty}</span>
+        ) : (
+          <span className="ln-muted">—</span>
+        ),
+    },
+    {
       key: 'active',
       header: 'สถานะ',
       render: (product) => (
@@ -344,6 +404,17 @@ export function AdminProducts({
           >
             รูปสินค้า
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              setError(null);
+              setReserveDraft(product.offlineSafetyQty > 0 ? String(product.offlineSafetyQty) : '');
+              setEditingReserve(product);
+            }}
+          >
+            กันออฟไลน์
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => void toggleActive(product)}>
             {product.isActive ? 'ปิด' : 'เปิด'}
           </Button>
@@ -355,7 +426,7 @@ export function AdminProducts({
   return (
     <Stack gap="lg">
       {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
-      {error && !adjusting && !editingImage ? (
+      {error && !adjusting && !editingImage && !editingReserve ? (
         <InlineNotice tone="danger">{error}</InlineNotice>
       ) : null}
 
@@ -424,6 +495,17 @@ export function AdminProducts({
               help="วางลิงก์ https ของรูป (เช่นจาก Nextcloud ของร้าน) — ระบบเก็บลิงก์ ไม่ได้เก็บไฟล์"
               value={newProduct.imageUrl}
               onChange={(event) => setNewProduct({ ...newProduct, imageUrl: event.target.value })}
+            />
+            <TextField
+              id="np-offline-safety"
+              label="กันสำรองออฟไลน์"
+              help="จำนวนที่ห้ามขายตอนเน็ตหลุด (เว้นว่าง = ไม่กัน)"
+              inputMode="numeric"
+              className="ln-num"
+              value={newProduct.offlineSafetyQty}
+              onChange={(event) =>
+                setNewProduct({ ...newProduct, offlineSafetyQty: event.target.value })
+              }
             />
           </FieldRow>
 
@@ -553,6 +635,53 @@ export function AdminProducts({
            * wrong all look the same as a good one until something tries to draw it.
            */}
           <Thumb url={imageDraft} size="lg" />
+        </Stack>
+      </Overlay>
+
+      <Overlay
+        open={editingReserve !== null}
+        onClose={() => setEditingReserve(null)}
+        title={editingReserve ? `กันสำรองออฟไลน์ · ${editingReserve.name}` : ''}
+        description={
+          editingReserve
+            ? `คงเหลือ ${editingReserve.stockQty} · จองไว้ ${editingReserve.reservedQty} · ขายได้ ${editingReserve.availableQty}`
+            : undefined
+        }
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditingReserve(null)} disabled={saving}>
+              ยกเลิก
+            </Button>
+            <Button loading={saving} onClick={() => void saveReserve()}>
+              บันทึก
+            </Button>
+          </>
+        }
+      >
+        <Stack gap="md">
+          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+          <TextField
+            id="edit-offline-safety"
+            label="กันสำรองออฟไลน์"
+            help="เว้นว่างหรือใส่ 0 เพื่อไม่กัน — กระทบเฉพาะตอนขายออฟไลน์ ไม่กระทบยอดขายออนไลน์"
+            inputMode="numeric"
+            className="ln-num"
+            value={reserveDraft}
+            onChange={(event) => setReserveDraft(event.target.value)}
+          />
+          {/*
+           * What the number does, in the shop's own arithmetic. A shop setting 2 on a
+           * product with 5 on the shelf has to be able to read "ขายออฟไลน์ได้อีก 3" back,
+           * because that sentence is the whole promise this setting makes (ADR 0019).
+           */}
+          {editingReserve ? (
+            <InlineNotice tone="info">
+              {`ตอนเน็ตหลุด เครื่องจะขาย \"${editingReserve.name}\" ได้อีก ${Math.max(
+                0,
+                editingReserve.availableQty - Number(reserveDraft === '' ? 0 : reserveDraft),
+              )} ชิ้น`}
+            </InlineNotice>
+          ) : null}
         </Stack>
       </Overlay>
     </Stack>

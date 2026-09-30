@@ -204,7 +204,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 822 tests across 57 files: unit + integration
+npm test                # 876 tests across 59 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 18 screens render, and render styled
@@ -727,7 +727,7 @@ goes through them.
 | `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, and the day that resets inside the statement that bumps it. |
 | `docs/adr/0018-the-board-that-calls-a-number.md` | The drink queue: a second state machine beside the order's status (because `completed` is what the money counts), the board the bar taps through, why only ready numbers reach the customer screen, and today as the board's horizon. |
 | `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to — and the five invariants that move out of the database. |
-| `docs/offline-till-spec.md` | The specification for offline selling: the one seam it adds, the numbering protocol, what is refused with no connection, and the phase order the tickets follow. Phases one and two of five are built (the pure rules, and the numbering table with the freeze); a shop still cannot sell offline. |
+| `docs/offline-till-spec.md` | The specification for offline selling: the one seam it adds, the numbering protocol, what is refused with no connection, and the phase order the tickets follow. Phases one to three are built — the pure rules, the numbering table with the freeze, the sale endpoint judging a device's own number, the till store and its IndexedDB storage, the till wired through them (a device sale queues on the device and the till says it is offline), and `products.offline_safety_qty` with a field at `/admin/products` to set it. Nothing borrows and the replay does not exist, so a shop still cannot sell offline. |
 | `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
@@ -753,7 +753,8 @@ Deferred deliberately, and listed here rather than discovered during service:
   the bytes: no upload, no file this deployment holds, no resizing of what the link
   returns, and a photo host that goes down shows placeholders.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
-  audit-log viewer are in — see below.)- **Waiting times as a report.** A walk-in ticket now records both when it was paid for
+  audit-log viewer are in — see below.)
+- **Waiting times as a report.** A walk-in ticket now records both when it was paid for
   and when the goods were ready (ADR 0018), so how long customers actually wait is a fact
   the database holds — and no screen or workbook reads it yet.
 - **A reconciliation screen over a date range.** The dashboard reconciles *today*: what the bank confirmed against what closed a bill, with the transfers left over. Comparing a week or a month against a statement is still two screens; it is also still the only way to find a bill from last week by its number.

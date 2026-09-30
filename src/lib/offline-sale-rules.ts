@@ -22,7 +22,7 @@
  */
 import { bangkokDateString, bangkokParts } from './bangkok-time';
 import { ValidationError } from './errors';
-import { formatThb } from './money';
+import { formatThb, roundThb, sumThb } from './money';
 import {
   blockForDay,
   nextValue,
@@ -32,6 +32,7 @@ import {
   type NumberBlock,
 } from './number-block';
 import { formatReceiptNumber } from './shop-view';
+import { computeVat } from './vat';
 
 /**
  * When the till warns that its numbers are nearly gone.
@@ -83,6 +84,9 @@ export interface OfflineSaleContext {
   readonly shiftOpen: boolean;
   readonly supervisorDiscountLimitThb: number;
   readonly isVatRegistered: boolean;
+  /** The rate the shop last published, and whether its prices already carry it. */
+  readonly vatRatePercent: number;
+  readonly pricesIncludeVat: boolean;
   readonly receiptPrefix: string;
   readonly catalogue: readonly OfflineCatalogueEntry[];
   /**
@@ -294,7 +298,19 @@ function collectRefusals(
    * while the slip is being printed.
    */
   if (context.isVatRegistered) {
-    if (!context.receiptBlock || nextValue(context.receiptBlock) === null) {
+    const block = context.receiptBlock;
+    /*
+     * Two situations, one code, and different sentences, because "หมดแล้ว" is a lie about a
+     * device that never had any: until borrowing is wired, every device is in the first case,
+     * and telling a cashier their numbers ran out sends them looking for numbers that were
+     * never issued.
+     */
+    if (block === null) {
+      refusals.push({
+        code: 'no_receipt_numbers',
+        message: 'เครื่องนี้ยังไม่ได้เตรียมเลขใบกำกับภาษีไว้ขายออฟไลน์ — ต่อเน็ตแล้วขายตามปกติ',
+      });
+    } else if (nextValue(block) === null) {
       refusals.push({
         code: 'no_receipt_numbers',
         message: 'เลขใบกำกับภาษีในเครื่องหมดแล้ว — ต้องต่อเน็ตก่อนขายบิลนี้',
@@ -303,6 +319,100 @@ function collectRefusals(
   }
 
   return refusals;
+}
+
+/**
+ * One line of a bill that has been priced and is on paper: what was sold, how much of
+ * it, and **the price the device charged**.
+ *
+ * The price travels with the bill rather than being looked up again later, and that is a
+ * decision with a cost either way. Re-pricing it from the catalogue at sync time is
+ * cheaper and wrong: the customer paid the price on the slip, and a shop that changed a
+ * price during the outage would find the two disagreeing about money that has already
+ * changed hands. So the device's price is the record, and the catalogue's price is kept
+ * beside it as the fact to compare against (the owner's "what the till sold at", phase 4).
+ */
+export interface OfflineSaleLine {
+  readonly productId: string;
+  readonly quantity: number;
+  readonly unitPrice: number;
+}
+
+/** A priced bill, ready to print and to queue. */
+export interface OfflinePricing {
+  readonly lines: readonly OfflineSaleLine[];
+  readonly subtotalThb: number;
+  readonly discountThb: number;
+  readonly finalAmountThb: number;
+  /** The VAT breakdown, from the same module the online sale uses. */
+  readonly netThb: number;
+  readonly vatThb: number;
+  readonly isVatInvoice: boolean;
+  readonly vatRatePercent: number | null;
+  readonly receivedThb: number;
+  readonly changeThb: number;
+}
+
+/**
+ * The offline slip's arithmetic.
+ *
+ * Deliberately the *same* two modules the online sale prices with — `vat.ts` for the tax
+ * split and `money.ts` for the rounding — because an offline slip and an online one have
+ * to be one shop's arithmetic in two places. A re-implementation here is how a shop ends
+ * up with two VAT figures for one bill.
+ *
+ * Call it only after `decideOfflineSale` has allowed the basket: the prices come from the
+ * cached catalogue rather than from any argument, so a caller cannot charge a price the
+ * shop never published (the failure this prevents is a till sold at ฿0 after a bug or a
+ * tampered page).
+ *
+ * Cash that does not cover the bill is a programming mistake rather than a refusal: the
+ * till only offers to close a bill whose cash the cashier has entered, so reaching here
+ * with less means the caller skipped the step that asks for it.
+ */
+export function priceOfflineSale(
+  basket: OfflineBasket,
+  context: OfflineSaleContext,
+  receivedThb: number,
+): OfflinePricing {
+  const lines: OfflineSaleLine[] = basket.lines.map((line) => {
+    const entry = context.catalogue.find((candidate) => candidate.productId === line.productId);
+    if (!entry) {
+      throw new ValidationError(`A priced offline sale names a product the device has no price for: ${line.productId}`);
+    }
+    return { productId: line.productId, quantity: line.quantity, unitPrice: entry.priceThb };
+  });
+
+  const subtotalThb = sumThb(lines.map((line) => roundThb(line.unitPrice * line.quantity)));
+  const discountThb = roundThb(basket.discountThb);
+  const finalAmountThb = roundThb(subtotalThb - discountThb);
+
+  const breakdown = computeVat({
+    amountThb: finalAmountThb,
+    ratePercent: context.vatRatePercent,
+    pricesIncludeVat: context.pricesIncludeVat,
+    isVatRegistered: context.isVatRegistered,
+  });
+
+  const received = roundThb(receivedThb);
+  if (received < finalAmountThb) {
+    throw new ValidationError(
+      `An offline sale was priced for less cash than it costs: ${received} < ${finalAmountThb}`,
+    );
+  }
+
+  return {
+    lines,
+    subtotalThb,
+    discountThb,
+    finalAmountThb,
+    netThb: breakdown.netThb,
+    vatThb: breakdown.vatThb,
+    isVatInvoice: breakdown.isVatInvoice,
+    vatRatePercent: breakdown.isVatInvoice ? breakdown.ratePercent : null,
+    receivedThb: received,
+    changeThb: roundThb(received - finalAmountThb),
+  };
 }
 
 /**

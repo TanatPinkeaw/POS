@@ -6,6 +6,7 @@ import {
   Button,
   ConfirmDialog,
   Icon,
+  InlineNotice,
   Menu,
   MenuItem,
   MenuSeparator,
@@ -22,6 +23,7 @@ import type { ProductView } from '@/lib/product-view';
 import type { ShopView } from '@/lib/shop-view';
 import { vatLabel } from '@/lib/shop-view';
 import { APPROVAL_HEADER } from '@/lib/supervisor-view';
+import { offlineNotice } from '@/lib/till-store';
 
 import { PaySheet } from './PaySheet';
 import { RefundDialog, type RefundTarget } from './RefundDialog';
@@ -83,10 +85,19 @@ export function Till({
     initialProducts,
     initialTotal,
     shift,
+    shop,
     onSold: refresh,
     discountLimitThb: shop.supervisorDiscountLimitThb,
     requestApproval: approval.request,
   });
+
+  /*
+   * The device's own state, said out loud (ADR 0019, `CONTEXT.md` item 4). An outage the
+   * till does not mention is the silent failure the offline work exists for: the cashier
+   * needs to know that cash still works, that a member lookup does not, and how many bills
+   * are waiting — and none of that can be inferred from a spinner that never resolves.
+   */
+  const device = till.offline ? offlineNotice(till.offline) : null;
 
   /*
    * Shown beside the total, because "รวม VAT แล้วหรือยัง" is the question a cashier
@@ -239,6 +250,31 @@ export function Till({
         </div>
       </div>
 
+      {device ? (
+        <InlineNotice tone={device.tone} title={device.title}>
+          {device.body}
+        </InlineNotice>
+      ) : null}
+
+      {/*
+        A warning is not an error: the sale went through and something about the numbers
+        needs somebody's attention — the last call number of the day, or one that ran out.
+        It carries its own dismissal rather than clearing itself, because "ไม่มีเลขคิว" is
+        worth reading twice.
+      */}
+      {till.offlineWarning ? (
+        <InlineNotice
+          tone="info"
+          actions={
+            <Button variant="ghost" size="sm" onClick={() => till.setOfflineWarning(null)}>
+              รับทราบ
+            </Button>
+          }
+        >
+          {till.offlineWarning}
+        </InlineNotice>
+      ) : null}
+
       <div style={{ flex: 1, minHeight: 0 }}>
         <SplitPane
           label="บิลปัจจุบัน"
@@ -284,7 +320,13 @@ export function Till({
       <Overlay
         open={Boolean(till.receipt)}
         onClose={finishSale}
-        title={till.receipt?.isVatInvoice ? 'ชำระเงินสำเร็จ · ออกใบกำกับภาษี' : 'ชำระเงินสำเร็จ'}
+        title={
+          till.receipt?.offline
+            ? 'ขายแล้ว · ยังไม่ได้ส่งเข้าระบบ'
+            : till.receipt?.isVatInvoice
+              ? 'ชำระเงินสำเร็จ · ออกใบกำกับภาษี'
+              : 'ชำระเงินสำเร็จ'
+        }
         description={till.receipt ? `บิล ${till.receipt.orderNumber}` : undefined}
         footer={
           <>
@@ -299,12 +341,18 @@ export function Till({
               supervisor for a PIN, because that is about the money and not about
               who is standing where.
             */}
-            {till.receipt ? (
+            {/*
+              Only for a bill the shop has: a refund needs a credit note, a PIN and the
+              server's arithmetic, and a sale still sitting in the device's queue has none of
+              the three yet (ADR 0019). The button is absent rather than present-and-failing,
+              because a cashier who taps it is a cashier telling the customer yes.
+            */}
+            {till.receipt?.orderId ? (
               <Button
                 variant="secondary"
                 onClick={() =>
                   setRefundTarget({
-                    orderId: till.receipt!.orderId,
+                    orderId: till.receipt!.orderId!,
                     orderNumber: till.receipt!.orderNumber,
                     amountThb: till.receipt!.finalAmountThb,
                     lineCount: till.receipt!.lines.length,
@@ -318,6 +366,12 @@ export function Till({
           </>
         }
       >
+        {till.receipt?.offline ? (
+          <InlineNotice tone="warning">
+            บิลนี้ยังไม่ถูกส่งเข้าระบบ — จะส่งให้อัตโนมัติเมื่อเน็ตกลับมา เลขที่ใบกำกับภาษีและเลขคิว
+            เป็นเลขที่เครื่องนี้พิมพ์จริง
+          </InlineNotice>
+        ) : null}
         {till.receipt ? <Receipt shop={shop} data={till.receipt} when={till.receipt.at} /> : null}
       </Overlay>
 

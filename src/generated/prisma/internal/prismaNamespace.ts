@@ -2070,7 +2070,8 @@ export const Number_blocksScalarFieldEnum = {
   opened_by: 'opened_by',
   opened_at: 'opened_at',
   reported_at: 'reported_at',
-  cancelled_at: 'cancelled_at'
+  cancelled_at: 'cancelled_at',
+  closed_by: 'closed_by'
 } as const
 
 export type Number_blocksScalarFieldEnum = (typeof Number_blocksScalarFieldEnum)[keyof typeof Number_blocksScalarFieldEnum]
@@ -2114,6 +2115,7 @@ export const ProductsScalarFieldEnum = {
   sale_price: 'sale_price',
   stock_qty: 'stock_qty',
   reserved_qty: 'reserved_qty',
+  offline_safety_qty: 'offline_safety_qty',
   image_url: 'image_url',
   is_active: 'is_active',
   created_at: 'created_at',

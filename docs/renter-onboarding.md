@@ -310,6 +310,7 @@ that `migrate dev` would propose dropping.
 | The wizard says the system is already set up | Correct — a shop row exists. It will not re-initialise. To start over on a *throwaway* database only: `DELETE FROM shops;` then reload `/setup`. |
 | Forgot the administrator password | Reset it from the database, replacing the phone number and hash. Generate a hash, then: `UPDATE users SET password_hash = '<hash>' WHERE phone = '08xxxxxxxx';` |
 | A sale is refused with "drawer is not open" | Open the drawer first (`/pos` → เปิดลิ้นชัก). This is deliberate: cash must belong to a drawer. |
+| The till shows a bar reading **โหมดออฟไลน์**, and sales are refused with "ต่อเน็ตก่อนขาย" | The till cannot reach its server: the shop's connection dropped, the router is down, or the machine this runs on was restarted. Check the till's own network first, then `docs/homelab-deploy.md` §4. **Selling with no connection is not enabled in this version** (ADR 0019) — the till says so instead of failing silently, and the refusal names what is missing. This is the one symptom where the honest fix is "get the line back". |
 | Imported stock twice | Stock was added twice, as documented. Correct it with a stock adjustment (`REASON_CORRECTION`) so the audit trail explains it. |
 | Signing in works on this machine but not on a tablet | The production session cookie is `Secure`, so it is only stored over `https://` — browsers exempt `localhost`, which is why the server itself works and the tablet does not. The deployment needs a secure URL; see `docs/homelab-deploy.md` §4. |
 | `pg_dump: command not found` from `npm run backup` | Only the PostgreSQL client is missing: `apt install postgresql-client-17` for a 17 server (the plain package is usually a version behind, which fails differently — `aborting because of server version mismatch`). Windows gets one with the PostgreSQL installer. |
@@ -337,7 +338,18 @@ Recorded here so nobody discovers it during service:
   `/admin/settings`.
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.
-- No offline mode: the till needs the network it is served from.
+- **No offline selling.** The till needs the network it is served from. When that network
+drops the till now says so — a bar above the basket, and a refusal that names the next step
+rather than a generic error — but it cannot take money for a bill it cannot record, so a shop
+with no connection cannot trade yet. The work is specified (`docs/offline-till-spec.md`,
+ADR 0019) and half built; what is missing is the sending, so nothing may borrow numbers
+until that lands.
+
+  One setting from that work is already on the product list: **กันออฟไลน์**
+  (`/admin/products` → `กันออฟไลน์` on a row). It is how many of an item the till must
+  *not* sell while the network is down — the last two bottles a pre-order is on its way to
+  collect, say. It changes no online sale and nothing today depends on it, because the till
+  cannot sell offline yet; set it if you already know which items you would protect.
 - No rate limiting on anything you are *signed in* to, with one exception:
   **enrolling customers**. Signing in, the supervisor PIN, the setup wizard,
   display pairing and the bank webhook are counted because they need no session;

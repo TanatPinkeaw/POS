@@ -22,8 +22,8 @@ import { dateColumnFromDay, dayFromDateColumn, isValidCalendarDay } from './bang
 import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import type { Db } from './inventory';
-import { MAX_BLOCK_SIZE, type NumberBlock, type NumberKind } from './number-block';
-import { SHOP_ROW_ID } from './shop';
+import { claim, MAX_BLOCK_SIZE, type NumberBlock, type NumberKind } from './number-block';
+import { lockShopRow, SHOP_ROW_ID } from './shop';
 
 /** A block as the database holds it, plus the rows' own facts. */
 export interface NumberBlockRecord extends NumberBlock {
@@ -205,6 +205,91 @@ export async function openNumberBlock(input: {
 }
 
 /**
+ * Records a number a device printed from its own block — the sale path's half of the loan.
+ *
+ * This is what makes a loan usable *online* as well as offline. A device that holds a
+ * block is the allocator for its own bills, so a sale that arrives from it carries its
+ * own number and the server's job is to judge it rather than to issue one (ADR 0019,
+ * *Who allocates while a block is out*). Judging it means three questions, and the
+ * second is the one that costs money if it is wrong: is this block open, is the number
+ * inside the range it lent, and has the block already been somewhere at or past it.
+ *
+ * **Caller contract: the shop row is already locked** (`lockShopRow`). This function
+ * takes the block's row lock next, and every transaction that holds both rows takes them
+ * in that order — the shop's counters first, then the loan — so a sale and a report
+ * cannot deadlock against each other.
+ *
+ * The day matters only to the call numbers, and it is the day the *sale* is recorded on
+ * rather than the device's opinion of today: a tablet whose clock has drifted a day
+ * ahead must not spend tomorrow's numbers on today's customers, and the block is the
+ * only thing that can tell it so.
+ */
+export async function claimNumberFromBlock(
+  tx: Db,
+  input: { blockId: string; kind: NumberKind; value: number; day?: string },
+): Promise<NumberBlockRecord> {
+  const rows = await tx.$queryRaw<NumberBlockRow[]>`
+    SELECT * FROM "number_blocks" WHERE "id" = ${input.blockId}::uuid FOR UPDATE
+  `;
+  const row = rows[0];
+  if (!row) {
+    throw new NotFoundError('Number block');
+  }
+  assertOpen(row);
+
+  if (row.series !== input.kind) {
+    throw new ConflictError(
+      `ชุดเลขนี้เป็นชุด${row.series === 'receipt' ? 'ใบกำกับภาษี' : 'เลขคิว'} ` +
+        `แต่เลขที่ส่งมาเป็นชุด${input.kind === 'receipt' ? 'ใบกำกับภาษี' : 'เลขคิว'}`,
+      'DEVICE_NUMBER_WRONG_SERIES',
+    );
+  }
+
+  const record = toRecord(row);
+  if (record.kind === 'queue') {
+    if (input.day === undefined) {
+      throw new ValidationError('Claiming a call number requires the day the sale belongs to');
+    }
+    if (record.day !== input.day) {
+      throw new ConflictError(
+        `เลขคิวในเครื่องเป็นของวัน ${record.day ?? '—'} แต่บิลนี้เป็นของวัน ${input.day} ` +
+          '— ตรวจเวลาของเครื่องก่อนขาย',
+        'DEVICE_NUMBER_WRONG_DAY',
+      );
+    }
+  }
+
+  const judged = claim(record, input.value);
+  if (!judged.ok) {
+    if (judged.reason === 'malformed') {
+      // Unreachable through the CHECK constraints; a stored block that contradicts
+      // itself is a database integrity failure rather than anything a device did.
+      throw new ValidationError('The borrowed block is malformed');
+    }
+    if (judged.reason === 'out_of_range') {
+      throw new ConflictError(
+        `เลข ${input.value} ไม่อยู่ในชุดที่ร้านให้เครื่องนี้ไว้ (${record.from}–${record.to}) ` +
+          '— ต้องซิงค์เครื่องใหม่ก่อนขาย',
+        'DEVICE_NUMBER_OUT_OF_RANGE',
+      );
+    }
+    throw new ConflictError(
+      `เลข ${input.value} ผ่านไปแล้วในชุดนี้ (ใช้ถึง ${record.lastUsed ?? 0}) ` +
+        '— เลขซ้ำจะทำให้ลูกค้าสองคนถูกเรียกด้วยเลขเดียวกัน',
+      'DEVICE_NUMBER_ALREADY_USED',
+    );
+  }
+
+  await tx.$executeRaw`
+    UPDATE "number_blocks"
+       SET "last_used_number" = ${input.value}
+     WHERE "id" = ${row.id}::uuid
+  `;
+
+  return toRecord({ ...row, last_used_number: input.value });
+}
+
+/**
  * Gives the unused tail of a block back, and closes it.
  *
  * `lastUsed` is the last number the device actually printed, and the shop's counter is
@@ -223,6 +308,11 @@ export async function reportNumberBlock(input: {
   userId: string;
 }): Promise<NumberBlockRecord> {
   return prisma.$transaction(async (tx) => {
+    // The shop row first, then the loan: see `lockShopRow` for why the order is not
+    // free to vary between here, a borrow and a sale. The lock is taken here rather
+    // than left to `rewindCounter` at the end, which is where it used to be — after
+    // this transaction had already locked the block.
+    await lockShopRow(tx);
     const rows = await tx.$queryRaw<NumberBlockRow[]>`
       SELECT * FROM "number_blocks" WHERE "id" = ${input.id}::uuid FOR UPDATE
     `;
@@ -288,6 +378,8 @@ export async function cancelNumberBlock(input: {
   userId: string;
 }): Promise<NumberBlockRecord> {
   return prisma.$transaction(async (tx) => {
+    // Same order as a report — see the note there.
+    await lockShopRow(tx);
     const rows = await tx.$queryRaw<NumberBlockRow[]>`
       SELECT * FROM "number_blocks" WHERE "id" = ${input.id}::uuid FOR UPDATE
     `;

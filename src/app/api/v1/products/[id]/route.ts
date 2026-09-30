@@ -37,6 +37,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
         stock_qty: product.stock_qty,
         reserved_qty: product.reserved_qty,
       }),
+      offlineSafetyQty: product.offline_safety_qty,
       imageUrl: product.image_url,
       isActive: product.is_active,
     };
@@ -72,6 +73,9 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Re
         ...(body.description !== undefined ? { description: body.description } : {}),
         ...(body.costPrice !== undefined ? { cost_price: body.costPrice } : {}),
         ...(body.salePrice !== undefined ? { sale_price: body.salePrice } : {}),
+        ...(body.offlineSafetyQty !== undefined
+          ? { offline_safety_qty: body.offlineSafetyQty }
+          : {}),
         ...(body.imageUrl !== undefined ? { image_url: body.imageUrl } : {}),
         ...(body.isActive !== undefined ? { is_active: body.isActive } : {}),
       },

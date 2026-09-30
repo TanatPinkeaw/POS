@@ -145,6 +145,49 @@ describe('listing the catalogue', () => {
     expect(found.items[0]?.availableQty).toBe(2);
   });
 
+  /*
+   * The offline reserve is read *here* rather than in its own suite, because this is the
+   * read the till snapshots from: a column the back office sets but this view drops would be
+   * a setting that protects nothing (ADR 0019).
+   */
+  it('reports no offline reserve by default, so a catalogue nobody edited keeps selling', async () => {
+    const page = await listProducts({ limit: 5 });
+
+    expect(page.items).toHaveLength(5);
+    for (const item of page.items) {
+      expect(item.offlineSafetyQty).toBe(0);
+    }
+  });
+
+  it('carries the shop offline reserve into the read without touching availability', async () => {
+    const target = await prisma.products.findFirstOrThrow({
+      where: { name: productName(CATALOGUE_SIZE) },
+    });
+    await prisma.products.update({
+      where: { id: target.id },
+      data: { offline_safety_qty: 2 },
+    });
+
+    const found = await listProducts({ search: productName(CATALOGUE_SIZE) });
+
+    expect(found.items[0]?.offlineSafetyQty).toBe(2);
+    // The reserve is a device rule, not a stock movement: the online figure is unchanged.
+    expect(found.items[0]?.availableQty).toBe(7);
+  });
+
+  it('refuses a negative reserve at the database, not at a code review', async () => {
+    // A negative reserve would make `available − safety` larger than the shelf, which
+    // reads as a licence to oversell. The CHECK is what makes that unreachable.
+    const target = await prisma.products.findFirstOrThrow();
+
+    await expect(
+      prisma.products.update({
+        where: { id: target.id },
+        data: { offline_safety_qty: -1 },
+      }),
+    ).rejects.toThrow();
+  });
+
   it('orders by name and then by id, so paging cannot shuffle rows', async () => {
     // Two products with the same name are the case that breaks a single-key sort:
     // PostgreSQL is free to return them in either order per query, which shows up

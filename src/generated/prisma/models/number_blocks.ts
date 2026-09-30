@@ -70,6 +70,7 @@ export type Number_blocksMinAggregateOutputType = {
   opened_at: Date | null
   reported_at: Date | null
   cancelled_at: Date | null
+  closed_by: string | null
 }
 
 export type Number_blocksMaxAggregateOutputType = {
@@ -84,6 +85,7 @@ export type Number_blocksMaxAggregateOutputType = {
   opened_at: Date | null
   reported_at: Date | null
   cancelled_at: Date | null
+  closed_by: string | null
 }
 
 export type Number_blocksCountAggregateOutputType = {
@@ -98,6 +100,7 @@ export type Number_blocksCountAggregateOutputType = {
   opened_at: number
   reported_at: number
   cancelled_at: number
+  closed_by: number
   _all: number
 }
 
@@ -126,6 +129,7 @@ export type Number_blocksMinAggregateInputType = {
   opened_at?: true
   reported_at?: true
   cancelled_at?: true
+  closed_by?: true
 }
 
 export type Number_blocksMaxAggregateInputType = {
@@ -140,6 +144,7 @@ export type Number_blocksMaxAggregateInputType = {
   opened_at?: true
   reported_at?: true
   cancelled_at?: true
+  closed_by?: true
 }
 
 export type Number_blocksCountAggregateInputType = {
@@ -154,6 +159,7 @@ export type Number_blocksCountAggregateInputType = {
   opened_at?: true
   reported_at?: true
   cancelled_at?: true
+  closed_by?: true
   _all?: true
 }
 
@@ -255,6 +261,7 @@ export type Number_blocksGroupByOutputType = {
   opened_at: Date
   reported_at: Date | null
   cancelled_at: Date | null
+  closed_by: string | null
   _count: Number_blocksCountAggregateOutputType | null
   _avg: Number_blocksAvgAggregateOutputType | null
   _sum: Number_blocksSumAggregateOutputType | null
@@ -292,7 +299,9 @@ export type number_blocksWhereInput = {
   opened_at?: Prisma.DateTimeFilter<"number_blocks"> | Date | string
   reported_at?: Prisma.DateTimeNullableFilter<"number_blocks"> | Date | string | null
   cancelled_at?: Prisma.DateTimeNullableFilter<"number_blocks"> | Date | string | null
+  closed_by?: Prisma.UuidNullableFilter<"number_blocks"> | string | null
   opener?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
+  closer?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
 }
 
 export type number_blocksOrderByWithRelationInput = {
@@ -307,7 +316,9 @@ export type number_blocksOrderByWithRelationInput = {
   opened_at?: Prisma.SortOrder
   reported_at?: Prisma.SortOrderInput | Prisma.SortOrder
   cancelled_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  closed_by?: Prisma.SortOrderInput | Prisma.SortOrder
   opener?: Prisma.usersOrderByWithRelationInput
+  closer?: Prisma.usersOrderByWithRelationInput
 }
 
 export type number_blocksWhereUniqueInput = Prisma.AtLeast<{
@@ -325,7 +336,9 @@ export type number_blocksWhereUniqueInput = Prisma.AtLeast<{
   opened_at?: Prisma.DateTimeFilter<"number_blocks"> | Date | string
   reported_at?: Prisma.DateTimeNullableFilter<"number_blocks"> | Date | string | null
   cancelled_at?: Prisma.DateTimeNullableFilter<"number_blocks"> | Date | string | null
+  closed_by?: Prisma.UuidNullableFilter<"number_blocks"> | string | null
   opener?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
+  closer?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
 }, "id">
 
 export type number_blocksOrderByWithAggregationInput = {
@@ -340,6 +353,7 @@ export type number_blocksOrderByWithAggregationInput = {
   opened_at?: Prisma.SortOrder
   reported_at?: Prisma.SortOrderInput | Prisma.SortOrder
   cancelled_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  closed_by?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.number_blocksCountOrderByAggregateInput
   _avg?: Prisma.number_blocksAvgOrderByAggregateInput
   _max?: Prisma.number_blocksMaxOrderByAggregateInput
@@ -362,6 +376,7 @@ export type number_blocksScalarWhereWithAggregatesInput = {
   opened_at?: Prisma.DateTimeWithAggregatesFilter<"number_blocks"> | Date | string
   reported_at?: Prisma.DateTimeNullableWithAggregatesFilter<"number_blocks"> | Date | string | null
   cancelled_at?: Prisma.DateTimeNullableWithAggregatesFilter<"number_blocks"> | Date | string | null
+  closed_by?: Prisma.UuidNullableWithAggregatesFilter<"number_blocks"> | string | null
 }
 
 export type number_blocksCreateInput = {
@@ -376,6 +391,7 @@ export type number_blocksCreateInput = {
   reported_at?: Date | string | null
   cancelled_at?: Date | string | null
   opener: Prisma.usersCreateNestedOneWithoutNumber_blocksInput
+  closer?: Prisma.usersCreateNestedOneWithoutBlocks_closedInput
 }
 
 export type number_blocksUncheckedCreateInput = {
@@ -390,6 +406,7 @@ export type number_blocksUncheckedCreateInput = {
   opened_at?: Date | string
   reported_at?: Date | string | null
   cancelled_at?: Date | string | null
+  closed_by?: string | null
 }
 
 export type number_blocksUpdateInput = {
@@ -404,6 +421,7 @@ export type number_blocksUpdateInput = {
   reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   opener?: Prisma.usersUpdateOneRequiredWithoutNumber_blocksNestedInput
+  closer?: Prisma.usersUpdateOneWithoutBlocks_closedNestedInput
 }
 
 export type number_blocksUncheckedUpdateInput = {
@@ -418,6 +436,7 @@ export type number_blocksUncheckedUpdateInput = {
   opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type number_blocksCreateManyInput = {
@@ -432,6 +451,7 @@ export type number_blocksCreateManyInput = {
   opened_at?: Date | string
   reported_at?: Date | string | null
   cancelled_at?: Date | string | null
+  closed_by?: string | null
 }
 
 export type number_blocksUpdateManyMutationInput = {
@@ -459,6 +479,7 @@ export type number_blocksUncheckedUpdateManyInput = {
   opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type number_blocksCountOrderByAggregateInput = {
@@ -473,6 +494,7 @@ export type number_blocksCountOrderByAggregateInput = {
   opened_at?: Prisma.SortOrder
   reported_at?: Prisma.SortOrder
   cancelled_at?: Prisma.SortOrder
+  closed_by?: Prisma.SortOrder
 }
 
 export type number_blocksAvgOrderByAggregateInput = {
@@ -493,6 +515,7 @@ export type number_blocksMaxOrderByAggregateInput = {
   opened_at?: Prisma.SortOrder
   reported_at?: Prisma.SortOrder
   cancelled_at?: Prisma.SortOrder
+  closed_by?: Prisma.SortOrder
 }
 
 export type number_blocksMinOrderByAggregateInput = {
@@ -507,6 +530,7 @@ export type number_blocksMinOrderByAggregateInput = {
   opened_at?: Prisma.SortOrder
   reported_at?: Prisma.SortOrder
   cancelled_at?: Prisma.SortOrder
+  closed_by?: Prisma.SortOrder
 }
 
 export type number_blocksSumOrderByAggregateInput = {
@@ -544,10 +568,24 @@ export type number_blocksCreateNestedManyWithoutOpenerInput = {
   connect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
 }
 
+export type number_blocksCreateNestedManyWithoutCloserInput = {
+  create?: Prisma.XOR<Prisma.number_blocksCreateWithoutCloserInput, Prisma.number_blocksUncheckedCreateWithoutCloserInput> | Prisma.number_blocksCreateWithoutCloserInput[] | Prisma.number_blocksUncheckedCreateWithoutCloserInput[]
+  connectOrCreate?: Prisma.number_blocksCreateOrConnectWithoutCloserInput | Prisma.number_blocksCreateOrConnectWithoutCloserInput[]
+  createMany?: Prisma.number_blocksCreateManyCloserInputEnvelope
+  connect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+}
+
 export type number_blocksUncheckedCreateNestedManyWithoutOpenerInput = {
   create?: Prisma.XOR<Prisma.number_blocksCreateWithoutOpenerInput, Prisma.number_blocksUncheckedCreateWithoutOpenerInput> | Prisma.number_blocksCreateWithoutOpenerInput[] | Prisma.number_blocksUncheckedCreateWithoutOpenerInput[]
   connectOrCreate?: Prisma.number_blocksCreateOrConnectWithoutOpenerInput | Prisma.number_blocksCreateOrConnectWithoutOpenerInput[]
   createMany?: Prisma.number_blocksCreateManyOpenerInputEnvelope
+  connect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+}
+
+export type number_blocksUncheckedCreateNestedManyWithoutCloserInput = {
+  create?: Prisma.XOR<Prisma.number_blocksCreateWithoutCloserInput, Prisma.number_blocksUncheckedCreateWithoutCloserInput> | Prisma.number_blocksCreateWithoutCloserInput[] | Prisma.number_blocksUncheckedCreateWithoutCloserInput[]
+  connectOrCreate?: Prisma.number_blocksCreateOrConnectWithoutCloserInput | Prisma.number_blocksCreateOrConnectWithoutCloserInput[]
+  createMany?: Prisma.number_blocksCreateManyCloserInputEnvelope
   connect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
 }
 
@@ -565,6 +603,20 @@ export type number_blocksUpdateManyWithoutOpenerNestedInput = {
   deleteMany?: Prisma.number_blocksScalarWhereInput | Prisma.number_blocksScalarWhereInput[]
 }
 
+export type number_blocksUpdateManyWithoutCloserNestedInput = {
+  create?: Prisma.XOR<Prisma.number_blocksCreateWithoutCloserInput, Prisma.number_blocksUncheckedCreateWithoutCloserInput> | Prisma.number_blocksCreateWithoutCloserInput[] | Prisma.number_blocksUncheckedCreateWithoutCloserInput[]
+  connectOrCreate?: Prisma.number_blocksCreateOrConnectWithoutCloserInput | Prisma.number_blocksCreateOrConnectWithoutCloserInput[]
+  upsert?: Prisma.number_blocksUpsertWithWhereUniqueWithoutCloserInput | Prisma.number_blocksUpsertWithWhereUniqueWithoutCloserInput[]
+  createMany?: Prisma.number_blocksCreateManyCloserInputEnvelope
+  set?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  disconnect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  delete?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  connect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  update?: Prisma.number_blocksUpdateWithWhereUniqueWithoutCloserInput | Prisma.number_blocksUpdateWithWhereUniqueWithoutCloserInput[]
+  updateMany?: Prisma.number_blocksUpdateManyWithWhereWithoutCloserInput | Prisma.number_blocksUpdateManyWithWhereWithoutCloserInput[]
+  deleteMany?: Prisma.number_blocksScalarWhereInput | Prisma.number_blocksScalarWhereInput[]
+}
+
 export type number_blocksUncheckedUpdateManyWithoutOpenerNestedInput = {
   create?: Prisma.XOR<Prisma.number_blocksCreateWithoutOpenerInput, Prisma.number_blocksUncheckedCreateWithoutOpenerInput> | Prisma.number_blocksCreateWithoutOpenerInput[] | Prisma.number_blocksUncheckedCreateWithoutOpenerInput[]
   connectOrCreate?: Prisma.number_blocksCreateOrConnectWithoutOpenerInput | Prisma.number_blocksCreateOrConnectWithoutOpenerInput[]
@@ -579,6 +631,20 @@ export type number_blocksUncheckedUpdateManyWithoutOpenerNestedInput = {
   deleteMany?: Prisma.number_blocksScalarWhereInput | Prisma.number_blocksScalarWhereInput[]
 }
 
+export type number_blocksUncheckedUpdateManyWithoutCloserNestedInput = {
+  create?: Prisma.XOR<Prisma.number_blocksCreateWithoutCloserInput, Prisma.number_blocksUncheckedCreateWithoutCloserInput> | Prisma.number_blocksCreateWithoutCloserInput[] | Prisma.number_blocksUncheckedCreateWithoutCloserInput[]
+  connectOrCreate?: Prisma.number_blocksCreateOrConnectWithoutCloserInput | Prisma.number_blocksCreateOrConnectWithoutCloserInput[]
+  upsert?: Prisma.number_blocksUpsertWithWhereUniqueWithoutCloserInput | Prisma.number_blocksUpsertWithWhereUniqueWithoutCloserInput[]
+  createMany?: Prisma.number_blocksCreateManyCloserInputEnvelope
+  set?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  disconnect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  delete?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  connect?: Prisma.number_blocksWhereUniqueInput | Prisma.number_blocksWhereUniqueInput[]
+  update?: Prisma.number_blocksUpdateWithWhereUniqueWithoutCloserInput | Prisma.number_blocksUpdateWithWhereUniqueWithoutCloserInput[]
+  updateMany?: Prisma.number_blocksUpdateManyWithWhereWithoutCloserInput | Prisma.number_blocksUpdateManyWithWhereWithoutCloserInput[]
+  deleteMany?: Prisma.number_blocksScalarWhereInput | Prisma.number_blocksScalarWhereInput[]
+}
+
 export type number_blocksCreateWithoutOpenerInput = {
   id?: string
   series: $Enums.number_series
@@ -590,6 +656,7 @@ export type number_blocksCreateWithoutOpenerInput = {
   opened_at?: Date | string
   reported_at?: Date | string | null
   cancelled_at?: Date | string | null
+  closer?: Prisma.usersCreateNestedOneWithoutBlocks_closedInput
 }
 
 export type number_blocksUncheckedCreateWithoutOpenerInput = {
@@ -603,6 +670,7 @@ export type number_blocksUncheckedCreateWithoutOpenerInput = {
   opened_at?: Date | string
   reported_at?: Date | string | null
   cancelled_at?: Date | string | null
+  closed_by?: string | null
 }
 
 export type number_blocksCreateOrConnectWithoutOpenerInput = {
@@ -612,6 +680,44 @@ export type number_blocksCreateOrConnectWithoutOpenerInput = {
 
 export type number_blocksCreateManyOpenerInputEnvelope = {
   data: Prisma.number_blocksCreateManyOpenerInput | Prisma.number_blocksCreateManyOpenerInput[]
+  skipDuplicates?: boolean
+}
+
+export type number_blocksCreateWithoutCloserInput = {
+  id?: string
+  series: $Enums.number_series
+  day?: Date | string | null
+  from_number: number
+  to_number: number
+  last_used_number?: number | null
+  device_label: string
+  opened_at?: Date | string
+  reported_at?: Date | string | null
+  cancelled_at?: Date | string | null
+  opener: Prisma.usersCreateNestedOneWithoutNumber_blocksInput
+}
+
+export type number_blocksUncheckedCreateWithoutCloserInput = {
+  id?: string
+  series: $Enums.number_series
+  day?: Date | string | null
+  from_number: number
+  to_number: number
+  last_used_number?: number | null
+  device_label: string
+  opened_by: string
+  opened_at?: Date | string
+  reported_at?: Date | string | null
+  cancelled_at?: Date | string | null
+}
+
+export type number_blocksCreateOrConnectWithoutCloserInput = {
+  where: Prisma.number_blocksWhereUniqueInput
+  create: Prisma.XOR<Prisma.number_blocksCreateWithoutCloserInput, Prisma.number_blocksUncheckedCreateWithoutCloserInput>
+}
+
+export type number_blocksCreateManyCloserInputEnvelope = {
+  data: Prisma.number_blocksCreateManyCloserInput | Prisma.number_blocksCreateManyCloserInput[]
   skipDuplicates?: boolean
 }
 
@@ -646,6 +752,23 @@ export type number_blocksScalarWhereInput = {
   opened_at?: Prisma.DateTimeFilter<"number_blocks"> | Date | string
   reported_at?: Prisma.DateTimeNullableFilter<"number_blocks"> | Date | string | null
   cancelled_at?: Prisma.DateTimeNullableFilter<"number_blocks"> | Date | string | null
+  closed_by?: Prisma.UuidNullableFilter<"number_blocks"> | string | null
+}
+
+export type number_blocksUpsertWithWhereUniqueWithoutCloserInput = {
+  where: Prisma.number_blocksWhereUniqueInput
+  update: Prisma.XOR<Prisma.number_blocksUpdateWithoutCloserInput, Prisma.number_blocksUncheckedUpdateWithoutCloserInput>
+  create: Prisma.XOR<Prisma.number_blocksCreateWithoutCloserInput, Prisma.number_blocksUncheckedCreateWithoutCloserInput>
+}
+
+export type number_blocksUpdateWithWhereUniqueWithoutCloserInput = {
+  where: Prisma.number_blocksWhereUniqueInput
+  data: Prisma.XOR<Prisma.number_blocksUpdateWithoutCloserInput, Prisma.number_blocksUncheckedUpdateWithoutCloserInput>
+}
+
+export type number_blocksUpdateManyWithWhereWithoutCloserInput = {
+  where: Prisma.number_blocksScalarWhereInput
+  data: Prisma.XOR<Prisma.number_blocksUpdateManyMutationInput, Prisma.number_blocksUncheckedUpdateManyWithoutCloserInput>
 }
 
 export type number_blocksCreateManyOpenerInput = {
@@ -656,6 +779,21 @@ export type number_blocksCreateManyOpenerInput = {
   to_number: number
   last_used_number?: number | null
   device_label: string
+  opened_at?: Date | string
+  reported_at?: Date | string | null
+  cancelled_at?: Date | string | null
+  closed_by?: string | null
+}
+
+export type number_blocksCreateManyCloserInput = {
+  id?: string
+  series: $Enums.number_series
+  day?: Date | string | null
+  from_number: number
+  to_number: number
+  last_used_number?: number | null
+  device_label: string
+  opened_by: string
   opened_at?: Date | string
   reported_at?: Date | string | null
   cancelled_at?: Date | string | null
@@ -672,6 +810,7 @@ export type number_blocksUpdateWithoutOpenerInput = {
   opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closer?: Prisma.usersUpdateOneWithoutBlocks_closedNestedInput
 }
 
 export type number_blocksUncheckedUpdateWithoutOpenerInput = {
@@ -685,6 +824,7 @@ export type number_blocksUncheckedUpdateWithoutOpenerInput = {
   opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
 }
 
 export type number_blocksUncheckedUpdateManyWithoutOpenerInput = {
@@ -695,6 +835,49 @@ export type number_blocksUncheckedUpdateManyWithoutOpenerInput = {
   to_number?: Prisma.IntFieldUpdateOperationsInput | number
   last_used_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   device_label?: Prisma.StringFieldUpdateOperationsInput | string
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+}
+
+export type number_blocksUpdateWithoutCloserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  series?: Prisma.Enumnumber_seriesFieldUpdateOperationsInput | $Enums.number_series
+  day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  from_number?: Prisma.IntFieldUpdateOperationsInput | number
+  to_number?: Prisma.IntFieldUpdateOperationsInput | number
+  last_used_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  device_label?: Prisma.StringFieldUpdateOperationsInput | string
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  opener?: Prisma.usersUpdateOneRequiredWithoutNumber_blocksNestedInput
+}
+
+export type number_blocksUncheckedUpdateWithoutCloserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  series?: Prisma.Enumnumber_seriesFieldUpdateOperationsInput | $Enums.number_series
+  day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  from_number?: Prisma.IntFieldUpdateOperationsInput | number
+  to_number?: Prisma.IntFieldUpdateOperationsInput | number
+  last_used_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  device_label?: Prisma.StringFieldUpdateOperationsInput | string
+  opened_by?: Prisma.StringFieldUpdateOperationsInput | string
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+}
+
+export type number_blocksUncheckedUpdateManyWithoutCloserInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  series?: Prisma.Enumnumber_seriesFieldUpdateOperationsInput | $Enums.number_series
+  day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  from_number?: Prisma.IntFieldUpdateOperationsInput | number
+  to_number?: Prisma.IntFieldUpdateOperationsInput | number
+  last_used_number?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  device_label?: Prisma.StringFieldUpdateOperationsInput | string
+  opened_by?: Prisma.StringFieldUpdateOperationsInput | string
   opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   reported_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   cancelled_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -714,7 +897,9 @@ export type number_blocksSelect<ExtArgs extends runtime.Types.Extensions.Interna
   opened_at?: boolean
   reported_at?: boolean
   cancelled_at?: boolean
+  closed_by?: boolean
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  closer?: boolean | Prisma.number_blocks$closerArgs<ExtArgs>
 }, ExtArgs["result"]["number_blocks"]>
 
 export type number_blocksSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -729,7 +914,9 @@ export type number_blocksSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   opened_at?: boolean
   reported_at?: boolean
   cancelled_at?: boolean
+  closed_by?: boolean
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  closer?: boolean | Prisma.number_blocks$closerArgs<ExtArgs>
 }, ExtArgs["result"]["number_blocks"]>
 
 export type number_blocksSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -744,7 +931,9 @@ export type number_blocksSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   opened_at?: boolean
   reported_at?: boolean
   cancelled_at?: boolean
+  closed_by?: boolean
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  closer?: boolean | Prisma.number_blocks$closerArgs<ExtArgs>
 }, ExtArgs["result"]["number_blocks"]>
 
 export type number_blocksSelectScalar = {
@@ -759,23 +948,28 @@ export type number_blocksSelectScalar = {
   opened_at?: boolean
   reported_at?: boolean
   cancelled_at?: boolean
+  closed_by?: boolean
 }
 
-export type number_blocksOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "series" | "day" | "from_number" | "to_number" | "last_used_number" | "device_label" | "opened_by" | "opened_at" | "reported_at" | "cancelled_at", ExtArgs["result"]["number_blocks"]>
+export type number_blocksOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "series" | "day" | "from_number" | "to_number" | "last_used_number" | "device_label" | "opened_by" | "opened_at" | "reported_at" | "cancelled_at" | "closed_by", ExtArgs["result"]["number_blocks"]>
 export type number_blocksInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  closer?: boolean | Prisma.number_blocks$closerArgs<ExtArgs>
 }
 export type number_blocksIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  closer?: boolean | Prisma.number_blocks$closerArgs<ExtArgs>
 }
 export type number_blocksIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   opener?: boolean | Prisma.usersDefaultArgs<ExtArgs>
+  closer?: boolean | Prisma.number_blocks$closerArgs<ExtArgs>
 }
 
 export type $number_blocksPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "number_blocks"
   objects: {
     opener: Prisma.$usersPayload<ExtArgs>
+    closer: Prisma.$usersPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -789,6 +983,14 @@ export type $number_blocksPayload<ExtArgs extends runtime.Types.Extensions.Inter
     opened_at: Date
     reported_at: Date | null
     cancelled_at: Date | null
+    /**
+     * *
+     *    * Who closed it: the device reporting itself, or the admin resolving a loose end after
+     *    * a tablet never came back. Two different acts with the same shape, and the one that
+     *    * matters months later is the second — somebody said out loud that the numbers had
+     *    * stopped there, and the series moved on that word.
+     */
+    closed_by: string | null
   }, ExtArgs["result"]["number_blocks"]>
   composites: {}
 }
@@ -1184,6 +1386,7 @@ readonly fields: number_blocksFieldRefs;
 export interface Prisma__number_blocksClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   opener<T extends Prisma.usersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.usersDefaultArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  closer<T extends Prisma.number_blocks$closerArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.number_blocks$closerArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1224,6 +1427,7 @@ export interface number_blocksFieldRefs {
   readonly opened_at: Prisma.FieldRef<"number_blocks", 'DateTime'>
   readonly reported_at: Prisma.FieldRef<"number_blocks", 'DateTime'>
   readonly cancelled_at: Prisma.FieldRef<"number_blocks", 'DateTime'>
+  readonly closed_by: Prisma.FieldRef<"number_blocks", 'String'>
 }
     
 
@@ -1622,6 +1826,25 @@ export type number_blocksDeleteManyArgs<ExtArgs extends runtime.Types.Extensions
    * Limit how many number_blocks to delete.
    */
   limit?: number
+}
+
+/**
+ * number_blocks.closer
+ */
+export type number_blocks$closerArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the users
+   */
+  select?: Prisma.usersSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the users
+   */
+  omit?: Prisma.usersOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.usersInclude<ExtArgs> | null
+  where?: Prisma.usersWhereInput
 }
 
 /**

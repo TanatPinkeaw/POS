@@ -14,6 +14,7 @@ import {
   blockForDay,
   blockSize,
   canReport,
+  claim,
   isWellFormedBlock,
   nextValue,
   openBlockFor,
@@ -171,6 +172,52 @@ describe('updating one block in place', () => {
 
     expect(updated[0]?.lastUsed).toBe(1);
     expect(updated[1]).toBe(tomorrow);
+  });
+});
+
+describe('a number a device printed itself', () => {
+  it('is recorded on the block, and comes back as the next one to print', () => {
+    const taken = claim(queueBlock(), 1);
+
+    expect(taken).toEqual({ ok: true, block: queueBlock({ lastUsed: 1 }) });
+    expect(taken.ok && nextValue(taken.block)).toBe(2);
+  });
+
+  it('refuses a number the block never lent', () => {
+    expect(claim(queueBlock({ from: 10, to: 20 }), 9)).toEqual({
+      ok: false,
+      reason: 'out_of_range',
+    });
+    expect(claim(queueBlock({ from: 10, to: 20 }), 21)).toEqual({
+      ok: false,
+      reason: 'out_of_range',
+    });
+    expect(claim(queueBlock(), 0)).toEqual({ ok: false, reason: 'out_of_range' });
+    expect(claim(queueBlock(), 2.5)).toEqual({ ok: false, reason: 'out_of_range' });
+  });
+
+  it('refuses a number at or behind the mark, which would be two customers and one ticket', () => {
+    const used = queueBlock({ from: 1, to: 100, lastUsed: 5 });
+
+    expect(claim(used, 5)).toEqual({ ok: false, reason: 'already_used' });
+    expect(claim(used, 3)).toEqual({ ok: false, reason: 'already_used' });
+    expect(claim(used, 6)).toEqual({ ok: true, block: queueBlock({ lastUsed: 6 }) });
+  });
+
+  it('refuses to believe a block that does not make sense', () => {
+    expect(claim(queueBlock({ from: 10, to: 9 }), 10)).toEqual({
+      ok: false,
+      reason: 'malformed',
+    });
+  });
+
+  it('reports the block that came back as spent through that number, not through the range', () => {
+    const taken = claim(queueBlock({ from: 1, to: 100 }), 7);
+
+    expect(taken.ok && spentCount(taken.block)).toBe(7);
+    expect(taken.ok && remaining(taken.block)).toBe(93);
+    // And the tail still comes back to the shop when the block is reported.
+    expect(taken.ok && resumeAt(taken.block)).toBe(7);
   });
 });
 

@@ -9,6 +9,7 @@ import type { NumberBlock } from '@/lib/number-block';
 import {
   decideOfflineSale,
   offlineSellableQty,
+  priceOfflineSale,
   tallyOfflineSales,
   type OfflineBasket,
   type OfflineCatalogueEntry,
@@ -72,6 +73,8 @@ function context(overrides: Partial<OfflineSaleContext> = {}): OfflineSaleContex
     shiftOpen: true,
     supervisorDiscountLimitThb: 50,
     isVatRegistered: true,
+    vatRatePercent: 7,
+    pricesIncludeVat: true,
     receiptPrefix: 'FR',
     catalogue: [COFFEE, CAKE, RETIRED],
     callBlocks: [callBlock(), callBlock({ day: TOMORROW, from: 101, to: 200 })],
@@ -193,6 +196,19 @@ describe('what the counter cannot do with no connection', () => {
     ]);
   });
 
+  it('tells a device that never borrowed apart from one that spent its range', () => {
+    // "หมดแล้ว" about numbers that were never issued sends the cashier looking for the wrong
+    // thing: one next step is "connect and sell normally", the other is "get more numbers".
+    const never = decideOfflineSale(basket(), context({ receiptBlock: null }));
+    const spent = decideOfflineSale(
+      basket(),
+      context({ receiptBlock: vatReceiptBlock({ from: 500, to: 500, lastUsed: 500 }) }),
+    );
+
+    expect(never.allowed ? '' : never.refusals[0]?.message).toContain('ยังไม่ได้เตรียม');
+    expect(spent.allowed ? '' : spent.refusals[0]?.message).toContain('หมดแล้ว');
+  });
+
   it('says everything that is wrong at once', () => {
     const decision = decideOfflineSale(
       basket({ tender: 'promptpay', memberAttached: true, pointsRedeemed: 5, discountThb: 999 }),
@@ -281,6 +297,68 @@ describe('call numbers when the device has none for the day', () => {
     expect(decision.allowed).toBe(true);
     if (!decision.allowed) return;
     expect(decision.warnings.map((warning) => warning.code)).toEqual(['numbers_low', 'numbers_low']);
+  });
+});
+
+describe('what the offline slip says', () => {
+  it('is priced from the cached catalogue, and splits the VAT the same way online does', () => {
+    const priced = priceOfflineSale(basket({ lines: [{ productId: 'p-coffee', quantity: 2 }] }), context(), 100);
+
+    expect(priced.lines).toEqual([{ productId: 'p-coffee', quantity: 2, unitPrice: 45 }]);
+    expect(priced.subtotalThb).toBe(90);
+    expect(priced.finalAmountThb).toBe(90);
+    /*
+     * 90 × 7/107, rounded to satang — the same figures `computeVat` gives the online sale,
+     * which is the point: one shop's slip cannot be two arithmetic papers.
+     */
+    expect(priced.vatThb).toBe(5.89);
+    expect(priced.netThb).toBe(84.11);
+    expect(priced.isVatInvoice).toBe(true);
+    expect(priced.changeThb).toBe(10);
+  });
+
+  it('takes the price from the catalogue, never from the caller', () => {
+    /*
+     * The basket says what was sold, not what it costs — there is no field in it for a
+     * price at all, which is the structural half of this guarantee. The behavioural half
+     * is here: the figure comes off the catalogue entry, so a basket cannot be rung up
+     * for a price the shop never published.
+     */
+    const priced = priceOfflineSale(basket(), context({ catalogue: [{ ...COFFEE, priceThb: 45 }] }), 45);
+    expect(priced.lines[0]?.unitPrice).toBe(45);
+
+    const repriced = priceOfflineSale(basket(), context({ catalogue: [{ ...COFFEE, priceThb: 60 }] }), 60);
+    expect(repriced.lines[0]?.unitPrice).toBe(60);
+    expect(repriced.finalAmountThb).toBe(60);
+  });
+
+  it('subtracts a discount before the tax, and keeps the bill balanced', () => {
+    const priced = priceOfflineSale(basket({ lines: [{ productId: 'p-cake', quantity: 2 }], discountThb: 30 }), context(), 100);
+
+    expect(priced.subtotalThb).toBe(130);
+    expect(priced.discountThb).toBe(30);
+    expect(priced.finalAmountThb).toBe(100);
+    expect(priced.netThb + priced.vatThb).toBe(priced.finalAmountThb);
+  });
+
+  it('issues no tax invoice at a shop that is not registered, so no number is spent', () => {
+    const priced = priceOfflineSale(basket(), context({ isVatRegistered: false }), 45);
+
+    expect(priced.isVatInvoice).toBe(false);
+    expect(priced.vatThb).toBe(0);
+    expect(priced.netThb).toBe(45);
+  });
+
+  it('refuses to price a bill against a product the device has no price for', () => {
+    expect(() =>
+      priceOfflineSale(basket({ lines: [{ productId: 'p-ghost', quantity: 1 }] }), context(), 45),
+    ).toThrow(/no price for/);
+  });
+
+  it('refuses cash that does not cover the bill, rather than drawing a negative change', () => {
+    expect(() => priceOfflineSale(basket(), context(), 40)).toThrow(/less cash than it costs/);
+    // Exactly the bill is fine: the customer hands over the right money and gets nothing back.
+    expect(priceOfflineSale(basket(), context(), 45).changeThb).toBe(0);
   });
 });
 

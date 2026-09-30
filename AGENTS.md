@@ -72,9 +72,14 @@ Recorded so a session starts from the truth rather than from the last commit mes
   browser end-to-end test in CI (`route:audit` stands in for one — see Traps), the
   restore in `docs/homelab-deploy.md` §7 is a recipe that no script, check or CI job
   rehearses, nothing has ever loaded `deploy/systemd/` — those units were reviewed by
-  reading, never by `systemd-analyze verify` or a real boot — and there is no
-  experience of real data volume in reports or analytics. "Green" means *correct as
-  far as the tests reach*; it does not mean a shop has used it.
+  reading, never by `systemd-analyze verify` or a real boot — there is no
+  experience of real data volume in reports or analytics, and **the till's device
+  storage has no automated test at all**: `offline-db.ts` is IndexedDB, the suite is a
+  Node environment, and the repository refuses the dependency that would fake it (rule
+  2). The offline *decisions* and the seam above it are tested
+  (`tests/till-store.test.ts`, with storage injected); the file that opens the database
+  is not. "Green" means *correct as far as the tests reach*; it does not mean a shop has
+  used it.
 
 ---
 
@@ -260,7 +265,11 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   it back before the range. At most one open block per series, and one per day for
   call numbers. A device that holds numbers is the allocator for its own bills, online
   sales included: a number issued *beside* a borrowed range could never be placed in
-  the series afterwards.
+  the series afterwards. So the walk-in sale takes the device's own number
+  (`deviceNumbers`) and `claimNumberFromBlock` judges it — open loan, inside the range,
+  and **strictly past the mark**: a number at or below the deepest one the loan has
+  recorded is two customers and one ticket, which is why that refusal is a 409 and
+  not a `ValidationError`.
 - **`payments.amount` is always positive**, and `payments.direction`
   (`sale`/`refund`) carries the sign. `CHECK (amount > 0)` therefore still holds
   for a refund leg — so every aggregate over `payments` must say what it means:

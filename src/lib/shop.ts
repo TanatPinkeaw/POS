@@ -338,6 +338,25 @@ export async function isSeriesReserved(db: Db, series: NumberKind): Promise<bool
 }
 
 /**
+ * Takes the shop row's lock, so that a transaction which needs it *first* can say so.
+ *
+ * Every document series in this application lives on this one row, and a transaction
+ * that ends up holding two rows takes them in one order: **the shop row, then anything
+ * else**. The sale path gets this for free — the call number is allocated before any
+ * product row is touched — but the number-block paths are the other way round, because
+ * they begin by locking the block they are about. ADR 0019 put a block and the shop row
+ * in the same transaction, and that is what turns a difference in order into a deadlock:
+ * a borrow holds this row and waits for the block a report is holding, while the report
+ * waits for this row.
+ *
+ * Callers that never touch a block do not need to call this — the allocators below take
+ * the same lock as part of the statement that bumps the counter.
+ */
+export async function lockShopRow(db: Db = prisma): Promise<void> {
+  await db.$queryRaw`SELECT "id" FROM "shops" WHERE "id" = ${SHOP_ROW_ID} FOR UPDATE`;
+}
+
+/**
  * Reserves the next credit-note number, or null when no shop is set up.
  *
  * Same trade-off as `allocateReceiptNumber`, and for the same reason: a

@@ -216,6 +216,11 @@ export const productCreateSchema = z.object({
   costPrice: z.number().min(0),
   salePrice: z.number().min(0),
   stockQty: z.number().int().min(0).default(0),
+  /**
+   * The offline reserve (ADR 0019). Validated here as well as by the column's CHECK, so a
+   * negative number is a Thai field error rather than a 500 from a refused constraint.
+   */
+  offlineSafetyQty: z.number().int().min(0).default(0),
   imageUrl: z.string().trim().max(2048).nullable().optional(),
   isActive: z.boolean().default(true),
 });
@@ -248,6 +253,25 @@ export const settlementSchema = z.object({
   receivedCash: z.number().min(0).optional(),
 });
 
+/**
+ * A number the till printed out of its own borrowed block.
+ *
+ * Both halves are required — the number and which loan it came from — because the number
+ * alone cannot be judged: `12` is a valid call number in every block the shop has ever
+ * lent, and only the block says whether it is this device's to use. The id is parsed as a
+ * UUID rather than a free string so that a malformed one is a 422 at the edge instead of
+ * a cast error inside a transaction, which would reach the till as a 500.
+ */
+const deviceNumberClaimSchema = z.object({
+  blockId: z.string().uuid(),
+  value: z.number().int().positive(),
+});
+
+export const deviceNumbersSchema = z.object({
+  receipt: deviceNumberClaimSchema.optional(),
+  call: deviceNumberClaimSchema.optional(),
+});
+
 export const posSaleSchema = z.object({
   type: z.literal('pos_walkin'),
   lines: z.array(cartLineSchema).min(1, 'Add at least one item'),
@@ -255,6 +279,8 @@ export const posSaleSchema = z.object({
   shiftId: z.number().int().positive(),
   discountThb: z.number().min(0).optional(),
   settlement: settlementSchema,
+  /** Numbers the till printed itself, when it is holding a borrowed block (ADR 0019). */
+  deviceNumbers: deviceNumbersSchema.optional(),
 });
 
 /**

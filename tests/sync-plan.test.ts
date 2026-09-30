@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   dueForReplay,
+  mayUseServer,
   nextSequence,
   pendingSummary,
   recordFailure,
@@ -22,7 +23,7 @@ function bill(overrides: Partial<QueuedBill> = {}): QueuedBill {
     sequence: 1,
     soldAt: NOW,
     soldDay: '2026-09-29',
-    lines: [{ productId: 'p-coffee', quantity: 1 }],
+    lines: [{ productId: 'p-coffee', quantity: 1, unitPrice: 45 }],
     totalThb: 45,
     attempts: 0,
     nextAttemptAt: NOW,
@@ -106,6 +107,20 @@ describe('the number the next bill printed gets', () => {
 
   it('carries on past the highest it has', () => {
     expect(nextSequence([bill({ sequence: 4 }), bill({ sequence: 9 })])).toBe(10);
+  });
+});
+
+describe('when the server may touch the shop’s numbers', () => {
+  it('only once the device has sent everything it printed', () => {
+    expect(mayUseServer([])).toEqual({ allowed: true, message: null });
+  });
+
+  it('is refused while a bill is still unsent, with the way out in the message', () => {
+    const readiness = mayUseServer([bill(), bill({ clientRef: 'ref-2', sequence: 2 })]);
+
+    expect(readiness.allowed).toBe(false);
+    expect(readiness.message).toContain('2');
+    expect(readiness.message).toContain('ค้าง');
   });
 });
 
