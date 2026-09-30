@@ -182,6 +182,8 @@ export function MembersManager({ initialMembers }: { initialMembers: MemberRow[]
       header: 'คะแนนสะสม',
       cardLabel: 'คะแนนสะสม',
       align: 'end',
+      // Stacked: on one line a balance of 1200 beside "0 ออเดอร์" reads as 12000 points.
+      stack: true,
       render: (member) => (
         <>
           <span className="ln-num ln-mono">{member.pointsBalance}</span>

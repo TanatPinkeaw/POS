@@ -64,8 +64,31 @@
   background: var(--ln-surface-inset);
 }
 
+/*
+ * A right-aligned column's **header** is right-aligned too, and until this rule
+ * existed it was not: the markup has always put `alignEnd` on the `<th>`, but
+ * `.table th` sets `text-align: left` one declaration later and out-weighs a bare
+ * class (0,1,1 against 0,1,0). The result was the defect a shop sees as "คอลัมน์ไม่ตรง":
+ * on a money table the figures sit hard against the right edge of their column while
+ * their heading sits hard against the left, so `ชั่วโมง` appears to belong to the
+ * column *after* the hours, and `คะแนนสะสม` to the one after the points.
+ */
+.table th.alignEnd {
+  text-align: right;
+}
+
 .alignEnd {
   text-align: right;
+}
+
+/*
+ * A cell whose value is a figure and a note about it — a balance and how it was earned,
+ * a total and what it is made of. Stacked, the way `.primaryCell` stacks an identity and
+ * its detail, and for the same reason: inline, `1200` and `0 ออเดอร์` read as one number
+ * (`12000`), which is a figure nobody sent.
+ */
+.stackedCell > * {
+  display: block;
 }
 
 /*

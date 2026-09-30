@@ -14,6 +14,15 @@ export interface Column<T> {
    */
   cardLabel?: string;
   align?: 'start' | 'end';
+  /**
+   * Stacks the cell's children instead of running them together.
+   *
+   * For a cell that carries two facts — `1200` and `0 ออเดอร์` — where one line makes
+   * them read as a single number. The primary cell stacks for the same reason and does
+   * it implicitly; a column asks for it explicitly, because only the caller knows whether
+   * its two children are a figure and its note or something that belongs on one line.
+   */
+  stack?: boolean;
   width?: string;
   render: (row: T) => ReactNode;
 }
@@ -95,6 +104,7 @@ export function DataTable<T>({
                       data-label={label}
                       className={[
                         column.align === 'end' ? styles.alignEnd : '',
+                        column.stack ? styles.stackedCell : '',
                         index === 0 ? styles.primaryCell : '',
                       ]
                         .filter(Boolean)
