@@ -150,6 +150,12 @@ re-litigate (the reasoning, when it lands, goes into an ADR):
     share of the net excluding VAT accrued to a `consignor_payables` ledger, sold as
     principal, never offline in v1, with the shop's accountant still to agree the tax
     treatment.
+20. **A receipt link is short-lived and never outlives the month** (ADR 0021 §2–4). The
+    download window is a fixed 30 days (`RECEIPT_ACCESS_DAYS`) and is half-open at its
+    boundary; an order is never deleted when the window closes. A link is minted per ask
+    with its own id and expires at the sooner of an hour (`RECEIPT_LINK_TTL_MINUTES`) and
+    the window, so reissue replaces reuse. The shop's own reprint is never windowed — the
+    window withholds a customer's download, not the retention.
 
 ## Still open (tracked, not decided)
 

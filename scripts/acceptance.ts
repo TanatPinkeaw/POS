@@ -270,6 +270,53 @@ interface PickupLookupDto {
   status: string;
 }
 
+/**
+ * A whole-row fingerprint of one order, so a download that touched *any* column
+ * shows up — not just the handful a hand-written comparison would remember.
+ */
+async function orderFingerprint(url: string, orderId: string): Promise<string> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    const rows = await client.query<{ fingerprint: string }>(
+      'SELECT md5(o::text) AS fingerprint FROM "orders" o WHERE o."id" = $1',
+      [orderId],
+    );
+    return rows.rows[0]?.fingerprint ?? 'missing';
+  } finally {
+    await client.end();
+  }
+}
+
+/** Reads one order's completed-at, so a test can age it and put it back exactly. */
+async function readCompletedAt(url: string, orderId: string): Promise<string | null> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    const rows = await client.query<{ completed_at: string | null }>(
+      'SELECT "completed_at"::text AS completed_at FROM "orders" WHERE "id" = $1',
+      [orderId],
+    );
+    return rows.rows[0]?.completed_at ?? null;
+  } finally {
+    await client.end();
+  }
+}
+
+/** Moves one order's sale instant, to test the access window; null clears it. */
+async function setCompletedAt(url: string, orderId: string, iso: string | null): Promise<void> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    await client.query('UPDATE "orders" SET "completed_at" = $2::timestamptz WHERE "id" = $1', [
+      orderId,
+      iso,
+    ]);
+  } finally {
+    await client.end();
+  }
+}
+
 async function runChecks(seedGuardUrl: string | null): Promise<number> {
   let passed = 0;
   let failed = 0;
@@ -539,6 +586,109 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     receipt.shop.name,
   );
   check("and the renter's tax id", receipt.shop.taxId === SHOP.taxId, receipt.shop.taxId);
+
+  /* ------------------------------------------------- 6b. the receipt link */
+  /*
+   * A signed link a walk-in can carry away (ADR 0021 §2, §3). The counter mints
+   * one for the sale in front of it; a visitor with no cookie jar at all opens it
+   * and gets exactly this order's receipt; a tampered link is refused; a reissue is
+   * a different token; and once the sale ages past the one-month window the file is
+   * withheld while the bill itself still lists and reprints. The window half needs
+   * the database, so it runs only when this script owns the schema.
+   */
+  const originalCompletedAt =
+    seedGuardUrl === null ? null : await readCompletedAt(seedGuardUrl, sale.orderId);
+  const beforeDownload =
+    seedGuardUrl === null ? null : await orderFingerprint(seedGuardUrl, sale.orderId);
+
+  const link = await cashier.call<{ token: string; path: string }>(
+    `/api/v1/orders/${sale.orderId}/receipt-link`,
+    { method: 'POST' },
+  );
+  check(
+    'the counter mints a receipt link for the sale',
+    /^\/api\/v1\/receipts\/[^/]+$/.test(link.path),
+    link.path,
+  );
+
+  // No cookie jar and no session — the walk-in who never registered.
+  const stranger = new Session(() => base);
+  const downloaded = await stranger.call<{
+    receipt: { receiptNumber: string | null; finalAmountThb: number };
+  }>(link.path);
+  check(
+    'a walk-in with no session downloads exactly this order',
+    downloaded.receipt.receiptNumber === sale.receiptNumber &&
+      downloaded.receipt.finalAmountThb === sale.finalAmountThb,
+    downloaded.receipt,
+  );
+
+  /*
+   * Flip the *first* character of the signature, not the last. Base64url decoders
+   * tolerate non-canonical trailing bits, so a flipped last character can decode to
+   * the very same signature bytes and verify — the mutation would be a no-op for
+   * some tokens and the check would pass without testing anything.
+   */
+  const [linkHeader, linkPayload, linkSignature] = link.token.split('.');
+  const tamperedToken = `${linkHeader}.${linkPayload}.${linkSignature!.startsWith('A') ? 'B' : 'A'}${linkSignature!.slice(1)}`;
+  const refused = await stranger.request(`/api/v1/receipts/${tamperedToken}`);
+  check('a link with one character changed is refused', refused.status === 422, refused.status);
+
+  const relinked = await cashier.call<{ token: string }>(
+    `/api/v1/orders/${sale.orderId}/receipt-link`,
+    { method: 'POST' },
+  );
+  check('asking again reissues rather than reuses the link', relinked.token !== link.token);
+  check(
+    'and the reissued link still serves the order',
+    (await stranger.call<{ receipt: { receiptNumber: string | null } }>(`/api/v1/receipts/${relinked.token}`))
+      .receipt.receiptNumber === sale.receiptNumber,
+  );
+
+  if (beforeDownload !== null && originalCompletedAt !== null && seedGuardUrl !== null) {
+    const afterDownload = await orderFingerprint(seedGuardUrl, sale.orderId);
+    check(
+      'a download does not touch the order it shows',
+      afterDownload === beforeDownload,
+      `${beforeDownload} → ${afterDownload}`,
+    );
+
+    /*
+     * Age the sale past the window while leaving the link unexpired, so only the
+     * window can be what refuses it. Then put the sale back.
+     */
+    const aged = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+    await setCompletedAt(seedGuardUrl, sale.orderId, aged);
+
+    const closedFetch = await stranger.request(link.path);
+    check('a link whose window has closed is refused as gone', closedFetch.status === 410, closedFetch.status);
+    const closedMint = await cashier.request(`/api/v1/orders/${sale.orderId}/receipt-link`, {
+      method: 'POST',
+    });
+    check('the counter cannot mint a link for an aged-out bill', closedMint.status === 410, closedMint.status);
+
+    const stillThere = await cashier.call<{ receipt: { receiptNumber: string | null } }>(
+      `/api/v1/orders/${sale.orderId}/receipt`,
+    );
+    check(
+      'but the bill itself still lists, and still reprints',
+      stillThere.receipt.receiptNumber === sale.receiptNumber,
+      stillThere.receipt.receiptNumber,
+    );
+    const stillVisible = await cashier.request(`/api/v1/orders/${sale.orderId}`);
+    check(
+      'and the order stays visible while only the file is withheld',
+      stillVisible.status === 200,
+      stillVisible.status,
+    );
+
+    await setCompletedAt(seedGuardUrl, sale.orderId, originalCompletedAt);
+    check(
+      'once the sale is back inside the window the file is offered again',
+      (await stranger.call<{ receipt: { receiptNumber: string | null } }>(link.path)).receipt.receiptNumber ===
+        sale.receiptNumber,
+    );
+  }
 
   const shopAfterSale = await admin.call<ShopDto>('/api/v1/shop');
   check(

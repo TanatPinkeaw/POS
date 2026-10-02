@@ -13,7 +13,7 @@ second does not. That is the spine of the order below.
 ## Effort 1 — Land the offline till
 
 **State.** Built, reviewed on both axes, and **green**: `npm run verify:all` runs all five
-gates, `verify` is 62 files and 934 tests, the browser journey passes its checks. It is
+gates, `verify` is 64 files and 959 tests, the browser journey passes its checks. It is
 **landed on `main`** as its own commit (`83bacc9`), on top of the base tree.
 
 **What it unlocks.** A shop keeps selling cash when its connection drops, with the numbers,
@@ -36,8 +36,9 @@ land it alone, reviewed, before anything is stacked on it.
 ## Effort 2 — Customer identity, electronic receipts, the role matrix
 
 **State.** Designed in ADRs 0020, 0021 and 0022; specified and ticketed under
-`.scratch/customer-identity/`; **in progress** — ticket 04 (the role matrix) and ticket 05
-(the receipt renderer) are done and on `main`, the rest unbuilt.
+`.scratch/customer-identity/`; **in progress** — tickets 04 (the role matrix), 05 (the
+receipt renderer) and 06 (the signed link and the access window) are done and on `main`,
+the rest unbuilt.
 
 **What it unlocks.**
 
@@ -49,9 +50,9 @@ land it alone, reviewed, before anything is stacked on it.
 - **The customer portal**, which is the screen Effort 3 needs for a consignor to see what they
   are owed.
 
-**Order inside it.** Tickets 04 (the role matrix) and 05 (the receipt renderer) are done; 01
-(Google and OTP) is next and unblocks 02, 03 and 08; 06 follows 05; the portal (07) is last
-and is what Effort 3 waits on.
+**Order inside it.** Tickets 04 (the role matrix), 05 (the receipt renderer) and 06 (the
+signed link) are done; 01 (Google and OTP) is next and unblocks 02, 03 and 08; the portal
+(07) is last and is what Effort 3 waits on.
 
 **Done when.** A new customer can sign up with Google and prove a phone, an existing customer
 can link one without losing their points, a walk-in can leave with a receipt link, an older

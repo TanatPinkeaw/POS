@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 934 tests across 62 files: unit + integration
+npm test                # 959 tests across 64 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 18 screens render, and render styled
@@ -767,9 +767,10 @@ Deferred deliberately, and listed here rather than discovered during service:
 the phone still the identity), designed, and unbuilt: enrolment at the counter is the only
 way a customer exists today.
 - **Electronic receipts.** Decided in ADR 0021 (an image generated from the order, the last
-month downloadable, a signed link for a walk-in). The image renderer is built, but nothing
-reaches it yet: no screen generates one or links a customer to it, so a receipt is still a
-screen.
+month downloadable, a signed link for a walk-in). The renderer, the one-month window and the
+signed link are built — a walk-in's link fetches the bill over HTTP with no session — but no
+screen yet draws one or hands a link over: the customer page arrives with the portal, so a
+receipt is still a screen.
 - **Consigned goods (ฝากขาย).** Decided in ADR 0023 (an owner and a share on `products`, a
 payables ledger, sold as principal, never offline in v1), designed, and unbuilt.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there

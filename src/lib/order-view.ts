@@ -6,11 +6,16 @@
  * numbers here, so no route handler has to remember to do it and nothing leaks
  * a Decimal into JSON.
  */
+import type { ReceiptData } from '@/components/pos/Receipt';
+
 import { prisma } from './db';
-import { NotFoundError } from './errors';
+import { ConflictError, NotFoundError } from './errors';
 import { fromDecimal, sumThb } from './money';
 import type { OrderStatus } from './order-state';
 import { createPickupToken } from './pickup-token';
+import { formatQueueNumber } from './queue-number';
+import { loadShop } from './shop';
+import { UNCONFIGURED_SHOP, type ShopView } from './shop-view';
 
 export interface OrderItemView {
   id: string;
@@ -244,4 +249,114 @@ export async function listOrderViews(filter: {
       readyAt: order.ready_at,
     })),
   );
+}
+
+/**
+ * The receipt for one sale, as both the reprint screen and the customer's image
+ * need it (ADR 0002, ADR 0021).
+ *
+ * One projection, shared by the DOM reprint and the downloadable image, so a
+ * customer comparing the two — or a shop asserting a reprint matches the sale —
+ * cannot find a difference caused by one route remembering a field and the other
+ * forgetting it. Everything comes from the order's snapshot columns, never from the
+ * shop's current settings, except the shop's own identity, which legitimately
+ * follows the settings: a renamed shop reprints under its new name.
+ */
+export interface ReceiptPayload {
+  shop: ShopView;
+  receipt: ReceiptData;
+  /**
+   * The instant the download window counts from (ADR 0021 §2): when the sale
+   * completed, falling back to when it was created for a row that predates the
+   * completed-at column.
+   */
+  soldAt: Date;
+}
+
+export async function loadReceiptPayload(orderId: string): Promise<ReceiptPayload> {
+  const order = await prisma.orders.findUnique({
+    where: { id: orderId },
+    include: {
+      items: { include: { product: { select: { name: true } } }, orderBy: { id: 'asc' } },
+      payments: true,
+    },
+  });
+
+  if (!order) {
+    throw new NotFoundError(`Order ${orderId}`);
+  }
+  /*
+   * A refunded sale keeps its receipt. The invoice was issued, it was handed to a
+   * customer, and nothing un-issues it — the credit note is a second document
+   * beside it rather than a replacement. Refusing the reprint would lose the only
+   * record of what the customer originally paid, which is exactly what they need to
+   * be shown when they ask where their refund went.
+   */
+  if (order.status !== 'completed' && order.status !== 'refunded') {
+    throw new ConflictError(
+      `Order ${order.order_number} is ${order.status}; only a completed sale has a receipt`,
+      'ORDER_NOT_COMPLETED',
+    );
+  }
+
+  const shop = (await loadShop()) ?? UNCONFIGURED_SHOP;
+
+  /*
+   * Points are a settlement discount rather than money, so they are excluded from
+   * "received" — otherwise the receipt would claim the customer handed over cash
+   * that nobody put in the drawer. Refund legs are excluded for the mirror-image
+   * reason: this is the document for what the customer *paid*, and after a refund
+   * the order's payments contain a leg going the other way.
+   */
+  const money = order.payments.filter(
+    (payment) => payment.method !== 'points' && payment.direction === 'sale',
+  );
+  const changeThb = money.reduce(
+    (largest, payment) => Math.max(largest, fromDecimal(payment.change_amount ?? 0)),
+    0,
+  );
+  /*
+   * The tender lines come from the stored `received_amount`, not from the order
+   * total: a ฿100 note against a ฿35 bill must reprint as 100.00 rather than
+   * re-deriving 35.00 and contradicting the change beside it.
+   */
+  const tenders = money.map((payment) => ({
+    method: payment.method,
+    amountThb: fromDecimal(payment.amount),
+    receivedThb:
+      payment.received_amount === null ? null : fromDecimal(payment.received_amount),
+  }));
+
+  return {
+    shop,
+    soldAt: order.completed_at ?? order.created_at,
+    receipt: {
+      orderNumber: order.order_number,
+      receiptNumber: order.receipt_number,
+      /*
+       * Formatted here, from the stored integer, so a reprint carries the same
+       * `037` the customer was called by rather than a bare `37` (ADR 0017).
+       */
+      queueNumber:
+        order.queue_number === null ? null : formatQueueNumber(order.queue_number),
+      isVatInvoice: order.is_vat_invoice,
+      vatRatePercent: order.vat_rate_used === null ? null : fromDecimal(order.vat_rate_used),
+      netThb: fromDecimal(order.net_amount),
+      vatThb: fromDecimal(order.vat_amount),
+      subtotalThb: fromDecimal(order.subtotal_amount),
+      discountThb: fromDecimal(order.discount_amount),
+      finalAmountThb: fromDecimal(order.final_amount),
+      changeThb,
+      tenders,
+      pointsEarned: order.points_earned,
+      pointsRedeemed: order.points_redeemed,
+      createdAt: order.created_at.toISOString(),
+      lines: order.items.map((item) => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        unitPrice: fromDecimal(item.unit_price),
+        totalPrice: fromDecimal(item.total_price),
+      })),
+    },
+  };
 }

@@ -64,11 +64,21 @@ over the record, never the record itself.
 - **Signed links need the same care as pickup codes**: short expiry, single order, and
   reissue rather than reuse.
 
-## Known gaps
+## Built, and the gaps left
 
+- **The renderer.** The image is drawn from the order by `receipt-image.ts` over the
+  import-free `receipt-canvas.ts`, and the DOM reprint and the image share one projection
+  (`loadReceiptPayload`) so they cannot drift over a field. Chromium draws a VAT slip and a
+  cash slip in `offline:browser`.
+- **The window.** A fixed 30 days (`RECEIPT_ACCESS_DAYS`), half-open at the boundary, and an
+  order is never deleted when it closes — only the file stops being offered.
+- **The link.** Minted per ask with a fresh id and expiring at the sooner of an hour
+  (`RECEIPT_LINK_TTL_MINUTES`) and the window. The counter mints one at
+  `POST /api/v1/orders/{id}/receipt-link`, and a session-free `GET /api/v1/receipts/{token}`
+  serves the receipt. The shop's own reprint stays deliberately unwindowed.
 - **No PDF.** The decided format is an image (CONTEXT item 13); a PDF would need either a
   dependency or browser print, and neither is chosen.
-- **The link's lifetime is not yet set**, and neither is whether a link is reissued per open
-  or is stable per order.
-- **Nothing is built.** `Receipt.tsx` renders a screen today; the image renderer and the
-  signed link do not exist.
+- **No customer-facing screen yet.** The link and the renderer exist and are exercised over
+  real HTTP and in Chromium, but the page that draws them for a customer arrives with the
+  portal (identity ticket 07), and the counter's own "hand the link over" surface is not
+  built either.
