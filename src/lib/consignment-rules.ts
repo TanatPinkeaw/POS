@@ -51,6 +51,31 @@ export function shareFromSale(netExclVatThb: number, percent: number): number {
 }
 
 /**
+ * One line's net, excluding VAT, out of the order's own net.
+ *
+ * The tax snapshot belongs to the order, not to a line: `net_amount` is the whole
+ * bill's taxable base *after* any order-level discount, so the only honest way to a
+ * single line's net is to allocate the order's net across the lines by what each was
+ * charged. Allocating by the pre-discount line total spreads a discount pro-rata,
+ * which is the same rule `refund-plan.ts` already uses when a refund has to split an
+ * order-level discount — so a consigned line's net and a refund of that line agree.
+ *
+ * When the shop is not VAT-registered, `netAmountThb` is the whole subtotal and this
+ * returns the line total unchanged, which is what a shop with no tax would expect.
+ */
+export function lineNetExclVat(
+  netAmountThb: number,
+  lineTotalThb: number,
+  subtotalThb: number,
+): number {
+  const subtotalSatang = toSatang(subtotalThb);
+  if (subtotalSatang <= 0) {
+    return 0;
+  }
+  return fromSatang(Math.round((toSatang(netAmountThb) * toSatang(lineTotalThb)) / subtotalSatang));
+}
+
+/**
  * The signed debit a refund of a consigned sale writes (ADR 0023 §6).
  *
  * The goods go back to the consignor, so the share goes back with them. Negative by

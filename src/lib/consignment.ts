@@ -24,8 +24,10 @@
 import type { Prisma } from '../generated/prisma/client';
 
 import { recordAudit } from './audit';
+import { lineNetExclVat, shareFromSale } from './consignment-rules';
 import { NotFoundError, ValidationError } from './errors';
 import { adjustStock, type Db } from './inventory';
+import { fromDecimal } from './money';
 
 export interface ConsignmentTerms {
   productId: string;
@@ -206,6 +208,83 @@ export async function withdrawConsignment(
     withdrawnQty,
     stockQty,
   };
+}
+
+export interface RecordShareInput {
+  orderId: string;
+  /** The instant the sale committed, reused as `created_at` so the ledger and the
+   *  order's own books cannot disagree about which day a sale is in. */
+  at: Date;
+}
+
+/**
+ * Writes one payable credit per consigned line of a sale that has just been written
+ * (ADR 0023 §5).
+ *
+ * Called from inside each sale's own transaction — the walk-in bill and the pre-order
+ * handover are the only two places a sale completes — and reads the order it is given
+ * rather than any cart, so the figures come from the rows that are about to commit.
+ * That is what makes a rolled-back sale owe nobody: the credit is written in the same
+ * transaction as the money, so if the money is undone the credit is undone with it.
+ *
+ * The order is read through the transaction (there is no `include`), and its own
+ * `net_amount` — the taxable base after any discount, snapshotted by `resolveSaleTax` —
+ * is split across the lines by `lineNetExclVat`, so a consigned line's share is a
+ * percentage of what that line actually contributed, not of its shelf price. VAT is
+ * excluded because it belongs to the state (ADR 0023 §4).
+ *
+ * A product with no consignor is skipped, which is the ordinary case; the loop exists
+ * for the one line in the cart that is somebody else's. A credit is written even when
+ * the share rounds to zero — a zero row is a record that the line sold, and dropping it
+ * would leave the consignor's statement with a gap where a sale was.
+ */
+export async function recordConsignorShares(db: Db, input: RecordShareInput): Promise<number> {
+  const order = await db.orders.findUniqueOrThrow({
+    where: { id: input.orderId },
+    select: { order_number: true, net_amount: true, subtotal_amount: true },
+  });
+
+  const items = await db.order_items.findMany({
+    where: { order_id: input.orderId },
+    select: {
+      id: true,
+      product_id: true,
+      total_price: true,
+      product: { select: { consignor_user_id: true, consignor_share_percent: true } },
+    },
+    orderBy: { id: 'asc' },
+  });
+
+  const netAmount = fromDecimal(order.net_amount);
+  const subtotal = fromDecimal(order.subtotal_amount);
+
+  let written = 0;
+  for (const item of items) {
+    const consignorUserId = item.product.consignor_user_id;
+    const percent = item.product.consignor_share_percent;
+    if (!consignorUserId || percent === null) {
+      continue;
+    }
+
+    const lineNet = lineNetExclVat(netAmount, fromDecimal(item.total_price), subtotal);
+    const amount = shareFromSale(lineNet, percent);
+
+    await db.consignor_payables.create({
+      data: {
+        consignor_user_id: consignorUserId,
+        kind: 'sale',
+        amount_thb: amount,
+        order_id: input.orderId,
+        order_item_id: item.id,
+        product_id: item.product_id,
+        description: `ส่วนแบ่งฝากขายจากบิล ${order.order_number}`,
+        created_at: input.at,
+      },
+    });
+    written += 1;
+  }
+
+  return written;
 }
 
 /** Re-exported so a caller can type a `Db` without a second import. */

@@ -8,6 +8,12 @@
  */
 import { recordAudit } from './audit';
 import { bangkokDateString, bangkokParts, dateColumnFromDay } from './bangkok-time';
+/*
+ * The consignor's share is written from the two places a sale completes, inside the
+ * sale's own transaction (ADR 0023 §5). The helper reads the committed order rather
+ * than the cart, so both sites record the same figures from the same rows.
+ */
+import { recordConsignorShares } from './consignment';
 import { prisma } from './db';
 import { optionalNumberEnv } from './env';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
@@ -624,6 +630,13 @@ export async function createPosSale(input: {
       })),
     });
 
+    /*
+     * The consignor's share is written here, in the sale's own transaction, right
+     * after the lines it is computed from and before the stock moves. A sale that
+     * rolls back owes nobody because this row rolls back with it (ADR 0023 §5).
+     */
+    await recordConsignorShares(tx, { orderId: order.id, at });
+
     for (const line of priced) {
       const balanceAfter = await sellFromStock(tx, {
         productId: line.productId,
@@ -1038,6 +1051,14 @@ export async function completeOrder(input: {
     const at = new Date();
     const tax = await resolveSaleTax(tx, finalAmount, at);
 
+    /*
+     * The second completion site: a pre-order's share is written at handover, never at
+     * placement, because this is the moment the reservation became a sale and the money
+     * moved (ADR 0023 §5, §8). The order's `net_amount` is still the placement-time zero
+     * here, so the share is deliberately written *after* the order update below rather
+     * than before it.
+     */
+
     for (const item of order.items) {
       const balanceAfter = await commitReservedStock(tx, {
         productId: item.product_id,
@@ -1104,6 +1125,13 @@ export async function completeOrder(input: {
         points_redeemed: settlement.pointsRedeemed,
       },
     });
+
+    /*
+     * Now that the tax snapshot is on the order, the handover's share can be computed
+     * from the same `net_amount` the sale will keep. Written after the status update so
+     * a share can never be recorded for a handover that did not complete.
+     */
+    await recordConsignorShares(tx, { orderId: order.id, at });
 
     return {
       orderId: order.id,

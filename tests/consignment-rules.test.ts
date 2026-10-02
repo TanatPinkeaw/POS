@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import {
   assertPayable,
   ledgerBalance,
+  lineNetExclVat,
   payoutEntry,
   refundReversal,
   shareFromSale,
@@ -74,6 +75,32 @@ describe('a refund and a payout over the ledger', () => {
       refundReversal(60),
     ]);
     expect(balance).toBe(-60);
+  });
+});
+
+describe('allocating a line’s net out of the order’s net', () => {
+  it('returns the line total when the order is not VAT-registered', () => {
+    // With no tax the net is the whole subtotal, so a line keeps its own total.
+    expect(lineNetExclVat(250, 100, 250)).toBe(100);
+  });
+
+  it('splits the net across the lines by what each was charged', () => {
+    // ฿107 gross is ฿100 net; a ฿50 line of a ฿107 bill contributes ฿100 × 50/107.
+    const lineNet = lineNetExclVat(100, 50, 107);
+    expect(lineNet).toBeCloseTo(46.73, 2);
+    // The lines still add back to the net, to the satang, or the share would be
+    // taken of a figure that is not the sale's.
+    expect(roundThb(lineNetExclVat(100, 57, 107) + lineNet)).toBe(100);
+  });
+
+  it('spreads an order-level discount pro-rata', () => {
+    // Two equal lines of a discounted bill each take half the net.
+    expect(lineNetExclVat(80, 100, 200)).toBe(40);
+  });
+
+  it('is zero when there is no net or no subtotal to divide by', () => {
+    expect(lineNetExclVat(0, 100, 200)).toBe(0);
+    expect(lineNetExclVat(100, 100, 0)).toBe(0);
   });
 });
 
