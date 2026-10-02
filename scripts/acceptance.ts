@@ -744,6 +744,18 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   );
 
   /*
+   * The page the counter's QR points at. The link is handed over to be *seen*, so it
+   * must open the receipt and not the JSON — the same token, read as a browser would.
+   */
+  const receiptPage = await stranger.raw(`/receipts?t=${encodeURIComponent(link.token)}`);
+  const receiptPageHtml = await receiptPage.text();
+  check(
+    'and the same link opens a page that draws that receipt',
+    receiptPage.status === 200 && receiptPageHtml.includes(sale.receiptNumber ?? '\u0000'),
+    receiptPage.status,
+  );
+
+  /*
    * Flip the *first* character of the signature, not the last. Base64url decoders
    * tolerate non-canonical trailing bits, so a flipped last character can decode to
    * the very same signature bytes and verify — the mutation would be a no-op for

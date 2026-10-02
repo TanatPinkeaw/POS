@@ -30,6 +30,13 @@ describe('public paths', () => {
     expect(isPublicPath('/shop/account')).toBe(false);
     expect(isPublicPath('/shop/products')).toBe(false);
   });
+
+  it('makes a receipt link public, because a walk-in has no session', () => {
+    // ADR 0021 §3: the signed token in the query is the credential, so the page must
+    // be reachable without signing in — and its siblings are unaffected.
+    expect(isPublicPath('/receipts')).toBe(true);
+    expect(isPublicPath('/receipts/abc')).toBe(false);
+  });
 });
 
 describe('the page matrix', () => {

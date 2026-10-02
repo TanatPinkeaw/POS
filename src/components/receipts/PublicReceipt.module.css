@@ -1,0 +1,23 @@
+/*
+ * The customer's receipt page.
+ *
+ * A plain, centred column: this page has one job — show the slip — and any chrome
+ * around it would only be something to hide before printing. The width is the receipt
+ * sheet's own (80mm through `ln-receipt-sheet`); the actions sit above it and are
+ * excluded from the print sheet by `ln-no-print`.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ln-space-4);
+  min-height: 100dvh;
+  padding: var(--ln-space-5);
+  background: var(--ln-bg);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ln-space-3);
+}

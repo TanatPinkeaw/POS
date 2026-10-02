@@ -14,6 +14,8 @@ import { fromDecimal, sumThb } from './money';
 import type { OrderStatus } from './order-state';
 import { createPickupToken } from './pickup-token';
 import { formatQueueNumber } from './queue-number';
+import { receiptWithinAccessWindow } from './receipt-access';
+import { ReceiptWindowClosedError, verifyReceiptToken } from './receipt-link';
 import { loadShop } from './shop';
 import { UNCONFIGURED_SHOP, type ShopView } from './shop-view';
 
@@ -271,6 +273,29 @@ export interface ReceiptPayload {
    * completed-at column.
    */
   soldAt: Date;
+}
+
+/**
+ * One order's receipt, resolved from the signed link a customer holds (ADR 0021 §2, §3).
+ *
+ * The two gates the API route and the printable page both need, in one place so they
+ * cannot drift: `verifyReceiptToken` proves we issued a link for this order and it has
+ * not expired (422 otherwise), and the access window is recomputed from the order's own
+ * sale instant on every read — a link minted on the last day can still see the window
+ * close under it (410). Shared rather than duplicated because a link that works on the
+ * page but not the API (or the reverse) is a bug nobody would see until a customer did.
+ */
+export async function loadReceiptByLink(
+  token: string,
+): Promise<{ shop: ShopView; receipt: ReceiptData }> {
+  const { orderId } = await verifyReceiptToken(token);
+  const { shop, receipt, soldAt } = await loadReceiptPayload(orderId);
+
+  if (!receiptWithinAccessWindow(soldAt)) {
+    throw new ReceiptWindowClosedError();
+  }
+
+  return { shop, receipt };
 }
 
 export async function loadReceiptPayload(orderId: string): Promise<ReceiptPayload> {

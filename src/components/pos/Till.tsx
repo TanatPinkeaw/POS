@@ -26,6 +26,7 @@ import { APPROVAL_HEADER } from '@/lib/supervisor-view';
 import { numbersRemaining, offlineNotice } from '@/lib/till-store';
 
 import { PaySheet } from './PaySheet';
+import { ReceiptLinkDialog } from './ReceiptLinkDialog';
 import { RefundDialog, type RefundTarget } from './RefundDialog';
 import { SupervisorApprovalDialog } from './SupervisorApprovalDialog';
 import { useSupervisorApproval } from './useSupervisorApproval';
@@ -81,6 +82,14 @@ export function Till({
    * mid-refund must not take the refund with it.
    */
   const [refundTarget, setRefundTarget] = useState<RefundTarget | null>(null);
+  /*
+   * The bill whose receipt link is being handed over. Held like `refundTarget`
+   * rather than inside the dialog, so the dialog can render over the receipt sheet
+   * the cashier is already looking at.
+   */
+  const [linkTarget, setLinkTarget] = useState<{ orderId: string; orderNumber: string } | null>(
+    null,
+  );
 
   const toast = useToast();
   const approval = useSupervisorApproval();
@@ -375,6 +384,26 @@ export function Till({
               the three yet (ADR 0019). The button is absent rather than present-and-failing,
               because a cashier who taps it is a cashier telling the customer yes.
             */}
+            {/*
+              Hand the customer the link to keep. Only for a bill the shop has: a
+              sale still sitting in the device's queue has no order on the server to
+              mint a link against (ADR 0019), so the button is absent rather than
+              present-and-failing.
+            */}
+            {till.receipt?.orderId && !till.receipt.offline ? (
+              <Button
+                variant="secondary"
+                icon="qr"
+                onClick={() =>
+                  setLinkTarget({
+                    orderId: till.receipt!.orderId!,
+                    orderNumber: till.receipt!.orderNumber,
+                  })
+                }
+              >
+                ให้ลิงก์ใบเสร็จ
+              </Button>
+            ) : null}
             {till.receipt?.orderId ? (
               <Button
                 variant="secondary"
@@ -402,6 +431,14 @@ export function Till({
         ) : null}
         {till.receipt ? <Receipt shop={shop} data={till.receipt} when={till.receipt.at} /> : null}
       </Overlay>
+
+      {linkTarget ? (
+        <ReceiptLinkDialog
+          orderId={linkTarget.orderId}
+          orderNumber={linkTarget.orderNumber}
+          onClose={() => setLinkTarget(null)}
+        />
+      ) : null}
 
       {refundTarget ? (
         <RefundDialog

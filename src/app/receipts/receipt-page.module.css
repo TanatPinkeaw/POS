@@ -1,0 +1,19 @@
+/*
+ * The link-opened receipt page.
+ *
+ * A bare centring column, and deliberately not the app shell: this page belongs to a
+ * customer with no account, so there is no nav, no session and nothing to frame it
+ * with. The refusal state reuses the same wrapper so a dead link still looks like the
+ * shop rather than like a browser error.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ln-space-4);
+  min-height: 100dvh;
+  padding: var(--ln-space-5);
+  background: var(--ln-bg);
+}

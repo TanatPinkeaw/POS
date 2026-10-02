@@ -66,11 +66,13 @@ over the record, never the record itself.
 
 ## Built, and the gaps left
 
-- **The customer's side is built.** `/shop/account` lists the last month's receipts and
-  downloads each as a PNG drawn from the order (`receipt-image.ts` in the browser), through
-  `GET /api/v1/orders/[id]/receipt`, which now branches on role: a member reaches only their own
-  order *with* the window enforced, staff reprint anything unwindowed. The counter still has no
-  "hand this link over" surface of its own.
+- **The customer's side, and the hand-over, are built.** `/shop/account` lists the last
+  month's receipts and downloads each as a PNG drawn from the order (`receipt-image.ts` in the
+  browser), through `GET /api/v1/orders/[id]/receipt`, which branches on role: a member reaches
+  only their own order *with* the window enforced, staff reprint anything unwindowed. A signed
+  link now opens a printable page at `/receipts?t=…` (public, no session — the token is the
+  credential) that draws the receipt and offers print and download; the till's receipt sheet
+  mints a fresh link and shows its QR and URL for the customer to scan, print or read out.
 
 - **The renderer.** The image is drawn from the order by `receipt-image.ts` over the
   import-free `receipt-canvas.ts`, and the DOM reprint and the image share one projection

@@ -19,29 +19,20 @@
  *      window answers 410 rather than serving a file the customer is no longer
  *      offered.
  *
- * The response is the same `{ shop, receipt }` shape the reprint route returns, so
- * the client draws it with the one renderer it already has. Nothing here writes: a
- * download never touches the order (ADR 0021 §1 — the order is the record, the image
- * is derived).
+ * Both live in `loadReceiptByLink`, shared with the printable page at `/receipts` so
+ * the JSON and the page a customer actually opens cannot disagree. The response is the
+ * same `{ shop, receipt }` shape the reprint route returns, so a client draws it with
+ * the one renderer it already has. Nothing here writes: a download never touches the
+ * order (ADR 0021 §1 — the order is the record, the image is derived).
  */
 import { withApi } from '@/lib/api';
-import { loadReceiptPayload } from '@/lib/order-view';
-import { receiptWithinAccessWindow } from '@/lib/receipt-access';
-import { ReceiptWindowClosedError, verifyReceiptToken } from '@/lib/receipt-link';
+import { loadReceiptByLink } from '@/lib/order-view';
 
 type RouteContext = { params: Promise<{ token: string }> };
 
 export async function GET(_request: Request, context: RouteContext): Promise<Response> {
   return withApi(async () => {
     const { token } = await context.params;
-
-    const { orderId } = await verifyReceiptToken(token);
-    const { shop, receipt, soldAt } = await loadReceiptPayload(orderId);
-
-    if (!receiptWithinAccessWindow(soldAt)) {
-      throw new ReceiptWindowClosedError();
-    }
-
-    return { shop, receipt };
+    return loadReceiptByLink(token);
   });
 }

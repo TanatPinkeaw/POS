@@ -17,7 +17,7 @@
  * deliberately so — see `offSiteReferences`. Three properties are worth more than
  * cleverness:
  *
- *   * **The route list is data.** Twenty paths across four areas, each with the
+ *   * **The route list is data.** Twenty-one paths across four areas, each with the
  *     session it needs and the path it must land on. That table is also the only
  *     place the areas are written down outside `roles.ts`, so a screen that is
  *     moved and forgotten shows up as a redirect to a page the audit did not
@@ -86,6 +86,7 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/pos/queue', area: 'pos', session: 'cashier', landsOn: '/pos/queue', label: 'the drink queue' },
   { path: '/pos/preorders', area: 'pos', session: 'cashier', landsOn: '/pos/preorders', label: 'the pre-order board' },
   { path: '/shop', area: 'public', session: 'none', landsOn: '/shop', label: 'the customer sign-in, both doors' },
+  { path: '/receipts', area: 'public', session: 'none', landsOn: '/receipts', label: 'the receipt a signed link opens' },
   { path: '/shop/products', area: 'shop', session: 'member', landsOn: '/shop/products', label: 'the member catalogue' },
   { path: '/shop/orders', area: 'shop', session: 'member', landsOn: '/shop/orders', label: 'the member orders' },
   { path: '/shop/account', area: 'shop', session: 'member', landsOn: '/shop/account', label: 'the member account' },

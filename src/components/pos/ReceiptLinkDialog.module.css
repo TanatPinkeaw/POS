@@ -1,0 +1,46 @@
+/*
+ * The receipt-link hand-over.
+ *
+ * Centred like the payment QR it is modelled on: the customer holds their phone up to
+ * the screen, so the code wants white behind it and nothing beside it competing for
+ * the camera. The URL below is selectable for reading down a phone.
+ */
+
+.panel {
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-3);
+  text-align: center;
+}
+
+.frame {
+  padding: var(--ln-space-2);
+  border: 1px solid var(--ln-border-subtle);
+  border-radius: var(--ln-radius-md);
+  background: #ffffff;
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.url {
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+  user-select: all;
+}
+
+.copyRow {
+  display: flex;
+  justify-content: center;
+}
+
+.loading {
+  margin: 0;
+  color: var(--ln-text-muted);
+}

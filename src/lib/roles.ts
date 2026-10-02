@@ -168,6 +168,13 @@ export function isPublicPath(pathname: string): boolean {
      * exact, not a prefix — `/shop/products` and the rest of the area stay guarded.
      */
     pathname === '/shop' ||
+    /*
+     * The customer's receipt, opened from a signed link (ADR 0021 §3): a walk-in has
+     * no session, and the token in the query is the credential. Without this the proxy
+     * would send them to a login they cannot satisfy. The route handler and the page
+     * still verify the token; being reachable is not being authorised.
+     */
+    pathname === '/receipts' ||
     pathname.startsWith('/uploads/')
   );
 }
