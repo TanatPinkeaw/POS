@@ -47,6 +47,135 @@ async function storageProbe(page: Page): Promise<void> {
   assert.deepEqual(outcome.state, { snapshot: null, queue: [] }); checks++;
 }
 
+/**
+ * Compile the receipt's pure modules and draw a real slip on a real canvas.
+ *
+ * The renderer is split so this can happen: `receipt-canvas.ts` imports nothing,
+ * and `receipt-image.ts` pulls only the shared pure vocabulary (`bangkok-time`,
+ * `shop-view`, `tender`, `vat`, `money`, `errors`). The probe transpiles each to
+ * CommonJS, wires them together in the page, and draws — so the browser's canvas
+ * API is exercised rather than mocked, the same way `storageProbe` exercises
+ * IndexedDB. There is one flat directory to resolve, which is why the loader is a
+ * two-line specifier match rather than a module system.
+ */
+async function receiptProbe(page: Page): Promise<void> {
+  const modules: Record<string, string> = {};
+  for (const path of [
+    'src/lib/receipt-image.ts',
+    'src/lib/receipt-canvas.ts',
+    'src/lib/bangkok-time.ts',
+    'src/lib/errors.ts',
+    'src/lib/shop-view.ts',
+    'src/lib/vat.ts',
+    'src/lib/money.ts',
+    'src/lib/tender.ts',
+  ]) {
+    modules[path.slice('src/'.length)] = ts.transpileModule(readFileSync(path, 'utf8'), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+  }
+
+  // tsx compiles this file with esbuild's `keepNames`, which wraps the `const`
+  // helpers *inside* the callback below. Playwright serializes that callback and runs
+  // it in the page, where esbuild's `__name` helper does not exist — so stand a no-op
+  // one up first. (Only `const`-bound functions are wrapped; the inline arrow here is
+  // left alone, which is why the shim itself needs no shim.)
+  await page.evaluate(() => {
+    (window as unknown as Record<string, unknown>).__name = (fn: unknown) => fn;
+  });
+
+  const outcome = await page.evaluate((sources) => {
+    const cache: Record<string, { exports: unknown }> = {};
+    const load = (id: string): any => {
+      const cached = cache[id];
+      if (cached) return cached.exports;
+      const code = sources[id];
+      if (!code) throw new Error(`receipt probe is missing module ${id}`);
+      const module = { exports: {} as unknown };
+      cache[id] = module;
+      const dir = id.slice(0, id.lastIndexOf('/') + 1);
+      const localRequire = (spec: string): unknown => {
+        const target = spec.startsWith('@/lib/')
+          ? `lib/${spec.slice('@/lib/'.length)}`
+          : spec.startsWith('./')
+            ? `${dir}${spec.slice(2)}`
+            : null;
+        if (!target) throw new Error(`receipt probe cannot resolve "${spec}" from "${id}"`);
+        return load(`${target}.ts`);
+      };
+      new Function('module', 'exports', 'require', code)(module, module.exports, localRequire);
+      return module.exports;
+    };
+
+    const image = load('lib/receipt-image.ts');
+    const canvas = load('lib/receipt-canvas.ts');
+    const when = '2026-10-02T03:00:00.000Z';
+    const shop = {
+      name: 'ร้านกาแฟทดสอบ', legalName: null, branchLabel: 'สาขา 1', taxId: '1103700123456',
+      address: null, phone: '021234567', isVatRegistered: true, vatRate: 7, pricesIncludeVat: true,
+      receiptPrefix: 'OB', receiptRunningNumber: 123, receiptFooter: 'ขอบคุณที่ใช้บริการ',
+      logoUrl: null, promptpayId: null, promptpayType: null, supervisorDiscountLimitThb: 50,
+    };
+    const order = (vat: boolean) => ({
+      orderNumber: 'OB-000123', receiptNumber: vat ? 'OB-2026-000123' : null, queueNumber: vat ? '037' : null,
+      isVatInvoice: vat, vatRatePercent: vat ? 7 : null, netThb: 100, vatThb: vat ? 7 : 0,
+      subtotalThb: 107, discountThb: 0, finalAmountThb: 107,
+      tenders: [{ method: 'cash', amountThb: 107, receivedThb: 110 }], changeThb: 3,
+      pointsEarned: 0, pointsRedeemed: 0,
+      lines: [{ name: 'ชาเย็น', quantity: 1, unitPrice: 107, totalPrice: 107 }],
+      createdAt: when,
+    });
+
+    const proto = CanvasRenderingContext2D.prototype as unknown as { fillText: (...args: unknown[]) => void };
+    const originalFillText = proto.fillText;
+    const render = (vat: boolean) => {
+      const data = order(vat);
+      const lines = image.buildReceiptLines(shop, data, when);
+      const drawn: string[] = [];
+      proto.fillText = function (this: unknown, text: unknown, ...rest: unknown[]) {
+        drawn.push(String(text));
+        originalFillText.apply(this, [text, ...rest]);
+      };
+      let slip: HTMLCanvasElement;
+      try {
+        slip = image.drawReceiptToCanvas(shop, data, undefined, when);
+      } finally {
+        proto.fillText = originalFillText;
+      }
+      const again = image.drawReceiptToCanvas(shop, data, undefined, when);
+      const pixels = slip.getContext('2d')!.getImageData(0, 0, slip.width, slip.height).data;
+      let ink = 0;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (pixels[i] !== 255 || pixels[i + 1] !== 255 || pixels[i + 2] !== 255) ink++;
+      }
+      return {
+        drawn,
+        height: slip.height,
+        expectedHeight: canvas.receiptCanvasHeight(lines, canvas.DEFAULT_RECEIPT_CANVAS),
+        url: slip.toDataURL('image/png'),
+        urlAgain: again.toDataURL('image/png'),
+        ink,
+      };
+    };
+
+    return { vat: render(true), plain: render(false) };
+  }, modules);
+
+  check(outcome.vat.url.startsWith('data:image/png'), 'the receipt renders to a PNG data URL');
+  check(outcome.vat.url === outcome.vat.urlAgain, 'the same order renders the same image twice');
+  check(outcome.vat.height === outcome.vat.expectedHeight && outcome.vat.height > 200, 'the canvas is sized to the document before it is drawn');
+  check(outcome.vat.ink > 0, 'drawing puts ink on the page');
+  check(
+    ['ร้านกาแฟทดสอบ', 'เลขที่', 'OB-2026-000123', 'คิวที่', '037', 'ชาเย็น × 1', 'ยอดก่อน VAT', 'VAT 7%', 'ยอดชำระ', 'รับเงินสด', 'เงินทอน', 'ขอบคุณที่ใช้บริการ'].every(
+      (text) => outcome.vat.drawn.includes(text),
+    ),
+    'the drawn slip carries the order number, the tax split, and the tenders',
+  );
+  check(outcome.plain.url !== outcome.vat.url, 'a VAT bill and a cash bill are not the same image');
+  check(!outcome.plain.drawn.includes('VAT 7%') && !outcome.plain.drawn.includes('1103700123456'), 'a non-VAT slip carries no tax line and no tax id');
+  check(outcome.plain.drawn.includes('ใบเสร็จรับเงิน'), 'a non-VAT slip names the document a receipt');
+}
+
 async function state(page: Page): Promise<{ queue: { clientRef: string }[]; snapshot: { catalogue: unknown[]; heldBlocks: unknown[] } | null }> {
   return page.evaluate(async () => {
     const db = await new Promise<IDBDatabase>((resolve, reject) => { const r = indexedDB.open('pos-offline', 1); r.onsuccess = () => resolve(r.result); r.onerror = () => reject(r.error); });
@@ -82,6 +211,7 @@ async function main(): Promise<void> {
     await page.goto(`${base}/pos`);
     await expect(page.getByRole('button', { name: 'เตรียมเครื่องขายออฟไลน์' })).toBeEnabled();
     await storageProbe(page);
+    await receiptProbe(page);
     // Reset the page's in-memory store after probing its adapter.
     await page.reload();
     await page.getByRole('button', { name: 'เตรียมเครื่องขายออฟไลน์' }).click();
