@@ -20,6 +20,19 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Enter your password'),
 });
 
+/**
+ * The number to send a sign-in OTP to (ADR 0020 §5).
+ *
+ * Trimmed and length-bounded, not shape-checked: this door is also the one a
+ * first-time customer uses to prove a number we have never seen, so it must accept
+ * a number in any of the forms people write them, and the same loose `.max(20)` the
+ * counter's enrolment uses. Whether the number is already a customer is a question
+ * for later (ticket 02), not a reason to refuse the send.
+ */
+export const otpSendSchema = z.object({
+  phone: z.string().trim().min(1, 'Enter a phone number').max(20),
+});
+
 export const categoryCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
 });

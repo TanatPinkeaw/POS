@@ -34,7 +34,9 @@ export type RateLimitPolicyName =
   | 'setup_attempt'
   | 'pair_attempt'
   | 'inbound_notification'
-  | 'member_create';
+  | 'member_create'
+  | 'otp_send_number'
+  | 'otp_send_address';
 
 export interface RateLimitPolicy {
   /** Attempts that may be spent back to back, from an idle caller. */
@@ -153,6 +155,21 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * ceiling is invisible at the counter and still stops a script.
    */
   member_create: { capacity: 10, windowMs: 10 * 60_000 },
+  /**
+   * Sending an OTP to one number, from one address (ADR 0020 §5). Keyed by both,
+   * like `login_failure`: the number is what is being messaged and the address is
+   * how one attacker is recognised. Three back to back is a retry or two; a fourth
+   * in a quarter hour is somebody making the shop pay to text a stranger.
+   */
+  otp_send_number: { capacity: 3, windowMs: 15 * 60_000 },
+  /**
+   * Sending OTPs from one address, whatever the number. The companion to
+   * `otp_send_number`, and the reason varying the number does not walk around it:
+   * this one is not per number, so walking a list of numbers spends *this* bucket.
+   * Sending is unauthenticated and costs money per attempt, which is exactly the
+   * shape a limiter exists for.
+   */
+  otp_send_address: { capacity: 10, windowMs: 15 * 60_000 },
 };
 
 /** A caller's bucket, as it stands after the last decision about it. */

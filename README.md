@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 959 tests across 64 files: unit + integration
+npm test                # 995 tests across 67 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 18 screens render, and render styled
@@ -764,8 +764,11 @@ goes through them.
 Deferred deliberately, and listed here rather than discovered during service:
 
 - **Customer sign-in with Google.** Decided in ADR 0020 (Google plus a phone OTP, with
-the phone still the identity), designed, and unbuilt: enrolment at the counter is the only
-way a customer exists today.
+the phone still the identity). The credential half is built — a Google id token is verified
+in-process against Google's JWKS, a unique `google_subject` column exists, and an OTP door
+sends a code through a provider chosen in `.env`, rate-limited per number and per address —
+but the signup and linking flow that ties the two to a customer row is still to come:
+enrolment at the counter remains the only way a customer exists today.
 - **Electronic receipts.** Decided in ADR 0021 (an image generated from the order, the last
 month downloadable, a signed link for a walk-in). The renderer, the one-month window and the
 signed link are built — a walk-in's link fetches the bill over HTTP with no session — but no

@@ -152,6 +152,24 @@ export type audit_logs = Prisma.audit_logsModel
  */
 export type rate_limit_buckets = Prisma.rate_limit_bucketsModel
 /**
+ * Model otp_challenges
+ * 
+ * One in-flight phone-ownership challenge (ADR 0020 §5).
+ * 
+ * Keyed by the phone itself: issuing a new code replaces the row rather than
+ * stacking challenges, so there is exactly one live code per number and a test
+ * cannot accidentally verify a code from a previous send. The code is stored
+ * hashed — a six-digit secret has only a million values, and a plaintext column
+ * would hand an attacker the whole space in one leak — with an expiry and an
+ * attempt ceiling so exhausting it costs more than guessing it.
+ * 
+ * Deliberately not tied to a `users` row by a foreign key: an OTP proves the
+ * caller holds a phone, whether or not that phone is already a customer. That is
+ * what lets the same door serve a first signup and a returning link alike
+ * (ticket 02).
+ */
+export type otp_challenges = Prisma.otp_challengesModel
+/**
  * Model orders
  * 
  */

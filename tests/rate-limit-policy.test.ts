@@ -141,6 +141,8 @@ describe('the policy table', () => {
       'pair_attempt',
       'inbound_notification',
       'member_create',
+      'otp_send_number',
+      'otp_send_address',
     ]);
 
     for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {
@@ -162,6 +164,16 @@ describe('the policy table', () => {
 
     expect(policy.capacity).toBeGreaterThanOrEqual(60);
     expect(policy.capacity).toBeLessThan(1_000);
+  });
+
+  it('caps an OTP send as a cost, per number and per address', () => {
+    const { otp_send_number: perNumber, otp_send_address: perAddress } = RATE_LIMIT_POLICIES;
+
+    // Small per number: a retry or two is normal, a fourth text to one phone is not.
+    expect(perNumber.capacity).toBeGreaterThanOrEqual(2);
+    expect(perNumber.capacity).toBeLessThanOrEqual(5);
+    // And the address bucket is the wider one, so varying the number cannot dodge it.
+    expect(perAddress.capacity).toBeGreaterThan(perNumber.capacity);
   });
 
   it('caps enrolments as a burst a person cannot type, not as a daily quota', () => {

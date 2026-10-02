@@ -62,6 +62,7 @@ export const ModelName = {
   cash_shifts: 'cash_shifts',
   audit_logs: 'audit_logs',
   rate_limit_buckets: 'rate_limit_buckets',
+  otp_challenges: 'otp_challenges',
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
@@ -140,6 +141,7 @@ export type Number_blocksScalarFieldEnum = (typeof Number_blocksScalarFieldEnum)
 export const UsersScalarFieldEnum = {
   id: 'id',
   email: 'email',
+  google_subject: 'google_subject',
   phone: 'phone',
   password_hash: 'password_hash',
   full_name: 'full_name',
@@ -263,6 +265,18 @@ export const Rate_limit_bucketsScalarFieldEnum = {
 } as const
 
 export type Rate_limit_bucketsScalarFieldEnum = (typeof Rate_limit_bucketsScalarFieldEnum)[keyof typeof Rate_limit_bucketsScalarFieldEnum]
+
+
+export const Otp_challengesScalarFieldEnum = {
+  phone: 'phone',
+  code_hash: 'code_hash',
+  attempts: 'attempts',
+  expires_at: 'expires_at',
+  consumed_at: 'consumed_at',
+  created_at: 'created_at'
+} as const
+
+export type Otp_challengesScalarFieldEnum = (typeof Otp_challengesScalarFieldEnum)[keyof typeof Otp_challengesScalarFieldEnum]
 
 
 export const OrdersScalarFieldEnum = {

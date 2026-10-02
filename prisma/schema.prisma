@@ -372,6 +372,12 @@ enum audit_action {
 model users {
   id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email               String?   @unique @db.VarChar(255)
+  // ---------------------------------------------------- a Google door (ADR 0020)
+  // The subject id from a verified Google id token, so a returning customer who
+  // signed in with Google is recognised as the same row. Unique, so one Google
+  // account cannot attach to two customers. Null is the normal state: the counter
+  // flow (ADR 0011) never sets it, and the phone remains the identity.
+  google_subject      String?   @unique @db.VarChar(255)
   phone               String    @unique @db.VarChar(20)
   password_hash       String    @db.VarChar(255)
   full_name           String    @db.VarChar(100)
@@ -598,6 +604,29 @@ model rate_limit_buckets {
 }
 
 // ---------------------------------------------------------------- orders
+
+///
+/// One in-flight phone-ownership challenge (ADR 0020 §5).
+///
+/// Keyed by the phone itself: issuing a new code replaces the row rather than
+/// stacking challenges, so there is exactly one live code per number and a test
+/// cannot accidentally verify a code from a previous send. The code is stored
+/// hashed — a six-digit secret has only a million values, and a plaintext column
+/// would hand an attacker the whole space in one leak — with an expiry and an
+/// attempt ceiling so exhausting it costs more than guessing it.
+///
+/// Deliberately not tied to a `users` row by a foreign key: an OTP proves the
+/// caller holds a phone, whether or not that phone is already a customer. That is
+/// what lets the same door serve a first signup and a returning link alike
+/// (ticket 02).
+model otp_challenges {
+  phone       String    @id @db.VarChar(20)
+  code_hash   String    @db.VarChar(255)
+  attempts    Int       @default(0)
+  expires_at  DateTime  @db.Timestamptz(6)
+  consumed_at DateTime? @db.Timestamptz(6)
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+}
 
 model orders {
   id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

@@ -36,7 +36,7 @@
  */
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
 
 import { roundThb } from '../src/lib/money';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
@@ -141,6 +141,17 @@ const PARTIAL_CSV = [
  * two scripts drift apart.
  */
 let base = '';
+
+/**
+ * A gateway this run owns, for the OTP door (ADR 0020 §5).
+ *
+ * Created before the app server is started, because the app reads its OTP
+ * configuration from the environment at boot — the same constraint section 12's
+ * notification gateway does not have, since its worker is spawned per run.
+ */
+let otpGateway: Server | null = null;
+/** What the app posted to the OTP gateway, in order. */
+const otpInbox: { to?: string; code?: string; text?: string; kind?: string }[] = [];
 
 /* ------------------------------------------------------------------ the run */
 
@@ -1894,6 +1905,58 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     enrolRows[0] ?? enrolTrail.total,
   );
 
+  /* ------------------------------------------- 15. a code that costs money */
+  section('15. A code to prove a phone');
+  if (seedGuardUrl !== null) {
+    /*
+     * The OTP door (ADR 0020 §5) is unauthenticated on purpose, and every call pays
+     * to text somebody. The run points it at a gateway it owns and asserts the code
+     * gets there, then that a burst is refused — the two things a shop cannot afford
+     * to get wrong about a door that spends money per attempt. Last, because the two
+     * sections above count the trail globally and a trip here would be a third row.
+     */
+    const otpPhone = '0891112222';
+    const before = otpInbox.length;
+    const sent = await anonymous.call<{ sent: boolean; expiresInMinutes: number }>(
+      '/api/v1/auth/otp',
+      { method: 'POST', body: { phone: otpPhone } },
+    );
+    check('the OTP door accepts a send and reports success', sent.sent === true, sent);
+
+    const delivered = otpInbox[before];
+    check(
+      "the code reaches the shop's gateway, addressed to the phone",
+      delivered?.to === otpPhone && delivered?.kind === 'otp',
+      delivered,
+    );
+    check(
+      'and it is a six-digit code the customer can read',
+      /^\d{6}$/.test(delivered?.code ?? ''),
+      delivered?.code,
+    );
+
+    // Two more fills the per-number bucket of three; the fourth is refused by it.
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: otpPhone } });
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: otpPhone } });
+    const burst = await anonymous.request('/api/v1/auth/otp', {
+      method: 'POST',
+      body: { phone: otpPhone },
+    });
+    check('a burst of sends to one number is refused (429)', burst.status === 429, burst.status);
+
+    // The bucket is keyed by the number as well as the address, so a second person
+    // is not locked out by the first one's burst.
+    const other = await anonymous.call<{ sent: boolean }>('/api/v1/auth/otp', {
+      method: 'POST',
+      body: { phone: '0891113333' },
+    });
+    check(
+      'and a different number still sends, so one person cannot lock the door for another',
+      other.sent === true,
+      other,
+    );
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -1967,6 +2030,30 @@ async function main(): Promise<void> {
         shell('next build', 'npx next build');
       }
 
+      /*
+       * The OTP gateway, in this process, and pointed at by the app's own
+       * environment before it boots. A real SMS provider would make this leg a test
+       * of somebody else's uptime; a loopback listener proves the same thing — the
+       * code leaves the door — with nothing to sign up for.
+       */
+      const otpPort = await freePort(3312);
+      otpGateway = createServer((request, response) => {
+        const chunks: Buffer[] = [];
+        request.on('data', (chunk: Buffer) => chunks.push(chunk));
+        request.on('end', () => {
+          try {
+            otpInbox.push(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+          } catch {
+            otpInbox.push({ text: 'unparseable' });
+          }
+          response.writeHead(200, { 'content-type': 'application/json' });
+          response.end('{"ok":true}');
+        });
+      });
+      await new Promise<void>((resolve) => otpGateway!.listen(otpPort, '127.0.0.1', resolve));
+      process.env.OTP_CHANNEL = 'webhook';
+      process.env.OTP_WEBHOOK_URL = `http://127.0.0.1:${otpPort}/otp`;
+
       const port = await freePort(FIRST_PORT);
       base = `http://127.0.0.1:${port}`;
       console.log(`\n4. Serving the build on ${base}`);
@@ -1977,6 +2064,11 @@ async function main(): Promise<void> {
     }
 
     const failures = await runChecks(scratch);
+
+    if (otpGateway !== null) {
+      await new Promise<void>((resolve) => otpGateway!.close(() => resolve()));
+      otpGateway = null;
+    }
 
     if (child !== null) {
       console.log('\n5. Shutting the acceptance server down');
@@ -1995,6 +2087,10 @@ async function main(): Promise<void> {
     console.log('');
     process.exit(failures === 0 ? 0 : 1);
   } catch (error) {
+    if (otpGateway !== null) {
+      await new Promise<void>((resolve) => otpGateway!.close(() => resolve()));
+      otpGateway = null;
+    }
     if (child !== null) {
       await stopServer(child);
     }

@@ -99,12 +99,25 @@ keeps the cross-role uniqueness that makes sign-in unambiguous.
 - **The SMS provider is a seam, not a commitment.** One interface, one implementation chosen
   at deploy time through `.env`, exactly as `NOTIFY_CHANNEL` is.
 
-## Known gaps, stated rather than discovered
+## Built, and the gaps left
 
+- **The credential half is built.** `src/lib/google-id-token.ts` verifies an id token in
+  process against Google's JWKS — RS256, this deployment's client id, Google's own issuer —
+  and `users.google_subject` is nullable and unique, so a Google account belongs to exactly
+  one customer. A token minted for another app, expired, or signed with another key is
+  refused; a symmetric token offered where an RSA one was expected is refused too.
+- **The phone half is built.** `otp.ts` is the provider seam (`OTP_CHANNEL=webhook` plus a URL
+  and an optional secret, the shape `NOTIFY_CHANNEL` already has) and `otp-store.ts` keeps one
+  hashed, expiring, attempt-limited challenge per phone. The send door is unauthenticated and
+  rate-limited per number *and* per address (`otp_send_number`, `otp_send_address`).
 - **OTP-once means a number can be captured.** If a phone is later reassigned and its new
   owner signs in, nothing re-proves that they are not the original customer. Step-up on the
   sensitive actions (redeeming points, changing a number) is the mitigation and is decided;
   step-up on every sign-in is deliberately not.
-- **No provider is chosen**, and no OTP budget is set.
-- **Nothing here is built.** This is the direction; the code today is counter-enrolment only,
-  and the documents that describe that (README, ADR 0010 §enrolment) are still true.
+- **Signup and linking are not built.** Ticket 02 ties a verified Google credential and a
+  proved phone to a customer row — creating one, or attaching the Google subject to the row
+  that already owns the number. Until then the counter flow (ADR 0011) is the only way a
+  customer exists.
+- **No provider is chosen**, and no OTP budget is set: the seam is here, the shop points it
+  at a gateway at deploy, and `GOOGLE_CLIENT_ID` must be set for the Google door to accept
+  anything.

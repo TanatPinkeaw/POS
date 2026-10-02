@@ -408,6 +408,7 @@ export const ModelName = {
   cash_shifts: 'cash_shifts',
   audit_logs: 'audit_logs',
   rate_limit_buckets: 'rate_limit_buckets',
+  otp_challenges: 'otp_challenges',
   orders: 'orders',
   order_items: 'order_items',
   payments: 'payments',
@@ -433,7 +434,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1248,6 +1249,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.rate_limit_bucketsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Rate_limit_bucketsCountAggregateOutputType> | number
+        }
+      }
+    }
+    otp_challenges: {
+      payload: Prisma.$otp_challengesPayload<ExtArgs>
+      fields: Prisma.otp_challengesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.otp_challengesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.otp_challengesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>
+        }
+        findFirst: {
+          args: Prisma.otp_challengesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.otp_challengesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>
+        }
+        findMany: {
+          args: Prisma.otp_challengesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>[]
+        }
+        create: {
+          args: Prisma.otp_challengesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>
+        }
+        createMany: {
+          args: Prisma.otp_challengesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.otp_challengesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>[]
+        }
+        delete: {
+          args: Prisma.otp_challengesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>
+        }
+        update: {
+          args: Prisma.otp_challengesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>
+        }
+        deleteMany: {
+          args: Prisma.otp_challengesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.otp_challengesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.otp_challengesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>[]
+        }
+        upsert: {
+          args: Prisma.otp_challengesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$otp_challengesPayload>
+        }
+        aggregate: {
+          args: Prisma.Otp_challengesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateOtp_challenges>
+        }
+        groupBy: {
+          args: Prisma.otp_challengesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Otp_challengesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.otp_challengesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Otp_challengesCountAggregateOutputType> | number
         }
       }
     }
@@ -2080,6 +2155,7 @@ export type Number_blocksScalarFieldEnum = (typeof Number_blocksScalarFieldEnum)
 export const UsersScalarFieldEnum = {
   id: 'id',
   email: 'email',
+  google_subject: 'google_subject',
   phone: 'phone',
   password_hash: 'password_hash',
   full_name: 'full_name',
@@ -2203,6 +2279,18 @@ export const Rate_limit_bucketsScalarFieldEnum = {
 } as const
 
 export type Rate_limit_bucketsScalarFieldEnum = (typeof Rate_limit_bucketsScalarFieldEnum)[keyof typeof Rate_limit_bucketsScalarFieldEnum]
+
+
+export const Otp_challengesScalarFieldEnum = {
+  phone: 'phone',
+  code_hash: 'code_hash',
+  attempts: 'attempts',
+  expires_at: 'expires_at',
+  consumed_at: 'consumed_at',
+  created_at: 'created_at'
+} as const
+
+export type Otp_challengesScalarFieldEnum = (typeof Otp_challengesScalarFieldEnum)[keyof typeof Otp_challengesScalarFieldEnum]
 
 
 export const OrdersScalarFieldEnum = {
@@ -2941,6 +3029,7 @@ export type GlobalOmitConfig = {
   cash_shifts?: Prisma.cash_shiftsOmit
   audit_logs?: Prisma.audit_logsOmit
   rate_limit_buckets?: Prisma.rate_limit_bucketsOmit
+  otp_challenges?: Prisma.otp_challengesOmit
   orders?: Prisma.ordersOmit
   order_items?: Prisma.order_itemsOmit
   payments?: Prisma.paymentsOmit

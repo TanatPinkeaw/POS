@@ -49,6 +49,9 @@ const TABLES = [
   // spent them. Without this a suite would inherit the previous run's spent bucket
   // and be refused the request it was about to make.
   'rate_limit_buckets',
+  // One live OTP challenge per phone, and it outlives the test that issued it: a
+  // leftover row would let the next test find a code it never sent (ADR 0020 §5).
+  'otp_challenges',
 ];
 
 export { prisma };
