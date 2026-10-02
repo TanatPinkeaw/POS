@@ -110,10 +110,18 @@ keeps the cross-role uniqueness that makes sign-in unambiguous.
   and an optional secret, the shape `NOTIFY_CHANNEL` already has) and `otp-store.ts` keeps one
   hashed, expiring, attempt-limited challenge per phone. The send door is unauthenticated and
   rate-limited per number *and* per address (`otp_send_number`, `otp_send_address`).
+- **A phone change is built.** `changeCustomerPhone` proves the new number by consuming *its*
+  OTP before anything is written, refuses a number another identity already holds (the unique
+  index as the backstop under the read), and audits the move with the number it came from;
+  `PATCH /api/v1/auth/phone` reaches it — session-authenticated, a customer only — and
+  re-issues the session so the token's phone claim agrees with the row at once. A code issued
+  for the old number cannot move the identity: the challenge is looked up by the number being
+  moved *to*.
 - **OTP-once means a number can be captured.** If a phone is later reassigned and its new
   owner signs in, nothing re-proves that they are not the original customer. Step-up on the
-  sensitive actions (redeeming points, changing a number) is the mitigation and is decided;
-  step-up on every sign-in is deliberately not.
+  remaining sensitive action (redeeming points) is the mitigation still to build; step-up on
+  every sign-in is deliberately not. Changing a number is no longer on that list — it always
+  re-proves the new one.
 - **Signup and linking are built.** `src/lib/identity.ts` is the whole rule, and its order is
   the decision: a Google subject already on a row signs in (no code); otherwise the phone is
   proved by consuming the OTP; then whoever owns the number decides the rest — a staff number

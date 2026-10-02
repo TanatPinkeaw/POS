@@ -13,7 +13,7 @@ second does not. That is the spine of the order below.
 ## Effort 1 — Land the offline till
 
 **State.** Built, reviewed on both axes, and **green** when it landed: `npm run verify:all` ran
-all five gates (the tree has grown since — `verify` is now 68 files and 1005 tests). It is
+all five gates (the tree has grown since — `verify` is now 69 files and 1015 tests). It is
 **landed on `main`** as its own commit (`83bacc9`), on top of the base tree.
 
 **What it unlocks.** A shop keeps selling cash when its connection drops, with the numbers,
@@ -37,8 +37,9 @@ land it alone, reviewed, before anything is stacked on it.
 
 **State.** Designed in ADRs 0020, 0021 and 0022; specified and ticketed under
 `.scratch/customer-identity/`; **in progress** — tickets 01 (the Google credential and the
-OTP seam), 02 (signup and linking), 04 (the role matrix), 05 (the receipt renderer) and 06 (the
-signed link and the access window) are done and on `main`, the rest unbuilt.
+OTP seam), 02 (signup and linking), 03 (a phone change that proves the new number), 04 (the role
+matrix), 05 (the receipt renderer) and 06 (the signed link and the access window) are done and on
+`main`, the rest unbuilt.
 
 **What it unlocks.**
 
@@ -50,10 +51,10 @@ signed link and the access window) are done and on `main`, the rest unbuilt.
 - **The customer portal**, which is the screen Effort 3 needs for a consignor to see what they
   are owed.
 
-**Order inside it.** Tickets 01 (Google and OTP), 02 (signup and linking), 04 (the role matrix),
-05 (the receipt renderer) and 06 (the signed link) are done; 03 (phone change and step-up) and 08
-(an owner's Google door) build on 01 and 02; the portal (07) is last, carries the `/shop`
-sign-in screens, and is what Effort 3 waits on.
+**Order inside it.** Tickets 01 (Google and OTP), 02 (signup and linking), 03 (a phone change
+that proves the new number), 04 (the role matrix), 05 (the receipt renderer) and 06 (the signed
+link) are done; 08 (an owner's Google door) builds on 01 and 02; the portal (07) is last, carries
+the `/shop` screens (the two doors and the phone change), and is what Effort 3 waits on.
 
 **Done when.** A new customer can sign up with Google and prove a phone, an existing customer
 can link one without losing their points, a walk-in can leave with a receipt link, an older

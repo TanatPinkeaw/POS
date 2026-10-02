@@ -2200,6 +2200,94 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
+  /* --------------------- 17. A customer moves their number, and proves it */
+  section('17. A phone change proves the new number');
+  if (seedGuardUrl !== null) {
+    /*
+     * ADR 0020 §5: OTP verifies once at signup and again on every phone change. The
+     * number is the identity, so this is the higher-risk act — moving it without
+     * proof, or onto one somebody already holds, is what the rule must refuse. Last,
+     * because the sections above tally the trail globally.
+     */
+    const beforeChange = await member.call<{ phone: string; pointsBalance: number }>(
+      '/api/v1/auth/me',
+    );
+    check(
+      'the customer starts on the number the counter enrolled',
+      beforeChange.phone === MEMBER.phone,
+      beforeChange.phone,
+    );
+
+    // No proof, no move.
+    const noProof = await member.request('/api/v1/auth/phone', {
+      method: 'PATCH',
+      body: { phone: '0864440001', code: '000000' },
+    });
+    check('a phone change without a proved number is refused (422)', noProof.status === 422, noProof.status);
+
+    // The new number is proved by a code *sent to it*.
+    const newPhone = '0864440002';
+    const changeBefore = otpInbox.length;
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: newPhone } });
+    const changeCode = otpInbox[changeBefore]?.code ?? '';
+    const changed = await member.call<{ phone: string; pointsBalance: number }>('/api/v1/auth/phone', {
+      method: 'PATCH',
+      body: { phone: newPhone, code: changeCode },
+    });
+    check(
+      'the code sent to the new number moves the customer onto it',
+      changed.phone === newPhone,
+      changed.phone,
+    );
+    check(
+      'and the points move with the identity, on the same row',
+      changed.pointsBalance === 120,
+      changed.pointsBalance,
+    );
+
+    const afterChange = await member.call<{ phone: string }>('/api/v1/auth/me');
+    check(
+      'and the re-issued session and the row agree on the new number at once',
+      afterChange.phone === newPhone,
+      afterChange.phone,
+    );
+
+    // And the moved-to number is now the way in, with the password they were handed.
+    const reLogin = new Session(() => base);
+    await reLogin.login({ identifier: newPhone, password: MEMBER.password });
+    check(
+      'the customer signs in on the new number with their counter password',
+      (await reLogin.call<{ phone: string }>('/api/v1/auth/me')).phone === newPhone,
+      newPhone,
+    );
+
+    // A phone is the identity, so the change is a security event worth the trail.
+    const phoneTrail = await admin.call<AuditPageDto>('/api/v1/audit?action=member_updated');
+    const phoneRow = phoneTrail.entries.find(
+      (entry) =>
+        Array.isArray(entry.detail?.fields) && (entry.detail?.fields as unknown[]).includes('phone'),
+    );
+    check(
+      'and the change is audited with the number it came from',
+      phoneRow?.detail?.previousPhone === MEMBER.phone,
+      phoneRow?.detail ?? null,
+    );
+
+    // A number a staff account holds is refused, exactly as enrolment refuses it.
+    const takenBefore = otpInbox.length;
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: ADMIN.phone } });
+    const takenCode = otpInbox[takenBefore]?.code ?? '';
+    const taken = await member.request('/api/v1/auth/phone', {
+      method: 'PATCH',
+      body: { phone: ADMIN.phone, code: takenCode },
+    });
+    check(
+      'and moving onto a number a staff account holds is refused (409)',
+      taken.status === 409,
+      taken.status,
+    );
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`

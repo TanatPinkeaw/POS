@@ -52,6 +52,20 @@ export const googleSignupSchema = z.object({
   fullName: z.string().trim().min(1).max(100).optional(),
 });
 
+/**
+ * A customer moving their own number to a new one (ADR 0020 §5).
+ *
+ * The new number and the code that proves it travel together, so there is no window
+ * in which a number is recorded but unproved: the code is checked against the *new*
+ * number, and nothing is written until it matches. The old number is never in the
+ * body — it is whatever the signed-in customer's row already is, because a caller
+ * does not get to name the identity they are moving.
+ */
+export const customerPhoneChangeSchema = z.object({
+  phone: z.string().trim().min(1, 'Enter a phone number').max(20),
+  code: z.string().trim().min(1, 'Enter the code').max(10),
+});
+
 export const categoryCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
 });

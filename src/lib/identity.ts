@@ -29,7 +29,7 @@ import { randomBytes } from 'node:crypto';
 
 import { recordAudit } from './audit';
 import { prisma } from './db';
-import { ConflictError, ValidationError } from './errors';
+import { ConflictError, NotFoundError, ValidationError } from './errors';
 import type { GoogleIdentity } from './google-id-token';
 import { consumeOtpChallenge } from './otp-store';
 import { hashPassword } from './password';
@@ -203,6 +203,101 @@ export async function completeCustomerGoogleSignIn(input: {
     }
     throw error;
   }
+}
+
+/**
+ * Moves a customer's phone to a new number, proving the new one first (ADR 0020 §5).
+ *
+ * This is the other half of "OTP is verified once, and on every phone change". A
+ * phone is the identity — points, order history and the collection code all hang off
+ * it — so moving it is the higher-risk act, and the proof is of the number being
+ * moved *to*, not the one being left. A code minted for the old number is therefore
+ * useless here: the challenge is looked up by the new one.
+ *
+ * The order matches `completeCustomerGoogleSignIn`: prove the new number by
+ * consuming its challenge, then decide, then write. So a wrong or expired code
+ * leaves the row exactly as it was, and no half-moved identity can exist. A new
+ * number another row already holds is refused rather than stolen, and uniqueness
+ * spans every role — a staff number is as taken as another customer's — with the
+ * index as the backstop under the read a race could slip between.
+ *
+ * Changing to the number the row already has is a no-op: there is nothing to prove
+ * and nothing to write down, so it neither spends a code nor earns an audit row.
+ */
+export async function changeCustomerPhone(input: {
+  userId: string;
+  /** The number being moved to; the code must have been sent to *this* one. */
+  newPhone: string;
+  code: string;
+}): Promise<CustomerRow> {
+  const newPhone = normalisePhone(input.newPhone);
+  if (newPhone.length === 0) {
+    throw new ValidationError('กรุณากรอกเบอร์โทรศัพท์');
+  }
+
+  const existing = await prisma.users.findUnique({
+    where: { id: input.userId },
+    select: { ...CUSTOMER_SELECT, google_subject: true },
+  });
+  if (!existing) {
+    throw new NotFoundError(`Customer ${input.userId}`);
+  }
+  if (existing.role !== 'member') {
+    throw new ConflictError('บัญชีนี้ไม่ใช่บัญชีลูกค้า', 'NOT_A_MEMBER_ACCOUNT');
+  }
+
+  if (existing.phone === newPhone) {
+    return toCustomer(existing);
+  }
+
+  // Prove the new number before anything is written.
+  if (!(await consumeOtpChallenge(newPhone, input.code))) {
+    throw new ValidationError('รหัสยืนยันไม่ถูกต้องหรือหมดอายุแล้ว');
+  }
+
+  // Uniqueness spans every role, so this is a refusal rather than a re-key of somebody
+  // else's account. Loaded here so the message is Thai, with the index below as the
+  // backstop for the race between this read and the write.
+  const owner = await prisma.users.findUnique({ where: { phone: newPhone }, select: { id: true } });
+  if (owner && owner.id !== existing.id) {
+    throw new ConflictError('เบอร์นี้ถูกใช้กับบัญชีอื่นอยู่แล้ว — ลองใช้เบอร์อื่น', 'DUPLICATE_ACCOUNT');
+  }
+
+  let updated: {
+    id: string;
+    role: string;
+    full_name: string;
+    phone: string;
+    points_balance: number;
+    is_active: boolean;
+  };
+  try {
+    updated = await prisma.users.update({
+      where: { id: existing.id },
+      data: { phone: newPhone },
+      select: CUSTOMER_SELECT,
+    });
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      throw new ConflictError('เบอร์นี้ถูกใช้กับบัญชีอื่นอยู่แล้ว — ลองใช้เบอร์อื่น', 'DUPLICATE_ACCOUNT');
+    }
+    throw error;
+  }
+
+  /*
+   * A phone change is a security event — it moves the identity — so it is written
+   * down, with the number that used to be the way to find this customer. The shape
+   * matches `updateMember`'s, so the trail reads the same whoever made the change.
+   */
+  await recordAudit({
+    action: 'member_updated',
+    actorUserId: updated.id,
+    targetType: 'user',
+    targetId: updated.id,
+    detail: { fields: ['phone'], previousPhone: existing.phone },
+  });
+
+  return toCustomer(updated);
 }
 
 function isUniqueViolation(error: unknown): boolean {
