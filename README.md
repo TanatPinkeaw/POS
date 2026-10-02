@@ -105,7 +105,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
-| `npm run route:audit` | Builds, serves, and opens all 18 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
+| `npm run route:audit` | Builds, serves, and opens all 23 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
@@ -205,10 +205,10 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 995 tests across 67 files: unit + integration
+npm test                # 1005 tests across 68 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
-npm run route:audit     # all 18 screens render, and render styled
+npm run acceptance      # 166 checks of the whole renter journey, from an empty schema
+npm run route:audit     # all 23 screens render, and render styled
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
@@ -240,7 +240,7 @@ that the demo seed now *refuses* to touch the configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 140 of its
+or that quietly began fetching a font from another origin passes all 166 of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.
@@ -763,12 +763,14 @@ goes through them.
 
 Deferred deliberately, and listed here rather than discovered during service:
 
-- **Customer sign-in with Google.** Decided in ADR 0020 (Google plus a phone OTP, with
-the phone still the identity). The credential half is built — a Google id token is verified
-in-process against Google's JWKS, a unique `google_subject` column exists, and an OTP door
-sends a code through a provider chosen in `.env`, rate-limited per number and per address —
-but the signup and linking flow that ties the two to a customer row is still to come:
-enrolment at the counter remains the only way a customer exists today.
+- **Customer sign-in with Google, from a screen.** Decided in ADR 0020 (Google plus a phone
+OTP, with the phone still the identity). The server flow is built — a Google id token is
+verified in-process against Google's JWKS, an OTP door sends a code through a provider chosen
+in `.env` (rate-limited per number and per address), a first sign-in with a proved phone makes
+a `member`, and a returning customer's Google account **links** to the row that already owns
+their number rather than splitting their points — but no screen yet offers the two doors side
+by side, so enrolment at the counter and the API are how a customer exists today. The `/shop`
+sign-in that shows both arrives with the portal.
 - **Electronic receipts.** Decided in ADR 0021 (an image generated from the order, the last
 month downloadable, a signed link for a walk-in). The renderer, the one-month window and the
 signed link are built — a walk-in's link fetches the bill over HTTP with no session — but no

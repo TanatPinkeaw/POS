@@ -40,6 +40,22 @@ import { DomainError } from './errors';
 /** Google publishes its signing keys here; the key set is cached and rotated by jose. */
 export const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 
+/**
+ * The key set to verify against — Google's, unless the operator overrides it.
+ *
+ * The override exists for two honest reasons and one dangerous one. The honest ones:
+ * the acceptance run points it at a JWKS it serves itself, so the door can be driven
+ * end to end without a live Google; and a self-hosted deployment behind an egress
+ * proxy can mirror the keys. The dangerous one is that it moves the trust anchor —
+ * whoever sets it can mint tokens this deployment will believe — which is exactly
+ * why only the operator sets it (the same `.env` they already keep secrets in), and
+ * why it is written down here rather than left to a reader to discover.
+ */
+export function readGoogleJwksUrl(env: Record<string, string | undefined> = process.env): string {
+  const url = env.GOOGLE_JWKS_URL?.trim();
+  return url && url.length > 0 ? url : GOOGLE_JWKS_URL;
+}
+
 /** Both forms Google has used in `iss`; either is accepted. */
 const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 
@@ -73,12 +89,19 @@ export function readGoogleClientId(env: Record<string, string | undefined> = pro
   return clientId && clientId.length > 0 ? clientId : null;
 }
 
-/** The remote key set, created once per process and reused across sign-ins. */
-let remoteJwks: JWTVerifyGetKey | null = null;
+/**
+ * The remote key set, cached per URL and reused across sign-ins.
+ *
+ * Keyed by URL rather than a single slot because the acceptance run changes the URL
+ * between phases; a plain `??=` would keep serving the first set it built.
+ */
+let remoteJwks: { url: string; keys: JWTVerifyGetKey } | null = null;
 
-function googleJwks(): JWTVerifyGetKey {
-  remoteJwks ??= createRemoteJWKSet(new URL(GOOGLE_JWKS_URL));
-  return remoteJwks;
+function googleJwks(url: string): JWTVerifyGetKey {
+  if (remoteJwks?.url !== url) {
+    remoteJwks = { url, keys: createRemoteJWKSet(new URL(url)) };
+  }
+  return remoteJwks.keys;
 }
 
 /**
@@ -100,7 +123,7 @@ export async function verifyGoogleIdToken(
   }
 
   try {
-    const { payload } = await jwtVerify(token, options.keys ?? googleJwks(), {
+    const { payload } = await jwtVerify(token, options.keys ?? googleJwks(readGoogleJwksUrl(options.env)), {
       issuer: GOOGLE_ISSUERS,
       audience: clientId,
       algorithms: ['RS256'],

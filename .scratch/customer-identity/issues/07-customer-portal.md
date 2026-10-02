@@ -8,6 +8,9 @@ their phone.
 
 - [ ] Extends `/shop/*` (no new Area): points history, the last month's receipts, and a phone
       change that requires the OTP of ticket 03.
+- [ ] Carries ticket 02's deferred sign-in surface: the `/shop` door offers "continue with
+      Google" and counter enrolment side by side, driving `/api/v1/auth/google` and
+      `/api/v1/auth/signup`.
 - [ ] Scoped to the signed-in customer: a second customer cannot read the first's points or
       receipts.
 - [ ] Empty states are styled, not blank, for a customer who has not bought anything.

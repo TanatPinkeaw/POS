@@ -114,10 +114,19 @@ keeps the cross-role uniqueness that makes sign-in unambiguous.
   owner signs in, nothing re-proves that they are not the original customer. Step-up on the
   sensitive actions (redeeming points, changing a number) is the mitigation and is decided;
   step-up on every sign-in is deliberately not.
-- **Signup and linking are not built.** Ticket 02 ties a verified Google credential and a
-  proved phone to a customer row — creating one, or attaching the Google subject to the row
-  that already owns the number. Until then the counter flow (ADR 0011) is the only way a
-  customer exists.
+- **Signup and linking are built.** `src/lib/identity.ts` is the whole rule, and its order is
+  the decision: a Google subject already on a row signs in (no code); otherwise the phone is
+  proved by consuming the OTP; then whoever owns the number decides the rest — a staff number
+  is refused, a member's row gets the subject *attached* (one row, points and history intact,
+  and never renamed), and a number nobody owns makes a customer with a random password hash.
+  `POST /api/v1/auth/google` answers `needsPhone` for an unknown account and signs a known one
+  in; `POST /api/v1/auth/signup` finishes the first sign-in. A second Google account cannot
+  take a number another holds, and the unique index is the backstop under the two reads a race
+  could slip between.
+- **The `/shop` screen is not built.** The doors exist as API calls only; the sign-in surface
+  that offers "continue with Google" and the counter side by side (and the two-door ticket 02
+  asks for) arrives with the customer portal (ticket 07). Until then the counter flow
+  (ADR 0011) and the API are how a customer exists.
 - **No provider is chosen**, and no OTP budget is set: the seam is here, the shop points it
   at a gateway at deploy, and `GOOGLE_CLIENT_ID` must be set for the Google door to accept
   anything.

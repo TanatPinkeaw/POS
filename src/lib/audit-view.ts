@@ -215,6 +215,8 @@ export function auditTargetLabel(row: AuditRow): string {
         email: 'อีเมล',
         active: 'สถานะบัญชี',
         password: 'รหัสผ่าน',
+        // A customer's Google account attached to (or moved onto) this row (ADR 0020).
+        google: 'บัญชี Google',
       };
       const named = fields
         .filter((field): field is string => typeof field === 'string')

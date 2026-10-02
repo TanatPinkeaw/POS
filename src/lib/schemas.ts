@@ -33,6 +33,25 @@ export const otpSendSchema = z.object({
   phone: z.string().trim().min(1, 'Enter a phone number').max(20),
 });
 
+/** A Google id token from the browser, to be verified in-process (ADR 0020 §6). */
+export const googleSignInSchema = z.object({
+  idToken: z.string().trim().min(1, 'A Google credential is required'),
+});
+
+/**
+ * The second half of a first Google sign-in: the id token, the phone, and the code.
+ *
+ * Both halves travel together on purpose. The id token is re-verified here rather
+ * than held in a half-signed-up state on the server, so there is no window in which a
+ * "pending" Google identity exists without a phone to anchor it.
+ */
+export const googleSignupSchema = z.object({
+  idToken: z.string().trim().min(1, 'A Google credential is required'),
+  phone: z.string().trim().min(1, 'Enter a phone number').max(20),
+  code: z.string().trim().min(1, 'Enter the code').max(10),
+  fullName: z.string().trim().min(1).max(100).optional(),
+});
+
 export const categoryCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
 });

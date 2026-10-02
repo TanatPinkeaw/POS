@@ -38,6 +38,8 @@ import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 
+import { exportJWK, generateKeyPair, SignJWT } from 'jose';
+
 import { roundThb } from '../src/lib/money';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
 
@@ -153,6 +155,40 @@ let otpGateway: Server | null = null;
 /** What the app posted to the OTP gateway, in order. */
 const otpInbox: { to?: string; code?: string; text?: string; kind?: string }[] = [];
 
+/**
+ * A Google key set this run serves itself, and the key that signs its tokens.
+ *
+ * The Google door verifies against Google's published JWKS; the acceptance run points
+ * `GOOGLE_JWKS_URL` at a JWKS it owns (see `readGoogleJwksUrl`) and mints tokens with a
+ * key it generated, so the whole sign-in path is exercised without a live Google — the
+ * same trade the notification and OTP gateways make.
+ */
+let googleJwks: Server | null = null;
+let googlePrivateKey: CryptoKey | null = null;
+const GOOGLE_TEST_CLIENT_ID = 'acceptance.apps.googleusercontent.com';
+
+/** A Google id token this deployment will accept, for one subject. */
+async function googleIdToken(
+  subject: string,
+  overrides: { fullName?: string; email?: string } = {},
+): Promise<string> {
+  if (!googlePrivateKey) {
+    throw new Error('The acceptance Google signing key was never generated');
+  }
+  return new SignJWT({
+    email: overrides.email ?? `${subject}@example.com`,
+    email_verified: true,
+    name: overrides.fullName ?? 'ลูกค้า กูเกิล',
+  })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setSubject(subject)
+    .setIssuedAt()
+    .setIssuer('https://accounts.google.com')
+    .setAudience(GOOGLE_TEST_CLIENT_ID)
+    .setExpirationTime('1h')
+    .sign(googlePrivateKey);
+}
+
 /* ------------------------------------------------------------------ the run */
 
 interface ShopDto {
@@ -259,6 +295,36 @@ interface MemberDto {
   joinedAt: string;
 }
 
+/**
+ * The Google door's two answers (ADR 0020 §1, §3).
+ *
+ * A **known** Google account answers like the password door — a session and the
+ * customer's own figures — with no `linked`/`needsPhone` at all. An **unknown** one
+ * answers `linked: false, needsPhone: true` and a name to prefill, having written
+ * nothing. One shape holds both so the journey can assert which one it got.
+ */
+interface GoogleDoorDto {
+  linked?: boolean;
+  needsPhone?: boolean;
+  fullName?: string | null;
+  email?: string | null;
+  id?: string;
+  role?: string;
+  pointsBalance?: number;
+  redirectTo?: string;
+}
+
+/** What finishing a first Google sign-in answers: made, linked, or neither. */
+interface GoogleSignupDto {
+  id: string;
+  role: string;
+  fullName: string;
+  pointsBalance: number;
+  created: boolean;
+  linked: boolean;
+  redirectTo: string;
+}
+
 interface PreOrderPlacedDto {
   orderId: string;
   orderNumber: string;
@@ -323,6 +389,49 @@ async function setCompletedAt(url: string, orderId: string, iso: string | null):
       orderId,
       iso,
     ]);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Writes one customer's points balance straight into the scratch schema.
+ *
+ * No API grants points — they are earned by sales — and the property under test in
+ * section 16 is that lining a Google sign-in up against a row *leaves them alone*.
+ * Making the figure non-zero first is the same trick section 9 uses to age an
+ * order: it takes an assertion that would pass on 0 and makes it mean something.
+ */
+async function setPointsBalance(url: string, userId: string, points: number): Promise<void> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    await client.query('UPDATE "users" SET "points_balance" = $2 WHERE "id" = $1', [
+      userId,
+      points,
+    ]);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * How many rows, of any role, hold a phone number.
+ *
+ * The unique index already makes two impossible, so this is not the thing that
+ * stops a split; it is the *observation* that the thing worked — after linking, the
+ * one row is still one row, and the returning customer did not arrive as a second
+ * member with the points left behind on the first.
+ */
+async function countUsersWithPhone(url: string, phone: string): Promise<number> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    const rows = await client.query<{ count: string }>(
+      'SELECT count(*)::text AS count FROM "users" WHERE "phone" = $1',
+      [phone],
+    );
+    return Number(rows.rows[0]?.count ?? '0');
   } finally {
     await client.end();
   }
@@ -1957,6 +2066,140 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
+  /* ---------------------------- 16. One customer behind two ways in (ADR 0020) */
+  section('16. A Google sign-in that makes a customer, and one that links');
+  if (seedGuardUrl !== null) {
+    /*
+     * The failure this section exists to catch is a split balance (ADR 0020 §4): a
+     * returning customer whose phone already has a row, and a second row made for
+     * the same person with the points left behind on the first. The Google door is
+     * driven against a JWKS this run serves itself, so the whole path — verify the
+     * token, prove the phone, write one row — runs with no live Google. Last,
+     * because the sections above tally the trail globally.
+     */
+
+    // (a) A number nobody owns becomes a customer, with Google supplying the name.
+    const newSubject = 'accept-google-new';
+    const newPhone = '0862220001';
+    const firstContact = await anonymous.request<GoogleDoorDto>('/api/v1/auth/google', {
+      method: 'POST',
+      body: { idToken: await googleIdToken(newSubject, { fullName: 'ลูกค้าใหม่ จากกูเกิล' }) },
+    });
+    check(
+      'an unknown Google account is asked for a phone, not signed in',
+      firstContact.status === 200 &&
+        firstContact.data?.linked === false &&
+        firstContact.data?.needsPhone === true,
+      firstContact.data,
+    );
+    check(
+      'and the door offers the name Google gave, so the form can prefill it',
+      firstContact.data?.fullName === 'ลูกค้าใหม่ จากกูเกิล',
+      firstContact.data?.fullName,
+    );
+
+    const newBefore = otpInbox.length;
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: newPhone } });
+    const newCode = otpInbox[newBefore]?.code ?? '';
+
+    const newSession = new Session(() => base);
+    const created = await newSession.call<GoogleSignupDto>('/api/v1/auth/signup', {
+      method: 'POST',
+      body: { idToken: await googleIdToken(newSubject), phone: newPhone, code: newCode },
+    });
+    check(
+      'the code completes a signup and the phone makes the customer',
+      created.created === true && created.linked === false && created.role === 'member',
+      created,
+    );
+    const newMe = await newSession.call<{ role: string }>('/api/v1/auth/me');
+    check(
+      'and the signup starts a session, so the customer is signed in',
+      newMe.role === 'member',
+      newMe.role,
+    );
+
+    // The subject now resolves to that row, so a second visit needs no code at all.
+    const again = await anonymous.call<GoogleDoorDto>('/api/v1/auth/google', {
+      method: 'POST',
+      body: { idToken: await googleIdToken(newSubject) },
+    });
+    check(
+      'a second visit with the same Google account signs straight in, with no code',
+      again.id === created.id && again.role === 'member',
+      again,
+    );
+
+    // (b) A number the counter already enrolled links to that row, never a second.
+    await setPointsBalance(seedGuardUrl, enrolled.id, 120);
+    const linkSubject = 'accept-google-returning';
+    const linkBefore = otpInbox.length;
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: MEMBER.phone } });
+    const linkCode = otpInbox[linkBefore]?.code ?? '';
+
+    const linkSession = new Session(() => base);
+    const linked = await linkSession.call<GoogleSignupDto>('/api/v1/auth/signup', {
+      method: 'POST',
+      body: {
+        idToken: await googleIdToken(linkSubject, { fullName: 'ชื่อจากกูเกิล' }),
+        phone: MEMBER.phone,
+        code: linkCode,
+      },
+    });
+    check(
+      'a Google sign-in on a number the counter enrolled links to that same row',
+      linked.id === enrolled.id && linked.linked === true && linked.created === false,
+      { linkedId: linked.id, enrolledId: enrolled.id },
+    );
+    check(
+      'and the points earned at the counter stay on that one customer',
+      linked.pointsBalance === 120,
+      linked.pointsBalance,
+    );
+    const rowsForPhone = await countUsersWithPhone(seedGuardUrl, MEMBER.phone);
+    check(
+      'without splitting the number into a second customer',
+      rowsForPhone === 1,
+      rowsForPhone,
+    );
+
+    // (c) Now that the number is linked, a different Google account cannot take it.
+    const thiefBefore = otpInbox.length;
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: MEMBER.phone } });
+    const thiefCode = otpInbox[thiefBefore]?.code ?? '';
+    const thief = await anonymous.request('/api/v1/auth/signup', {
+      method: 'POST',
+      body: {
+        idToken: await googleIdToken('accept-google-thief'),
+        phone: MEMBER.phone,
+        code: thiefCode,
+      },
+    });
+    check(
+      'and a second Google account is refused the number (409)',
+      thief.status === 409,
+      thief.status,
+    );
+
+    // (d) A number a staff account holds is refused as a customer, and stays staff.
+    const staffBefore = otpInbox.length;
+    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: ADMIN.phone } });
+    const staffCode = otpInbox[staffBefore]?.code ?? '';
+    const staffAttempt = await anonymous.request('/api/v1/auth/signup', {
+      method: 'POST',
+      body: {
+        idToken: await googleIdToken('accept-google-staff'),
+        phone: ADMIN.phone,
+        code: staffCode,
+      },
+    });
+    check(
+      'a number a staff account holds is refused as a customer (409)',
+      staffAttempt.status === 409,
+      staffAttempt.status,
+    );
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -2054,6 +2297,19 @@ async function main(): Promise<void> {
       process.env.OTP_CHANNEL = 'webhook';
       process.env.OTP_WEBHOOK_URL = `http://127.0.0.1:${otpPort}/otp`;
 
+      // The Google door, pointed at a JWKS this run serves, before the app boots.
+      const jwksPort = await freePort(3313);
+      const pair = await generateKeyPair('RS256');
+      googlePrivateKey = pair.privateKey;
+      const publicJwk = await exportJWK(pair.publicKey);
+      googleJwks = createServer((_request, response) => {
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ keys: [publicJwk] }));
+      });
+      await new Promise<void>((resolve) => googleJwks!.listen(jwksPort, '127.0.0.1', resolve));
+      process.env.GOOGLE_CLIENT_ID = GOOGLE_TEST_CLIENT_ID;
+      process.env.GOOGLE_JWKS_URL = `http://127.0.0.1:${jwksPort}/certs`;
+
       const port = await freePort(FIRST_PORT);
       base = `http://127.0.0.1:${port}`;
       console.log(`\n4. Serving the build on ${base}`);
@@ -2068,6 +2324,10 @@ async function main(): Promise<void> {
     if (otpGateway !== null) {
       await new Promise<void>((resolve) => otpGateway!.close(() => resolve()));
       otpGateway = null;
+    }
+    if (googleJwks !== null) {
+      await new Promise<void>((resolve) => googleJwks!.close(() => resolve()));
+      googleJwks = null;
     }
 
     if (child !== null) {
@@ -2090,6 +2350,10 @@ async function main(): Promise<void> {
     if (otpGateway !== null) {
       await new Promise<void>((resolve) => otpGateway!.close(() => resolve()));
       otpGateway = null;
+    }
+    if (googleJwks !== null) {
+      await new Promise<void>((resolve) => googleJwks!.close(() => resolve()));
+      googleJwks = null;
     }
     if (child !== null) {
       await stopServer(child);

@@ -18,14 +18,25 @@
  * oracle, and proving a brand-new number is precisely what a first signup needs.
  */
 import { readJson, withApi } from '@/lib/api';
+import { ValidationError } from '@/lib/errors';
 import { deliverOtpCode, OtpNotConfiguredError, otpTtlMinutes, readOtpChannelConfig } from '@/lib/otp';
 import { issueOtpChallenge } from '@/lib/otp-store';
+import { normalisePhone } from '@/lib/phone';
 import { chargeRateLimit } from '@/lib/rate-limit';
 import { otpSendSchema } from '@/lib/schemas';
 
 export async function POST(request: Request): Promise<Response> {
   return withApi(async () => {
-    const { phone } = await readJson(request, otpSendSchema);
+    /*
+     * Normalised before it is used as a key, so `080-000-0002` and `0800000002` are
+     * one challenge and one bucket — the same rule the counter uses to look a
+     * customer up, and the only way a code sent from a form that kept the dashes can
+     * be checked by a signup that stripped them.
+     */
+    const phone = normalisePhone((await readJson(request, otpSendSchema)).phone);
+    if (phone.length === 0) {
+      throw new ValidationError('กรุณากรอกเบอร์โทรศัพท์');
+    }
 
     // Both, before the code is minted or a message is paid for.
     await chargeRateLimit(request, 'otp_send_number', phone);
