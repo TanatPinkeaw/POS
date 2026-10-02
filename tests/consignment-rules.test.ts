@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertPayable,
+  clawbackFromLine,
   ledgerBalance,
   lineNetExclVat,
   payoutEntry,
@@ -101,6 +102,34 @@ describe('allocating a line’s net out of the order’s net', () => {
   it('is zero when there is no net or no subtotal to divide by', () => {
     expect(lineNetExclVat(0, 100, 200)).toBe(0);
     expect(lineNetExclVat(100, 100, 0)).toBe(0);
+  });
+});
+
+describe('clawing a line’s share back on a refund', () => {
+  it('takes the returned units’ share of the credited amount', () => {
+    // ฿120 credited for three units, one returned: a third of the share.
+    expect(clawbackFromLine(120, 0, 1, 3, false)).toBe(40);
+  });
+
+  it('rounds an early note’s share once', () => {
+    // ฿100 over three units does not divide exactly; the first note rounds.
+    expect(clawbackFromLine(100, 0, 1, 3, false)).toBe(33.33);
+  });
+
+  it('lets the note that closes the line take the remainder, so the debits sum to the credit', () => {
+    const first = clawbackFromLine(100, 0, 1, 3, false);
+    const second = clawbackFromLine(100, first, 1, 3, false);
+    const closing = clawbackFromLine(100, first + second, 1, 3, true);
+    expect(roundThb(first + second + closing)).toBe(100);
+  });
+
+  it('claws the whole credit back when the line closes in one visit', () => {
+    expect(clawbackFromLine(60, 0, 2, 2, true)).toBe(60);
+  });
+
+  it('takes nothing when no units came back', () => {
+    expect(clawbackFromLine(60, 0, 0, 3, false)).toBe(0);
+    expect(clawbackFromLine(60, 0, 1, 0, false)).toBe(0);
   });
 });
 

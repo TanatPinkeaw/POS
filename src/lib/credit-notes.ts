@@ -45,6 +45,7 @@
 import type { credit_notes, orders } from '../generated/prisma/client';
 
 import { recordAudit } from './audit';
+import { recordConsignorRefunds } from './consignment';
 import type { RefundMethod, CreditNoteDocument, DocumentLine, RefundSummary } from './credit-note-view';
 import { refundMethodLabel } from './credit-note-view';
 import { prisma } from './db';
@@ -330,6 +331,27 @@ export async function refundOrder(input: {
       });
       returnedUnits += line.quantity;
     }
+
+    /*
+     * The goods went back to the consignor, so the share goes back with them: one
+     * debit per consigned line, at the amount the sale credited, in this same
+     * transaction (ADR 0023 §6). A line the shop owned — or one sold before the
+     * ledger existed — has no credit to reverse and writes nothing. Nothing here
+     * can block the refund: a payout already taken just lets the balance go
+     * negative, and the next payout nets it (the `points_forgiven` precedent).
+     */
+    const saleQtyById = new Map(refundable.map((line) => [line.orderItemId, line.quantity]));
+    await recordConsignorRefunds(tx, {
+      orderId: order.id,
+      at: new Date(),
+      lines: plan.lines.map((line) => ({
+        orderItemId: line.orderItemId,
+        quantity: line.quantity,
+        closesLine:
+          (returnedByItem.get(line.orderItemId) ?? 0) + line.quantity >=
+          (saleQtyById.get(line.orderItemId) ?? 0),
+      })),
+    });
 
     /*
      * One leg, for the full amount, in the tender the money actually went back

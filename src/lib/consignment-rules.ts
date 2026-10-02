@@ -88,6 +88,40 @@ export function refundReversal(shareThb: number): number {
 }
 
 /**
+ * The share a refund claws back from one consigned line (ADR 0023 §6).
+ *
+ * `creditedShareThb` is what the sale wrote for the line, `alreadyReversedThb` the
+ * magnitude earlier notes have already taken back, and `refundedQty` of `lineQty`
+ * units the units *this* note returns. Pro-rata by units, in satang and rounded once,
+ * which is the same allocation `lineNetExclVat` uses — a third of a line's units
+ * gives back a third of its share.
+ *
+ * When the note takes the line's last unit the **remainder** is taken instead of a
+ * fresh rounding, so however many visits a line comes back in the debits add up to
+ * the credit exactly and the balance lands on zero. That is the one rule the discount
+ * allocation in `refund-plan.ts` and the points clawback in `credit-notes.ts` already
+ * use: every note but the last rounds, and the last settles the difference.
+ *
+ * Non-negative, because it is a *share*: the caller signs it with `refundReversal`.
+ */
+export function clawbackFromLine(
+  creditedShareThb: number,
+  alreadyReversedThb: number,
+  refundedQty: number,
+  lineQty: number,
+  closesLine: boolean,
+): number {
+  const credited = toSatang(creditedShareThb);
+  if (closesLine) {
+    return fromSatang(credited - toSatang(alreadyReversedThb));
+  }
+  if (lineQty <= 0 || refundedQty <= 0) {
+    return 0;
+  }
+  return fromSatang(Math.round((credited * refundedQty) / lineQty));
+}
+
+/**
  * The signed debit a payout writes as the shop hands the money over.
  *
  * The mirror of `refundReversal` for the other kind of debit, and it is the *only* way

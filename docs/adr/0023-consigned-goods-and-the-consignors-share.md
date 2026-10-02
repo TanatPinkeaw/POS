@@ -112,13 +112,17 @@ is a matter for the shop's own agreement outside this system.
 - **Accountant sign-off on principal versus agent** and on revenue recognition is required
   before a shop trades this way; this ADR records the shape, not the tax opinion.
 - **No online consignment sale** in v1, by decision, not oversight.
-- **The sale writes the share; the rest is not built.** A product carries a consignor and a
+- **The sale and its refund move the ledger; the rest is not built.** A product carries a consignor and a
   share, `consignor_payables` is the ledger, the pure rule that turns a net sale into a share
   and a refund's reversal lives in `src/lib/consignment-rules.ts`, and an admin can consign a
   product or withdraw unsold goods from `/admin/products` — each audited. `recordConsignorShares`
   is called inside the sale's own transaction at both completion sites — `createPosSale` and the
   pre-order handover in `completeOrder` — and computes each consigned line's credit from the
   order's own `net_amount` (split across the lines by `lineNetExclVat`), so a rolled-back sale
-  owes nobody. Nothing yet claws the share back on a refund, excludes consigned stock from the
-  owned valuation, refuses a consigned product offline, or shows a consignor what they are owed —
-  those are tickets 05–09 under `.scratch/consignment/`.
+  owes nobody. `recordConsignorRefunds` is called inside the refund's own transaction in
+  `refundOrder` and writes one debit per returned consigned line, proportional to the units that
+  came back (the note that closes a line takes the remainder, so the debits sum to the credit and
+  a full refund lands the balance on zero); a payout already made leaves a negative balance the
+  next payout nets. Nothing yet excludes consigned stock from the owned valuation, refuses a
+  consigned product offline, or shows a consignor what they are owed — those are tickets 06–09
+  under `.scratch/consignment/`.

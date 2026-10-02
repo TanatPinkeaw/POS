@@ -24,7 +24,7 @@
 import type { Prisma } from '../generated/prisma/client';
 
 import { recordAudit } from './audit';
-import { lineNetExclVat, shareFromSale } from './consignment-rules';
+import { clawbackFromLine, lineNetExclVat, refundReversal, shareFromSale } from './consignment-rules';
 import { NotFoundError, ValidationError } from './errors';
 import { adjustStock, type Db } from './inventory';
 import { fromDecimal } from './money';
@@ -278,6 +278,145 @@ export async function recordConsignorShares(db: Db, input: RecordShareInput): Pr
         order_item_id: item.id,
         product_id: item.product_id,
         description: `ส่วนแบ่งฝากขายจากบิล ${order.order_number}`,
+        created_at: input.at,
+      },
+    });
+    written += 1;
+  }
+
+  return written;
+}
+
+export interface RefundedConsignmentLine {
+  /** The sale line that sold, which is what the refund names. */
+  orderItemId: string;
+  /** How many units this refund takes back. */
+  quantity: number;
+  /**
+   * True when this refund leaves none of the line outstanding. Passed in rather than
+   * re-derived: the refund already knows the sale's quantity, what earlier notes took,
+   * and what this one does, and asking the database the same question twice is how two
+   * answers to "is it closed" start to differ.
+   */
+  closesLine: boolean;
+}
+
+export interface RecordRefundsInput {
+  orderId: string;
+  /** The instant the refund committed, reused as `created_at` so the ledger and the
+   *  credit note cannot disagree about which day a reversal is in. */
+  at: Date;
+  /** The lines this refund takes back, from the refund plan. */
+  lines: RefundedConsignmentLine[];
+}
+
+/**
+ * Writes one payable debit per consigned line a refund takes back (ADR 0023 §6).
+ *
+ * The goods go back to the consignor, so the share goes back with them. Called from
+ * inside the refund's own transaction — `refundOrder` is the only place a sale is
+ * reversed — so a rolled-back refund claws nothing back, for the same reason a
+ * rolled-back sale owes nobody (ticket 04).
+ *
+ * The debit is **not** recomputed from the refund's money: it is the share the sale
+ * credited, read back off its own `sale` row for the line and split by units. That
+ * matters when the terms were re-agreed after the sale — the balance is a sum of
+ * what was written, and a clawback that recomputed at today's percent would take back
+ * a number the shop never owed. A line with no `sale` row was not consigned (or was
+ * sold before the ledger existed), so there is nothing to reverse and it is skipped.
+ *
+ * Nothing here checks the resulting balance. A payout already taken can leave the
+ * balance negative, and the debit still has to be written — the next payout nets
+ * against it (ADR 0023 §6), exactly as a `points_forgiven` shortfall is carried.
+ */
+export async function recordConsignorRefunds(
+  db: Db,
+  input: RecordRefundsInput,
+): Promise<number> {
+  if (input.lines.length === 0) {
+    return 0;
+  }
+
+  const order = await db.orders.findUniqueOrThrow({
+    where: { id: input.orderId },
+    select: { order_number: true },
+  });
+
+  const itemIds = input.lines.map((line) => BigInt(line.orderItemId));
+
+  const items = await db.order_items.findMany({
+    where: { id: { in: itemIds } },
+    select: { id: true, quantity: true },
+  });
+  const lineQtyByItem = new Map(items.map((item) => [item.id.toString(), item.quantity]));
+
+  /*
+   * What the sale credited each line, and who was credited: the row is the record of
+   * the debt, so it is also the record of who is owed it back.
+   */
+  const credits = await db.consignor_payables.findMany({
+    where: { order_id: input.orderId, kind: 'sale', order_item_id: { in: itemIds } },
+    select: {
+      order_item_id: true,
+      consignor_user_id: true,
+      product_id: true,
+      amount_thb: true,
+    },
+  });
+  const creditedByItem = new Map<
+    string,
+    { amount: number; consignorUserId: string; productId: string | null }
+  >();
+  for (const row of credits) {
+    const key = row.order_item_id!.toString();
+    const current = creditedByItem.get(key);
+    creditedByItem.set(key, {
+      amount: (current?.amount ?? 0) + fromDecimal(row.amount_thb),
+      consignorUserId: row.consignor_user_id,
+      productId: row.product_id,
+    });
+  }
+
+  /* What earlier notes already clawed back for each line, as a magnitude to subtract. */
+  const reversals = await db.consignor_payables.findMany({
+    where: { order_id: input.orderId, kind: 'refund', order_item_id: { in: itemIds } },
+    select: { order_item_id: true, amount_thb: true },
+  });
+  const reversedByItem = new Map<string, number>();
+  for (const row of reversals) {
+    const key = row.order_item_id!.toString();
+    reversedByItem.set(key, (reversedByItem.get(key) ?? 0) + Math.abs(fromDecimal(row.amount_thb)));
+  }
+
+  let written = 0;
+  for (const line of input.lines) {
+    const credit = creditedByItem.get(line.orderItemId);
+    if (!credit) {
+      continue;
+    }
+
+    const lineQty = lineQtyByItem.get(line.orderItemId);
+    if (lineQty === undefined) {
+      continue;
+    }
+
+    const amount = clawbackFromLine(
+      credit.amount,
+      reversedByItem.get(line.orderItemId) ?? 0,
+      line.quantity,
+      lineQty,
+      line.closesLine,
+    );
+
+    await db.consignor_payables.create({
+      data: {
+        consignor_user_id: credit.consignorUserId,
+        kind: 'refund',
+        amount_thb: refundReversal(amount),
+        order_id: input.orderId,
+        order_item_id: BigInt(line.orderItemId),
+        product_id: credit.productId,
+        description: `คืนส่วนแบ่งฝากขายจากบิล ${order.order_number}`,
         created_at: input.at,
       },
     });

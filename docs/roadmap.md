@@ -13,7 +13,7 @@ second does not. That is the spine of the order below.
 ## Effort 1 — Land the offline till
 
 **State.** Built, reviewed on both axes, and **green** when it landed: `npm run verify:all` ran
-all five gates (the tree has grown since — `verify` is now 74 files and 1062 tests). It is
+all five gates (the tree has grown since — `verify` is now 75 files and 1073 tests). It is
 **landed on `main`** as its own commit (`83bacc9`), on top of the base tree.
 
 **What it unlocks.** A shop keeps selling cash when its connection drops, with the numbers,
@@ -72,17 +72,18 @@ receipt is delivered. The ADRs are already written.
 
 **State.** Designed in ADR 0023; specified and ticketed under `.scratch/consignment/`;
 **in progress** — ticket 01 (the owner and the payable ledger on the schema), ticket 02 (the
-pure share rule), ticket 03 (an admin consigning a product and withdrawing it, each audited)
-and ticket 04 (the share recorded in the sale's own transaction, at both completion sites) are
-done and on `main`. Explicitly touches the money path.
+pure share rule), ticket 03 (an admin consigning a product and withdrawing it, each audited),
+ticket 04 (the share recorded in the sale's own transaction, at both completion sites) and
+ticket 05 (a refund clawing the share back, in the refund's own transaction) are done and on
+`main`. Explicitly touches the money path.
 
 **What it unlocks.** A member leaves goods with the shop; the shop sells them as principal and
 owes an agreed percentage of the net, accrued as a payable and settled through the drawer or a
 transfer (ADR 0023). The consigned share, not a second inventory.
 
-**Order inside it.** The schema (01), the pure share rule (02), admin set-up (03) and the share
-recorded at the two sale sites (04) are done. Refund clawback (05), valuation (06) and the
-never-offline rule (07) hang off 04; the payout (08) and the consignor's portal view (09,
+**Order inside it.** The schema (01), the pure share rule (02), admin set-up (03), the share
+recorded at the two sale sites (04) and the refund clawback (05) are done. Valuation (06) and
+the never-offline rule (07) hang off 04; the payout (08) and the consignor's portal view (09,
 which waits on Effort 2) close it.
 
 **Done when.** A consigned sale writes exactly one payable credit, a refund reverses it, a
