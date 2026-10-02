@@ -72,6 +72,7 @@ export const ModelName = {
   inbound_payments: 'inbound_payments',
   notifications: 'notifications',
   display_devices: 'display_devices',
+  consignor_payables: 'consignor_payables',
   point_transactions: 'point_transactions'
 } as const
 
@@ -180,6 +181,8 @@ export const ProductsScalarFieldEnum = {
   offline_safety_qty: 'offline_safety_qty',
   image_url: 'image_url',
   is_active: 'is_active',
+  consignor_user_id: 'consignor_user_id',
+  consignor_share_percent: 'consignor_share_percent',
   created_at: 'created_at',
   updated_at: 'updated_at'
 } as const
@@ -449,6 +452,21 @@ export const Display_devicesScalarFieldEnum = {
 } as const
 
 export type Display_devicesScalarFieldEnum = (typeof Display_devicesScalarFieldEnum)[keyof typeof Display_devicesScalarFieldEnum]
+
+
+export const Consignor_payablesScalarFieldEnum = {
+  id: 'id',
+  consignor_user_id: 'consignor_user_id',
+  kind: 'kind',
+  amount_thb: 'amount_thb',
+  order_id: 'order_id',
+  order_item_id: 'order_item_id',
+  product_id: 'product_id',
+  description: 'description',
+  created_at: 'created_at'
+} as const
+
+export type Consignor_payablesScalarFieldEnum = (typeof Consignor_payablesScalarFieldEnum)[keyof typeof Consignor_payablesScalarFieldEnum]
 
 
 export const Point_transactionsScalarFieldEnum = {

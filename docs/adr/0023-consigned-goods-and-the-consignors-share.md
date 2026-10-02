@@ -112,5 +112,8 @@ is a matter for the shop's own agreement outside this system.
 - **Accountant sign-off on principal versus agent** and on revenue recognition is required
   before a shop trades this way; this ADR records the shape, not the tax opinion.
 - **No online consignment sale** in v1, by decision, not oversight.
-- **Nothing is built.** A product has no consignor and no payable ledger today; this is the
-  direction, and the specification for building it lives under `.scratch/consignment/`.
+- **Only the floor is built.** A product carries a consignor and a share, and
+  `consignor_payables` is the ledger; the pure rule that turns a net sale into a share, a
+  refund's reversal and a payout lives in `src/lib/consignment-rules.ts`. Nothing yet writes
+  to the ledger, refuses a consigned product offline, or shows a consignor what they are owed
+  — those are tickets 03–09 under `.scratch/consignment/`.

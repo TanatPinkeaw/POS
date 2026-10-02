@@ -251,6 +251,7 @@ export type order_itemsWhereInput = {
   order?: Prisma.XOR<Prisma.OrdersScalarRelationFilter, Prisma.ordersWhereInput>
   product?: Prisma.XOR<Prisma.ProductsScalarRelationFilter, Prisma.productsWhereInput>
   refunded_on?: Prisma.Credit_note_itemsListRelationFilter
+  consignor_payables?: Prisma.Consignor_payablesListRelationFilter
 }
 
 export type order_itemsOrderByWithRelationInput = {
@@ -264,6 +265,7 @@ export type order_itemsOrderByWithRelationInput = {
   order?: Prisma.ordersOrderByWithRelationInput
   product?: Prisma.productsOrderByWithRelationInput
   refunded_on?: Prisma.credit_note_itemsOrderByRelationAggregateInput
+  consignor_payables?: Prisma.consignor_payablesOrderByRelationAggregateInput
 }
 
 export type order_itemsWhereUniqueInput = Prisma.AtLeast<{
@@ -280,6 +282,7 @@ export type order_itemsWhereUniqueInput = Prisma.AtLeast<{
   order?: Prisma.XOR<Prisma.OrdersScalarRelationFilter, Prisma.ordersWhereInput>
   product?: Prisma.XOR<Prisma.ProductsScalarRelationFilter, Prisma.productsWhereInput>
   refunded_on?: Prisma.Credit_note_itemsListRelationFilter
+  consignor_payables?: Prisma.Consignor_payablesListRelationFilter
 }, "id">
 
 export type order_itemsOrderByWithAggregationInput = {
@@ -319,6 +322,7 @@ export type order_itemsCreateInput = {
   order: Prisma.ordersCreateNestedOneWithoutItemsInput
   product: Prisma.productsCreateNestedOneWithoutOrder_itemsInput
   refunded_on?: Prisma.credit_note_itemsCreateNestedManyWithoutOrder_itemInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsUncheckedCreateInput = {
@@ -330,6 +334,7 @@ export type order_itemsUncheckedCreateInput = {
   quantity: number
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
   refunded_on?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutOrder_itemInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsUpdateInput = {
@@ -341,6 +346,7 @@ export type order_itemsUpdateInput = {
   order?: Prisma.ordersUpdateOneRequiredWithoutItemsNestedInput
   product?: Prisma.productsUpdateOneRequiredWithoutOrder_itemsNestedInput
   refunded_on?: Prisma.credit_note_itemsUpdateManyWithoutOrder_itemNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsUncheckedUpdateInput = {
@@ -352,6 +358,7 @@ export type order_itemsUncheckedUpdateInput = {
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   refunded_on?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutOrder_itemNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsCreateManyInput = {
@@ -441,6 +448,11 @@ export type order_itemsSumOrderByAggregateInput = {
 export type Order_itemsScalarRelationFilter = {
   is?: Prisma.order_itemsWhereInput
   isNot?: Prisma.order_itemsWhereInput
+}
+
+export type Order_itemsNullableScalarRelationFilter = {
+  is?: Prisma.order_itemsWhereInput | null
+  isNot?: Prisma.order_itemsWhereInput | null
 }
 
 export type order_itemsCreateNestedManyWithoutProductInput = {
@@ -541,6 +553,22 @@ export type order_itemsUpdateOneRequiredWithoutRefunded_onNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.order_itemsUpdateToOneWithWhereWithoutRefunded_onInput, Prisma.order_itemsUpdateWithoutRefunded_onInput>, Prisma.order_itemsUncheckedUpdateWithoutRefunded_onInput>
 }
 
+export type order_itemsCreateNestedOneWithoutConsignor_payablesInput = {
+  create?: Prisma.XOR<Prisma.order_itemsCreateWithoutConsignor_payablesInput, Prisma.order_itemsUncheckedCreateWithoutConsignor_payablesInput>
+  connectOrCreate?: Prisma.order_itemsCreateOrConnectWithoutConsignor_payablesInput
+  connect?: Prisma.order_itemsWhereUniqueInput
+}
+
+export type order_itemsUpdateOneWithoutConsignor_payablesNestedInput = {
+  create?: Prisma.XOR<Prisma.order_itemsCreateWithoutConsignor_payablesInput, Prisma.order_itemsUncheckedCreateWithoutConsignor_payablesInput>
+  connectOrCreate?: Prisma.order_itemsCreateOrConnectWithoutConsignor_payablesInput
+  upsert?: Prisma.order_itemsUpsertWithoutConsignor_payablesInput
+  disconnect?: Prisma.order_itemsWhereInput | boolean
+  delete?: Prisma.order_itemsWhereInput | boolean
+  connect?: Prisma.order_itemsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.order_itemsUpdateToOneWithWhereWithoutConsignor_payablesInput, Prisma.order_itemsUpdateWithoutConsignor_payablesInput>, Prisma.order_itemsUncheckedUpdateWithoutConsignor_payablesInput>
+}
+
 export type order_itemsCreateWithoutProductInput = {
   id?: bigint | number
   unit_price: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -549,6 +577,7 @@ export type order_itemsCreateWithoutProductInput = {
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
   order: Prisma.ordersCreateNestedOneWithoutItemsInput
   refunded_on?: Prisma.credit_note_itemsCreateNestedManyWithoutOrder_itemInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsUncheckedCreateWithoutProductInput = {
@@ -559,6 +588,7 @@ export type order_itemsUncheckedCreateWithoutProductInput = {
   quantity: number
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
   refunded_on?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutOrder_itemInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsCreateOrConnectWithoutProductInput = {
@@ -608,6 +638,7 @@ export type order_itemsCreateWithoutOrderInput = {
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
   product: Prisma.productsCreateNestedOneWithoutOrder_itemsInput
   refunded_on?: Prisma.credit_note_itemsCreateNestedManyWithoutOrder_itemInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsUncheckedCreateWithoutOrderInput = {
@@ -618,6 +649,7 @@ export type order_itemsUncheckedCreateWithoutOrderInput = {
   quantity: number
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
   refunded_on?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutOrder_itemInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsCreateOrConnectWithoutOrderInput = {
@@ -654,6 +686,7 @@ export type order_itemsCreateWithoutRefunded_onInput = {
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
   order: Prisma.ordersCreateNestedOneWithoutItemsInput
   product: Prisma.productsCreateNestedOneWithoutOrder_itemsInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsUncheckedCreateWithoutRefunded_onInput = {
@@ -664,6 +697,7 @@ export type order_itemsUncheckedCreateWithoutRefunded_onInput = {
   unit_cost: runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity: number
   total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutOrder_itemInput
 }
 
 export type order_itemsCreateOrConnectWithoutRefunded_onInput = {
@@ -690,6 +724,7 @@ export type order_itemsUpdateWithoutRefunded_onInput = {
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.ordersUpdateOneRequiredWithoutItemsNestedInput
   product?: Prisma.productsUpdateOneRequiredWithoutOrder_itemsNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsUncheckedUpdateWithoutRefunded_onInput = {
@@ -700,6 +735,67 @@ export type order_itemsUncheckedUpdateWithoutRefunded_onInput = {
   unit_cost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutOrder_itemNestedInput
+}
+
+export type order_itemsCreateWithoutConsignor_payablesInput = {
+  id?: bigint | number
+  unit_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  unit_cost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity: number
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  order: Prisma.ordersCreateNestedOneWithoutItemsInput
+  product: Prisma.productsCreateNestedOneWithoutOrder_itemsInput
+  refunded_on?: Prisma.credit_note_itemsCreateNestedManyWithoutOrder_itemInput
+}
+
+export type order_itemsUncheckedCreateWithoutConsignor_payablesInput = {
+  id?: bigint | number
+  order_id: string
+  product_id: string
+  unit_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  unit_cost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity: number
+  total_price: runtime.Decimal | runtime.DecimalJsLike | number | string
+  refunded_on?: Prisma.credit_note_itemsUncheckedCreateNestedManyWithoutOrder_itemInput
+}
+
+export type order_itemsCreateOrConnectWithoutConsignor_payablesInput = {
+  where: Prisma.order_itemsWhereUniqueInput
+  create: Prisma.XOR<Prisma.order_itemsCreateWithoutConsignor_payablesInput, Prisma.order_itemsUncheckedCreateWithoutConsignor_payablesInput>
+}
+
+export type order_itemsUpsertWithoutConsignor_payablesInput = {
+  update: Prisma.XOR<Prisma.order_itemsUpdateWithoutConsignor_payablesInput, Prisma.order_itemsUncheckedUpdateWithoutConsignor_payablesInput>
+  create: Prisma.XOR<Prisma.order_itemsCreateWithoutConsignor_payablesInput, Prisma.order_itemsUncheckedCreateWithoutConsignor_payablesInput>
+  where?: Prisma.order_itemsWhereInput
+}
+
+export type order_itemsUpdateToOneWithWhereWithoutConsignor_payablesInput = {
+  where?: Prisma.order_itemsWhereInput
+  data: Prisma.XOR<Prisma.order_itemsUpdateWithoutConsignor_payablesInput, Prisma.order_itemsUncheckedUpdateWithoutConsignor_payablesInput>
+}
+
+export type order_itemsUpdateWithoutConsignor_payablesInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  unit_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  unit_cost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  order?: Prisma.ordersUpdateOneRequiredWithoutItemsNestedInput
+  product?: Prisma.productsUpdateOneRequiredWithoutOrder_itemsNestedInput
+  refunded_on?: Prisma.credit_note_itemsUpdateManyWithoutOrder_itemNestedInput
+}
+
+export type order_itemsUncheckedUpdateWithoutConsignor_payablesInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  order_id?: Prisma.StringFieldUpdateOperationsInput | string
+  product_id?: Prisma.StringFieldUpdateOperationsInput | string
+  unit_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  unit_cost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  quantity?: Prisma.IntFieldUpdateOperationsInput | number
+  total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  refunded_on?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsCreateManyProductInput = {
@@ -719,6 +815,7 @@ export type order_itemsUpdateWithoutProductInput = {
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order?: Prisma.ordersUpdateOneRequiredWithoutItemsNestedInput
   refunded_on?: Prisma.credit_note_itemsUpdateManyWithoutOrder_itemNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsUncheckedUpdateWithoutProductInput = {
@@ -729,6 +826,7 @@ export type order_itemsUncheckedUpdateWithoutProductInput = {
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   refunded_on?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutOrder_itemNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsUncheckedUpdateManyWithoutProductInput = {
@@ -757,6 +855,7 @@ export type order_itemsUpdateWithoutOrderInput = {
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   product?: Prisma.productsUpdateOneRequiredWithoutOrder_itemsNestedInput
   refunded_on?: Prisma.credit_note_itemsUpdateManyWithoutOrder_itemNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsUncheckedUpdateWithoutOrderInput = {
@@ -767,6 +866,7 @@ export type order_itemsUncheckedUpdateWithoutOrderInput = {
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   total_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   refunded_on?: Prisma.credit_note_itemsUncheckedUpdateManyWithoutOrder_itemNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutOrder_itemNestedInput
 }
 
 export type order_itemsUncheckedUpdateManyWithoutOrderInput = {
@@ -785,10 +885,12 @@ export type order_itemsUncheckedUpdateManyWithoutOrderInput = {
 
 export type Order_itemsCountOutputType = {
   refunded_on: number
+  consignor_payables: number
 }
 
 export type Order_itemsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   refunded_on?: boolean | Order_itemsCountOutputTypeCountRefunded_onArgs
+  consignor_payables?: boolean | Order_itemsCountOutputTypeCountConsignor_payablesArgs
 }
 
 /**
@@ -808,6 +910,13 @@ export type Order_itemsCountOutputTypeCountRefunded_onArgs<ExtArgs extends runti
   where?: Prisma.credit_note_itemsWhereInput
 }
 
+/**
+ * Order_itemsCountOutputType without action
+ */
+export type Order_itemsCountOutputTypeCountConsignor_payablesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.consignor_payablesWhereInput
+}
+
 
 export type order_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -820,6 +929,7 @@ export type order_itemsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   order?: boolean | Prisma.ordersDefaultArgs<ExtArgs>
   product?: boolean | Prisma.productsDefaultArgs<ExtArgs>
   refunded_on?: boolean | Prisma.order_items$refunded_onArgs<ExtArgs>
+  consignor_payables?: boolean | Prisma.order_items$consignor_payablesArgs<ExtArgs>
   _count?: boolean | Prisma.Order_itemsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["order_items"]>
 
@@ -862,6 +972,7 @@ export type order_itemsInclude<ExtArgs extends runtime.Types.Extensions.Internal
   order?: boolean | Prisma.ordersDefaultArgs<ExtArgs>
   product?: boolean | Prisma.productsDefaultArgs<ExtArgs>
   refunded_on?: boolean | Prisma.order_items$refunded_onArgs<ExtArgs>
+  consignor_payables?: boolean | Prisma.order_items$consignor_payablesArgs<ExtArgs>
   _count?: boolean | Prisma.Order_itemsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type order_itemsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -882,6 +993,10 @@ export type $order_itemsPayload<ExtArgs extends runtime.Types.Extensions.Interna
      * * The credit-note lines that took this one back, wholly or in part.
      */
     refunded_on: Prisma.$credit_note_itemsPayload<ExtArgs>[]
+    /**
+     * * The consignor shares this line's sale and any refund of it produced.
+     */
+    consignor_payables: Prisma.$consignor_payablesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: bigint
@@ -1288,6 +1403,7 @@ export interface Prisma__order_itemsClient<T, Null = never, ExtArgs extends runt
   order<T extends Prisma.ordersDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ordersDefaultArgs<ExtArgs>>): Prisma.Prisma__ordersClient<runtime.Types.Result.GetResult<Prisma.$ordersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   product<T extends Prisma.productsDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.productsDefaultArgs<ExtArgs>>): Prisma.Prisma__productsClient<runtime.Types.Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   refunded_on<T extends Prisma.order_items$refunded_onArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.order_items$refunded_onArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$credit_note_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  consignor_payables<T extends Prisma.order_items$consignor_payablesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.order_items$consignor_payablesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payablesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1746,6 +1862,30 @@ export type order_items$refunded_onArgs<ExtArgs extends runtime.Types.Extensions
   take?: number
   skip?: number
   distinct?: Prisma.Credit_note_itemsScalarFieldEnum | Prisma.Credit_note_itemsScalarFieldEnum[]
+}
+
+/**
+ * order_items.consignor_payables
+ */
+export type order_items$consignor_payablesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignor_payables
+   */
+  select?: Prisma.consignor_payablesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignor_payables
+   */
+  omit?: Prisma.consignor_payablesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignor_payablesInclude<ExtArgs> | null
+  where?: Prisma.consignor_payablesWhereInput
+  orderBy?: Prisma.consignor_payablesOrderByWithRelationInput | Prisma.consignor_payablesOrderByWithRelationInput[]
+  cursor?: Prisma.consignor_payablesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Consignor_payablesScalarFieldEnum | Prisma.Consignor_payablesScalarFieldEnum[]
 }
 
 /**

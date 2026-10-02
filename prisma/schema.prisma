@@ -418,6 +418,9 @@ model users {
   inbound_dismissals  inbound_payments[]   @relation("inbound_dismisser")
   number_blocks       number_blocks[]      @relation("number_block_opener")
   blocks_closed       number_blocks[]      @relation("number_block_closer")
+  // ------------------------------------------------ consignment (ADR 0023)
+  consigned_products  products[]           @relation("consigned_products")
+  consignor_payables  consignor_payables[] @relation("payable_consignor")
 }
 
 // ---------------------------------------------------------------- catalog
@@ -455,6 +458,15 @@ model products {
   offline_safety_qty Int      @default(0)
   image_url          String?
   is_active          Boolean  @default(true)
+  // ------------------------------------------------------- consignment (ADR 0023)
+  // Goods the shop sells but does not own. A null `consignor_user_id` is the normal
+  // case: the product is the shop's own stock. When it is set, the product belongs
+  // to exactly one member and `consignor_share_percent` is the agreed share of the
+  // net (excluding VAT) the shop owes on each sale (ADR 0023 §2, §4). The two move
+  // together — a consignment with no percent, or a percent with no consignor, is a
+  // state the migration refuses in the database rather than in every code path.
+  consignor_user_id       String? @db.Uuid
+  consignor_share_percent Int?
   created_at         DateTime @default(now()) @db.Timestamptz(6)
   updated_at         DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
@@ -464,9 +476,14 @@ model products {
   category    categories?   @relation(fields: [category_id], references: [id], onDelete: Restrict)
   stock_logs  stock_logs[]
   order_items order_items[]
+  // Restrict for the same reason as the category: deleting the member who consigned
+  // goods would orphan the shop's liability to them, which is money, not a label.
+  consignor          users?                @relation("consigned_products", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  consignor_payables consignor_payables[]
 
   @@index([category_id])
   @@index([is_active])
+  @@index([consignor_user_id])
 }
 
 model stock_logs {
@@ -716,6 +733,7 @@ model orders {
    */
   credit_notes       credit_notes[]  @relation("credit_notes_for_order")
   notifications      notifications[]
+  consignor_payables consignor_payables[]
 
   @@index([status])
   @@index([created_at])
@@ -758,6 +776,8 @@ model order_items {
   product products @relation(fields: [product_id], references: [id])
   /** The credit-note lines that took this one back, wholly or in part. */
   refunded_on credit_note_items[]
+  /** The consignor shares this line's sale and any refund of it produced. */
+  consignor_payables consignor_payables[]
 
   @@index([order_id])
   @@index([product_id])
@@ -1125,6 +1145,56 @@ model display_devices {
   created_at         DateTime  @default(now()) @db.Timestamptz(6)
 
   paired_by users? @relation(fields: [paired_by_user_id], references: [id], onDelete: SetNull)
+}
+
+/** What moved a consignor's balance (ADR 0023 §2, §5, §6). */
+enum consignor_payable_kind {
+  /** A sale of consigned goods credited the consignor their share. */
+  sale
+  /** A refund of a consigned sale clawed the share back. */
+  refund
+  /** A payout handed the consignor money, debiting the balance. */
+  payout
+}
+
+/**
+ * What the shop owes each consignor (ADR 0023 §2).
+ *
+ * An append-only ledger the way `point_transactions` is — a credit when consigned
+ * goods sell, a debit when a refund claws the share back or a payout hands it over,
+ * and the balance is the *sum* rather than a column that can drift away from the rows.
+ * `amount_thb` is signed, so the arithmetic is one addition and the migration's CHECK
+ * refuses a row whose sign disagrees with its kind (a sale that debits, a payout that
+ * credits).
+ *
+ * The money path itself is untouched: the sale is the shop's own (its receipt, its
+ * series, its VAT, ADR 0023 §3), and this ledger records only the debt that sale
+ * created. That is what keeps the share from becoming a second inventory and a second
+ * sales path.
+ */
+model consignor_payables {
+  id                BigInt                 @id @default(autoincrement())
+  consignor_user_id String                 @db.Uuid
+  kind              consignor_payable_kind
+  /** Signed: a sale credits, a refund and a payout debit. */
+  amount_thb        Decimal                @db.Decimal(10, 2)
+  /** The sale or refund this movement came from; null on a payout. */
+  order_id          String?                @db.Uuid
+  /** The line that sold, so a refund can name exactly what went back. */
+  order_item_id     BigInt?
+  product_id        String?                @db.Uuid
+  description       String?                @db.VarChar(255)
+  created_at        DateTime               @default(now()) @db.Timestamptz(6)
+
+  // Restrict rather than cascade: this is the shop's liability to a real person, and
+  // deleting them must not quietly erase what they are owed.
+  consignor  users        @relation("payable_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  order      orders?      @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  order_item order_items? @relation(fields: [order_item_id], references: [id], onDelete: SetNull)
+  product    products?    @relation(fields: [product_id], references: [id], onDelete: SetNull)
+
+  @@index([consignor_user_id, created_at])
+  @@index([order_id])
 }
 
 model point_transactions {

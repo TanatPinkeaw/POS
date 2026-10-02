@@ -180,3 +180,12 @@ export const notification_status = {
 } as const
 
 export type notification_status = (typeof notification_status)[keyof typeof notification_status]
+
+
+export const consignor_payable_kind = {
+  sale: 'sale',
+  refund: 'refund',
+  payout: 'payout'
+} as const
+
+export type consignor_payable_kind = (typeof consignor_payable_kind)[keyof typeof consignor_payable_kind]
