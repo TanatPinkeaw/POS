@@ -1655,11 +1655,60 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   const settledRow = (await member.call<OrderBoardRowDto[]>('/api/v1/orders')).find(
     (row) => row.orderNumber === placed.orderNumber,
   );
-  check('the customer sees their own order settled', settledRow?.status === 'completed', settledRow?.status);
-  check(
+  check('the customer sees their own order settled', settledRow?.status === 'completed', settledRow?.status);  check(
     'and the code is gone from the screen once the parcel is',
     settledRow?.pickupToken === null,
     settledRow?.pickupToken,
+  );
+
+  /* ---------------------------- 11b. the customer's own account (ADR 0020) */
+  /*
+   * The portal's server half, driven over HTTP: the customer reads their own points
+   * and their own receipt, and is refused somebody else's. The customer is still
+   * signed in from the pre-order above, and the collection has just posted the
+   * loyalty points, so the ledger is not empty. Before the trail sections that
+   * tally globally, and before the admin's token is handed out below.
+   */
+  const points = await member.call<{
+    balance: number;
+    entries: { pointsChange: number; balanceAfter: number }[];
+  }>('/api/v1/points');
+  check(
+    'the customer reads their own points ledger',
+    points.entries.length > 0 && points.balance === points.entries[0]?.balanceAfter,
+    { balance: points.balance, newest: points.entries[0] },
+  );
+  check(
+    'and the points earned by the sale are on it',
+    points.entries.some((entry) => entry.pointsChange > 0),
+    points.entries,
+  );
+
+  const ownReceipt = await member.call<{ receipt: { orderNumber: string } }>(
+    `/api/v1/orders/${placed.orderId}/receipt`,
+  );
+  check(
+    'and the customer can read the receipt for their own order',
+    ownReceipt.receipt.orderNumber === placed.orderNumber,
+    ownReceipt.receipt.orderNumber,
+  );
+
+  // An order that is not theirs is refused — and the refusal is a 403, not a 404,
+  // because the order exists and simply belongs to somebody else.
+  const notMine = await member.request(`/api/v1/orders/${sale.orderId}/receipt`);
+  check(
+    'a receipt for an order that is not theirs is refused (403)',
+    notMine.status === 403,
+    notMine.status,
+  );
+
+  // Staff are neither scoped nor windowed: the counter still reprints the walk-in
+  // sale, which is the same order the member was just refused.
+  const staffReprint = await cashier.request(`/api/v1/orders/${sale.orderId}/receipt`);
+  check(
+    'and staff still reprint the same order the customer was refused',
+    staffReprint.status === 200,
+    staffReprint.status,
   );
 
   /* ---------------- 12. the shop hears about it without watching a screen */

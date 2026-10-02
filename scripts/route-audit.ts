@@ -364,10 +364,11 @@ async function bootstrap(scratch: string): Promise<Record<RouteSession, string>>
   // The customer is enrolled the way the shop enrolls one (ADR 0010). This used to
   // be a SQL insert, because no route created customers — which is exactly the gap
   // that made the member area unreachable on a fresh install.
-  await admin.call('/api/v1/members', {
+  const enrolledMember = await admin.call<{ id: string }>('/api/v1/members', {
     method: 'POST',
     body: { fullName: MEMBER.fullName, phone: MEMBER.phone, password: MEMBER.password },
   });
+  const memberId = enrolledMember.id;
 
   await admin.postForm('/api/v1/products/import', csvForm(CATALOGUE_CSV, 'commit'));
 
@@ -406,6 +407,23 @@ async function bootstrap(scratch: string): Promise<Record<RouteSession, string>>
   await member.call('/api/v1/orders', {
     method: 'POST',
     body: { type: 'preorder', lines: [{ productId: coffee.id, quantity: 2 }] },
+  });
+
+  /*
+   * The account portal reads the points ledger, so the customer needs one: a walk-in
+   * sale rung up under their own number posts the points the portal shows. Without
+   * this the portal renders its empty state, which is styled too — but only a
+   * populated ledger exercises the earn/spend rows this screen exists for.
+   */
+  await cashier.call('/api/v1/orders', {
+    method: 'POST',
+    body: {
+      type: 'pos_walkin',
+      shiftId: shift.id,
+      customerId: memberId,
+      lines: [{ productId: coffee.id, quantity: 1 }],
+      settlement: { cash: COFFEE.price },
+    },
   });
 
   return {

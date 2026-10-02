@@ -131,10 +131,17 @@ keeps the cross-role uniqueness that makes sign-in unambiguous.
   in; `POST /api/v1/auth/signup` finishes the first sign-in. A second Google account cannot
   take a number another holds, and the unique index is the backstop under the two reads a race
   could slip between.
-- **The `/shop` screen is not built.** The doors exist as API calls only; the sign-in surface
-  that offers "continue with Google" and the counter side by side (and the two-door ticket 02
-  asks for) arrives with the customer portal (ticket 07). Until then the counter flow
-  (ADR 0011) and the API are how a customer exists.
+- **The two doors, and the portal, are built.** `/shop` (public, ticket 07) offers continue
+  with Google and the counter's phone-and-password side by side; a Google sign-in that is a new
+  account collects a phone and an OTP in place, and one that is already a customer signs straight
+  in. `/shop/account` (member-only, under the matrix of ADR 0022) is the customer's own points
+  ledger, their last month's receipts as downloads, and the phone change — every read scoped by
+  the session, so another customer's data is unreachable by construction.
+- **The owner's signup door is blocked, not built.** ADR 0016 §7 has the owner continue with
+  Google during *hosted* signup, then set a phone and password so the counter never waits on a
+  Google session. That is ticket 08, and it assumes the hosted control plane (ADR 0016 Phase 1:
+  `accounts`, `tenants`, a slug, Google authorization-code signup) which does not exist. Until
+  that effort starts, the owner signs in exactly as staff do — phone and temporary password.
 - **No provider is chosen**, and no OTP budget is set: the seam is here, the shop points it
   at a gateway at deploy, and `GOOGLE_CLIENT_ID` must be set for the Google door to accept
   anything.

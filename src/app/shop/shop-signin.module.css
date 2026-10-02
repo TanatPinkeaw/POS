@@ -1,0 +1,112 @@
+/*
+ * The customer's own sign-in screen.
+ *
+ * Deliberately the same card as `/login`, because it is the same act for a
+ * different person: a customer arriving without an account, or returning to one.
+ * The two doors get equal weight — a divider with the word "หรือ" between them, not
+ * one door tucked under the other.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ln-space-5);
+  min-height: 100dvh;
+  padding: var(--ln-space-5);
+  background:
+    radial-gradient(
+      120% 90% at 50% -10%,
+      color-mix(in srgb, var(--ln-brand) 12%, transparent),
+      transparent 62%
+    ),
+    var(--ln-bg);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-5);
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--ln-space-6);
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-lg);
+  box-shadow: var(--ln-shadow-md);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--ln-space-2);
+  text-align: center;
+}
+
+.brand {
+  font-size: var(--ln-size-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ln-text-subtle);
+}
+
+.shop {
+  font-size: var(--ln-size-xl);
+}
+
+.tagline {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-4);
+}
+
+.door {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+}
+
+.doorTitle {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  font-weight: 600;
+  color: var(--ln-text-muted);
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  color: var(--ln-text-subtle);
+  font-size: var(--ln-size-xs);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ln-border);
+}
+
+.googleSlot {
+  display: flex;
+  justify-content: center;
+  min-height: 2.75rem;
+}
+
+.googleSlot > div {
+  width: 100%;
+}
+
+.footer {
+  font-size: var(--ln-size-xs);
+  color: var(--ln-text-subtle);
+}

@@ -13,7 +13,7 @@ second does not. That is the spine of the order below.
 ## Effort 1 — Land the offline till
 
 **State.** Built, reviewed on both axes, and **green** when it landed: `npm run verify:all` ran
-all five gates (the tree has grown since — `verify` is now 69 files and 1015 tests). It is
+all five gates (the tree has grown since — `verify` is now 70 files and 1023 tests). It is
 **landed on `main`** as its own commit (`83bacc9`), on top of the base tree.
 
 **What it unlocks.** A shop keeps selling cash when its connection drops, with the numbers,
@@ -38,8 +38,9 @@ land it alone, reviewed, before anything is stacked on it.
 **State.** Designed in ADRs 0020, 0021 and 0022; specified and ticketed under
 `.scratch/customer-identity/`; **in progress** — tickets 01 (the Google credential and the
 OTP seam), 02 (signup and linking), 03 (a phone change that proves the new number), 04 (the role
-matrix), 05 (the receipt renderer) and 06 (the signed link and the access window) are done and on
-`main`, the rest unbuilt.
+matrix), 05 (the receipt renderer), 06 (the signed link and the access window) and 07 (the
+customer portal, which carries the `/shop` sign-in screen) are done and on `main`. Only 08 — the
+owner's hosted signup door — remains, and it waits on the control plane of Effort 3's ADR 0016.
 
 **What it unlocks.**
 
@@ -51,10 +52,11 @@ matrix), 05 (the receipt renderer) and 06 (the signed link and the access window
 - **The customer portal**, which is the screen Effort 3 needs for a consignor to see what they
   are owed.
 
-**Order inside it.** Tickets 01 (Google and OTP), 02 (signup and linking), 03 (a phone change
-that proves the new number), 04 (the role matrix), 05 (the receipt renderer) and 06 (the signed
-link) are done; 08 (an owner's Google door) builds on 01 and 02; the portal (07) is last, carries
-the `/shop` screens (the two doors and the phone change), and is what Effort 3 waits on.
+**Order inside it.** Tickets 01–07 are done, the portal (07) included, which is what Effort 3
+waits on for a consignor's view. Ticket 08 (the owner's Google sign-up door) is the one left,
+and it is **blocked**: it assumes the hosted control plane (ADR 0016 Phase 1 — `accounts`,
+`tenants`, a slug, Google authorization-code signup) that does not exist yet, so it can be
+deferred until that effort starts without holding anything else up.
 
 **Done when.** A new customer can sign up with Google and prove a phone, an existing customer
 can link one without losing their points, a walk-in can leave with a receipt link, an older

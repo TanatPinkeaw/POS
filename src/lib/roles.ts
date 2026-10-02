@@ -89,6 +89,13 @@ const PAGES: PagePermission[] = [
   { prefix: '/admin/reports', roles: ['admin', 'employee'] },
   { prefix: '/admin', roles: ['admin'] },
   { prefix: '/pos', roles: ['employee', 'admin'] },
+  /*
+   * The customer portal — points, receipts and the phone change — is the customer's
+   * own account, and only theirs (ADR 0020, ticket 07). It sits above `/shop` so the
+   * longest-prefix rule makes it member-only while the catalogue and order screens
+   * keep the wider access they already had.
+   */
+  { prefix: '/shop/account', roles: ['member'] },
   { prefix: '/shop', roles: ROLES.slice() },
 ];
 
@@ -155,6 +162,12 @@ export function isPublicPath(pathname: string): boolean {
     pathname === '/' ||
     pathname === '/setup' ||
     pathname === '/display' ||
+    /*
+     * The customer's own door (ADR 0020 §3): `/shop` is the screen a person with no
+     * account reaches to become one, so it cannot itself require a session. It is
+     * exact, not a prefix — `/shop/products` and the rest of the area stay guarded.
+     */
+    pathname === '/shop' ||
     pathname.startsWith('/uploads/')
   );
 }

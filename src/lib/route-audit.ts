@@ -17,7 +17,7 @@
  * deliberately so — see `offSiteReferences`. Three properties are worth more than
  * cleverness:
  *
- *   * **The route list is data.** Sixteen paths across four areas, each with the
+ *   * **The route list is data.** Twenty paths across four areas, each with the
  *     session it needs and the path it must land on. That table is also the only
  *     place the areas are written down outside `roles.ts`, so a screen that is
  *     moved and forgotten shows up as a redirect to a page the audit did not
@@ -48,12 +48,12 @@ export interface RouteSpec {
    * The path the request must end on — the path itself for a screen that just
    * renders, and the redirect target for one that does not.
    *
-   * This is what stops the audit from passing vacuously: seventeen of these eighteen
-   * screens redirect to `/login` when they are handed no session, so "it
-   * answered 200" would otherwise mean "the login page is styled" eighteen times
-   * over. Pinning the landing path also makes the table a live assertion about
-   * `roles.ts` and the proxy — a front door that sends a manager to the till
-   * fails here rather than passing as a styled page.
+   * This is what stops the audit from passing vacuously: most of these screens
+   * redirect somewhere when they are handed no session (or the wrong one), so "it
+   * answered 200" would otherwise mean "the login page is styled" once per route.
+   * Pinning the landing path also makes the table a live assertion about `roles.ts`
+   * and the proxy — a front door that sends a manager to the till fails here rather
+   * than passing as a styled page.
    */
   landsOn: string;
   label: string;
@@ -85,11 +85,13 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/pos/attendance', area: 'pos', session: 'cashier', landsOn: '/pos/attendance', label: 'attendance' },
   { path: '/pos/queue', area: 'pos', session: 'cashier', landsOn: '/pos/queue', label: 'the drink queue' },
   { path: '/pos/preorders', area: 'pos', session: 'cashier', landsOn: '/pos/preorders', label: 'the pre-order board' },
+  { path: '/shop', area: 'public', session: 'none', landsOn: '/shop', label: 'the customer sign-in, both doors' },
   { path: '/shop/products', area: 'shop', session: 'member', landsOn: '/shop/products', label: 'the member catalogue' },
   { path: '/shop/orders', area: 'shop', session: 'member', landsOn: '/shop/orders', label: 'the member orders' },
+  { path: '/shop/account', area: 'shop', session: 'member', landsOn: '/shop/account', label: 'the member account' },
 ];
 
-/** The distinct paths in the walk — what "eighteen routes" means. */
+/** The distinct paths in the walk — every page this application serves. */
 export function routePaths(walk: readonly RouteSpec[] = ROUTE_WALK): string[] {
   return [...new Set(walk.map((entry) => entry.path))];
 }

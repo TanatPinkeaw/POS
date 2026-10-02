@@ -1,0 +1,321 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import { Button, InlineNotice, TextField } from '@/components/ds';
+import { apiPost } from '@/lib/client-api';
+
+import styles from '@/app/shop/shop-signin.module.css';
+
+interface LoginResponse {
+  role: 'member' | 'employee' | 'admin';
+  redirectTo: string;
+}
+
+interface GoogleDoorResponse {
+  linked?: boolean;
+  needsPhone?: boolean;
+  id?: string;
+  redirectTo?: string;
+}
+
+interface SignupResponse {
+  redirectTo: string;
+}
+
+/* --- the thin slice of Google Identity Services this screen uses --------- */
+
+interface GoogleCredentialResponse {
+  credential?: string;
+}
+
+interface GoogleIdApi {
+  initialize(config: {
+    client_id: string;
+    callback: (response: GoogleCredentialResponse) => void;
+  }): void;
+  renderButton(element: HTMLElement, options: Record<string, unknown>): void;
+}
+
+declare global {
+  interface Window {
+    google?: { accounts?: { id?: GoogleIdApi } };
+  }
+}
+
+const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
+
+/**
+ * The customer's two doors (ADR 0020 §3, §7).
+ *
+ * The counter door is phone and password — the same thing the shop enrolled the
+ * customer with — and the Google door is the self-serve one. Neither hides the
+ * other: this is the screen the ticket asks for where a walk-in and a customer who
+ * found the shop online both have a way in.
+ *
+ * The Google half is **data**, not a hard dependency. When the deployment has a
+ * `GOOGLE_CLIENT_ID`, Identity Services is loaded (client-side, so no third-party
+ * script sits in the served HTML) and its button fills the slot; without one, the
+ * door is present but says plainly that it is not configured rather than showing a
+ * button that cannot work. That also keeps a shop that never configures Google from
+ * fetching anything from Google on its sign-in page.
+ */
+export function CustomerSignIn({ googleClientId }: { googleClientId: string | null }) {
+  const router = useRouter();
+
+  // Stable across renders, so the Google effect is not torn down and rebuilt on
+  // every keystroke in the form below it.
+  const go = useCallback(
+    (path: string) => {
+      router.replace(path);
+      // Re-render server components so the shell picks up the new session.
+      router.refresh();
+    },
+    [router],
+  );
+
+  return (
+    <div className={styles.form}>
+      <GoogleDoor googleClientId={googleClientId} onSignedIn={go} />
+      <p className={styles.divider}>หรือ</p>
+      <CounterDoor onSignedIn={go} />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------- google door */
+
+function GoogleDoor({
+  googleClientId,
+  onSignedIn,
+}: {
+  googleClientId: string | null;
+  onSignedIn: (path: string) => void;
+}) {
+  const slot = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  /** True once Google's token came back for an account with no customer row yet. */
+  const [needsPhone, setNeedsPhone] = useState(false);
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
+  const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  /*
+   * The id token is held in a ref rather than state: it is a credential the
+   * follow-up signup re-presents, and nothing renders from it, so putting it in
+   * state would be a re-render carrying a secret for no reason.
+   */
+  const idToken = useRef<string | null>(null);
+
+  const handleCredential = useCallback(
+    async (token: string): Promise<void> => {
+      idToken.current = token;
+      setError(null);
+      try {
+        const result = await apiPost<GoogleDoorResponse>('/api/v1/auth/google', { idToken: token });
+        if (result.needsPhone) {
+          setNeedsPhone(true);
+          return;
+        }
+        if (result.redirectTo) {
+          onSignedIn(result.redirectTo);
+        }
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ');
+      }
+    },
+    [onSignedIn],
+  );
+
+  useEffect(() => {
+    if (googleClientId === null) {
+      return;
+    }
+    let cancelled = false;
+
+    const script = document.createElement('script');
+    script.src = GOOGLE_SCRIPT_SRC;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      const api = window.google?.accounts?.id;
+      if (cancelled || !api || !slot.current) {
+        return;
+      }
+      api.initialize({
+        client_id: googleClientId,
+        callback: (response) => {
+          if (response.credential) {
+            void handleCredential(response.credential);
+          }
+        },
+      });
+      api.renderButton(slot.current, {
+        type: 'standard',
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        width: 320,
+      });
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      cancelled = true;
+      script.remove();
+    };
+  }, [googleClientId, handleCredential]);
+
+  async function sendCode(): Promise<void> {
+    setError(null);
+    setBusy(true);
+    try {
+      await apiPost('/api/v1/auth/otp', { phone: phone.trim() });
+      setSent(true);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'ส่งรหัสไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function completeSignup(): Promise<void> {
+    if (idToken.current === null) {
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      const result = await apiPost<SignupResponse>('/api/v1/auth/signup', {
+        idToken: idToken.current,
+        phone: phone.trim(),
+        code: code.trim(),
+      });
+      onSignedIn(result.redirectTo);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'สมัครสมาชิกไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className={styles.door} aria-label="เข้าสู่ระบบด้วย Google">
+      <p className={styles.doorTitle}>ลูกค้าใหม่ หรือมีบัญชี Google</p>
+
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+
+      {googleClientId === null ? (
+        <InlineNotice tone="info">
+          ร้านนี้ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย Google — ใช้เบอร์โทรศัพท์และรหัสผ่านด้านล่างได้เลย
+        </InlineNotice>
+      ) : !needsPhone ? (
+        <div className={styles.googleSlot} ref={slot} />
+      ) : (
+        <div className={styles.door}>
+          <p className="ln-muted">ยืนยันเบอร์โทรศัพท์เพื่อผูกบัญชี Google ของคุณ</p>
+          <TextField
+            id="googlePhone"
+            label="เบอร์โทรศัพท์"
+            inputMode="tel"
+            autoComplete="tel"
+            value={phone}
+            onChange={(event) => {
+              setPhone(event.target.value);
+              setSent(false);
+            }}
+          />
+          {!sent ? (
+            <Button
+              variant="secondary"
+              icon="bell"
+              loading={busy}
+              disabled={phone.trim().length === 0}
+              onClick={() => void sendCode()}
+            >
+              ส่งรหัสยืนยัน
+            </Button>
+          ) : (
+            <>
+              <TextField
+                id="googleCode"
+                label="รหัสยืนยัน 6 หลัก"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+              />
+              <Button
+                variant="primary"
+                loading={busy}
+                disabled={code.trim().length === 0}
+                onClick={() => void completeSignup()}
+              >
+                ยืนยันและเข้าสู่ระบบ
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------- counter door */
+
+function CounterDoor({ onSignedIn }: { onSignedIn: (path: string) => void }) {
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event: React.FormEvent): Promise<void> => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await apiPost<LoginResponse>('/api/v1/auth/login', {
+        identifier: identifier.trim(),
+        password,
+      });
+      onSignedIn(result.redirectTo);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'เข้าสู่ระบบไม่สำเร็จ');
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className={styles.door} aria-label="เข้าสู่ระบบด้วยเบอร์โทรศัพท์">
+      <p className={styles.doorTitle}>ลูกค้าที่ลงทะเบียนไว้แล้ว</p>
+      <form className={styles.form} onSubmit={submit} noValidate>
+        {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+
+        <TextField
+          id="shopIdentifier"
+          label="เบอร์โทรศัพท์"
+          autoComplete="username"
+          inputMode="tel"
+          value={identifier}
+          onChange={(event) => setIdentifier(event.target.value)}
+          required
+        />
+        <TextField
+          id="shopPassword"
+          label="รหัสผ่าน"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          required
+        />
+        <Button type="submit" variant="primary" size="lg" block loading={busy}>
+          เข้าสู่ระบบ
+        </Button>
+      </form>
+    </section>
+  );
+}

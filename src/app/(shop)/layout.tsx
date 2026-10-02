@@ -1,10 +1,12 @@
 import { AreaLayout } from '@/components/shell/AreaLayout';
 import type { NavItem } from '@/components/shell/AppShell';
+import { canReachPage } from '@/lib/roles';
 import { requireShellUser } from '@/lib/shell';
 
 const SHOP_NAV: NavItem[] = [
   { href: '/shop/products', label: 'สินค้า', icon: 'box' },
   { href: '/shop/orders', label: 'ออเดอร์ของฉัน', icon: 'receipt' },
+  { href: '/shop/account', label: 'บัญชีของฉัน', icon: 'user' },
 ];
 
 /**
@@ -16,13 +18,18 @@ const SHOP_NAV: NavItem[] = [
  * when a 14px field takes focus, which hides the buttons the customer was about to
  * press. Touch density gives the same markup 16px fields and 48px targets, and the
  * quantity steppers add `ln-tap` on top because they are tapped repeatedly.
+ *
+ * The nav is the full list *filtered by the same matrix the guard reads* (ADR 0022),
+ * exactly as the back-office nav is: `/shop/account` is member-only, so an employee
+ * opening the shop does not get a menu item that would bounce them.
  */
 export default async function ShopLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const user = await requireShellUser(['member', 'employee', 'admin']);
+  const nav = SHOP_NAV.filter((item) => canReachPage(user.role, item.href));
   return (
-    <AreaLayout user={user} nav={SHOP_NAV} density="touch">
+    <AreaLayout user={user} nav={nav} density="touch">
       {children}
     </AreaLayout>
   );

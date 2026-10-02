@@ -66,6 +66,12 @@ over the record, never the record itself.
 
 ## Built, and the gaps left
 
+- **The customer's side is built.** `/shop/account` lists the last month's receipts and
+  downloads each as a PNG drawn from the order (`receipt-image.ts` in the browser), through
+  `GET /api/v1/orders/[id]/receipt`, which now branches on role: a member reaches only their own
+  order *with* the window enforced, staff reprint anything unwindowed. The counter still has no
+  "hand this link over" surface of its own.
+
 - **The renderer.** The image is drawn from the order by `receipt-image.ts` over the
   import-free `receipt-canvas.ts`, and the DOM reprint and the image share one projection
   (`loadReceiptPayload`) so they cannot drift over a field. Chromium draws a VAT slip and a

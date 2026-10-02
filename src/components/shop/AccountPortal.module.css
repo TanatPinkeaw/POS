@@ -1,0 +1,71 @@
+/*
+ * The account portal's list rows.
+ *
+ * A plain list rather than `DataTable`: this is read on a phone, and a table wide
+ * enough for a date, a description and two figures is a table that scrolls
+ * sideways. Each row is a flex line that wraps its two halves under each other
+ * when the screen is narrow.
+ */
+
+.ledger {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ledgerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-2) var(--ln-space-4);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ln-space-3) 0;
+  border-top: 1px solid var(--ln-border-subtle);
+}
+
+.ledgerRow:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.ledgerMain {
+  display: grid;
+  gap: 2px;
+  min-width: 12rem;
+}
+
+.ledgerWhat {
+  font-weight: 600;
+  color: var(--ln-text);
+}
+
+.ledgerFigures {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-4);
+  margin-left: auto;
+}
+
+.ledgerEarn {
+  font-weight: 700;
+  color: var(--ln-money-in);
+}
+
+.ledgerSpend {
+  font-weight: 700;
+  color: var(--ln-money-out);
+}
+
+.closed {
+  flex-basis: 100%;
+  margin: var(--ln-space-1) 0 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+.currentPhone {
+  margin: 0;
+  font-size: var(--ln-size-lg);
+}

@@ -22,6 +22,14 @@ describe('public paths', () => {
     expect(isPublicPath('/admin/dashboard')).toBe(false);
     expect(isPublicPath('/shop/products')).toBe(false);
   });
+
+  it('makes the customer door public, but only the door itself', () => {
+    // `/shop` is how somebody with no account gets one (ADR 0020 §3), so it cannot
+    // require a session — yet its siblings, and the account behind it, stay guarded.
+    expect(isPublicPath('/shop')).toBe(true);
+    expect(isPublicPath('/shop/account')).toBe(false);
+    expect(isPublicPath('/shop/products')).toBe(false);
+  });
 });
 
 describe('the page matrix', () => {
@@ -52,6 +60,12 @@ describe('the page matrix', () => {
 
   it('leaves the customer area open to every signed-in role', () => {
     expect(requiredRolesForPath('/shop/products')).toEqual(['member', 'employee', 'admin']);
+  });
+
+  it('keeps the customer account to a member, and by no other role', () => {
+    expect(requiredRolesForPath('/shop/account')).toEqual(['member']);
+    expect(requiredRolesForPath('/shop/account')).not.toContain('employee');
+    expect(requiredRolesForPath('/shop/account')).not.toContain('admin');
   });
 
   it('denies a path no rule claims rather than opening it', () => {
