@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1041 tests across 72 files: unit + integration
+npm test                # 1050 tests across 73 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 180 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 26 screens render, and render styled
@@ -778,7 +778,10 @@ order; a walk-in's signed link opens a printable **receipt page** with no sessio
 counter can hand one over — the till's receipt sheet mints a fresh link and shows a QR and URL
 for the customer to scan, print or read down the phone.
 - **Consigned goods (ฝากขาย).** Decided in ADR 0023 (an owner and a share on `products`, a
-payables ledger, sold as principal, never offline in v1), designed, and unbuilt.
+payables ledger, sold as principal, never offline in v1). Partly built: an admin can consign a
+product to a member with an agreed share and withdraw unsold goods from `/admin/products`, each
+audited, and the share rule is a pure module. Not yet built: the ledger is not written at a
+sale, a consigned product is not refused offline, and a consignor cannot see what they are owed.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Customer messages on LINE.** The shop's own group can be reached, but a

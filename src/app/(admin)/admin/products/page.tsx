@@ -28,7 +28,12 @@ export default async function AdminProductsPage() {
 
   const [products, categories] = await Promise.all([
     prisma.products.findMany({
-      include: { category: { select: { name: true } } },
+      include: {
+        category: { select: { name: true } },
+        // Who the goods belong to, for the table's own column (ADR 0023). Null for the
+        // ordinary product, which is the shop's own stock.
+        consignor: { select: { full_name: true } },
+      },
       orderBy: { name: 'asc' },
     }),
     prisma.categories.findMany({
@@ -54,6 +59,9 @@ export default async function AdminProductsPage() {
     offlineSafetyQty: product.offline_safety_qty,
     imageUrl: product.image_url,
     isActive: product.is_active,
+    consignorUserId: product.consignor_user_id,
+    consignorName: product.consignor?.full_name ?? null,
+    consignorSharePercent: product.consignor_share_percent,
   }));
 
   return (

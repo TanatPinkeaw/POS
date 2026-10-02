@@ -39,6 +39,18 @@ export interface AdminProduct {
   /** A link to the picture, wherever the shop keeps it — not a file we hold. */
   imageUrl: string | null;
   isActive: boolean;
+  /** The member whose goods these are, or null for the shop's own stock (ADR 0023). */
+  consignorUserId: string | null;
+  consignorName: string | null;
+  /** The agreed share of the net, 0–100. Null whenever `consignorUserId` is. */
+  consignorSharePercent: number | null;
+}
+
+/** One row of the member search behind the consignment dialog. */
+interface ConsignorCandidate {
+  id: string;
+  fullName: string;
+  phone: string;
 }
 
 interface Category {
@@ -112,6 +124,11 @@ export function AdminProducts({
   const [imageDraft, setImageDraft] = useState('');
   const [editingReserve, setEditingReserve] = useState<AdminProduct | null>(null);
   const [reserveDraft, setReserveDraft] = useState('');
+  const [consigning, setConsigning] = useState<AdminProduct | null>(null);
+  const [consignorQuery, setConsignorQuery] = useState('');
+  const [consignorResults, setConsignorResults] = useState<ConsignorCandidate[]>([]);
+  const [consignorId, setConsignorId] = useState('');
+  const [shareDraft, setShareDraft] = useState('');
 
   /*
    * Server props win on every re-render of the page.
@@ -150,6 +167,32 @@ export function AdminProducts({
     const fresh = await apiFetch<AdminProduct[]>('/api/v1/products?includeInactive=true');
     setProducts(fresh);
   }, []);
+
+  /*
+   * The consignment dialog finds its member by name or number, through the same till
+   * lookup a cashier uses — there is one member list and one search over it. Debounced
+   * like that search, so a typed name is one request rather than one per keystroke.
+   */
+  useEffect(() => {
+    if (consigning === null) {
+      return;
+    }
+    const term = consignorQuery.trim();
+    if (term === '') {
+      setConsignorResults([]);
+      return;
+    }
+    const handle = setTimeout(() => {
+      void apiFetch<ConsignorCandidate[]>(`/api/v1/members?search=${encodeURIComponent(term)}`)
+        .then((found) => {
+          setConsignorResults(found);
+        })
+        .catch(() => {
+          setConsignorResults([]);
+        });
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [consigning, consignorQuery]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -277,6 +320,72 @@ export function AdminProducts({
     }
   }
 
+  /**
+   * Opens the consignment dialog, seeded with whatever the product already is.
+   *
+   * Seeding rather than blanking matters for the percent: an admin re-agreeing the
+   * share of an existing arrangement should see the current number to change it, not
+   * retype it from memory.
+   */
+  function openConsignment(product: AdminProduct): void {
+    setError(null);
+    setConsignorQuery(product.consignorName ?? '');
+    setConsignorResults([]);
+    setConsignorId(product.consignorUserId ?? '');
+    setShareDraft(
+      product.consignorSharePercent !== null ? String(product.consignorSharePercent) : '',
+    );
+    setConsigning(product);
+  }
+
+  async function saveConsignment(): Promise<void> {
+    if (!consigning) {
+      return;
+    }
+    if (!consignorId) {
+      setError('เลือกสมาชิกผู้ฝากขายก่อน');
+      return;
+    }
+    const share = Number(shareDraft);
+    if (!Number.isInteger(share) || share < 0 || share > 100) {
+      setError('ส่วนแบ่งต้องเป็นจำนวนเต็ม 0–100');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await apiPatch(`/api/v1/products/${consigning.id}/consignment`, {
+        consignorUserId: consignorId,
+        sharePercent: share,
+      });
+      setNotice(`ตั้งฝากขายของ "${consigning.name}" แล้ว (แบ่ง ${share}%)`);
+      setConsigning(null);
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'บันทึกการฝากขายไม่สำเร็จ');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function withdrawGoods(): Promise<void> {
+    if (!consigning) {
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await apiPost(`/api/v1/products/${consigning.id}/consignment`, { note: null });
+      setNotice(`ถอนสินค้าฝากขาย "${consigning.name}" แล้ว (มีบันทึกใน stock_logs)`);
+      setConsigning(null);
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'ถอนสินค้าฝากขายไม่สำเร็จ');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function toggleActive(product: AdminProduct): Promise<void> {
     setError(null);
     try {
@@ -376,6 +485,21 @@ export function AdminProducts({
       ),
     },
     {
+      key: 'consignment',
+      header: 'ฝากขาย',
+      /* A dash for the ordinary product: a shop with two hundred of its own items
+       * and three consigned ones should see the three, not a column of blanks. */
+      render: (product) =>
+        product.consignorUserId ? (
+          <span className="ln-break">
+            {product.consignorName ?? 'สมาชิก'}
+            <span className="ln-muted ln-num"> {product.consignorSharePercent}%</span>
+          </span>
+        ) : (
+          <span className="ln-muted">—</span>
+        ),
+    },
+    {
       key: 'actions',
       header: '',
       cardLabel: 'จัดการ',
@@ -415,6 +539,15 @@ export function AdminProducts({
           >
             กันออฟไลน์
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => {
+              openConsignment(product);
+            }}
+          >
+            ฝากขาย
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => void toggleActive(product)}>
             {product.isActive ? 'ปิด' : 'เปิด'}
           </Button>
@@ -426,7 +559,7 @@ export function AdminProducts({
   return (
     <Stack gap="lg">
       {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
-      {error && !adjusting && !editingImage && !editingReserve ? (
+      {error && !adjusting && !editingImage && !editingReserve && !consigning ? (
         <InlineNotice tone="danger">{error}</InlineNotice>
       ) : null}
 
@@ -680,6 +813,68 @@ export function AdminProducts({
                 0,
                 editingReserve.availableQty - Number(reserveDraft === '' ? 0 : reserveDraft),
               )} ชิ้น`}
+            </InlineNotice>
+          ) : null}
+        </Stack>
+      </Overlay>
+
+      <Overlay
+        open={consigning !== null}
+        onClose={() => setConsigning(null)}
+        title={consigning ? `ฝากขาย · ${consigning.name}` : ''}
+        description="สินค้าของสมาชิกที่ร้านขายแทน — ร้านเป็นผู้ขาย และเป็นหนี้ส่วนแบ่งให้สมาชิกเมื่องานขายสำเร็จ"
+        footer={
+          <>
+            {consigning?.consignorUserId ? (
+              <Button variant="secondary" onClick={() => void withdrawGoods()} disabled={saving}>
+                ถอนสินค้าฝากขาย
+              </Button>
+            ) : null}
+            <Button variant="secondary" onClick={() => setConsigning(null)} disabled={saving}>
+              ยกเลิก
+            </Button>
+            <Button loading={saving} onClick={() => void saveConsignment()}>
+              บันทึก
+            </Button>
+          </>
+        }
+      >
+        <Stack gap="md">
+          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+          <TextField
+            id="consign-search"
+            label="ค้นหาสมาชิก"
+            help="พิมพ์ชื่อหรือเบอร์โทรของสมาชิกผู้ฝากขาย"
+            value={consignorQuery}
+            onChange={(event) => setConsignorQuery(event.target.value)}
+          />
+          {consignorResults.length > 0 ? (
+            <SelectField
+              id="consign-member"
+              label="สมาชิกผู้ฝากขาย"
+              value={consignorId}
+              onChange={(event) => setConsignorId(event.target.value)}
+            >
+              <option value="">— เลือกสมาชิก —</option>
+              {consignorResults.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.fullName} · {member.phone}
+                </option>
+              ))}
+            </SelectField>
+          ) : null}
+          <TextField
+            id="consign-share"
+            label="ส่วนแบ่งของสมาชิก (%)"
+            help="เปอร์เซ็นต์ของยอดสุทธิ (ไม่รวม VAT) — เศษสตางค์ที่ปัดขึ้นเป็นของร้าน"
+            inputMode="numeric"
+            className="ln-num"
+            value={shareDraft}
+            onChange={(event) => setShareDraft(event.target.value)}
+          />
+          {consigning?.consignorUserId ? (
+            <InlineNotice tone="info">
+              {`ขณะนี้ฝากขายกับ ${consigning.consignorName ?? 'สมาชิก'} · ${consigning.consignorSharePercent}% — "ถอนสินค้าฝากขาย" จะดึงของที่ยังไม่ขายออกจากสต็อกและปิดสัญญา`}
             </InlineNotice>
           ) : null}
         </Stack>

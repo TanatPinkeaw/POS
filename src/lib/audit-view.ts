@@ -26,7 +26,9 @@ export type AuditAction =
   | 'rate_limited'
   | 'member_created'
   | 'member_updated'
-  | 'offline_sale_synced';
+  | 'offline_sale_synced'
+  | 'consignment_set'
+  | 'consignment_withdrawn';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -44,6 +46,8 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'member_created',
   'member_updated',
   'offline_sale_synced',
+  'consignment_set',
+  'consignment_withdrawn',
 ];
 
 /**
@@ -69,6 +73,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   member_created: 'เพิ่มบัญชีลูกค้า (สมาชิก)',
   member_updated: 'แก้ข้อมูลบัญชีลูกค้า',
   offline_sale_synced: 'บิลที่ขายตอนเน็ตหลุด (ส่งเข้าระบบแล้ว)',
+  consignment_set: 'ตั้ง/แก้เงื่อนไขฝากขาย',
+  consignment_withdrawn: 'ถอนสินค้าฝากขาย',
 };
 
 /**
@@ -115,6 +121,11 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
    * and the trail is where its explanation lives.
    */
   offline_sale_synced: 'info',
+  // Routine bookkeeping: the shop takes on goods to sell, and the trail is where
+  // the agreed share is written down before anyone disagrees about it.
+  consignment_set: 'neutral',
+  // Goods leaving with their owner, and a liability ending — worth a second read.
+  consignment_withdrawn: 'info',
 };
 
 /**

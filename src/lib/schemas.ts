@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { AUDIT_ACTIONS, AUDIT_PAGE_SIZE_MAX } from './audit-view';
 import { isClock, isLocalDateTime, isValidCalendarDay } from './bangkok-time';
+import { MAX_SHARE_PERCENT, MIN_SHARE_PERCENT } from './consignment-rules';
 import { MAX_BLOCK_SIZE } from './number-block';
 import { REPORT_TYPES } from './report-spec';
 import { PROMPTPAY_ID_TYPES, normalisePromptPayId } from './promptpay';
@@ -272,6 +273,33 @@ export const productCreateSchema = z.object({
 });
 
 export const productUpdateSchema = productCreateSchema.partial();
+
+/**
+ * Putting a product into consignment, or re-agreeing its terms (ADR 0023).
+ *
+ * Both halves are required and travel together: a consignor with no share is a liability
+ * the shop cannot settle, and a share with no consignor is a percentage owed to nobody.
+ * The database refuses the half-state with a CHECK; this refuses it earlier, as a Thai
+ * field error rather than a 500 from a constraint. The range is the rule module's own
+ * constants, so the form and the arithmetic cannot disagree about what 100% means.
+ */
+export const consignmentTermsSchema = z.object({
+  consignorUserId: z.string().uuid(),
+  sharePercent: z
+    .number()
+    .int()
+    .min(MIN_SHARE_PERCENT)
+    .max(MAX_SHARE_PERCENT),
+});
+
+/**
+ * Taking unsold goods back. The note is optional but the field exists because "why"
+ * is the only thing the record cannot reconstruct: the stock movement says how many
+ * units left, and this says whether it was the end of the arrangement or a recall.
+ */
+export const consignmentWithdrawalSchema = z.object({
+  note: z.string().trim().max(500).nullable().optional(),
+});
 
 /**
  * SRS §4.3: a manual adjustment is only accepted with an enumerated reason, so

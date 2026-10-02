@@ -365,6 +365,23 @@ enum audit_action {
    * makes the difference an explanation instead of a rumour.
    */
   offline_sale_synced
+  /**
+   * A product entered consignment, or the member it belongs to and the agreed share
+   * were changed (ADR 0023). Its own action rather than a note on the product: goods
+   * belonging to somebody else inside the shop is a liability, and "who did we agree
+   * to owe, and for how much" is the question the trail exists to answer. The detail
+   * carries the consignor, the percent, and what they were before, because a share
+   * is renegotiated far more often than it is first set.
+   */
+  consignment_set
+  /**
+   * The member took their unsold goods back, and the shop's liability for them ended.
+   * Paired with an SRS §4.3 stock movement — the shelf really changed — while this row
+   * records the decision: which consignor, and how many units left. Distinct from
+   * `consignment_set` because an owner scanning the trail for "where did those goods go"
+   * should not have to read a term change to find it.
+   */
+  consignment_withdrawn
 }
 
 // ---------------------------------------------------------------- users
