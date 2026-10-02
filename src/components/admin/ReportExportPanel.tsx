@@ -34,10 +34,17 @@ export function ReportExportPanel({
   reports,
   defaultFrom,
   defaultTo,
+  canExport,
 }: {
   reports: ReportMeta[];
   defaultFrom: string;
   defaultTo: string;
+  /**
+   * Downloading a workbook is admin-only (the export route refuses anyone else),
+   * so an employee reading this screen is not offered the button that would fail
+   * — the picker and the column list stay, and the notice says why.
+   */
+  canExport: boolean;
 }) {
   const [type, setType] = useState(reports[0]?.type ?? 'sales_summary');
   const [from, setFrom] = useState(defaultFrom);
@@ -163,9 +170,15 @@ export function ReportExportPanel({
               </InlineNotice>
             ) : null}
 
-            <Button block loading={busy} onClick={() => void download()}>
-              ดาวน์โหลด Excel (.xlsx)
-            </Button>
+            {canExport ? (
+              <Button block loading={busy} onClick={() => void download()}>
+                ดาวน์โหลด Excel (.xlsx)
+              </Button>
+            ) : (
+              <InlineNotice tone="info">
+                การดาวน์โหลดรายงานเป็นสิทธิ์ของผู้จัดการ — พนักงานดูรายการและคอลัมน์ได้
+              </InlineNotice>
+            )}
           </Stack>
         </Card>
       }

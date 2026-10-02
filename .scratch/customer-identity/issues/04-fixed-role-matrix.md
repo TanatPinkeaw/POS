@@ -34,6 +34,11 @@ Verified on the current tree: `npm run typecheck` clean, `tests/roles.test.ts` a
 `tests/nav-active.test.ts` pass, and `npm run verify:all` is green across all five gates
 (route audit 23/23, offline browser 21 checks).
 
+The **read-only UI** half is now closed too: the dashboard hides `NumberLoanRecovery`, the
+order document actions, the inbound dismiss button and the stock-adjust link from an
+employee, and the reports screen withholds the export button (the export route is
+admin-only) behind a notice, so no control an employee can reach answers 403.
+
 **One honesty note.** The handler half of the last box is enforced by the matrix lookup and
 by each page's `requireShellUser`, but there is **no server-level test** that signs in as an
 employee and asserts the redirect on `/admin/products` and the 403 on an admin API — the

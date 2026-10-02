@@ -32,6 +32,7 @@ import { formatThb } from '@/lib/money';
 import { listAbandonedNotifications, outboxHealth } from '@/lib/notify-outbox';
 import { closedTransferTotals, listAwaitingCollection } from '@/lib/payment-intents';
 import type { AwaitingCollectionView } from '@/lib/payment-intents-view';
+import { requireShellUser } from '@/lib/shell';
 
 /**
  * Sales dashboard and financial analytics — SRS §2, admin-only.
@@ -83,6 +84,15 @@ const PREORDER_STAGES = [
 ] as const;
 
 export default async function DashboardPage() {
+  /*
+   * Employees may read this page (ADR 0022), so the role decides whether the
+   * admin-only controls render. The API would refuse them anyway — but a button
+   * that answers 403 is a button that should not have been there, and hiding it is
+   * what makes "read-only" true in the UI rather than only on the server.
+   */
+  const user = await requireShellUser(['admin', 'employee']);
+  const isAdmin = user.role === 'admin';
+
   /*
    * Money the bank reported that this system could not attribute to a bill. Read
    * here rather than inside the snapshot because it is not a figure on a chart —
@@ -210,7 +220,8 @@ export default async function DashboardPage() {
       header: '',
       cardLabel: 'จัดการ',
       align: 'end',
-      render: (row) => <InboundDismissButton transfer={row} />,
+      // Dismissing money the bank sent is an admin act.
+      render: (row) => (isAdmin ? <InboundDismissButton transfer={row} /> : null),
     },
   ];
 
@@ -318,9 +329,11 @@ export default async function DashboardPage() {
       cardLabel: 'จัดการ',
       align: 'end',
       render: () => (
-        <LinkButton href="/admin/products" size="sm">
-          ปรับสต็อก
-        </LinkButton>
+        isAdmin ? (
+          <LinkButton href="/admin/products" size="sm">
+            ปรับสต็อก
+          </LinkButton>
+        ) : null
       ),
     },
   ];
@@ -372,13 +385,15 @@ export default async function DashboardPage() {
          * nothing — which is knowledge that belongs beside the state machine
          * rather than duplicated per screen.
          */
-        <OrderActions
-          orderId={row.id}
-          orderNumber={row.orderNumber}
-          status={row.status}
-          amountThb={row.finalAmountThb}
-          lineCount={row.itemCount}
-        />
+        isAdmin ? (
+          <OrderActions
+            orderId={row.id}
+            orderNumber={row.orderNumber}
+            status={row.status}
+            amountThb={row.finalAmountThb}
+            lineCount={row.itemCount}
+          />
+        ) : null
       ),
     },
   ];
@@ -390,7 +405,7 @@ export default async function DashboardPage() {
         subtitle="ข้อมูลสดจากฐานข้อมูล — ยอดขายเป็นยอดรวมก่อนหักการคืนเงิน"
       />
 
-      {loans.length ? <Card title="ชุดเลขออฟไลน์ที่ยังไม่คืน" subtitle="ชุดที่เปิดอยู่จะหยุดการออกเลขจากเครื่องอื่น — ให้เครื่องเดิมส่งบิลและคืนเลขก่อน ใช้กู้คืนเฉพาะเมื่อเครื่องกลับมาไม่ได้">
+      {isAdmin && loans.length ? <Card title="ชุดเลขออฟไลน์ที่ยังไม่คืน" subtitle="ชุดที่เปิดอยู่จะหยุดการออกเลขจากเครื่องอื่น — ให้เครื่องเดิมส่งบิลและคืนเลขก่อน ใช้กู้คืนเฉพาะเมื่อเครื่องกลับมาไม่ได้">
         <Stack gap="md">
           {loans.map((loan) => <div key={loan.id} className="ln-row">
             <span>{loan.deviceLabel} · {loan.kind === 'receipt' ? 'ใบกำกับภาษี' : `คิว ${loan.day}`} · {loan.from}–{loan.to} · บันทึกใช้ถึง {loan.lastUsed ?? '—'}</span>

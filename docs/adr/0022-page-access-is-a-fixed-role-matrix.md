@@ -55,7 +55,13 @@ no client-side hiding as the enforcement.
   that produces "why can't I see this page?" support calls.
 - **Row-level or field-level permissions.** Not asked for, and a much larger model.
 
-## Known gaps
+## Built, and the one gap left
 
-- **The matrix is not yet written as code.** Today's enforcement is the area routing and
-  `requireRole` as they stand; the explicit table is this ADR's decision and is unbuilt.
+The matrix is `PAGES` in `src/lib/roles.ts`, deny by default, read by `src/proxy.ts`, by
+`canReachPage` in the back-office nav, and by each admin page that stays admin-only stating
+its own refusal. The read pages withhold the controls their role may not use, so an employee
+reading the dashboard or the reports is not offered a button that answers 403.
+
+- **Still open:** there is no test that drives the HTTP surface with an employee session and
+  asserts the redirect and the refusal end to end; the matrix and the rendering are covered,
+  the through-HTTP assertion is not.

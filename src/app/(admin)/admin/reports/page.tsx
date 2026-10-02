@@ -2,9 +2,17 @@ import { ReportExportPanel, type ReportMeta } from '@/components/admin/ReportExp
 import { PageHeader, Stack } from '@/components/ds';
 import { REPORT_TITLES, REPORT_TYPES, reportColumns } from '@/lib/report-spec';
 import { resolveReportRange } from '@/lib/reports';
+import { requireShellUser } from '@/lib/shell';
 
-/** SRS §2: financial analytics and exports are admin-only. */
-export default function ReportsPage() {
+/**
+ * SRS §2. An employee may open this screen to see what reports exist and what
+ * columns they carry (ADR 0022), but the **export** is admin-only: the download
+ * route refuses anyone else, so the button is withheld rather than left to answer
+ * a 403.
+ */
+export default async function ReportsPage() {
+  const user = await requireShellUser(['admin', 'employee']);
+
   // Resolved on the server so the default range is always a Bangkok calendar
   // range, whatever timezone the admin's browser happens to be in.
   const range = resolveReportRange({});
@@ -22,7 +30,12 @@ export default function ReportsPage() {
         subtitle="ดาวน์โหลดเป็นไฟล์ Excel (.xlsx) ตามข้อกำหนด SRS §8 — หนึ่งไฟล์ต่อหนึ่งรายงาน"
       />
 
-      <ReportExportPanel reports={reports} defaultFrom={range.from} defaultTo={range.to} />
+      <ReportExportPanel
+        reports={reports}
+        defaultFrom={range.from}
+        defaultTo={range.to}
+        canExport={user.role === 'admin'}
+      />
     </Stack>
   );
 }
