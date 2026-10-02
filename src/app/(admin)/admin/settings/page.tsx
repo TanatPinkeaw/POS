@@ -6,6 +6,7 @@ import { PageHeader, Stack } from '@/components/ds';
 import { bangkokParts } from '@/lib/bangkok-time';
 import { listDisplayDevices } from '@/lib/display-devices';
 import { loadShop } from '@/lib/shop';
+import { requireShellUser } from '@/lib/shell';
 
 /**
  * Shop settings (ADR 0002).
@@ -17,6 +18,9 @@ import { loadShop } from '@/lib/shop';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminSettingsPage() {
+  // Admin-only under the page matrix (ADR 0022).
+  await requireShellUser(['admin']);
+
   const shop = await loadShop();
   if (!shop) {
     redirect('/setup');

@@ -42,8 +42,14 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
     return redirectToLogin(request);
   }
 
+  /*
+   * Deny by default (ADR 0022). `requiredRolesForPath` returns an empty list for a
+   * path no rule grants, and an empty list includes nobody — so a page that was
+   * never placed in the matrix is refused here rather than opened by omission. The
+   * public paths were answered above, before this point.
+   */
   const required = requiredRolesForPath(pathname);
-  if (required && !required.includes(role)) {
+  if (!required.includes(role)) {
     // Send them to the area they *can* use rather than to a dead-end 403.
     const url = request.nextUrl.clone();
     url.pathname = homePathForRole(role);

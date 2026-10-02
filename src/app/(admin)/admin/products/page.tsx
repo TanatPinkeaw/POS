@@ -5,6 +5,7 @@ import { PageHeader, Stack } from '@/components/ds';
 import { prisma } from '@/lib/db';
 import { availableQty } from '@/lib/inventory';
 import { fromDecimal } from '@/lib/money';
+import { requireShellUser } from '@/lib/shell';
 
 /**
  * The catalogue screen.
@@ -21,6 +22,10 @@ import { fromDecimal } from '@/lib/money';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminProductsPage() {
+  // Admin-only under the page matrix (ADR 0022): the layout admits an employee for
+  // the dashboard and reports, so each closed page states its own refusal.
+  await requireShellUser(['admin']);
+
   const [products, categories] = await Promise.all([
     prisma.products.findMany({
       include: { category: { select: { name: true } } },

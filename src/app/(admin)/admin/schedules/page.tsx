@@ -4,6 +4,7 @@ import { PageHeader, Stack } from '@/components/ds';
 import { listAttendanceRows, listSchedules, listStaff } from '@/lib/attendance';
 import { toAttendanceRowView } from '@/lib/attendance-view';
 import { addBangkokDays, bangkokDateString, resolveBangkokRange } from '@/lib/bangkok-time';
+import { requireShellUser } from '@/lib/shell';
 
 /**
  * Staff scheduling and the timesheet — SRS §6.
@@ -14,6 +15,9 @@ import { addBangkokDays, bangkokDateString, resolveBangkokRange } from '@/lib/ba
  * and the export always agree on which day they are talking about.
  */
 export default async function SchedulesPage() {
+  // Admin-only under the page matrix (ADR 0022).
+  await requireShellUser(['admin']);
+
   const today = bangkokDateString(new Date());
   const rosterFrom = addBangkokDays(today, -1);
   const rosterTo = addBangkokDays(today, 13);

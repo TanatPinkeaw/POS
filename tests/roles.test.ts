@@ -1,10 +1,11 @@
 // Seam under test: the edge proxy's permission table.
 //
-// Worth its own file because the failure mode is silent in the other direction:
-// a path that should be public but is not sends a visitor to a login page, and a
-// login page that redirects back is a blank screen rather than an error. The
-// customer display is exactly such a path — it has no account to sign in with —
-// so it is asserted here rather than discovered on a shop floor.
+// Worth its own file because the failure mode is silent in either direction: a path
+// that should be public but is not sends a visitor to a login page, and a path that
+// should be closed but is not is a page nobody intended to open. The customer display
+// is the first kind of mistake — it has no account to sign in with — and a page missing
+// from the matrix is the second, which is why "no rule" is asserted to mean *nobody*
+// rather than *everybody* (ADR 0022).
 import { describe, expect, it } from 'vitest';
 
 import { homePathForRole, isPublicPath, requiredRolesForPath } from '@/lib/roles';
@@ -23,9 +24,22 @@ describe('public paths', () => {
   });
 });
 
-describe('area permissions', () => {
-  it('keeps the back office to admins', () => {
+describe('the page matrix', () => {
+  it('keeps the back office to an admin, except the two read pages', () => {
+    expect(requiredRolesForPath('/admin/products')).toEqual(['admin']);
+    expect(requiredRolesForPath('/admin/settings')).toEqual(['admin']);
     expect(requiredRolesForPath('/admin/audit')).toEqual(['admin']);
+    expect(requiredRolesForPath('/admin/members')).toEqual(['admin']);
+  });
+
+  it('opens the dashboard and the reports to an employee, read-only', () => {
+    expect(requiredRolesForPath('/admin/dashboard')).toEqual(['admin', 'employee']);
+    expect(requiredRolesForPath('/admin/reports')).toEqual(['admin', 'employee']);
+  });
+
+  it('picks the longest matching prefix, so the exception beats its area', () => {
+    expect(requiredRolesForPath('/admin/dashboard')).toContain('employee');
+    expect(requiredRolesForPath('/admin/members')).not.toContain('employee');
   });
 
   it('lets cashiers and admins reach the till', () => {
@@ -36,8 +50,16 @@ describe('area permissions', () => {
     expect(requiredRolesForPath('/pos/preorders')).toEqual(['employee', 'admin']);
   });
 
-  it('returns null for a path no area claims', () => {
-    expect(requiredRolesForPath('/nowhere')).toBeNull();
+  it('leaves the customer area open to every signed-in role', () => {
+    expect(requiredRolesForPath('/shop/products')).toEqual(['member', 'employee', 'admin']);
+  });
+
+  it('denies a path no rule claims rather than opening it', () => {
+    // The whole point of a matrix over directory layout: a page nobody placed is
+    // reachable by nobody, so it cannot leak by omission.
+    expect(requiredRolesForPath('/nowhere')).toEqual([]);
+    expect(requiredRolesForPath('/nowhere')).not.toContain('admin');
+    expect(requiredRolesForPath('/admin/newpage')).toEqual(['admin']);
   });
 });
 
@@ -45,8 +67,7 @@ describe('post-login landing', () => {
   it('sends each role to an area it is allowed to open', () => {
     for (const role of ['member', 'employee', 'admin'] as const) {
       const home = homePathForRole(role);
-      const required = requiredRolesForPath(home);
-      expect(required === null || required.includes(role)).toBe(true);
+      expect(requiredRolesForPath(home)).toContain(role);
     }
   });
 });
