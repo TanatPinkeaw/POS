@@ -30,6 +30,10 @@ of the identifier.
 | **ใบกำกับภาษีอย่างย่อ** | The short tax invoice on a VAT-registered sale. The title on the slip. | `orders.is_vat_invoice` |
 | **จอลูกค้า** | The **customer display**: a paired screen with no session, told only what a room may see. | `/display`, `display-view.ts` |
 | **แต้ม** | Loyalty points. Earned on money collected, never edited by hand. | `point_transactions` |
+| **ผู้ฝากขาย** | The **consignor**: a member who leaves goods with the shop to sell for an agreed share. | `products.consignor_user_id` (ADR 0023) |
+| **ส่วนแบ่ง** | The consignor's **share** of a consigned sale — a percentage of the net, excluding VAT. | `products.consignor_share_percent` (ADR 0023) |
+| **ยอดค้างจ่าย** | The **payable** the shop owes a consignor: accrued by sales, reversed by refunds and payouts. | `consignor_payables` (ADR 0023) |
+| **ใบเสร็จอิเล็กทรอนิกส์** | The **electronic receipt**: the slip drawn as an image from the order, offered to the customer for the last month. | generated, not stored (ADR 0021) |
 
 ## The words the code uses that a shop does not
 
@@ -45,6 +49,18 @@ of the identifier.
 - **Rule** vs **persistence** — a pure module (`*-rules.ts`, `order-state.ts`,
   `fulfilment-state.ts`, `queue-number.ts`) versus the module that writes rows. The
   split is what lets the money rules be tested without a server.
+- **Account** vs **User** vs **Customer** — three different people, and "บัญชี" alone
+  says none of them. An **account** is who pays us (the hosted control plane); a
+  **user** works in one shop (`users`, any role); a **customer** is a shop's buyer (the
+  `member` role). Never write "บัญชี" in code, and in prose name which of the three.
+- **Consignor / Consignment / Share / Payable** — the person who leaves goods
+  (**consignor**), the arrangement to sell them (**consignment**), their cut
+  (**share**), and the debt the shop carries for it (**payable**). The goods are
+  *theirs*; the shop sells them as principal (ADR 0023).
+- **e-receipt** — the electronic receipt (ADR 0021). Never say "ใบเสร็จดิจิทัล" or
+  "soft copy": it is generated from the order, not a stored file.
+- **OTP** — the one-time code that proves a phone number. It verifies the **phone**, not
+  the person, which is why a phone is the identity and Google is only a door (ADR 0020).
 
 ## What this session has settled so far
 
@@ -119,6 +135,21 @@ re-litigate (the reasoning, when it lands, goes into an ADR):
     * **offline reaches a cash sale from a cached catalogue only** — no members, no
       points, no pre-orders, no PromptPay, no refunds, no over-limit discount, and
       the customer display goes quiet.
+
+16. **A customer signs in with Google, but the phone is the identity** (ADR 0020).
+    Customers may use Google plus a phone OTP or be enrolled at the counter; the phone
+    stays required and unique across every role, and points hang off it. Staff and the
+    owner keep the phone-and-temporary-password flow — this amends ADR 0016 §4, which had
+    put Google on the owner.
+17. **The electronic receipt is generated, not stored** (ADR 0021). A slip drawn from
+    the order as an image, offered to the customer for the last month; the order data is
+    kept as before, and a walk-in gets it through a signed link.
+18. **Page access is a fixed role matrix** (ADR 0022), deny by default, covering the
+    three roles as they stand — not a per-shop or per-user setting.
+19. **Consigned goods reuse the one money path** (ADR 0023): an owner on `products`, a
+    share of the net excluding VAT accrued to a `consignor_payables` ledger, sold as
+    principal, never offline in v1, with the shop's accountant still to agree the tax
+    treatment.
 
 ## Still open (tracked, not decided)
 

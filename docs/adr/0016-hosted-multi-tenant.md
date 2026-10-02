@@ -89,6 +89,12 @@ shop's session from being usable at another's address.
 
 ### 4. Identity: the owner signs in with Google; the shop's staff keep phone and password
 
+> **Superseded in part by ADR 0020 (2026-10-02).** The *staff keep phone and password* half
+> stands. The *owner signs in with Google* half was reassigned: Google becomes the
+> **customer's** door (and the owner's signup door), while the counter keeps the phone and
+> temporary password this section describes. Read ADR 0020 for the current split; the
+> reasoning below is kept because the staff half is still what the code does.
+
 Google is the **tenant's** door, not the counter's. A cashier at 7am does not have a Gmail
 account, and the till's login is the phone number the shop enrolled (ADRs 0010, 0011) —
 which stays exactly as it is, resolved inside that shop's schema.

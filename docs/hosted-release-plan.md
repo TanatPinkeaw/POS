@@ -68,11 +68,18 @@ with PKCE, a slug per shop, and a tenant resolved from the host.
 page that names a shop which does not exist yet — and a second signup cannot take the first
 one's slug.
 
-**Decide inside this phase:** how the Google identity is verified. Calling Google's
-`tokeninfo` endpoint keeps the crypto out of this repository at the cost of a network round
-trip per sign-in; verifying the id token here needs a JWKS fetch and RS256 verification, a
-few dozen lines of `node:crypto` and tests. Both are defensible; the one that is not is
-trusting an unverified token because it arrived over TLS.
+**Decide inside this phase:** how the Google identity is verified. **Decided by ADR 0020:
+verify the id token here, against Google's JWKS with RS256** (`jose`, already a dependency),
+rather than calling Google's `tokeninfo` endpoint — the network round trip per sign-in and
+the coupling to Google's rate limits are not worth avoiding crypto we already have. The one
+option that is not open is trusting an unverified token because it arrived over TLS.
+
+**Identity is now split three ways (ADR 0020, which amends ADR 0016 §4).** Google is the
+owner's **signup** door and the **customer's** sign-in door; the shop's staff and the owner's
+day-to-day use keep the phone and temporary password the counter already runs. A customer's
+phone stays unique across every role and is what their points hang off, and a first Google
+sign-in links to the member row that already owns the number rather than creating a second
+one.
 
 ### Phase 2 — provisioning: signing up creates a shop
 
