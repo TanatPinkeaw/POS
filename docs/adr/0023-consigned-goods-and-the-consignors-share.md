@@ -123,6 +123,8 @@ is a matter for the shop's own agreement outside this system.
   `refundOrder` and writes one debit per returned consigned line, proportional to the units that
   came back (the note that closes a line takes the remainder, so the debits sum to the credit and
   a full refund lands the balance on zero); a payout already made leaves a negative balance the
-  next payout nets. Nothing yet excludes consigned stock from the owned valuation, refuses a
-  consigned product offline, or shows a consignor what they are owed — those are tickets 06–09
-  under `.scratch/consignment/`.
+  next payout nets. The dashboard's stock valuation counts only owned products, and the
+  consigned stock and shares owed are reported beside it in a separate block whose owed figure
+  is the ledger's own sum — so a consignor's goods are never filed as the shop's own. Nothing
+  yet refuses a consigned product offline or shows a consignor what they are owed — those are
+  tickets 07–09 under `.scratch/consignment/`.

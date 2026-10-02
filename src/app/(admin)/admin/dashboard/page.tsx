@@ -466,14 +466,50 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <Stat
-            label="มูลค่าสต็อก (ทุน)"
+            label="มูลค่าสต็อกของร้าน (ทุน)"
             value={<Money amount={snapshot.catalogue.stockValueAtCostThb} />}
-            hint={`${snapshot.catalogue.activeProducts} รายการ · จองไว้ ${snapshot.catalogue.reservedUnits} ชิ้น`}
+            hint={`${snapshot.catalogue.ownedProducts} รายการของร้าน · จองไว้ ${snapshot.catalogue.reservedUnits} ชิ้น`}
             tone="warning"
             icon="box"
           />
         </Card>
       </CardGrid>
+
+      {/*
+        Consigned goods are somebody else's, so their figures sit in their own card rather
+        than beside the owned ones: filing a consignor's stock — or the debt it created —
+        under the shop's own numbers is the reporting mistake ADR 0023 §7 exists to stop.
+        The card appears only when the shop actually has consignments to show.
+      */}
+      {snapshot.consignment.productCount > 0 || snapshot.consignment.sharesOwedThb !== 0 ? (
+        <Card
+          title="สินค้าฝากขาย"
+          subtitle="แยกจากของร้าน — ของเป็นของผู้ฝากขาย และยอดค้างจ่ายคือผลรวมของบัญชีผู้ฝากขาย (ADR 0023)"
+        >
+          <CardGrid min="13rem">
+            <Stat
+              label="สินค้าฝากขาย"
+              value={<strong className="ln-num">{snapshot.consignment.productCount}</strong>}
+              hint={`${snapshot.consignment.units} ชิ้นอยู่บนชั้น`}
+              icon="box"
+            />
+            <Stat
+              label="มูลค่าของฝากขาย (ทุน)"
+              value={<Money amount={snapshot.consignment.stockValueAtCostThb} />}
+              hint="ไม่นับรวมในมูลค่าสต็อกของร้าน"
+              tone="info"
+              icon="box"
+            />
+            <Stat
+              label="ยอดค้างจ่ายผู้ฝากขาย"
+              value={<Money amount={snapshot.consignment.sharesOwedThb} />}
+              hint="ผลรวมบัญชีเจ้าหนี้ผู้ฝากขาย — ยังไม่ได้จ่าย"
+              tone={snapshot.consignment.sharesOwedThb > 0 ? 'warning' : 'neutral'}
+              icon="cash"
+            />
+          </CardGrid>
+        </Card>
+      ) : null}
 
       <Card title="ยอดขาย 7 วันย้อนหลัง" subtitle="แท่งคือยอดขาย (บาท) · เส้นคือจำนวนออเดอร์">
         <TrendChart points={points} primaryLabel="ยอดขาย (บาท)" secondaryLabel="จำนวนออเดอร์" />

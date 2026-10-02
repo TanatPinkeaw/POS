@@ -52,10 +52,37 @@ export interface DashboardSnapshot {
     cancelledToday: number;
   };
   catalogue: {
+    /** Every active product, the shop's and the consignors' alike. */
     activeProducts: number;
+    /** Active products the shop owns — the ones `stockValueAtCostThb` counts. */
+    ownedProducts: number;
     lowStockCount: number;
+    /**
+     * What the *owned* stock on the shelf cost, floored at zero per product.
+     *
+     * Consigned goods are excluded: the shop did not buy them, so counting them here
+     * would file somebody else's inventory as the shop's own (ADR 0023 §7). What they
+     * are worth is stated beside this figure in `consignment`, never inside it.
+     */
     stockValueAtCostThb: number;
     reservedUnits: number;
+  };
+  /**
+   * The consignors' side of the shelf, kept outside the shop's own figures.
+   *
+   * These are the numbers that would otherwise be mistaken for the shop's: goods that
+   * are somebody else's, and the debt those goods have already created. `sharesOwedThb`
+   * is the ledger's own sum, so a dashboard figure and the rows behind it cannot drift.
+   */
+  consignment: {
+    /** Active products consigned to a member. */
+    productCount: number;
+    /** Units of those products on the shelf — the consignor's, not the shop's. */
+    units: number;
+    /** What those consigned goods cost, shown separately from the owned valuation. */
+    stockValueAtCostThb: number;
+    /** The balance of `consignor_payables`: what the shop owes consignors right now. */
+    sharesOwedThb: number;
   };
   salesByDay: { day: string; salesThb: number; orderCount: number }[];
   lowStock: {
@@ -156,6 +183,7 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     cancelledToday,
     activeProducts,
     reservedAggregate,
+    sharesOwedAggregate,
     stockRows,
     salesByDayRows,
     recentOrders,
@@ -216,6 +244,13 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
       where: { is_active: true },
       _sum: { reserved_qty: true },
     }),
+    /*
+     * The total the shop owes consignors, read as the ledger's own sum rather than a
+     * cached column — the same arithmetic `ledgerBalance` does, so the figure on the
+     * dashboard is the rows it claims to be (ADR 0023 §2). Zero when nothing is owed,
+     * which is also what an empty ledger means.
+     */
+    prisma.consignor_payables.aggregate({ _sum: { amount_thb: true } }),
     prisma.products.findMany({
       where: { is_active: true },
       select: {
@@ -225,6 +260,8 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
         stock_qty: true,
         reserved_qty: true,
         cost_price: true,
+        /** Non-null means a consignor's goods, kept out of the owned valuation. */
+        consignor_user_id: true,
         // Read for the shortage list: how recently anything moved this row.
         updated_at: true,
       },
@@ -339,15 +376,32 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
       updatedAt: row.updated_at,
     }));
 
-  const stockValueAtCostThb = stockRows.reduce(
-    /*
-     * Floored at zero per product, because a replayed offline sale can leave a row negative
-     * (ADR 0019 decision 3, and the migration that relaxed the CHECK): goods left the shelf
-     * that nobody counted, and a shop does not own minus two of anything. Counting the
-     * negative would *reduce* what the stock is worth — the opposite of what it means — while
-     * the shortage itself is stated on its own card below.
-     */
-    (total, row) => total + Math.max(0, row.stock_qty) * fromDecimal(row.cost_price),
+  /*
+   * The shelf, split by who owns it. `consignor_user_id` is the whole distinction (ADR
+   * 0023 §1): a product is the shop's or a consignor's, never both and never part. The
+   * two sets are summed by the same rule so the figures are comparable, and the
+   * consignors' one is reported *beside* the shop's — never added into it.
+   */
+  const ownedRows = stockRows.filter((row) => row.consignor_user_id === null);
+  const consignedRows = stockRows.filter((row) => row.consignor_user_id !== null);
+
+  const valueAtCost = (rows: (typeof stockRows)[number][]): number =>
+    rows.reduce(
+      /*
+       * Floored at zero per product, because a replayed offline sale can leave a row negative
+       * (ADR 0019 decision 3, and the migration that relaxed the CHECK): goods left the shelf
+       * that nobody counted, and a shop does not own minus two of anything. Counting the
+       * negative would *reduce* what the stock is worth — the opposite of what it means — while
+       * the shortage itself is stated on its own card below.
+       */
+      (total, row) => total + Math.max(0, row.stock_qty) * fromDecimal(row.cost_price),
+      0,
+    );
+
+  const stockValueAtCostThb = valueAtCost(ownedRows);
+  const consignedStockValueAtCostThb = valueAtCost(consignedRows);
+  const consignedUnits = consignedRows.reduce(
+    (total, row) => total + Math.max(0, row.stock_qty),
     0,
   );
 
@@ -376,9 +430,16 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     },
     catalogue: {
       activeProducts,
+      ownedProducts: ownedRows.length,
       lowStockCount: lowStock.length,
       stockValueAtCostThb,
       reservedUnits: reservedAggregate._sum.reserved_qty ?? 0,
+    },
+    consignment: {
+      productCount: consignedRows.length,
+      units: consignedUnits,
+      stockValueAtCostThb: consignedStockValueAtCostThb,
+      sharesOwedThb: fromDecimal(sharesOwedAggregate._sum.amount_thb ?? 0),
     },
     salesByDay,
     lowStock: lowStock.map(({ costPrice: _costPrice, ...rest }) => rest),

@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1073 tests across 75 files: unit + integration
+npm test                # 1076 tests across 76 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 180 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 26 screens render, and render styled
@@ -785,9 +785,11 @@ the sale's own transaction**, at both a walk-in bill and a pre-order handover, s
 rolls back owes nobody. **A refund claws the share back**, also in the refund's own
 transaction: a debit proportional to the units returned, with the note that closes a line
 taking the remainder so the debits sum to the credit exactly, and a payout already made leaving
-a negative balance the next payout nets. Not yet built: consigned stock is not yet outside the
-shop's own valuation, a consigned product is not refused offline, and a consignor cannot see
-what they are owed.
+a negative balance the next payout nets. **Consigned goods stay outside the shop's own
+figures**: the dashboard's stock valuation counts only owned products, and the consigned stock
+and the shares owed are stated separately (the shares-owed figure is the ledger's own sum). Not
+yet built: a consigned product is not refused offline, and a consignor cannot see what they are
+owed.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Customer messages on LINE.** The shop's own group can be reached, but a
