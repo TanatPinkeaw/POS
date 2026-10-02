@@ -297,6 +297,84 @@ export const preOrderSchema = z.object({
   lines: z.array(cartLineSchema).min(1, 'Add at least one item'),
 });
 
+/**
+ * How much one replay may carry, and how many loans it may close.
+ *
+ * A ceiling rather than a policy: the request is a JSON body holding a week of a shop's
+ * bills, and an unbounded one is a way to make the server allocate an arbitrary amount of
+ * memory. A device with more queued than this sends them in batches, in sequence — which is
+ * the order it has to send them in anyway, because a replay stops at the first bill it
+ * cannot record.
+ */
+export const OFFLINE_SYNC_MAX_BILLS = 500;
+export const OFFLINE_SYNC_MAX_REPORTS = 20;
+
+/**
+ * One queued bill, as the device holds it (ADR 0019).
+ *
+ * Every figure here is the customer's slip: the price per line, the tax split, the total,
+ * the cash handed over. That is unusual for a request body — this repository's habit is to
+ * send a product id and let the server price it — and it is the point of a replay. The
+ * offline sale was priced by the same pure modules against the shop's published settings,
+ * the customer paid those figures, and a server that re-priced it from today's catalogue
+ * would be writing a record that disagrees with the paper in somebody's hand.
+ */
+const offlineBillSchema = z.object({
+  fulfilment: z.enum(['preparing', 'ready', 'collected']).optional(),
+  /** The bill's identity as the device minted it — what makes the replay idempotent. */
+  clientRef: z.string().uuid(),
+  sequence: z.number().int().positive(),
+  /** When the device sold it. The server files the bill under this instant. */
+  soldAt: z.string().datetime({ offset: true }),
+  /** The day the device filed it under, kept so a disagreement can be reported. */
+  soldDay: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'soldDay must be YYYY-MM-DD'),
+  /** The notes and coins handed over; the amount *applied* is `totalThb`. */
+  receivedThb: z.number().min(0),
+  totalThb: z.number().positive(),
+  lines: z
+    .array(
+      z.object({
+        productId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+        unitPrice: z.number().min(0),
+      }),
+    )
+    .min(1, 'A bill needs at least one line'),
+  /** Present only when the device was holding a borrowed range. */
+  numbers: deviceNumbersSchema.optional(),
+  tax: z.object({
+    isVatInvoice: z.boolean(),
+    vatRatePercent: z.number().min(0).nullable(),
+    netThb: z.number().min(0),
+    vatThb: z.number().min(0),
+  }),
+});
+
+/**
+ * The offline replay: everything a device is holding, and every loan it wants closed.
+ *
+ * One request for both halves, because they are one fact. A report says "I counted through
+ * N", and N is only true if every number up to N is on the server as a bill — so the bills
+ * and the report travel together and the server decides what it may close.
+ */
+export const offlineSyncSchema = z.object({
+  /** The drawer the bills were sold under. */
+  shiftId: z.number().int().positive(),
+  bills: z.array(offlineBillSchema).max(OFFLINE_SYNC_MAX_BILLS).default([]),
+  reports: z
+    .array(
+      z.object({
+        blockId: z.string().uuid(),
+        /** `report` counts through a number; `cancel` hands a block back untouched. */
+        mode: z.enum(['report', 'cancel']).default('report'),
+        /** Required by `report`, meaningless for `cancel`. */
+        lastUsed: z.number().int().positive().optional(),
+      }),
+    )
+    .max(OFFLINE_SYNC_MAX_REPORTS)
+    .default([]),
+});
+
 export const posSaleWithIntentSchema = posSaleSchema.extend({ intentRef: intentRefField });
 
 export const createOrderSchema = z.discriminatedUnion('type', [
@@ -328,6 +406,7 @@ export const fulfilmentActionSchema = z.object({
  * with consequences rather than a harmless request.
  */
 export const openNumberBlockSchema = z.object({
+  id: z.string().uuid().optional(),
   series: z.enum(['receipt', 'queue']),
   day: z
     .string()

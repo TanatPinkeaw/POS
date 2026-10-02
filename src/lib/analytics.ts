@@ -6,9 +6,12 @@
  * the indexes from SRS §7 are more than enough, and a live number is worth more
  * to a manager than a cached one.
  */
+import { Prisma } from '../generated/prisma/client';
+
 import { addBangkokDays, bangkokDateString, parseBangkokDay } from './bangkok-time';
 import { prisma } from './db';
 import { fromDecimal, roundThb } from './money';
+import { SALE_INSTANT_COLUMN, soldIn } from './sale-instant';
 
 export interface DashboardSnapshot {
   today: {
@@ -62,6 +65,31 @@ export interface DashboardSnapshot {
     stockQty: number;
     reservedQty: number;
     availableQty: number;
+  }[];
+  /**
+   * Products the shelf says are **below zero** — the task a replayed offline sale leaves
+   * behind (ADR 0019 decision 3).
+   *
+   * Offline there is no live row to guard a sale against, so a device can promise more than
+   * the shop has and the replay accepts the bill anyway: the goods are already in a
+   * customer's hands, and a record that contradicted the receipt would be worse than a
+   * negative count. So `stock_qty < 0` is reachable *only* through a replay — every guarded
+   * path refuses it — and that makes the sign itself the task list. Correcting the count on
+   * the products screen is what removes it, which is why there is no dismiss flag: the
+   * state is the reminder.
+   *
+   * A product can appear on both this list and `lowStock`, and that is not a contradiction:
+   * one says "you are nearly out", the other says "your books disagree with the shelf".
+   */
+  stockShortages: {
+    id: string;
+    name: string;
+    barcode: string | null;
+    stockQty: number;
+    reservedQty: number;
+    availableQty: number;
+    /** The last time anything changed this row, so an operator knows how stale it is. */
+    updatedAt: Date;
   }[];
   recentOrders: {
     id: string;
@@ -136,8 +164,13 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
       /*
        * `refunded` is included on purpose: this figure is gross takings, and a
        * refunded sale was still a sale. Its reversal is the next query.
+       *
+       * The window is the day a sale *happened* (`soldIn`, ADR 0019 decision 4). A bill
+       * closed offline at 21:00 and replayed at 08:12 is yesterday's takings: it was rung
+       * up, handed over and counted in that evening's drawer, and a dashboard that moved it
+       * to this morning would disagree with the person who counted.
        */
-      where: { status: { in: ['completed', 'refunded'] }, completed_at: { gte: todayStart } },
+      where: { status: { in: ['completed', 'refunded'] }, ...soldIn({ from: todayStart }) },
       _sum: { final_amount: true },
       _count: { _all: true },
     }),
@@ -167,11 +200,12 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     }),
     prisma.orders.count({
       // Collected today counts as collected even if it was refunded since; the
-      // refund is a Friday event, not a correction to Tuesday's board.
+      // refund is a Friday event, not a correction to Tuesday's board. A pre-order's
+      // sale instant *is* its handover, so this reads the same as `completed_at` used to.
       where: {
         order_type: 'preorder',
         status: { in: ['completed', 'refunded'] },
-        completed_at: { gte: todayStart },
+        ...soldIn({ from: todayStart }),
       },
     }),
     prisma.orders.count({
@@ -191,6 +225,8 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
         stock_qty: true,
         reserved_qty: true,
         cost_price: true,
+        // Read for the shortage list: how recently anything moved this row.
+        updated_at: true,
       },
     }),
     /*
@@ -205,17 +241,26 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
      * `date_trunc('day', …)` would file a 01:00 Bangkok sale under the previous
      * day the moment the session stopped being Bangkok's.
      */
-    prisma.$queryRaw<{ day: Date; sales: unknown; order_count: unknown }[]>`
-      SELECT date_trunc('day', "completed_at" AT TIME ZONE 'Asia/Bangkok')
-               AT TIME ZONE 'UTC'                AS day,
-             COALESCE(SUM("final_amount"), 0) AS sales,
-             COUNT(*)                         AS order_count
-        FROM "orders"
-       WHERE "status" IN ('completed', 'refunded')
-         AND "completed_at" >= ${weekStart}
-       GROUP BY 1
-       ORDER BY 1 ASC
-    `,
+    prisma.$queryRaw<{ day: Date; sales: unknown; order_count: unknown }[]>(
+      /*
+       * The column comes from `SALE_INSTANT_COLUMN` rather than being written here, and it
+       * is the only place in the codebase that has to be: PostgreSQL is doing the day
+       * arithmetic (below), so this is the one read the type checker cannot help with. If a
+       * later edit reached for `created_at` here the chart would quietly start disagreeing
+       * with the figure above it — the same shape of defect, one layer down.
+       */
+      Prisma.sql`
+        SELECT date_trunc('day', ${Prisma.raw(`"${SALE_INSTANT_COLUMN}"`)} AT TIME ZONE 'Asia/Bangkok')
+                 AT TIME ZONE 'UTC'                AS day,
+               COALESCE(SUM("final_amount"), 0) AS sales,
+               COUNT(*)                         AS order_count
+          FROM "orders"
+         WHERE "status" IN ('completed', 'refunded')
+           AND ${Prisma.raw(`"${SALE_INSTANT_COLUMN}"`)} >= ${weekStart}
+         GROUP BY 1
+         ORDER BY 1 ASC
+      `,
+    ),
     prisma.orders.findMany({
       orderBy: { created_at: 'desc' },
       take: 10,
@@ -275,8 +320,34 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     .sort((a, b) => a.availableQty - b.availableQty)
     .slice(0, 10);
 
+  /*
+   * The shortage task. Most-negative first, because the largest disagreement between the
+   * books and the shelf is the one to count first, and capped like the low-stock list so a
+   * screen cannot become a wall.
+   */
+  const stockShortages = stockRows
+    .filter((row) => row.stock_qty < 0)
+    .sort((left, right) => left.stock_qty - right.stock_qty)
+    .slice(0, 20)
+    .map((row) => ({
+      id: row.id,
+      name: row.name,
+      barcode: row.barcode,
+      stockQty: row.stock_qty,
+      reservedQty: row.reserved_qty,
+      availableQty: row.stock_qty - row.reserved_qty,
+      updatedAt: row.updated_at,
+    }));
+
   const stockValueAtCostThb = stockRows.reduce(
-    (total, row) => total + row.stock_qty * fromDecimal(row.cost_price),
+    /*
+     * Floored at zero per product, because a replayed offline sale can leave a row negative
+     * (ADR 0019 decision 3, and the migration that relaxed the CHECK): goods left the shelf
+     * that nobody counted, and a shop does not own minus two of anything. Counting the
+     * negative would *reduce* what the stock is worth — the opposite of what it means — while
+     * the shortage itself is stated on its own card below.
+     */
+    (total, row) => total + Math.max(0, row.stock_qty) * fromDecimal(row.cost_price),
     0,
   );
 
@@ -311,6 +382,7 @@ export async function dashboardSnapshot(now: Date = new Date()): Promise<Dashboa
     },
     salesByDay,
     lowStock: lowStock.map(({ costPrice: _costPrice, ...rest }) => rest),
+    stockShortages,
     recentOrders: recentOrders.map((order) => ({
       id: order.id,
       orderNumber: order.order_number,

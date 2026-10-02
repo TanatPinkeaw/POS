@@ -259,6 +259,17 @@ describe('the Phase 1 timeout guard', () => {
 });
 
 describe('cash drawer settlement — SRS §6.2', () => {
+  it('refuses normal close while the cashier holds an offline loan', async () => {
+    const { openNumberBlock, cancelNumberBlock } = await import('@/lib/number-blocks');
+    const { seedShop } = await import('./helpers/test-db');
+    await seedShop();
+    const shift = await openShift({ userId: people.employeeId, initialCash: 100 });
+    const block = await openNumberBlock({ series: 'receipt', size: 10, deviceLabel: 'counter', userId: people.employeeId });
+    await expect(closeShift({ shiftId: shift.id, userId: people.employeeId, actualCash: 100 })).rejects.toMatchObject({ code: 'SHIFT_OFFLINE_LOANS_OPEN' });
+    await cancelNumberBlock({ id: block.id, userId: people.employeeId });
+    expect((await closeShift({ shiftId: shift.id, userId: people.employeeId, actualCash: 100 })).status).toBe('closed');
+  });
+
   it('reports a shortage of exactly what is missing', async () => {
     const productId = await withProduct(5, 155);
     const shift = await openShift({ userId: people.employeeId, initialCash: 2000 });

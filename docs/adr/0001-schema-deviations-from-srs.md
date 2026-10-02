@@ -111,9 +111,17 @@ latter diffs against the Prisma schema and would propose dropping it.
 therefore appended by hand to the initial migration:
 
 - `CHECK (points_balance >= 0)` on `users`
-- `CHECK (stock_qty >= 0)`, `CHECK (reserved_qty >= 0)`, and
-  `CONSTRAINT chk_stock_availability CHECK (stock_qty >= reserved_qty)` on
-  `products` — the SRS's central invariant
+- `CHECK (reserved_qty >= 0)` on `products`. **The two constraints that used to sit beside
+  it are gone**, dropped by `20260118000000_offline_stock_shortage`: `CHECK (stock_qty >= 0)`
+  and `chk_stock_availability CHECK (stock_qty >= reserved_qty)`, which this ADR listed as the
+  SRS's central invariant. A replayed offline sale has to be able to drive the physical count
+  negative — the goods are already in a customer's hands (ADR 0019 decision 3) — and a CHECK
+  sees the row without knowing why it is being written, so neither could be narrowed to the
+  replay. What enforces "never oversell" now is the `WHERE` clause inside each mutating
+  statement in `src/lib/inventory.ts`, which was always the actual guard because the check and
+  the write share a statement; the constraint was a second line of defence. In its place is a
+  fact a person can act on: `stock_qty < 0` is reachable only through `settleReplayedSale`,
+  and the dashboard lists those products until somebody counts the shelf.
 - `CHECK (quantity > 0)` on `order_items`
 - `CHECK (amount > 0)` on `payments`
 - `time_logs.work_hours` (see §6)

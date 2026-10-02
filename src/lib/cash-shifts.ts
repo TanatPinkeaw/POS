@@ -12,6 +12,7 @@ import { prisma } from './db';
 import { optionalNumberEnv } from './env';
 import { ConflictError, NotFoundError } from './errors';
 import { fromDecimal, roundThb } from './money';
+import { lockShopRow } from './shop';
 import { classifyDiscrepancy, computeCashDiscrepancy, computeExpectedCash, type DiscrepancyKind } from './shifts';
 import type { Db } from './inventory';
 
@@ -176,6 +177,8 @@ export async function closeShift(input: {
   actualCash: number;
 }): Promise<ShiftSummary> {
   return prisma.$transaction(async (tx) => {
+    // Same shop-first order as borrowing/replay: close cannot race a new loan.
+    await lockShopRow(tx);
     const locked = await tx.$queryRaw<{ id: number; status: 'open' | 'closed' }[]>`
       SELECT "id", "status" FROM "cash_shifts" WHERE "id" = ${input.shiftId} FOR UPDATE
     `;
@@ -191,6 +194,10 @@ export async function closeShift(input: {
     }
 
     const existing = await tx.cash_shifts.findUniqueOrThrow({ where: { id: input.shiftId } });
+    if (existing.opened_by !== input.userId) throw new ConflictError('ลิ้นชักนี้เป็นของผู้ใช้อื่น — ให้เจ้าของกะปิดลิ้นชัก', 'SHIFT_WRONG_OWNER');
+    if (await tx.number_blocks.count({ where: { opened_by: existing.opened_by, reported_at: null, cancelled_at: null } })) {
+      throw new ConflictError('ส่งบิลและคืนชุดเลขออฟไลน์ให้ครบก่อนปิดลิ้นชัก', 'SHIFT_OFFLINE_LOANS_OPEN');
+    }
     const initialCashThb = fromDecimal(existing.initial_cash);
     const cashSalesThb = await cashSalesForShift(tx, input.shiftId);
     const expectedCashThb = computeExpectedCash({

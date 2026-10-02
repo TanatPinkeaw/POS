@@ -1,6 +1,6 @@
 'use client';
 
-import { Button, Numpad, Overlay, QrPanel, QuickCash, Tabs } from '@/components/ds';
+import { Button, InlineNotice, Numpad, Overlay, QrPanel, QuickCash, Tabs } from '@/components/ds';
 import { formatThb } from '@/lib/money';
 import { PAYMENT_INTENT_STATUS_LABELS } from '@/lib/payment-intents-view';
 
@@ -34,10 +34,11 @@ export function PaySheet({
   open: boolean;
   onClose: () => void;
 }) {
+  const deviceCashOnly = till.offline?.online === false || Boolean(till.offline?.snapshot?.heldBlocks.length || till.offline?.pending.count);
   const modes = [
     { key: 'cash', label: 'เงินสด' },
-    { key: 'promptpay', label: 'พร้อมเพย์' },
-    { key: 'split', label: 'แบ่งจ่าย' },
+    { key: 'promptpay', label: 'พร้อมเพย์', disabled: deviceCashOnly },
+    { key: 'split', label: 'แบ่งจ่าย', disabled: deviceCashOnly },
   ];
 
   const appendDigit = (key: string): void => {
@@ -124,6 +125,8 @@ export function PaySheet({
       }
     >
       <div style={{ display: 'grid', gap: 'var(--ln-space-4)' }}>
+        {till.error ? <InlineNotice tone="danger">{till.error}</InlineNotice> : null}
+        {deviceCashOnly ? <InlineNotice tone="warning">รับเฉพาะเงินสดไม่ผูกสมาชิก — ส่งบิลและคืนชุดเลขก่อนใช้พร้อมเพย์ สมาชิก หรือแต้ม</InlineNotice> : null}
         <Tabs
           label="วิธีชำระเงิน"
           variant="segmented"

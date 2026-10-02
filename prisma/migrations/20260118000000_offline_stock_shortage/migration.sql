@@ -1,0 +1,47 @@
+-- ------------------------------------------- the oversell an offline replay can produce
+--
+-- ADR 0019 decision 3 says a replayed bill is **accepted** when the shelf turns out to be
+-- shorter than the device believed: the goods are already in a customer's hands, so a record
+-- that contradicts the receipt is worse than a count that does not add up. This migration is
+-- that decision meeting a constraint which forbade it — and it is written down at length
+-- because relaxing a database invariant is exactly the kind of thing an agent should do on
+-- purpose rather than by accident.
+--
+-- The two constraints relaxed here, and why neither can be kept in a weaker form:
+--
+--   * **`chk_products_stock_qty_non_negative`.** An offline sale is the one writer that must
+--     be allowed to drive `stock_qty` below zero. It cannot be conditioned on "only for a
+--     replay" at the row level: a CHECK sees the row, and the row does not know why it is
+--     being written.
+--   * **`chk_stock_availability` (`stock_qty >= reserved_qty`).** Listed by ADR 0001 as the
+--     SRS's central invariant, and it also blocks the shortage case: a pre-order holds the
+--     last unit, a walk-in customer buys it during an outage, and the shop is then physically
+--     one item short with two promises against it. No weaker predicate expresses that state —
+--     `stock_qty >= reserved_qty OR stock_qty < 0` still refuses the mixed case (stock 0,
+--     reserved 1), which is the common shape of a shortage.
+--
+-- What is *not* lost, stated precisely, because the difference matters:
+--
+--   * **Every guarded write keeps its guard, and the guard was never this constraint.** Each
+--     mutation in `src/lib/inventory.ts` carries its own `WHERE` in the same statement, so
+--     the check and the write cannot race: `reserveStock` refuses unless
+--     `stock_qty - reserved_qty >= qty`, `sellFromStock` unless `stock_qty - qty >=
+--     reserved_qty`, `adjustStock` unless the result stays at or above zero *and* at or above
+--     the reservations, `commitReservedStock` unless both counters cover the quantity. A bug
+--     in one of those still fails as zero rows affected and a 409 — which is what the CHECK
+--     was ever a second line of defence for.
+--   * **`chk_products_reserved_qty_non_negative` stays.** Reservations can never go negative;
+--     only the physical count can, and only downward.
+--   * **The invariant is now checkable instead of enforced**: `stock_qty < 0` is reachable
+--     *only* through `settleReplayedSale`, so the sign is the task list — the dashboard shows
+--     those products and the state clears when somebody counts the shelf and corrects it.
+--     A repair that clamped the count at zero would need a second number saying how much was
+--     clamped, and a rule for clearing it; the count itself is a better reminder.
+--
+-- The one read that had to change with it is the inventory valuation: a negative row would
+-- otherwise *subtract* from what the shop's stock is worth, so `analytics.ts` floors each
+-- product at zero there. Everything else reads a negative count correctly as it stands — an
+-- availability figure of −2 refuses every sale, which is exactly what a shelf with nothing on
+-- it should do.
+ALTER TABLE "products" DROP CONSTRAINT "chk_products_stock_qty_non_negative";
+ALTER TABLE "products" DROP CONSTRAINT "chk_stock_availability";

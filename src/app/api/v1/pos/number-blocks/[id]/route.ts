@@ -15,14 +15,21 @@ import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { cancelNumberBlock, reportNumberBlock } from '@/lib/number-blocks';
 import { closeNumberBlockSchema } from '@/lib/schemas';
+import { z } from 'zod';
+
+const recoverySchema = closeNumberBlockSchema.and(z.object({
+  evidenceConfirmed: z.literal(true, { error: 'ตรวจใบที่พิมพ์จริงและยืนยันว่าเครื่องหยุดขายแล้วก่อนคืนเลข' }),
+}));
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
   return withApi(async () => {
-    const session = await requireRole(['employee', 'admin']);
+    // Cashiers release through replay, which checks their acknowledged bills.
+    // Manual recovery can move beyond the server mark and is admin-only.
+    const session = await requireRole(['admin']);
     const { id } = await context.params;
-    const body = await readJson(request, closeNumberBlockSchema);
+    const body = await readJson(request, recoverySchema);
 
     if (body.action === 'cancel') {
       return cancelNumberBlock({ id, userId: session.id });

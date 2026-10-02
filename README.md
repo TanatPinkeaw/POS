@@ -23,7 +23,7 @@ were all removed once the last screen moved across (ADR 0003).
 | Realtime | Socket.io mounted on the same HTTP server as Next |
 | UI | In-house design system (`src/design/` + `src/components/ds/`): CSS custom properties + CSS Modules |
 | Auth | bcrypt hashes + `jose`-signed JWT in an httpOnly cookie |
-| Tests | Vitest — unit tests plus integration tests against real PostgreSQL |
+| Tests | Vitest against real PostgreSQL; Playwright Chromium for actual IndexedDB and the offline cashier journey |
 
 ### Why one process
 
@@ -110,7 +110,8 @@ Three decisions are worth knowing before changing anything here:
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
-| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit` and `limiter:race` against the one build the journey makes — stopping at the first failure. The release check, and what CI runs. |
+| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `limiter:race`, `offline:browser` against the one build the journey makes. Stops at first failure; matches CI. |
+| `npm run offline:browser` | Real Chromium/IndexedDB offline cash, replay/reconnect, loan release and recovery on a test-only scratch schema. Install Chromium with `npx playwright install chromium`; `-- --skip-build` reuses the production build. |
 
 The migration is **finished**: every route is on the design system
 and the vendored theme is gone — no Bootstrap classes, no Bootstrap JavaScript, no
@@ -204,19 +205,20 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 876 tests across 59 files: unit + integration
+npm test                # 920 tests across 61 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 140 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 18 screens render, and render styled
 npm run limiter:race    # two servers against one database share one limit
+npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
 ```
 
 `npm run verify:all` is those gates in dependency order and nothing new: types and
 tests first, because nothing is built for them; then the journey, which builds once;
-then the audit and the race, both against that one artefact, because a release check
-should be checking one build rather than three. It stops at the first failure, and it
+then the audit, race and Chromium offline journey, against that one artefact, because
+a release check should be checking one build rather than several. It stops at the first failure, and it
 is what the two CI jobs run between them.
 
 `npm run doc:audit` is the smallest gate and the one with the longest reach: it holds
@@ -294,6 +296,27 @@ three roles, placing a pre-order, confirming it, collecting it with a PIN,
 reconciling the drawer, downloading all four SRS §8 workbooks (asserting the
 xlsx content type, the ZIP magic bytes, and that a cashier is refused), and then
 clocking the cashier in and out against the roster.
+
+### Prepared cash when the network goes away
+
+On `/pos`, open a drawer while connected, choose **เตรียมเครื่องขายออฟไลน์**, name
+it and accept the warning: it holds invoice numbers (VAT shops) and call numbers
+for today/tomorrow; other allocators cannot use those series until release. The
+preparation reads the full active catalogue in pages, not only the first sixty.
+Use HTTPS or localhost and a Chromium browser with IndexedDB and Web Locks.
+
+Prepared mode takes **cash without members**, even online, using one durable
+client identity before any replay. Changed online prices require reconfirmation;
+pending queues keep their cached promise. The local ticket shows preparing/ready/
+collected, the banner shows unsent cash and the last result, and reconnect/manual
+send replays the ordered prefix without duplicating payment or stock. **ส่งบิลและ
+คืนชุดเลข** restores ordinary tenders; closing the drawer performs that first and
+refuses while bills/loans remain. Never clear browser data, switch cashier, close
+or refresh the page while disconnected with pending bills. There is no cold offline
+launch. Admin dashboard recovery is for a device that cannot return, based on
+actual printed documents, not a guess at the server's last mark; missing money
+records still need reconciliation. Physical printers and shop field use remain
+unproven. See [operator instructions](docs/renter-onboarding.md).
 
 ### Telling people things (SRS §3, §4.2)
 
@@ -726,8 +749,13 @@ goes through them.
 | `docs/adr/0016-hosted-multi-tenant.md` | The rental as a hosted service: a schema per shop in one database, a control plane in `public`, a per-request seam with no default client, Google for the owner and phone-plus-password for the counter — and the invariants it deliberately does not spend. |
 | `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, and the day that resets inside the statement that bumps it. |
 | `docs/adr/0018-the-board-that-calls-a-number.md` | The drink queue: a second state machine beside the order's status (because `completed` is what the money counts), the board the bar taps through, why only ready numbers reach the customer screen, and today as the board's horizon. |
-| `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to — and the five invariants that move out of the database. |
-| `docs/offline-till-spec.md` | The specification for offline selling: the one seam it adds, the numbering protocol, what is refused with no connection, and the phase order the tickets follow. Phases one to three are built — the pure rules, the numbering table with the freeze, the sale endpoint judging a device's own number, the till store and its IndexedDB storage, the till wired through them (a device sale queues on the device and the till says it is offline), and `products.offline_safety_qty` with a field at `/admin/products` to set it. Nothing borrows and the replay does not exist, so a shop still cannot sell offline. |
+| `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to, the replay that makes a device's queue idempotent — and the invariants that move out of the database, including the two stock constraints the shortage case needed relaxed. |
+| `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone OTP, a linked rather than duplicated member, and the phone staying the key — amends ADR 0016 §4. |
+| `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
+| `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
+| `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
+| `docs/offline-till-spec.md` | Shipped prepared cash offline flow: durable storage, exclusive writer, borrowed numbers, ordered idempotent replay, original cashier/shift, local tickets, close/release and admin recovery; actual Chromium proof and explicit limits. |
+| `docs/roadmap.md` | The next three efforts in order — the offline till to land, customer identity with electronic receipts and the role matrix, then consigned goods — and which document changes with each. |
 | `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
 | `docs/wongnai-pos-gap-analysis.md` | Where this stands against a commercial Thai POS, and the build order that follows. |
 
@@ -735,6 +763,16 @@ goes through them.
 
 Deferred deliberately, and listed here rather than discovered during service:
 
+- **Customer sign-in with Google.** Decided in ADR 0020 (Google plus a phone OTP, with
+the phone still the identity), designed, and unbuilt: enrolment at the counter is the only
+way a customer exists today.
+- **Electronic receipts.** Decided in ADR 0021 (an image generated from the order, the last
+month downloadable, a signed link for a walk-in), designed, and unbuilt; a receipt is
+still a screen.
+- **A fixed role-to-page matrix.** Decided in ADR 0022, designed, and unbuilt; access today
+is the area routing and `requireRole` as they stand rather than an explicit table.
+- **Consigned goods (ฝากขาย).** Decided in ADR 0023 (an owner and a share on `products`, a
+payables ledger, sold as principal, never offline in v1), designed, and unbuilt.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Customer messages on LINE.** The shop's own group can be reached, but a
@@ -754,6 +792,9 @@ Deferred deliberately, and listed here rather than discovered during service:
   returns, and a photo host that goes down shows placeholders.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
   audit-log viewer are in — see below.)
+- **Cold offline app launch.** Prepared, already-loaded tills sell cash offline
+  (ADR 0019); fetching a new page without a connection is not supported. There is
+  no service worker, offline PromptPay/member/refund or second-register promise.
 - **Waiting times as a report.** A walk-in ticket now records both when it was paid for
   and when the goods were ready (ADR 0018), so how long customers actually wait is a fact
   the database holds — and no screen or workbook reads it yet.

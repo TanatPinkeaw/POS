@@ -61,7 +61,7 @@ that does not want its sales data in somebody else's cloud).
 | Capability | Ours | Them | Note |
 | --- | --- | --- | --- |
 | Walk-in sale | ✅ | ✅ | |
-| **Pre-order that reserves stock at placement** | ✅✅ | ⚠️ `[C]` | theirs takes pre-orders; ours locks the units, and `chk_stock_availability` makes overselling impossible |
+| **Pre-order that reserves stock at placement** | ✅✅ | ⚠️ `[C]` | theirs takes pre-orders; ours locks the units in the statement that sells them, so a reservation cannot oversell |
 | Four-phase lifecycle with auto-expiry | ✅ | ❌ | ours only |
 | Partial confirmation (drop a line, release its stock) | ✅ | ❌ | ours only |
 | 4-digit pickup PIN + hold deadline | ✅ | `[U]` | |

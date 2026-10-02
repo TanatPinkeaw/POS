@@ -158,7 +158,8 @@ export const audit_action = {
   display_revoked: 'display_revoked',
   rate_limited: 'rate_limited',
   member_created: 'member_created',
-  member_updated: 'member_updated'
+  member_updated: 'member_updated',
+  offline_sale_synced: 'offline_sale_synced'
 } as const
 
 export type audit_action = (typeof audit_action)[keyof typeof audit_action]

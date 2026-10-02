@@ -140,23 +140,35 @@ describe('a sale that carries its own receipt number', () => {
     const shiftId = await seedOpenShift(people.employeeId);
     const product = await seedProduct({ salePrice: 100, stockQty: 5 });
 
-    await sell(product.id, shiftId, { receipt: { blockId: block.id, value: 5 } });
+    for (let value = 1; value <= 3; value++) {
+      await sell(product.id, shiftId, { receipt: { blockId: block.id, value } });
+    }
 
-    await expect(
-      sell(product.id, shiftId, { receipt: { blockId: block.id, value: 5 } }),
-    ).rejects.toMatchObject({ code: 'DEVICE_NUMBER_ALREADY_USED' });
     await expect(
       sell(product.id, shiftId, { receipt: { blockId: block.id, value: 3 } }),
     ).rejects.toMatchObject({ code: 'DEVICE_NUMBER_ALREADY_USED' });
+    await expect(
+      sell(product.id, shiftId, { receipt: { blockId: block.id, value: 2 } }),
+    ).rejects.toMatchObject({ code: 'DEVICE_NUMBER_ALREADY_USED' });
 
-    // The refusal rolled the whole sale back: one bill, one number spent, no stock gone.
-    expect(await prisma.orders.count()).toBe(1);
-    expect(await lastUsed(block.id)).toBe(5);
+    // Refused retries do not add another bill or stock movement.
+    expect(await prisma.orders.count()).toBe(3);
+    expect(await lastUsed(block.id)).toBe(3);
     const stock = await prisma.products.findUniqueOrThrow({
       where: { id: product.id },
       select: { stock_qty: true },
     });
-    expect(stock.stock_qty).toBe(4);
+    expect(stock.stock_qty).toBe(2);
+  });
+
+  it('refuses a skipped receipt before writing money or stock', async () => {
+    const block = await borrowReceipts();
+    const shiftId = await seedOpenShift(people.employeeId);
+    const product = await seedProduct({ salePrice: 100, stockQty: 5 });
+    await expect(sell(product.id, shiftId, { receipt: { blockId: block.id, value: 2 } })).rejects.toMatchObject({ code: 'DEVICE_NUMBER_GAP' });
+    expect(await prisma.orders.count()).toBe(0);
+    expect(await lastUsed(block.id)).toBeNull();
+    expect((await prisma.products.findUniqueOrThrow({ where: { id: product.id } })).stock_qty).toBe(5);
   });
 
   it('refuses a number the block never lent', async () => {

@@ -125,6 +125,167 @@ function noConnection(): never {
   throw new TypeError('Failed to fetch');
 }
 
+describe('prepared transport', () => {
+  it('refuses last year’s borrowed invoice set before taking money', async () => {
+    const store = createTillStore({ storage: memoryStorage(), deviceLabel: 'counter', now: () => AT,
+      transport: { borrow: vi.fn(), sync: vi.fn() } });
+    await store.load();
+    await store.saveSnapshot(snapshot({ heldBlocks: [{ ...RECEIPT_BLOCK, receiptYear: 2025 }, CALL_BLOCK] }));
+    const result = await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    expect(result.ok ? null : result.refusals[0]?.code).toBe('no_receipt_numbers');
+    expect(store.getState().queue).toHaveLength(0);
+  });
+
+  it('never reuses a printed local bill label after acknowledged bills leave the queue', async () => {
+    const storage = memoryStorage();
+    const transport = { borrow: vi.fn(), sync: async (request: { bills: { clientRef: string; sequence: number }[] }) => ({ bills: request.bills.map((bill) => ({ ...bill, status: 'recorded' as const, warnings: [] })), reports: [], notAttempted: 0 }) };
+    let refs = 0;
+    const first = createTillStore({ storage, transport, deviceLabel: 'counter', now: () => AT, newClientRef: () => `bill-${++refs}` });
+    await first.load(); await first.saveSnapshot(snapshot());
+    const sale = await first.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    await first.sync(true);
+    const second = createTillStore({ storage, transport, deviceLabel: 'counter', now: () => AT, newClientRef: () => `bill-${++refs}` });
+    await second.load();
+    const next = await second.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    expect(sale.ok && sale.receipt.orderNumber).toBe('OFF-20260929-001');
+    expect(next.ok && next.receipt.orderNumber).toBe('OFF-20260929-002');
+  });
+
+  it('refuses pending device operations after the signed-in cashier changes', async () => {
+    const storage = memoryStorage();
+    storage.state = { snapshot: snapshot({ cashierId: 'original' }), queue: [] };
+    const borrow = vi.fn();
+    const sync = vi.fn();
+    const store = createTillStore({ storage, deviceLabel: 'counter', cashierId: 'different', transport: { borrow, sync } });
+    await store.load();
+    await expect(store.sync(true, true)).rejects.toThrow('บัญชีเดิม');
+    const result = await store.sell({ basket: basket(), receivedCash: 100, serverSale: async () => SERVER_RECEIPT });
+    expect(result.ok).toBe(false);
+    expect(sync).not.toHaveBeenCalled();
+    expect(borrow).not.toHaveBeenCalled();
+  });
+
+  it('cannot overwrite unread durable state after a read failure', async () => {
+    const write = vi.fn(async () => undefined);
+    const store = createTillStore({ storage: { persists: true, read: async () => { throw new Error('Read failed'); }, write }, deviceLabel: 'counter' });
+    await store.load();
+    await expect(store.saveSnapshot(snapshot())).rejects.toThrow();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('preserves the loan drawer until all loans are released', async () => {
+    const { store } = await readyStore();
+    await expect(store.saveSnapshot(snapshot({ shift: { id: 8, initialCashThb: 0 } }))).rejects.toThrow();
+    expect(store.getState().snapshot?.shift?.id).toBe(7);
+  });
+
+  it('does not sell offline without explicit preparation at a non-VAT shop', async () => {
+    const store = createTillStore({ storage: memoryStorage(), deviceLabel: 'counter', now: () => AT,
+      transport: { borrow: async () => { throw new Error('not used'); }, sync: async () => { throw new Error('not used'); } } });
+    await store.load();
+    await store.saveSnapshot(snapshot({ heldBlocks: [], shop: { ...snapshot().shop, isVatRegistered: false } }));
+    store.setOnline(false);
+    const result = await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    expect(result.ok).toBe(false);
+    expect(store.getState().queue).toHaveLength(0);
+  });
+
+  it('rolls back a local ticket transition when persistence fails', async () => {
+    const { store, storage } = await readyStore();
+    await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    storage.write = async () => { throw new Error('Disk full'); };
+    await expect(store.markTicket('ref-1', 'ready')).rejects.toThrow();
+    expect(store.getState().queue[0]?.fulfilment).toBe('preparing');
+  });
+
+  it('recovers a lost borrow response with the same persisted reservation', async () => {
+    const storage = memoryStorage();
+    let calls = 0;
+    const borrow = vi.fn(async (request: { id: string; series: 'receipt' | 'queue'; day: string | null; size: number; deviceLabel: string }) => {
+      if (++calls === 1) throw new TypeError('Response lost');
+      return { id: request.id, kind: request.series, day: request.day, from: 1, to: request.size, lastUsed: null };
+    });
+    let reference = 0;
+    const transport = { borrow, sync: async () => ({ bills: [], reports: [], notAttempted: 0 }) };
+    const first = createTillStore({ storage, transport, deviceLabel: 'counter', now: () => AT, newClientRef: () => `loan-${++reference}` });
+    await first.load();
+    await first.saveSnapshot(snapshot({ heldBlocks: [] }));
+    await expect(first.prepare('counter')).rejects.toThrow('Response lost');
+    expect(storage.state?.reservations?.[0]?.id).toBe('loan-1');
+    const second = createTillStore({ storage, transport, deviceLabel: 'counter', now: () => AT, newClientRef: () => `loan-${++reference}` });
+    await second.load();
+    await second.prepare('counter');
+    expect(borrow.mock.calls[0]?.[0].id).toBe(borrow.mock.calls[1]?.[0].id);
+    expect(storage.state?.reservations).toHaveLength(0);
+    expect(second.getState().snapshot?.heldBlocks).toHaveLength(3);
+  });
+
+  it('retains acknowledged bills when saving the acknowledgement fails', async () => {
+    const storage = memoryStorage();
+    const store = createTillStore({ storage, deviceLabel: 'counter', now: () => AT, newClientRef: () => 'bill-1',
+      transport: { borrow: async () => { throw new Error('not used'); }, sync: async (request) => {
+        storage.write = async () => { throw new Error('Disk full'); };
+        return { bills: request.bills.map((bill) => ({ clientRef: bill.clientRef, sequence: bill.sequence, status: 'recorded' as const, warnings: [] })), reports: [], notAttempted: 0 };
+      } },
+    });
+    await store.load();
+    await store.saveSnapshot(snapshot());
+    await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    await expect(store.sync(true)).rejects.toThrow('Disk full');
+    expect(store.getState().queue[0]?.clientRef).toBe('bill-1');
+    expect(storage.state?.queue[0]?.clientRef).toBe('bill-1');
+    expect(store.getState().snapshot?.catalogue[0]?.available).toBe(10);
+    expect(store.getState().canKeep).toBe(false);
+  });
+
+  it('persists before transport and removes only acknowledged bills', async () => {
+    const storage = memoryStorage();
+    const store = createTillStore({ storage, deviceLabel: 'counter', now: () => AT, newClientRef: () => 'bill-1',
+      transport: {
+        borrow: async () => { throw new Error('not used'); },
+        sync: async (request) => {
+          expect(storage.state?.queue).toHaveLength(1);
+          return { bills: request.bills.map((b) => ({ clientRef: b.clientRef, sequence: b.sequence, status: 'recorded', orderId: 'order-1', warnings: [] })), reports: [], notAttempted: 0 };
+        },
+      },
+    });
+    await store.load();
+    await store.saveSnapshot(snapshot());
+    store.setOnline(false);
+    await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    await store.sync(true);
+    expect(store.getState().queue).toHaveLength(0);
+  });
+});
+
+describe('durability before confirmation', () => {
+  it('keeps the original drawer on the bill', async () => {
+    const { store } = await readyStore();
+    await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    expect(store.getState().queue[0]?.shiftId).toBe(7);
+  });
+  it('does not treat a successful server sale with failed local persistence as a new sale', async () => {
+    const { store, storage } = await readyStore();
+    storage.write = async () => { throw new Error('Disk full'); };
+    await expect(store.sell({ basket: basket(), receivedCash: 100, serverSale: async () => SERVER_RECEIPT })).rejects.toThrow();
+    expect(store.getState().queue).toHaveLength(0);
+  });
+  it('does not spend a number or keep a tentative bill when storage fails', async () => {
+    const { store, storage } = await readyStore();
+    storage.write = async () => { throw new Error('Disk full'); };
+    await expect(store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection })).rejects.toThrow();
+    expect(store.getState().queue).toHaveLength(0);
+    expect(numbersRemaining(store.getState().snapshot, AT)).toEqual({ receipt: 50, call: 100 });
+  });
+
+  it('refuses offline money when the browser cannot keep it', async () => {
+    const { store } = await readyStore({ storage: memoryStorage(false) });
+    const result = await store.sell({ basket: basket(), receivedCash: 100, serverSale: noConnection });
+    expect(result.ok).toBe(false);
+    expect(store.getState().queue).toHaveLength(0);
+  });
+});
+
 describe('when the shop has no connection', () => {
   it('closes the bill on the device, numbered from its own block', async () => {
     const { store } = await readyStore();
@@ -144,7 +305,7 @@ describe('when the shop has no connection', () => {
     // The number is on paper, so the device's own copy has moved: the next bill is 2, not
     // a second 001 the server would refuse.
     expect(outcome.receipt.orderNumber).toBe('OFF-20260929-001');
-    expect(numbersRemaining(store.getState().snapshot)).toEqual({ receipt: 49, call: 99 });
+    expect(numbersRemaining(store.getState().snapshot, AT)).toEqual({ receipt: 49, call: 99 });
   });
 
   it('has the bill on the device before the customer leaves the counter', async () => {
@@ -219,7 +380,7 @@ describe('when the shop has a connection', () => {
     // Nothing is queued — the money is already the shop's — but the device's copy of the
     // block moved, because it is the device that proposes the next number.
     expect(store.getState().queue).toHaveLength(0);
-    expect(numbersRemaining(store.getState().snapshot)).toEqual({ receipt: 49, call: 99 });
+    expect(numbersRemaining(store.getState().snapshot, AT)).toEqual({ receipt: 49, call: 99 });
   });
 
   it('asks for no numbers at all on a device that holds none', async () => {
@@ -259,7 +420,7 @@ describe('when the shop has a connection', () => {
     );
     expect(store.getState().queue).toHaveLength(0);
     // And nothing was spent: the block is exactly where it was.
-    expect(numbersRemaining(store.getState().snapshot)).toEqual({ receipt: 50, call: 100 });
+    expect(numbersRemaining(store.getState().snapshot, AT)).toEqual({ receipt: 50, call: 100 });
   });
 });
 
@@ -295,7 +456,7 @@ describe('what the device refuses, in the till’s own words', () => {
     );
     // A refused sale burns nothing and queues nothing.
     expect(store.getState().queue).toHaveLength(0);
-    expect(numbersRemaining(store.getState().snapshot)).toEqual({ receipt: 50, call: 100 });
+    expect(numbersRemaining(store.getState().snapshot, AT)).toEqual({ receipt: 50, call: 100 });
   });
 
   it('stops at the safety quantity, which is the whole stock promise offline', async () => {
@@ -441,7 +602,7 @@ describe('the numbers a snapshot reports', () => {
   it('is null for a series the device holds no block for', async () => {
     const { store } = await readyStore({ state: { heldBlocks: [CALL_BLOCK] } });
 
-    expect(numbersRemaining(store.getState().snapshot)).toEqual({ receipt: null, call: 100 });
+    expect(numbersRemaining(store.getState().snapshot, AT)).toEqual({ receipt: null, call: 100 });
   });
 
   it('is null across the board before the first sync', () => {
@@ -453,7 +614,7 @@ describe('the numbers a snapshot reports', () => {
 
     await store.sell({ basket: basket({ lines: [{ productId: 'p-coffee', quantity: 3 }] }), receivedCash: 200, serverSale: noConnection });
 
-    const remaining = numbersRemaining(store.getState().snapshot);
+    const remaining = numbersRemaining(store.getState().snapshot, AT);
     expect(remaining.call).toBe(99);
     expect(remaining.receipt).toBe(49);
   });

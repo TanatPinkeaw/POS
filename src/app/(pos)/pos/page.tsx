@@ -1,3 +1,4 @@
+import { requireRole } from '@/lib/auth';
 import { PosScreen } from '@/components/pos/PosScreen';
 import type { CatalogueCategory } from '@/components/pos/TillCatalog';
 import { prisma } from '@/lib/db';
@@ -21,6 +22,7 @@ import { UNCONFIGURED_SHOP } from '@/lib/shop-view';
 export const dynamic = 'force-dynamic';
 
 export default async function PosPage() {
+  const cashier = await requireRole(['employee', 'admin']);
   const [page, categories, shop] = await Promise.all([
     listProducts({ limit: PRODUCT_PAGE_SIZE }),
     prisma.categories.findMany({
@@ -49,6 +51,7 @@ export default async function PosPage() {
       initialTotal={page.total}
       categories={catalogue}
       shop={shop ?? UNCONFIGURED_SHOP}
+      cashierId={cashier.id}
     />
   );
 }

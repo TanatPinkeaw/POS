@@ -12,6 +12,10 @@
  * against the write. Nothing here reads a balance and then writes it back in a
  * separate statement: that pattern is exactly what oversells stock, and it is
  * what SRS §4.2 exists to prevent.
+ *
+ * One mutation is deliberately unconditional — `settleReplayedSale`, the bill a device
+ * closed with no connection — and says why where it is defined: there is no guard to
+ * apply to goods that are already in a customer's hands.
  */
 import type { Prisma } from '../generated/prisma/client';
 import { ConflictError, InsufficientStockError, NotFoundError, ValidationError } from './errors';
@@ -236,6 +240,45 @@ export async function returnRefundedStock(
   const rows = await db.$queryRaw<StockBalance[]>`
     UPDATE "products"
        SET "stock_qty" = "stock_qty" + ${input.qty},
+           "updated_at" = NOW()
+     WHERE "id" = ${input.productId}::uuid
+    RETURNING "stock_qty", "reserved_qty"
+  `;
+
+  const balance = rows[0];
+  if (!balance) {
+    throw new NotFoundError(`Product ${input.productId}`);
+  }
+  return balance;
+}
+
+/**
+ * Takes replayed offline goods off the shelf, accepting that they may already be gone.
+ *
+ * This is the one mutation in this file with no guard, and the missing `WHERE` is the
+ * point rather than an oversight (ADR 0019 decision 3). A device that sold from a snapshot
+ * can promise more than the shelf holds — another till sold the same unit, or a pre-order
+ * took it — and when that bill reaches the shop the goods are *already in a customer's
+ * hands*. Refusing it here would make the record contradict the receipt the customer is
+ * holding, so the bill is accepted, stock is allowed to go **negative**, and the shortage
+ * becomes a task somebody can see rather than a sale the shop denies.
+ *
+ * That is why this is a separate function from `sellFromStock` instead of a flag on it: the
+ * guarded sell is the shop saying no to a customer, and this is the shop keeping its books
+ * after the fact. Merging them would put the two decisions one boolean apart.
+ *
+ * The only refusal left is a product that no longer exists, which is a 404 rather than a
+ * stock decision.
+ */
+export async function settleReplayedSale(
+  db: Db,
+  input: { productId: string; qty: number; productName?: string },
+): Promise<StockBalance> {
+  assertPositiveQty(input.qty);
+
+  const rows = await db.$queryRaw<StockBalance[]>`
+    UPDATE "products"
+       SET "stock_qty" = "stock_qty" - ${input.qty},
            "updated_at" = NOW()
      WHERE "id" = ${input.productId}::uuid
     RETURNING "stock_qty", "reserved_qty"

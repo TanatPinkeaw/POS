@@ -1,3 +1,5 @@
+import { bangkokDateTimeString } from './bangkok-time';
+
 /**
  * The audit trail, as the browser sees it.
  *
@@ -23,7 +25,8 @@ export type AuditAction =
   | 'display_revoked'
   | 'rate_limited'
   | 'member_created'
-  | 'member_updated';
+  | 'member_updated'
+  | 'offline_sale_synced';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -40,6 +43,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'rate_limited',
   'member_created',
   'member_updated',
+  'offline_sale_synced',
 ];
 
 /**
@@ -64,6 +68,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   rate_limited: 'ถูกรับจำกัดความถี่ (พยายามซ้ำหลายครั้ง)',
   member_created: 'เพิ่มบัญชีลูกค้า (สมาชิก)',
   member_updated: 'แก้ข้อมูลบัญชีลูกค้า',
+  offline_sale_synced: 'บิลที่ขายตอนเน็ตหลุด (ส่งเข้าระบบแล้ว)',
 };
 
 /**
@@ -103,6 +108,13 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   member_created: 'neutral',
   // Worth a second look: something about how the account signs in changed.
   member_updated: 'info',
+  /*
+   * Investigative rather than alarming: the bill is legitimate — it was printed, priced and
+   * handed over at the shop — and what an owner reads this row for is the difference between
+   * the slip and the record. That is why the tone is not `danger`: nothing went wrong here,
+   * and the trail is where its explanation lives.
+   */
+  offline_sale_synced: 'info',
 };
 
 /**
@@ -174,6 +186,20 @@ export function auditTargetLabel(row: AuditRow): string {
         return `${policy} · ${address}`;
       }
       return policy ?? 'ระบบจำกัดความถี่';
+    }
+    case 'offline_sale_synced': {
+      /*
+       * The bill and *when it was actually sold*, which is the whole reason this row is
+       * interesting: the record arrived at 08:12 and the sale happened at 21:00, so a reader
+       * shown only the sync time learns nothing about which day's takings moved.
+       */
+      const orderNumber =
+        typeof row.detail?.orderNumber === 'string' ? row.detail.orderNumber : row.targetId;
+      const soldAt = typeof row.detail?.soldAt === 'string' ? new Date(row.detail.soldAt) : null;
+      if (soldAt && !Number.isNaN(soldAt.getTime())) {
+        return `บิล ${orderNumber ?? ''} · ขายเมื่อ ${bangkokDateTimeString(soldAt)}`.trim();
+      }
+      return orderNumber ? `บิล ${orderNumber}` : 'บิลออฟไลน์';
     }
     case 'member_created':
       return typeof row.detail?.phone === 'string' ? `เบอร์ ${row.detail.phone}` : 'บัญชีลูกค้า';

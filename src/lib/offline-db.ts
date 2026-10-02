@@ -3,74 +3,84 @@
  *
  * **This module makes no decisions, deliberately.** Every rule the offline till obeys
  * lives in a pure module (`offline-sale-rules.ts`, `number-block.ts`, `sync-plan.ts`)
- * and `till-store.ts` holds the seam. This file opens a database, reads a record and
- * writes a record, and that is the whole of it — because it is the one part of the
- * offline path with **no automated test**: the suite runs in Node, and faking IndexedDB
- * means adding a dependency the repository refuses (rule 2). Keeping it empty of rules is
- * what makes that acceptable rather than a hole in the money code; `AGENTS.md`'s *Not yet
- * proven* list carries the gap in writing.
+ * and `till-store.ts` holds the seam. This file opens a database, commits a record and
+ * reads one back, and that is the whole of it — kept empty of rules because that is what
+ * makes the real Chromium journey (`scripts/offline-browser.ts`) an acceptable test of it
+ * rather than a hole in the money code.
  *
- * Two shapes of "no IndexedDB" are expected and handled here rather than by callers:
+ * Three facts about the platform shape this file, and each is a decision worth keeping:
  *
- *  - A browser that has none (private mode in some engines, a locked-down managed
- *    browser). The till must degrade to *not being able to sell offline* rather than to a
- *    screen that throws on load, so the fallback is a memory store that simply forgets.
- *  - A read or write that fails (quota, a database left in a broken state by an upgrade).
- *    The same answer: storage that does not answer is storage the device does not have.
- *
- * The second one is why `createDeviceStorage` is a wrapper rather than a choice made once:
- * the failure it describes only ever surfaces *after* the store has opened, and a rejected
- * `read()` would otherwise be an unhandled rejection in the till's own effect — the device
- * silently holding no snapshot and claiming it can keep billing. Degrading swaps the
- * implementation and drops `persists` to false in the same step, which is what turns a
- * broken database into the one thing the operator must be told (`offlineNotice`).
+ *  1. **A successful request is not a committed write.** An IndexedDB request's `onsuccess`
+ *     fires before the surrounding transaction has committed, so `withStore` resolves on
+ *     `transaction.oncomplete` — the only moment the browser guarantees the bytes are
+ *     durable. Resolving early would let the till show a paid bill that a crash erases.
+ *  2. **There is no fallback to volatile storage.** A device whose storage fails must
+ *     *stop being able to sell offline*, not silently keep bills in memory that a refresh
+ *     discards. So a failed read/write throws and flips `persists` to false in the same
+ *     step; `till-store.ts` turns that into a refusal and `offlineNotice` into a sentence
+ *     the operator reads. Degrading to `createMemoryStorage()` — which this used to do —
+ *     is the exact failure the ADR forbids.
+ *  3. **The writer lock is native.** Web Locks (`acquireTillWriter`) holds one lock for the
+ *     lifetime of a counter rather than a lease with a clock to drift, which is what lets
+ *     two tabs of the same browser reach one till without both borrowing a range.
  */
 import type { PersistedTill, TillStorage } from './till-store';
 
 const DATABASE_NAME = 'pos-offline';
-const DATABASE_VERSION = 1;
+/**
+ * One shop per deployment and one device per browser, so one record holds everything. A
+ * version bump with no migration is intentional: what is stored is a snapshot and a queue
+ * of bills, both of which the device rebuilds from the server — except unsent bills, which
+ * is why the upgrade never deletes the store it finds.
+ */
 const STORE_NAME = 'till';
-/** One shop per deployment and one device per browser, so one record holds everything. */
 const STATE_KEY = 'state';
 
-function request<T>(source: IDBRequest<T>): Promise<T> {
+function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    source.onsuccess = () => resolve(source.result);
-    source.onerror = () => reject(source.error ?? new Error('IndexedDB request failed'));
+    const open = indexedDB.open(DATABASE_NAME, 1);
+    open.onupgradeneeded = () => {
+      if (!open.result.objectStoreNames.contains(STORE_NAME)) open.result.createObjectStore(STORE_NAME);
+    };
+    /*
+     * `onblocked` fires when another tab holds an old connection open. It is an error rather
+     * than a wait: a till that cannot reach its own storage must say so, and the operator's
+     * next step (close the other tab) is not something a spinner communicates.
+     */
+    let blocked = false;
+    open.onblocked = () => { blocked = true; reject(new Error('Offline database upgrade blocked')); };
+    open.onerror = () => reject(open.error ?? new Error('Offline database unavailable'));
+    open.onsuccess = () => { if (blocked) open.result.close(); else resolve(open.result); };
   });
 }
 
 /**
- * Opens the database, creating the store on first run.
+ * Runs one operation and resolves only once its transaction has committed.
  *
- * A version bump with no migration is intentional: what is stored is a snapshot and a
- * queue of bills, and both are things the device can rebuild from the server. Carrying an
- * old shape forward would be more code than forgetting it.
+ * The two error channels are kept apart on purpose: `onabort` is a transaction the browser
+ * rolled back (quota, a constraint), `onerror` is a request that failed inside a live
+ * transaction, and `till-store` treats the difference as "nothing was written" versus
+ * "a write may be half-done". Both reject, so the caller never sees a promise resolve for
+ * work the database refused.
  */
-function openDatabase(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
-    open.onupgradeneeded = () => {
-      const database = open.result;
-      if (!database.objectStoreNames.contains(STORE_NAME)) {
-        database.createObjectStore(STORE_NAME);
-      }
-    };
-    open.onsuccess = () => resolve(open.result);
-    open.onerror = () => reject(open.error ?? new Error('Could not open the offline store'));
-  });
-}
-
-/** Reads and writes one record through a transaction that commits on its own. */
-async function withStore<T>(
-  mode: IDBTransactionMode,
-  run: (store: IDBObjectStore) => Promise<T>,
-): Promise<T> {
+async function withStore<T>(mode: IDBTransactionMode, run: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
   const database = await openDatabase();
   try {
-    const transaction = database.transaction(STORE_NAME, mode);
-    const result = await run(transaction.objectStore(STORE_NAME));
-    return result;
+    return await new Promise<T>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, mode);
+      let value: T;
+      transaction.oncomplete = () => resolve(value);
+      transaction.onabort = () => reject(transaction.error ?? new Error('Offline transaction aborted'));
+      transaction.onerror = () => reject(transaction.error ?? new Error('Offline transaction failed'));
+      try {
+        const request = run(transaction.objectStore(STORE_NAME));
+        request.onsuccess = () => { value = request.result; };
+        request.onerror = () => reject(request.error ?? new Error('Offline request failed'));
+      } catch (error) {
+        transaction.abort();
+        reject(error);
+      }
+    });
   } finally {
     database.close();
   }
@@ -80,73 +90,71 @@ async function withStore<T>(
 export function createIndexedDbStorage(): TillStorage {
   return {
     persists: true,
-
-    async read(): Promise<PersistedTill | null> {
-      const stored = await withStore('readonly', (store) =>
-        request<PersistedTill | undefined>(store.get(STATE_KEY)),
-      );
-      return stored ?? null;
-    },
-
-    async write(state: PersistedTill): Promise<void> {
-      await withStore('readwrite', (store) => request(store.put(state, STATE_KEY)));
-    },
+    read: async () => (await withStore<PersistedTill | undefined>('readonly', (store) => store.get(STATE_KEY))) ?? null,
+    write: async (state) => { await withStore('readwrite', (store) => store.put(state, STATE_KEY)); },
   };
 }
 
 /**
- * Storage that forgets between page loads, for a browser with no IndexedDB.
+ * Storage that forgets between page loads.
  *
- * Exported rather than hidden because it is also what a test injects, and because
- * "the till could not keep anything" is a fact the operator has to be told about
- * somewhere — `till-store.ts` reports it as `canKeep: false`.
+ * Exported because a test injects it, and because it is the honest answer for a browser with
+ * no `indexedDB` at all — `persists: false` is what tells `till-store` it must not accept an
+ * offline payment. It is **never** a destination a failed IndexedDB write may fall back to:
+ * that decision is the ADR's, and `createDeviceStorage` below implements it.
  */
 export function createMemoryStorage(): TillStorage {
   let state: PersistedTill | null = null;
   return {
     persists: false,
-    read: () => Promise.resolve(state),
-    write: (next) => {
-      state = next;
-      return Promise.resolve();
+    read: async () => state,
+    write: async (next) => { state = next; },
+  };
+}
+
+/**
+ * The storage this device has: IndexedDB when the browser offers it, memory only when it
+ * has none at all — and **never** a memory fallback after a failure.
+ *
+ * The distinction is the whole point. A browser with no `indexedDB` is known before anything
+ * is read, and falling back there is safe because no bill has been accepted yet. A database
+ * that is locked, out of quota or left broken by an upgrade only shows itself on the first
+ * `read`/`write`, and at that point a bill may be in flight — so the failure propagates and
+ * `persists` becomes false, which is what turns a broken database into the one thing the
+ * operator must be told rather than a sale the device cannot actually keep.
+ */
+export function createDeviceStorage(): TillStorage {
+  if (typeof indexedDB === 'undefined') return createMemoryStorage();
+  const disk = createIndexedDbStorage();
+  let healthy = true;
+  return {
+    get persists() { return healthy; },
+    async read() {
+      try { return await disk.read(); } catch (error) { healthy = false; throw error; }
+    },
+    async write(state) {
+      try { await disk.write(state); } catch (error) { healthy = false; throw error; }
     },
   };
 }
 
 /**
- * The storage this device has: IndexedDB when the browser offers it, memory when it does
- * not — or when it stops answering. Never throws.
+ * One writer per browser, held as a native cross-tab lock.
  *
- * Both halves matter and they happen at different times. A browser with no `indexedDB` at
- * all is known before anything is read; a database that is locked, out of quota or left
- * broken by an upgrade only shows itself on the first `read` or `write`, which is why the
- * wrapper swaps the implementation at that point instead of choosing once. Once swapped it
- * stays swapped: a store that has failed once must not be trusted with the next bill.
+ * A Web Lock rather than a lease row with a clock: the lock lives exactly as long as the
+ * counter's page, so there is no expiry to tune and no window in which two tabs both believe
+ * they hold the till. `ifAvailable` never queues — a second tab is told "no" immediately so
+ * it can render the "another tab is selling" notice rather than appear to hang.
+ *
+ * Resolves with a `release` function while holding the lock, or `null` when the browser has
+ * no Web Locks (older engines) or another tab already holds it.
  */
-export function createDeviceStorage(): TillStorage {
-  if (typeof indexedDB === 'undefined') {
-    return createMemoryStorage();
-  }
-
-  const memory = createMemoryStorage();
-  let current = createIndexedDbStorage();
-
-  return {
-    get persists(): boolean {
-      return current.persists;
-    },
-    read: () =>
-      current.read().catch(() => {
-        current = memory;
-        return null;
-      }),
-    write: (state) =>
-      current.write(state).catch(() => {
-        current = memory;
-        // The bill is kept where it can still be read back on this page — losing it
-        // outright is the failure this whole branch exists to avoid — while `persists`
-        // now says out loud that a refresh loses it.
-        return memory.write(state);
-      }),
-  };
+export async function acquireTillWriter(): Promise<(() => void) | null> {
+  if (typeof navigator === 'undefined' || !navigator.locks) return null;
+  return new Promise((resolve) => {
+    void navigator.locks.request('pos-till-writer', { ifAvailable: true }, async (lock) => {
+      if (!lock) { resolve(null); return; }
+      await new Promise<void>((release) => resolve(release));
+    }).catch(() => resolve(null));
+  });
 }

@@ -18,6 +18,7 @@
  * messages are going nowhere" and not on "the gateway hiccuped".
  */
 import { loadEnv } from './harness';
+import { prisma } from '../src/lib/db';
 
 import { deliverNotification, readChannelConfig } from '../src/lib/notify-channel';
 import {
@@ -98,7 +99,11 @@ async function main(): Promise<void> {
         );
         console.error('URL and secret, fix them, then re-run with `--watch` after requeueing.');
       }
-      process.exit(result.abandoned > 0 ? 1 : 0);
+      // Let database/socket handles close before Node tears down its event loop;
+      // forced exit can abort libuv on Windows even after every message was sent.
+      process.exitCode = result.abandoned > 0 ? 1 : 0;
+      await prisma.$disconnect();
+      return;
     }
 
     if (result.sent + result.failed > 0) {

@@ -357,6 +357,14 @@ enum audit_action {
    * corrected spelling is not one of those.
    */
   member_updated
+  /**
+   * A bill that was closed with no connection reached the shop, and how (ADR 0019).
+   * Its own action rather than a note on the sale, because the fact an owner needs is
+   * "this bill was recorded offline and synced at 08:12" — the printed slip and the
+   * record can differ for reasons nobody remembers a week later, and this row is what
+   * makes the difference an explanation instead of a rumour.
+   */
+  offline_sale_synced
 }
 
 // ---------------------------------------------------------------- users
@@ -634,6 +642,31 @@ model orders {
   points_earned     Int          @default(0)
   points_redeemed   Int          @default(0)
   cancel_reason     String?
+  /**
+   * The device's own identity for a bill it closed with no connection (ADR 0019).
+   *
+   * A UUID the till generated, unique here — which is what makes the replay idempotent:
+   * a retry after a timeout, or the same batch sent twice, writes one order because the
+   * second insert is refused by this index. Null on every bill the server witnessed,
+   * so `client_ref IS NOT NULL` is also the answer to "was this recorded offline".
+   */
+  client_ref        String?      @unique
+  /**
+   * The instant the sale happened for the books — the day every day-bucketed read
+   * files it under, and the reason `created_at` is no longer asked (ADR 0019
+   * decision 4; the rule is `src/lib/sale-instant.ts`).
+   *
+   * For an ordinary sale this is the server's now, the same instant `completed_at`
+   * gets. For a replayed offline bill it is the **device's** instant, which is why the
+   * two columns exist separately: a walk-in sale completed at 21:00 and synced at 08:12
+   * is yesterday's takings, and `created_at`/`completed_at` would file it today.
+   *
+   * A pre-order that is still pending carries the creation instant here and nothing reads
+   * it — every day bucket also filters on a terminal status, because a sale that has not
+   * happened yet has no sale instant. `completeOrder` sets it at handover, which is when
+   * the goods and the money actually moved.
+   */
+  sold_at           DateTime     @default(now()) @db.Timestamptz(6)
   created_at        DateTime     @default(now()) @db.Timestamptz(6)
   confirmed_at      DateTime?    @db.Timestamptz(6)
   ready_at          DateTime?    @db.Timestamptz(6)
@@ -657,6 +690,13 @@ model orders {
 
   @@index([status])
   @@index([created_at])
+  /**
+   * The day-bucketed reads' index. `created_at` keeps its own for the orders that have
+   * no sale instant yet (a pending pre-order, the expiry sweeper), and this one exists
+   * because a report over `sold_at` must not fall back to a sequential scan the month
+   * the shop has fifty thousand bills.
+   */
+  @@index([sold_at])
   @@index([order_type, status])
   /**
    * One bill per number per day, stated where it cannot be forgotten. The

@@ -44,6 +44,7 @@ export async function POST(request: Request): Promise<Response> {
       size: body.size,
       deviceLabel: body.deviceLabel,
       userId: session.id,
+      ...(body.id ? { id: body.id } : {}),
     });
   });
 }

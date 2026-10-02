@@ -25,6 +25,36 @@ import { nextAttemptAt } from './notify-retry';
 import type { OfflineSaleLine } from './offline-sale-rules';
 
 /**
+ * The numbers a bill printed, and which loan each came from.
+ *
+ * The loan id travels with the number because a bare `12` cannot be judged
+ * (`claimNumberFromBlock`): the server has to know which range the device was holding
+ * before it can say whether 12 was inside it or already past the mark. Absent for a
+ * device that holds nothing — a shop's first day, the acceptance journey — which is the
+ * path where the server allocates both series itself.
+ */
+export interface QueuedBillNumbers {
+  readonly receipt?: { readonly blockId: string; readonly value: number };
+  readonly call?: { readonly blockId: string; readonly value: number };
+}
+
+/**
+ * The tax facts the slip was printed with.
+ *
+ * Carried for the same reason the line prices are: the customer's document is the
+ * authority, and a rate that changed while the device was offline would otherwise make
+ * the record disagree with the paper in somebody's hand. The replay writes these onto the
+ * order when the bill has them, and the audit row says whether the shop's current rate
+ * still matches.
+ */
+export interface QueuedBillTax {
+  readonly isVatInvoice: boolean;
+  readonly vatRatePercent: number | null;
+  readonly netThb: number;
+  readonly vatThb: number;
+}
+
+/**
  * A bill closed with no connection, waiting to be sent.
  *
  * `sequence` is assigned by the device when the slip is printed and never changes. It
@@ -33,6 +63,10 @@ import type { OfflineSaleLine } from './offline-sale-rules';
  */
 export interface QueuedBill {
   readonly clientRef: string;
+  /** Immutable originating drawer, not whichever drawer is open at retry time. */
+  readonly shiftId?: number;
+  readonly fulfilment?: 'preparing' | 'ready' | 'collected';
+  readonly refusal?: string;
   readonly sequence: number;
   /** The device's clock at the sale — which day the books have to file it under. */
   readonly soldAt: Date;
@@ -47,6 +81,18 @@ export interface QueuedBill {
   readonly lines: readonly OfflineSaleLine[];
   /** What the customer actually paid, for the banner that says what is waiting. */
   readonly totalThb: number;
+  /**
+   * The notes and coins the customer handed over.
+   *
+   * Kept so the replayed bill prints the same change the customer was given: the amount
+   * *applied* to the bill is `totalThb`, and the two differ by exactly the change, so a
+   * record that kept only one of them would reprint a different-looking slip.
+   */
+  readonly receivedThb: number;
+  /** The numbers this bill printed, when the device was holding a borrowed range. */
+  readonly numbers?: QueuedBillNumbers;
+  /** The tax figures on the slip (see `QueuedBillTax`). */
+  readonly tax: QueuedBillTax;
   readonly attempts: number;
   readonly nextAttemptAt: Date;
 }
@@ -64,7 +110,9 @@ export function replayOrder(queue: readonly QueuedBill[]): QueuedBill[] {
  * bills change places.
  */
 export function dueForReplay(queue: readonly QueuedBill[], now: Date): QueuedBill[] {
-  return replayOrder(queue).filter((bill) => bill.nextAttemptAt.getTime() <= now.getTime());
+  const ordered = replayOrder(queue);
+  const stop = ordered.findIndex((bill) => bill.nextAttemptAt.getTime() > now.getTime());
+  return stop === -1 ? ordered : ordered.slice(0, stop);
 }
 
 /**

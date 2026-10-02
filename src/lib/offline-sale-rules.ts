@@ -53,6 +53,11 @@ export interface OfflineCatalogueEntry {
   /** The quantity this shop keeps back from offline selling (ADR 0019 decision 3). */
   readonly safetyQty: number;
   readonly isActive: boolean;
+  readonly barcode?: string | null;
+  readonly categoryId?: number | null;
+  readonly categoryName?: string | null;
+  readonly categoryKey?: string;
+  readonly imageUrl?: string | null;
 }
 
 export interface OfflineBasketLine {
@@ -101,6 +106,9 @@ export interface OfflineSaleContext {
 
 /** A code for a screen to react to, and a message for the person standing at the till. */
 export type OfflineRefusalCode =
+  | 'storage_unavailable'
+  | 'not_prepared'
+  | 'wrong_cashier'
   | 'no_open_shift'
   | 'cash_only'
   | 'member_unavailable'
@@ -455,7 +463,7 @@ export function decideOfflineSale(
   let callNumber: OfflineSaleAllowed['callNumber'] = null;
 
   const todayBlock = blockForDay(callBlocks, day);
-  if (todayBlock) {
+  if (todayBlock && nextValue(todayBlock) !== null) {
     const taken = spendChecked(todayBlock);
     callBlocks = replaceBlock(callBlocks, taken.block);
     callNumber = { value: taken.value, day };

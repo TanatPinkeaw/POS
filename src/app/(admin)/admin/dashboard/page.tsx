@@ -1,9 +1,12 @@
 import { InboundDismissButton } from '@/components/admin/InboundDismissButton';
 import { OrderActions } from '@/components/admin/OrderActions';
+import { NumberLoanRecovery } from '@/components/admin/NumberLoanRecovery';
+import { loadOpenNumberBlocks } from '@/lib/number-blocks';
 import {
   Card,
   CardGrid,
   DataTable,
+  LinkButton,
   EmptyState,
   InlineNotice,
   Money,
@@ -94,7 +97,7 @@ export default async function DashboardPage() {
    * system that queued it. Six failed attempts is a wrong gateway URL, and the
    * only place a shop will find that out is a screen like this one.
    */
-  const [snapshot, unattributed, inboundToday, closedToday, awaiting, outbox, undelivered] =
+  const [snapshot, unattributed, inboundToday, closedToday, awaiting, outbox, undelivered, loans] =
     await Promise.all([
       dashboardSnapshot(),
       listInboundTransfers(),
@@ -103,6 +106,7 @@ export default async function DashboardPage() {
       listAwaitingCollection(),
       outboxHealth(),
       listAbandonedNotifications(),
+      loadOpenNumberBlocks(),
     ]);
 
   /*
@@ -273,6 +277,54 @@ export default async function DashboardPage() {
     },
   ];
 
+  type ShortageRow = (typeof snapshot.stockShortages)[number];
+  const shortageColumns: Column<ShortageRow>[] = [
+    {
+      key: 'name',
+      header: 'สินค้า',
+      cardLabel: 'สินค้า',
+      render: (row) => (
+        <>
+          <span>{row.name}</span>
+          {row.barcode ? <span className="ln-mono">{row.barcode}</span> : null}
+        </>
+      ),
+    },
+    {
+      key: 'stock',
+      header: 'คงเหลือในระบบ',
+      cardLabel: 'คงเหลือในระบบ',
+      align: 'end',
+      /* Negative and shown as it is: the number is the size of the disagreement with the shelf. */
+      render: (row) => <Pill tone="danger">{row.stockQty}</Pill>,
+    },
+    {
+      key: 'reserved',
+      header: 'จองไว้',
+      align: 'end',
+      render: (row) => <span className="ln-num">{row.reservedQty}</span>,
+    },
+    {
+      key: 'updated',
+      header: 'แก้ล่าสุดเมื่อ',
+      cardLabel: 'แก้ล่าสุดเมื่อ',
+      render: (row) => (
+        <span className="ln-num">{bangkokDateTimeString(row.updatedAt)}</span>
+      ),
+    },
+    {
+      key: 'action',
+      header: '',
+      cardLabel: 'จัดการ',
+      align: 'end',
+      render: () => (
+        <LinkButton href="/admin/products" size="sm">
+          ปรับสต็อก
+        </LinkButton>
+      ),
+    },
+  ];
+
   const recentOrderColumns: Column<OrderRow>[] = [
     {
       key: 'number',
@@ -337,6 +389,15 @@ export default async function DashboardPage() {
         title="ภาพรวมวันนี้"
         subtitle="ข้อมูลสดจากฐานข้อมูล — ยอดขายเป็นยอดรวมก่อนหักการคืนเงิน"
       />
+
+      {loans.length ? <Card title="ชุดเลขออฟไลน์ที่ยังไม่คืน" subtitle="ชุดที่เปิดอยู่จะหยุดการออกเลขจากเครื่องอื่น — ให้เครื่องเดิมส่งบิลและคืนเลขก่อน ใช้กู้คืนเฉพาะเมื่อเครื่องกลับมาไม่ได้">
+        <Stack gap="md">
+          {loans.map((loan) => <div key={loan.id} className="ln-row">
+            <span>{loan.deviceLabel} · {loan.kind === 'receipt' ? 'ใบกำกับภาษี' : `คิว ${loan.day}`} · {loan.from}–{loan.to} · บันทึกใช้ถึง {loan.lastUsed ?? '—'}</span>
+            <NumberLoanRecovery loan={{ id: loan.id, deviceLabel: loan.deviceLabel, kind: loan.kind, day: loan.day, from: loan.from, to: loan.to, lastUsed: loan.lastUsed }} />
+          </div>)}
+        </Stack>
+      </Card> : null}
 
       <CardGrid min="15rem">
         <Card>
@@ -441,6 +502,29 @@ export default async function DashboardPage() {
           />
         </Card>
       </CardGrid>
+
+      {/*
+        Negative stock — the task a day of offline selling can leave behind (ADR 0019). The
+        device sold from a snapshot, the shelf turned out to be shorter, and the bill was
+        accepted because the customer already had the goods. This is the only way a negative
+        count is reachable, so the card says so rather than leaving a manager to wonder what
+        they did wrong — and it disappears when the count is corrected, which is why there is
+        no dismiss button.
+      */}
+      {snapshot.stockShortages.length > 0 ? (
+        <Card
+          title="สต็อกติดลบ — ต้องนับของจริง"
+          subtitle="เกิดจากการขายออฟไลน์เกินของที่นับไว้ บิลถูกบันทึกไปแล้วเพราะของถึงมือลูกค้า · นับของจริงแล้วปรับสต็อกให้ตรง"
+          flush
+        >
+          <DataTable
+            columns={shortageColumns}
+            rows={snapshot.stockShortages}
+            getRowKey={(row) => String(row.id)}
+            caption="สินค้าที่คงเหลือในระบบติดลบ"
+          />
+        </Card>
+      ) : null}
 
       {/*
         The reconciliation, rendered only on a day that had transfers. Everything

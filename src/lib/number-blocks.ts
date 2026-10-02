@@ -18,12 +18,13 @@
  * freeze inside `allocateReceiptNumber` / `allocateQueueNumber`, which asks these rows
  * in the same statement that allocates, using the same partial indexes the borrow uses.
  */
-import { dateColumnFromDay, dayFromDateColumn, isValidCalendarDay } from './bangkok-time';
+import { bangkokParts, dateColumnFromDay, dayFromDateColumn, isValidCalendarDay } from './bangkok-time';
 import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import type { Db } from './inventory';
 import { claim, MAX_BLOCK_SIZE, type NumberBlock, type NumberKind } from './number-block';
-import { lockShopRow, SHOP_ROW_ID } from './shop';
+import { isUniqueViolation } from './prisma-errors';
+import { lockShopRow, queueCounterSeed, SHOP_ROW_ID } from './shop';
 
 /** A block as the database holds it, plus the rows' own facts. */
 export interface NumberBlockRecord extends NumberBlock {
@@ -48,32 +49,6 @@ interface NumberBlockRow {
   reported_at: Date | null;
   cancelled_at: Date | null;
   closed_by: string | null;
-}
-
-/**
- * Whether a write was refused because something of that shape already exists.
- *
- * Read without importing Prisma's error classes, the way `shop.ts` does it. Two codes
- * rather than one because the borrow checks two different indexes: a unique constraint
- * Prisma knows about reports `P2002`, and a partial one — which Prisma cannot express and
- * therefore reports as a generic raw-query failure — has to be judged by what the
- * database said. Both mean the same thing to a device: *somebody already holds this*.
- */
-function isUniqueViolation(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) {
-    return false;
-  }
-  const candidate = error as { code?: string; meta?: { code?: string; message?: string } };
-  if (candidate.code === 'P2002') {
-    return true;
-  }
-  if (candidate.code === 'P2010') {
-    const meta = candidate.meta;
-    return (
-      meta?.code === '23505' || (typeof meta?.message === 'string' && meta.message.includes('23505'))
-    );
-  }
-  return false;
 }
 
 function toRecord(row: NumberBlockRow): NumberBlockRecord {
@@ -135,18 +110,60 @@ function assertBorrowable(input: {
  * customers called by the same number, arriving through a door the order's own unique
  * index cannot see.
  */
+/**
+ * Refuses a device bill whose printed number came from somebody else's loan.
+ *
+ * Ownership is a property of the *loan*, not of the bill, so it is judged across every
+ * caller that replays a device's printed numbers — the offline replay in `offline-sales.ts`
+ * and the one legacy online path in `orders.ts`. One function rather than the SQL-and-Thai
+ * message copied into each, because "whose range is this?" has one answer and a second copy
+ * is a second place to get it wrong.
+ *
+ * Absent numbers are skipped: a device that holds nothing prints nothing, which is the
+ * ordinary path for a shop's first day. A block row that is *missing* is not refused here
+ * — `claimNumberFromBlock`/`resolveSaleTax` own that judgement and give it a better reason
+ * than "wrong owner".
+ */
+export async function assertNumberBlocksOwnedBy(
+  db: Db,
+  blocks: readonly ({ readonly blockId: string } | undefined)[],
+  userId: string,
+): Promise<void> {
+  for (const block of blocks) {
+    if (!block) continue;
+    const row = await db.number_blocks.findUnique({ where: { id: block.blockId }, select: { opened_by: true } });
+    if (row && row.opened_by !== userId) {
+      throw new ConflictError('ชุดเลขเป็นของผู้ใช้อื่น — ใช้บัญชีที่ยืมชุดเลข', 'DEVICE_NUMBER_WRONG_OWNER');
+    }
+  }
+}
+
 export async function openNumberBlock(input: {
   series: NumberKind;
   day?: string | null;
   size: number;
   deviceLabel: string;
   userId: string;
+  /** Persisted before borrowing, so a lost response can be retried safely. */
+  id?: string;
 }): Promise<NumberBlockRecord> {
   const day = input.day ?? null;
   assertBorrowable({ series: input.series, day, size: input.size, deviceLabel: input.deviceLabel });
 
   try {
     return await prisma.$transaction(async (tx) => {
+      await lockShopRow(tx);
+      if (input.id) {
+        const previous = await tx.number_blocks.findUnique({ where: { id: input.id } });
+        if (previous) {
+          if (previous.opened_by !== input.userId || previous.series !== input.series ||
+              (previous.day?.toISOString().slice(0, 10) ?? null) !== day || previous.to_number - previous.from_number + 1 !== input.size) {
+            throw new ConflictError('คำขอยืมเลขไม่ตรงกับชุดเดิม — ตรวจเครื่องก่อน', 'NUMBER_BLOCK_ID_CONFLICT');
+          }
+          assertOpen(previous as unknown as NumberBlockRow);
+          return toRecord(previous as unknown as NumberBlockRow);
+        }
+      }
       const bumped =
         input.series === 'receipt'
           ? await tx.$queryRaw<{ to_number: number }[]>`
@@ -159,7 +176,7 @@ export async function openNumberBlock(input: {
               UPDATE "shops"
                  SET "queue_running_number" = CASE
                        WHEN "queue_running_day" = ${day}::date THEN "queue_running_number" + ${input.size}
-                       ELSE ${input.size}
+                       ELSE ${queueCounterSeed(day)} + ${input.size}
                      END,
                      "queue_running_day" = ${day}::date
                WHERE "id" = ${SHOP_ROW_ID}
@@ -180,6 +197,7 @@ export async function openNumberBlock(input: {
        */
       const row = await tx.number_blocks.create({
         data: {
+          ...(input.id ? { id: input.id } : {}),
           series: input.series,
           day: day === null ? null : dateColumnFromDay(day),
           from_number: to - input.size + 1,
@@ -259,6 +277,12 @@ export async function claimNumberFromBlock(
     }
   }
 
+  if (record.kind === 'receipt' && input.value <= record.to && input.value > (record.lastUsed ?? record.from - 1) + 1) {
+    throw new ConflictError('เลขใบกำกับขาดช่วง — ส่งบิลก่อนหน้าให้ครบก่อน', 'DEVICE_NUMBER_GAP');
+  }
+  if (record.kind === 'receipt' && String(bangkokParts(row.opened_at).year) !== (input.day ?? String(bangkokParts(new Date()).year)).slice(0, 4)) {
+    throw new ConflictError('ชุดเลขใบกำกับข้ามปี — คืนชุดเก่าแล้วเตรียมใหม่', 'DEVICE_NUMBER_WRONG_YEAR');
+  }
   const judged = claim(record, input.value);
   if (!judged.ok) {
     if (judged.reason === 'malformed') {
@@ -440,6 +464,11 @@ function assertOpen(row: NumberBlockRow): void {
  * the block open, which is a task somebody can see.
  */
 async function rewindCounter(tx: Db, row: NumberBlockRow, value: number): Promise<void> {
+  // Another day's reservation must not be overwritten; history carries this day's mark.
+  if (row.series === 'queue') {
+    const shop = await tx.shops.findUniqueOrThrow({ where: { id: SHOP_ROW_ID } });
+    if (shop.queue_running_day?.toISOString() !== row.day?.toISOString()) return;
+  }
   const affected =
     row.series === 'receipt'
       ? await tx.$executeRaw`

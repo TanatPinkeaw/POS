@@ -4,31 +4,37 @@
 assumes a working network: taking money with no connection, and making the books
 right when it comes back. It came out of an interview, so the decisions below are the
 owner's and the reasoning behind them is in ADR 0019. The *vocabulary* is
-`CONTEXT.md`; the *state of the build* is `README.md`.**Phases 1 and 2 are built, and so is the whole of phase 3 that is not a screen.** The three
-pure decision modules exist with their tests (`number-block.ts`, `offline-sale-rules.ts`,
-`sync-plan.ts`); the numbering protocol is on the server — `number_blocks`, the freeze
-inside the allocating `UPDATE`, and the borrow / report / cancel endpoints — **and the sale
-endpoint now accepts the numbers a device printed itself and judges them inside the block it
-borrowed** (`claimNumberFromBlock`, `tests/device-numbers.test.ts`). The till store exists
-(`till-store.ts`) with the device's own storage beneath it (`offline-db.ts`, IndexedDB) and
-the offline bill's arithmetic, all tested against an in-memory double.
+`CONTEXT.md`; the *state of the build* is `README.md`.
 
-**The till's writes go through the store too.** `useTill` keeps the snapshot (the catalogue
-it has seen, the shop's settings, the open drawer), the store decides server or device for
-every sale, an offline bill queues on the device with its own numbers and its own price, and
-the till says out loud what it is: `offlineNotice` above the basket, the pending count with
-how long the oldest has waited, and the refusal — in Thai, naming the next step — when the
-bills cannot be sent.
+**Implemented end to end.** A cashier explicitly prepares an online, open till,
+names the device and accepts the series-freeze warning. Preparation downloads the
+active catalogue in pages and persists reservation UUIDs before borrowing receipt
+numbers (VAT shops) and today's/tomorrow's call numbers. One native Web Lock owns
+writes across tabs. IndexedDB transaction completion, not request success, confirms
+bills; failed reads/writes never silently fall back to volatile offline money.
 
-The shop's own reserve is in place too: `products.offline_safety_qty` exists, the column's
-CHECK refuses a negative one, and `/admin/products` is where a shop sets it — so the device
-decides with the number the shop chose rather than a hardcoded zero.
+Prepared tills use **cash without members only**, including while connected. Before
+an online sale with no pending bills, the hook rechecks active stock and prices;
+a changed price requires cashier reconfirmation. Cash is then committed locally
+with one replay identity before any posting. Network uncertainty never produces
+an alternate sale. Pending bills use the frozen cached prices rather than rebasing
+mid-queue. Unprepared tills retain the ordinary server flow and do not accept
+offline money. There is no cold offline app launch or service worker.
 
-What is therefore **not** built is what still stands between this and a shop: **nothing
-borrows**, and the till refuses to sell offline for the honest reason that **it holds no
-numbers** (see *Who allocates while a block is out*). The replay does not exist either, so
-the reason not to borrow has changed rather than gone: a loan the device cannot settle
-leaves a shop that cannot sell online either.
+The screen shows cache age/count, remaining numbers, pending money, refused bills
+and local preparing/ready/collected tickets. Reconnect and a ten-second timer send
+the due ordered prefix; manual send overrides backoff. Replay uses batches of at
+most 500 bills, removes only committed acknowledgements, retains refused/unattempted
+bills and releases loans only after all bills are acknowledged. The original cashier
+and drawer cannot be replaced by a refresh. Normal drawer close sends everything
+and releases every loan first; the server refuses close while that cashier holds
+an open loan. Admin dashboard recovery is separate, admin-only and requires an
+explicit actual-document/old-device-stopped confirmation.
+
+The pure money/number/retry rules, injected store seam, real PostgreSQL replay,
+and actual Chromium/IndexedDB journey all have automated coverage. Browser proof
+runs as `npm run offline:browser` and is part of `verify:all` and CI. Shop field use,
+physical printer behavior and cold offline launch are not claims this proves.
 
 Anything this document names as a later command is written **without** the `npm run`
 prefix on purpose: `doc:audit` (ADR 0013) fails a document that runs a command which does
@@ -196,10 +202,11 @@ pure modules, records are persistence modules.**
 | `offline-sale-rules.ts` | pure | Whether a basket may be closed offline, every refusal as a typed reason, the price of a device sale, and the reserve inequality the shop sets per product (`products.offline_safety_qty`) |
 | `number-block.ts` | pure | Block arithmetic: what range a reservation is, what the next number is, what "used through N" means |
 | `sync-plan.ts` | pure | What to replay, in what order, what counts as done, what a refusal means for the queue |
+| `sale-instant.ts` | pure | Which instant a sale is filed under, which day that is, and the filter every day-bucketed read uses. **Built** |
 | `offline-db.ts` | persistence (device) | The IndexedDB adapter — no decisions, only storage. **Built** |
-| `till-store.ts` | seam | Local vs server, refresh, queue, replay. **Built**, and not yet called by a screen |
+| `till-store.ts` | seam | Local vs server, refresh, durable reservation/queue, sequential replay and release. **Wired to the till** |
 | `number-blocks.ts` | persistence (server) | Reserve, report, resolve, and *claim* — the database facts behind the pure module. **Built** |
-| `sale-instant.ts` | pure | Which day a bill belongs to, stated once (see below). **Not built — the change is phase 4** |
+| `offline-sales.ts` | persistence (server) | The replay: idempotent bill recording, the device's own prices as the record, the shortage, and closing the loans. **Built** |
 
 ### The numbering protocol — how a browser can issue a gapless number
 
@@ -244,12 +251,11 @@ one gapless series can have two writers.
 
 The consequences, in the order they matter:
 
-- **A sale sent by a device that holds a block carries its own number**, and the server
-  validates it (inside the open block, and not one the block has already used) instead of
-  allocating. That is built: the walk-in sale takes a `deviceNumbers` claim and
-  `claimNumberFromBlock` judges it — open block, inside the range, at-or-behind-the-mark
-  refused. A device holding a block is therefore the allocator for its own online sales too,
-  and a device holding nothing keeps the server's allocation unchanged.
+- **A prepared device cash sale carries its printed numbers through replay**.
+  The server validates owner, open block, range, day/year and contiguous invoice
+  usage. An invoice cannot skip the next number. The legacy ordinary sale endpoint
+  also judges `deviceNumbers`; the prepared UI does not post cash through that
+  non-idempotent endpoint. A device holding nothing keeps server allocation unchanged.
 - **A shop with nothing borrowed behaves exactly as it does today**: the server allocates.
   That is the path a first day of trading, the smoke checks and the acceptance journey all
   rely on, and this specification deliberately leaves it alone.
@@ -295,6 +301,20 @@ customer's hands — lets stock go negative, and raises a correction task. The p
 offline is therefore "no oversell beyond the shop's own reserve", and that sentence
 belongs in the runbook, not only in this file.
 
+**Built, and it cost two constraints.** `stock_qty < 0` was forbidden by the database —
+`chk_products_stock_qty_non_negative`, and `chk_stock_availability` (`stock_qty >=
+reserved_qty`, which a shortage also breaks when a pre-order is holding the last unit) — and
+neither can be weakened into a version that permits only the replay, because a CHECK sees the
+row and the row does not say why it is being written. Both were dropped in
+`20260118000000_offline_stock_shortage`, with the guards that remain named there: **every
+mutating path keeps its own `WHERE` in the same statement**, which was always the real guard,
+and `reserved_qty >= 0` stays. What replaces the constraint is a fact a person can act on —
+the sign is the task, `stock_qty < 0` is reachable only through `settleReplayedSale`, and the
+dashboard lists those products until somebody counts the shelf. The inventory valuation is
+the one read that had to change with it (it floors each product at zero, so a shortage cannot
+subtract from what the shop owns). ADR 0019 records the decision; ADR 0001 no longer lists
+those two constraints among the ones the schema enforces.
+
 ### Which day a bill belongs to
 
 A bill sold at 21:00 offline and synced at 08:12 the next morning is **yesterday's
@@ -305,6 +325,15 @@ for existing rows) and **every day-bucketed read moves onto it**: the report ran
 `reports.ts`, the dashboard's "today" in `analytics.ts`, the sales-by-day workbooks.
 The rule lives in `sale-instant.ts` so a later report cannot quietly pick the wrong
 column; `created_at` stays exactly as it is, as the separate fact that it is.
+
+**Built.** `sale-instant.ts` names the column (`SALE_INSTANT_COLUMN`), the instant
+(`saleInstant`) and the filter every day-bucketed read now writes as `soldIn(...)`, so no
+report can reach for `created_at` or `completed_at` by hand — the two columns that would
+still type-check while filing yesterday's evening under this morning. The one read the type
+checker cannot reach is the dashboard's sales-by-day, which buckets in SQL; it interpolates
+the constant, so it cannot drift either. A device clock *running ahead* is the one instant
+that is not trusted: it is clamped to the server's now and the clamp is reported, because a
+sale dated tomorrow lands in a reconciliation that has already finished.
 
 ### Replay: one idempotent endpoint
 
@@ -318,8 +347,17 @@ database is what makes it true.
 Refusals are typed, and every one of them must be a `DomainError` subclass — a stale
 or refused replay that surfaces as a 500 is a cashier reading "something went wrong on
 our side" (the trap `AGENTS.md` records about `InvalidPickupTokenError`). A refused
-bill stays in the local queue with its reason shown, and the rest of the queue
-continues.
+bill stays in the local queue with its reason shown.
+
+**And the batch stops there — a correction to this paragraph.** The sentence used to say the
+rest of the queue continues, which is wrong for any bill carrying a number: numbers are handed
+out in sequence, so a bill refused in the middle cannot be stepped over. Bill 3 holding receipt
+number 12 while bills 2 and 4 hold 11 and 13 leaves a document number that exists on paper and
+nowhere else, and nothing puts that series back in order afterwards. So the replay answers for
+the bills up to and including the refusal, says how many were never attempted, and the device
+sends them again once the refused one is sorted out. The same rule one level up is why the
+loans are closed *after* the bills and never before: a report moves the shop's counter, and the
+only safe partial outcome is **frozen**, not advanced.
 
 ### Schema
 
@@ -327,9 +365,14 @@ continues.
   (queue only, and what a call-number block is *for*), `from_number`, `to_number`,
   `last_used_number`, a device label, who opened it, when it was reported or
   cancelled. A partial-open state is "`reported_at IS NULL AND cancelled_at IS NULL`".
-- `orders.client_ref` — `String? @unique`, the replay's identity.
-- `orders.sold_at` — `DateTime`, non-null, the instant the sale happened for the
-  books (see above).
+- `orders.client_ref` — `String?` unique, the prepared/device replay identity.
+  Prepared online cash uses it too: non-null means device-recorded, not proof of a
+  disconnected network. Ordinary server sales leave it null.
+- `orders.sold_at` — `DateTime`, non-null, defaulted to now and indexed, the instant the sale
+  happened for the books (see above). **Built**, backfilled to `created_at` for existing rows
+  in `20260117000000_offline_replay`. `completeOrder` sets it at the pre-order's handover, so
+  a pending pre-order's value is the placement instant and nothing reads it — every
+  day-bucketed query also filters on a terminal status.
 - `products.offline_safety_qty` — `Int @default(0)` with a CHECK that it is not negative,
   the reserve the till may not sell through while offline. **Built**, and editable at
   `/admin/products` (`กันออฟไลน์`).
@@ -338,12 +381,18 @@ continues.
 
 ### API
 
-All handlers through `withApi`, all of them authenticated (`employee` or `admin` from
-the signed session, never from the body):
+All handlers through `withApi`, authenticated from the signed session, never the body.
+Borrow/replay accept employee or admin; manual recovery is admin-only:
 
 - Reserve blocks, report usage, and read back what the device should be holding.
 - One sync endpoint that takes the reported usage **and** the queued bills together,
   so a device and its numbers move in one transaction, and returns a per-bill result.
+  **Built** as `POST /api/v1/pos/sync` (`src/lib/offline-sales.ts`), with one refinement to
+  "in one transaction": each bill is its own transaction and the loans are closed after them,
+  because the batch's unit of success is a bill (the device removes exactly the client
+  references it got answers for) and because the safe partial outcome is a series left frozen.
+  A refusal is a *result* in a 200 body rather than an HTTP error, since a batch is a report
+  about several bills; anything that is not a domain refusal is still a 500.
 
 ### Surfaces
 
@@ -370,20 +419,18 @@ are checked without a browser and without a server, the same way `refund-plan.ts
 | Level | Tested | Prior art |
 | --- | --- | --- |
 | Pure | `offline-sale-rules.ts`, `number-block.ts`, `sync-plan.ts`, `sale-instant.ts` | `refund-plan.test.ts`, `queue-number.test.ts`, `fulfilment.test.ts` |
-| Server, real Postgres | The freeze while a block is open; reserve → spend → report leaving **no gap**; cancelling an unused block; the same `client_ref` twice writing one order; negative stock accepted with a task | `inventory-concurrency.test.ts`, `credit-notes.test.ts`, `shop-vat.test.ts` |
-| The journey | A shop that sells offline and syncs — driven through the modules and the HTTP API the way `acceptance` already drives the renter journey | `scripts/acceptance.ts` |
+| Server, real Postgres | The freeze while a block is open; reserve → spend → report leaving **no gap**; cancelling an unused block; the same `client_ref` twice writing one order; negative stock accepted with a task; the device's price recorded; a batch stopping at a refusal | `offline-replay.test.ts`, `device-numbers.test.ts`, `inventory-concurrency.test.ts`, `credit-notes.test.ts` |
+| The browser journey | Actual IndexedDB request-success/transaction-abort, reload, exclusive tabs, cached barcode beyond 60 items, cash receipt, local ticket, response lost after commit, reconnect sending, close/release, online price reconfirmation, failed checkout commit, admin recovery | `scripts/offline-browser.ts` |
 
-**The gap that stays open, in writing.** `offline-db.ts` (IndexedDB) and the till's
-offline screens have **no automated test**: the suite runs in a Node environment, and
-the repository refuses the dependency that would fake IndexedDB (rule 2). So the
-adapter is kept decision-free on purpose — every rule lives in the pure modules — and
-`till-store.ts` takes its storage as a port, which is why the seam *is* tested
-(`tests/till-store.test.ts`) against an in-memory double: what is untested is one file
-that opens a database and reads a record. Its correctness otherwise rests on
-`route:audit` (every rendered class is defined in the CSS the page loads) plus a human
-walking through an outage. **`AGENTS.md`'s "not yet proven" list carries this line** —
-not `README.md`, whose list of the same kind is the *Not built yet* section and is about
-features rather than proof.
+Playwright is an explicitly approved **development-only** dependency, not a fake
+IndexedDB library or production runtime. Install its Chromium binary with
+`npx playwright install chromium`; CI also installs Linux browser dependencies.
+`npm run offline:browser -- --skip-build` reuses the production artifact, requires
+`TEST_DATABASE_URL` naming a test database, migrates only its `offlinebrowser`
+scratch schema and drops that schema afterwards (`--keep` preserves it). The
+normal renter API acceptance remains separate so non-opt-in flows stay proven.
+No automated check substitutes for a shop pilot, power-loss/device eviction testing,
+physical printers, or restore rehearsal.
 
 ## Out of Scope
 
@@ -419,9 +466,14 @@ features rather than proof.
      is priced and queued on the device with the shop's own reserve applied, and the till
      states its own state.
   4. The replay: idempotency, the day-attribution change across the reports, the
-     negative-stock task.
-  5. The proof: `acceptance` extended, the runbook pages written, README's counts and
-     its "not yet proven" list updated.
+     negative-stock task. **Built end to end** — `orders.client_ref` and `orders.sold_at`
+     with their migration, `sale-instant.ts`, `offline-sales.ts` and the sync endpoint, the
+     reports and the dashboard moved onto `sold_at`, the two stock CHECKs relaxed so a
+     shortage is a state rather than a lie, and the negative-stock card. What is *not* built
+     is no longer a missing screen half: preparation and ordered sending are wired
+     together, with durable identity and device ownership.
+  5. The proof: Chromium journey beside ordinary `acceptance`, both in CI and
+     `verify:all`; runbook/spec/ADR updated. Test counts come from actual gate output.
 
 - **Which ADRs this owes.** ADR 0019 carries the decision and its price. The numbering
   protocol earns its own ADR when phase 2 lands (it is a document-series rule, and it

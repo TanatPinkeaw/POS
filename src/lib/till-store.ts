@@ -9,24 +9,23 @@
  *
  * Three decisions it makes once rather than at every call site:
  *
- * 1. **When the device sells instead of the server.** The device sells when the server
- *    cannot be used — either because the request did not arrive (`fetch` threw, so the
- *    shop has no connection) or because the device is holding bills it has not sent (see
- *    `mayUseServer` for why that one is arithmetic rather than caution).
+ * 1. **One identity for prepared cash.** A prepared till commits cash on the device
+ *    before replay even online. Pending stock/number promises cannot be rebased.
+ *    The old injected no-transport seam retains its legacy fallback for tests only.
  * 2. **A refusal from the server is never quietly re-done offline.** An `ApiError` means
  *    the server answered: "สต็อกไม่พอ" is the truth about the shop, and selling round it
- *    would invent a sale the shop refused. Only silence falls back.
+ *    would invent a sale the shop refused. A failed POST is uncertain, never proof
+ *    that the shop did not record it; the shipped transport path does not fall back.
  * 3. **What "spend" means for a number.** Whether the number goes out through an online
  *    sale or an offline one, the device's own copy of the block moves forward, because the
  *    device is what proposes the next number — and a device that forgot it had just used
  *    12 would propose 12 again and be refused.
  *
- * How a device comes by a block is deliberately *not* here yet. Phase 3 of the spec ends
- * with the till refusing to sell offline because it holds nothing, which is the safe half
- * of the feature; borrowing lands with the replay, because a loan the device cannot settle
- * (`mayUseServer`) is a shop that cannot sell online either.
+ * Prepared cash is committed locally before transport, even online, and sent through
+ * replay with one stable identity. An uncertain response never creates a second sale.
+ * Borrow reservations are persisted before HTTP so a lost response can be recovered.
  */
-import { bangkokDateString } from './bangkok-time';
+import { addBangkokDays, bangkokDateString, bangkokParts } from './bangkok-time';
 import { ApiError } from './client-api';
 import { formatThb, roundThb } from './money';
 import { nextValue, openBlockFor, remaining, type NumberBlock } from './number-block';
@@ -45,8 +44,18 @@ import {
   nextSequence,
   offlineOrderLabel,
   pendingSummary,
+  dueForReplay,
+  recordFailure,
+  replayOrder,
   type QueuedBill,
 } from './sync-plan';
+
+import type { OfflineSyncResult, OfflineBillRequest, OfflineReportRequest } from './offline-sales';
+
+export interface TillTransport {
+  borrow(input: { id: string; series: 'receipt' | 'queue'; day: string | null; size: number; deviceLabel: string }): Promise<NumberBlock & { id: string; openedAt?: Date | string }>;
+  sync(input: { shiftId: number; bills: OfflineBillRequest[]; reports: OfflineReportRequest[] }): Promise<OfflineSyncResult>;
+}
 
 /** The shop's tax and discount settings, as the device last saw them. */
 export interface OfflineShopSettings {
@@ -67,6 +76,7 @@ export interface OfflineShopSettings {
 export interface HeldBlock {
   readonly id: string;
   readonly block: NumberBlock;
+  readonly receiptYear?: number;
 }
 
 /**
@@ -80,6 +90,7 @@ export interface TillSnapshot {
   /** ISO instant of the sync this snapshot came from — what the till shows as its age. */
   readonly capturedAt: string;
   readonly deviceLabel: string;
+  readonly cashierId?: string;
   readonly shop: OfflineShopSettings;
   readonly catalogue: readonly OfflineCatalogueEntry[];
   /** The open drawer. Offline a drawer cannot be opened, only spent from. */
@@ -91,6 +102,8 @@ export interface TillSnapshot {
 export interface PersistedTill {
   readonly snapshot: TillSnapshot | null;
   readonly queue: readonly QueuedBill[];
+  readonly lastSequence?: number;
+  readonly reservations?: readonly { id: string; series: 'receipt' | 'queue'; day: string | null; size: number; deviceLabel: string }[];
 }
 
 /**
@@ -145,6 +158,7 @@ export interface TillStoreState {
   readonly pending: ReturnType<typeof pendingSummary>;
   /** Thai, when the device must not use the server for a sale yet. Null when it may. */
   readonly queueBlocksServer: string | null;
+  readonly lastSyncMessage?: string | null;
 }
 
 export type TillSaleOutcome =
@@ -178,6 +192,9 @@ export interface TillStore {
   setOnline(online: boolean): void;
   /** Remembers the shop as the device just read it. Called after every good sync. */
   saveSnapshot(snapshot: TillSnapshot): Promise<void>;
+  prepare(label: string, size?: number): Promise<void>;
+  sync(manual?: boolean, release?: boolean): Promise<void>;
+  markTicket(clientRef: string, state: 'ready' | 'collected'): Promise<void>;
   /**
    * Closes one bill: on the server when the shop has one, on the device when it does not.
    *
@@ -194,6 +211,8 @@ export interface TillStore {
 export function createTillStore(options: {
   storage: TillStorage;
   deviceLabel: string;
+  cashierId?: string;
+  transport?: TillTransport;
   /** The clock. Injectable so a test can state the instant it means. */
   now?: () => Date;
   /** Injectable for the same reason: a test's bill reference should be readable. */
@@ -205,23 +224,40 @@ export function createTillStore(options: {
 
   let snapshot: TillSnapshot | null = null;
   let queue: QueuedBill[] = [];
+  let lastSequence = 0;
   let loaded = false;
   let online: boolean | null = null;
+  let reservations: NonNullable<PersistedTill['reservations']> = [];
+  let lastSyncMessage: string | null = null;
 
-  function persist(): Promise<void> {
-    return options.storage.write({ snapshot, queue });
+  let storageHealthy = true;
+  let operation = Promise.resolve();
+  function serial<T>(run: () => Promise<T>): Promise<T> {
+    const next = operation.then(run);
+    operation = next.then(() => undefined, () => undefined);
+    return next;
+  }
+  async function persist(): Promise<void> {
+    try { await options.storage.write({ snapshot, queue, reservations, lastSequence }); }
+    catch (error) { storageHealthy = false; throw error; }
   }
 
   function state(): TillStoreState {
     return {
       loaded,
-      canKeep: options.storage.persists,
+      canKeep: options.storage.persists && storageHealthy,
       online,
       snapshot,
       queue,
       pending: pendingSummary(queue, now()),
       queueBlocksServer: mayUseServer(queue).message,
+      lastSyncMessage,
     };
+  }
+
+  function sameCashier(): boolean {
+    return !options.cashierId || snapshot?.cashierId === options.cashierId ||
+      (!snapshot?.heldBlocks.length && !queue.length && !reservations.length);
   }
 
   function offlineContext(at: Date): OfflineSaleContext | null {
@@ -297,7 +333,7 @@ export function createTillStore(options: {
       const value = claimed.get(entry.id);
       return value === undefined
         ? entry
-        : { id: entry.id, block: { ...entry.block, lastUsed: value } };
+        : { ...entry, block: { ...entry.block, lastUsed: value } };
     });
     snapshot = { ...snapshot, heldBlocks };
   }
@@ -316,7 +352,7 @@ export function createTillStore(options: {
           block.day === entry.block.day &&
           block.from === entry.block.from,
       );
-      return match ? { id: entry.id, block: match } : entry;
+      return match ? { ...entry, block: match } : entry;
     });
   }
 
@@ -375,7 +411,17 @@ export function createTillStore(options: {
     basket: OfflineBasket;
     receivedCash: number;
   }): Promise<TillSaleOutcome> {
+    if (!loaded || !storageHealthy || !options.storage.persists) {
+      return { ok: false, refusals: [{ code: 'storage_unavailable', message: 'เก็บบิลถาวรในเครื่องไม่ได้ — ต่อเน็ตและตรวจเบราว์เซอร์ก่อนรับเงิน' }] };
+    }
+    if (!sameCashier()) return { ok: false, refusals: [{ code: 'wrong_cashier', message: 'ข้อมูลในเครื่องเป็นของบัญชีเดิม — เข้าระบบด้วยบัญชีเดิมก่อนส่งบิลหรือขาย' }] };
+    if (options.transport && !snapshot?.heldBlocks.length) {
+      return { ok: false, refusals: [{ code: 'not_prepared', message: 'ยังไม่ได้เตรียมเครื่องขายออฟไลน์ — ต่อเน็ตแล้วเตรียมเครื่องก่อนรับเงิน' }] };
+    }
     const at = now();
+    if (snapshot?.heldBlocks.some((held) => held.block.kind === 'receipt' && held.receiptYear !== undefined && held.receiptYear !== bangkokParts(at).year)) {
+      return { ok: false, refusals: [{ code: 'no_receipt_numbers', message: 'ชุดใบกำกับเป็นของปีเก่า — ต่อเน็ต ส่งบิล คืนชุดเลข แล้วเตรียมใหม่ก่อนขาย' }] };
+    }
     const context = offlineContext(at);
     if (!context) {
       /*
@@ -401,19 +447,45 @@ export function createTillStore(options: {
 
     const pricing = priceOfflineSale(input.basket, context, input.receivedCash);
     const soldDay = bangkokDateString(at);
-    const sequence = nextSequence(queue);
+    const sequence = Math.max(lastSequence + 1, nextSequence(queue));
+    /*
+     * Which numbers *this* bill printed, read before the blocks move.
+     *
+     * The queue has to carry them, and that is a correction the phase-3 slice left open: a
+     * bill whose printed tax-invoice number was not on the order would be a document and a
+     * record that disagree about their own reference — the exact failure the whole numbering
+     * protocol exists to prevent. `pendingNumbers` is the same function the online path uses
+     * to propose its numbers, so the two cannot drift about which block comes next; the
+     * values here and the ones `decideOfflineSale` spends are the same by construction (the
+     * decision refuses a VAT bill with no number rather than spending none).
+     */
+    const printed = pendingNumbers(at) ?? undefined;
 
     const bill: QueuedBill = {
       clientRef: newClientRef(),
+      shiftId: snapshot!.shift!.id,
+      fulfilment: 'preparing',
       sequence,
       soldAt: at,
       soldDay,
       lines: pricing.lines,
       totalThb: pricing.finalAmountThb,
+      receivedThb: pricing.receivedThb,
+      ...(printed ? { numbers: printed } : {}),
+      tax: {
+        isVatInvoice: pricing.isVatInvoice,
+        vatRatePercent: pricing.vatRatePercent,
+        netThb: pricing.netThb,
+        vatThb: pricing.vatThb,
+      },
       attempts: 0,
       nextAttemptAt: at,
     };
 
+    const previousSnapshot = snapshot;
+    const previousQueue = queue;
+    const previousSequence = lastSequence;
+    lastSequence = sequence;
     queue = [...queue, bill];
     if (snapshot) {
       snapshot = {
@@ -421,7 +493,12 @@ export function createTillStore(options: {
         heldBlocks: adoptBlocks(snapshot.heldBlocks, decision.callBlocks, decision.receiptBlock),
       };
     }
-    await persist();
+    try { await persist(); } catch (error) {
+      snapshot = previousSnapshot;
+      queue = previousQueue;
+      lastSequence = previousSequence;
+      throw error;
+    }
 
     return {
       ok: true,
@@ -442,9 +519,14 @@ export function createTillStore(options: {
     getState: state,
 
     async load(): Promise<void> {
-      const stored = await options.storage.read();
-      snapshot = stored?.snapshot ?? null;
-      queue = stored ? [...stored.queue] : [];
+      if (loaded) return;
+      try {
+        const stored = await options.storage.read();
+        snapshot = stored?.snapshot ?? null;
+        queue = stored ? stored.queue.map((bill) => ({ ...bill, soldAt: new Date(bill.soldAt), nextAttemptAt: new Date(bill.nextAttemptAt), shiftId: bill.shiftId ?? stored.snapshot?.shift?.id })) : [];
+        reservations = stored?.reservations ?? [];
+        lastSequence = Math.max(stored?.lastSequence ?? 0, nextSequence(queue) - 1);
+      } catch { storageHealthy = false; }
       loaded = true;
     },
 
@@ -452,15 +534,132 @@ export function createTillStore(options: {
       online = next;
     },
 
-    async saveSnapshot(next: TillSnapshot): Promise<void> {
-      snapshot = next;
-      await persist();
+    saveSnapshot(next: TillSnapshot): Promise<void> {
+      return serial(async () => {
+        if (!sameCashier()) throw new Error('ข้อมูลในเครื่องเป็นของบัญชีเดิม — เข้าระบบด้วยบัญชีเดิมก่อน');
+        if (!loaded || !storageHealthy) throw new Error('อ่านข้อมูลเดิมไม่ได้ — ห้ามเขียนทับหรือล้างข้อมูลเครื่อง');
+        if ((snapshot?.heldBlocks.length || reservations.length) && snapshot?.shift?.id !== next.shift?.id) {
+          throw new Error('คืนชุดเลขด้วยลิ้นชักเดิมก่อนเปลี่ยนกะหรือผู้ใช้');
+        }
+        // Never rebase a pending stock promise or its drawer on an unrelated refresh.
+        if (queue.length > 0) return;
+        const previous = snapshot;
+        snapshot = { ...next, cashierId: options.cashierId ?? next.cashierId, heldBlocks: snapshot?.heldBlocks ?? next.heldBlocks };
+        try { await persist(); } catch (error) { snapshot = previous; throw error; }
+      });
     },
 
-    async sell(input): Promise<TillSaleOutcome> {
-      const at = now();
+    prepare(label, size = 200): Promise<void> {
+      return serial(async () => {
+        if (!sameCashier()) throw new Error('ข้อมูลในเครื่องเป็นของบัญชีเดิม — เข้าระบบด้วยบัญชีเดิมก่อนเตรียม');
+        if (!options.transport || !loaded || !snapshot?.shift || !state().canKeep || queue.length) throw new Error('เปิดลิ้นชักและส่งบิลให้ครบก่อนเตรียมเครื่อง');
+        if (!label.trim() || label.length > 60 || size < 1 || size > 2000) throw new Error('ชื่อเครื่องหรือจำนวนเลขไม่ถูกต้อง');
+        const day = bangkokDateString(now());
+        const wanted = [
+          ...(snapshot.shop.isVatRegistered ? [{ series: 'receipt' as const, day: null }] : []),
+          { series: 'queue' as const, day }, { series: 'queue' as const, day: addBangkokDays(day, 1) },
+        ];
+        for (const part of wanted) {
+          if (snapshot.heldBlocks.some((entry) => entry.block.kind === part.series && entry.block.day === part.day)) continue;
+          let request = reservations.find((entry) => entry.series === part.series && entry.day === part.day);
+          if (!request) {
+            request = { id: newClientRef(), ...part, size, deviceLabel: label.trim() };
+            const previousReservations = reservations;
+            reservations = [...reservations, request];
+            try { await persist(); } catch (error) { reservations = previousReservations; throw error; }
+          }
+          const block = await options.transport.borrow(request);
+          const previousSnapshot = snapshot;
+          const previousReservations = reservations;
+          snapshot = { ...snapshot, deviceLabel: label.trim(), heldBlocks: [...snapshot.heldBlocks, { id: block.id, block, ...(block.kind === 'receipt' ? { receiptYear: bangkokParts(block.openedAt ? new Date(block.openedAt) : now()).year } : {}) }] };
+          reservations = reservations.filter((entry) => entry.id !== request!.id);
+          try { await persist(); } catch (error) { snapshot = previousSnapshot; reservations = previousReservations; throw error; }
+        }
+        online = true;
+      });
+    },
 
-      if (mayUseServer(queue).allowed) {
+    sync(manual = false, release = false): Promise<void> {
+      return serial(async () => {
+        if (!sameCashier()) throw new Error('ข้อมูลในเครื่องเป็นของบัญชีเดิม — เข้าระบบด้วยบัญชีเดิมก่อนส่งบิล');
+        if (!options.transport || !loaded || !storageHealthy) throw new Error('ส่งบิลไม่ได้ — ตรวจการเก็บข้อมูลของเครื่อง');
+        // Recover a borrow whose response was lost before releasing anything.
+        for (const request of [...reservations]) {
+          if (!snapshot) throw new Error('ไม่พบข้อมูลเครื่องที่ยืมเลข — ห้ามล้างข้อมูล');
+          const block = await options.transport.borrow(request);
+          const previousSnapshot = snapshot;
+          const previousReservations = reservations;
+          if (!snapshot.heldBlocks.some((entry) => entry.id === block.id)) snapshot = { ...snapshot, heldBlocks: [...snapshot.heldBlocks, { id: block.id, block, ...(block.kind === 'receipt' ? { receiptYear: bangkokParts(block.openedAt ? new Date(block.openedAt) : now()).year } : {}) }] };
+          reservations = reservations.filter((entry) => entry.id !== request.id);
+          try { await persist(); } catch (error) { snapshot = previousSnapshot; reservations = previousReservations; throw error; }
+        }
+        while (queue.length > 0) {
+          const eligible = manual ? replayOrder(queue) : dueForReplay(queue, now());
+          const head = eligible[0];
+          if (!head) return;
+          const shiftId = head.shiftId;
+          if (!shiftId) throw new Error('บิลเก่าไม่มีลิ้นชัก — ให้ผู้ดูแลตรวจ ห้ามล้างข้อมูล');
+          const batch: QueuedBill[] = [];
+          for (const bill of eligible.slice(0, 500)) { if (bill.shiftId !== shiftId) break; batch.push(bill); }
+          let result: OfflineSyncResult;
+          try {
+            result = await options.transport.sync({ shiftId, reports: [], bills: batch.map((bill) => ({ ...bill, soldAt: bill.soldAt.toISOString() })) });
+            online = true;
+          } catch (error) {
+            if (!(error instanceof ApiError)) online = false;
+            queue = queue.map((bill) => bill.clientRef === head.clientRef ? recordFailure(bill, now()) : bill);
+            lastSyncMessage = error instanceof Error ? error.message : 'ส่งบิลไม่สำเร็จ';
+            await persist();
+            throw error;
+          }
+          const attemptedRefs = new Set(batch.map((bill) => bill.clientRef));
+          const accepted = new Set(result.bills.filter((bill) => attemptedRefs.has(bill.clientRef) && (bill.status === 'recorded' || bill.status === 'duplicate')).map((bill) => bill.clientRef));
+          const previousQueue = queue;
+          const previousSnapshot = snapshot;
+          // Keep remaining availability conservative until a fresh server snapshot arrives.
+          if (snapshot) snapshot = { ...snapshot, catalogue: snapshot.catalogue.map((product) => ({ ...product, available: product.available - batch.filter((bill) => accepted.has(bill.clientRef)).reduce((sum, bill) => sum + bill.lines.filter((line) => line.productId === product.productId).reduce((qty, line) => qty + line.quantity, 0), 0) })) };
+          queue = queue.filter((bill) => !accepted.has(bill.clientRef)).map((bill) => {
+            const refused = result.bills.find((entry) => entry.clientRef === bill.clientRef && entry.status === 'refused');
+            return refused ? { ...recordFailure(bill, now()), refusal: refused.message } : bill;
+          });
+          lastSyncMessage = result.bills.flatMap((bill) => [bill.message, ...bill.warnings]).filter(Boolean).join(' · ') || 'ส่งบิลครบแล้ว';
+          try { await persist(); } catch (error) { queue = previousQueue; snapshot = previousSnapshot; throw error; }
+          if (result.notAttempted || result.bills.some((bill) => bill.status === 'refused')) throw new Error(lastSyncMessage);
+          if (accepted.size === 0) throw new Error('เซิร์ฟเวอร์ไม่ยืนยันบิล — ห้ามล้างข้อมูล');
+        }
+        if (release && snapshot?.heldBlocks.length) {
+          const shiftId = snapshot.shift?.id;
+          if (!shiftId) throw new Error('ไม่พบลิ้นชักที่ยืมเลข');
+          const reports: OfflineReportRequest[] = snapshot.heldBlocks.map((held) => ({ blockId: held.id, mode: held.block.lastUsed === null ? 'cancel' : 'report', ...(held.block.lastUsed === null ? {} : { lastUsed: held.block.lastUsed }) }));
+          const result = await options.transport.sync({ shiftId, bills: [], reports });
+          const closed = new Set(result.reports.filter((report) => report.status !== 'refused').map((report) => report.blockId));
+          const previousSnapshot = snapshot;
+          snapshot = { ...snapshot, heldBlocks: snapshot.heldBlocks.filter((held) => !closed.has(held.id)) };
+          try { await persist(); } catch (error) { snapshot = previousSnapshot; throw error; }
+          if (snapshot.heldBlocks.length) throw new Error(result.reports.find((report) => report.message)?.message ?? 'คืนชุดเลขไม่ครบ');
+        }
+      });
+    },
+
+    markTicket(clientRef, fulfilment): Promise<void> {
+      return serial(async () => {
+        if (!loaded || !storageHealthy) throw new Error('เก็บสถานะคิวไม่ได้ — ตรวจข้อมูลเครื่อง');
+        const previousQueue = queue;
+        queue = queue.map((bill) => bill.clientRef === clientRef ? { ...bill, fulfilment } : bill);
+        try { await persist(); } catch (error) { queue = previousQueue; throw error; }
+      });
+    },
+
+    sell(input): Promise<TillSaleOutcome> {
+      return serial(async () => {
+      const at = now();
+      if (options.transport && snapshot?.heldBlocks.length && (input.basket.tender !== 'cash' || input.basket.memberAttached || input.basket.pointsRedeemed > 0)) {
+        return { ok: false, refusals: [{ code: 'cash_only', message: 'เครื่องที่ถือชุดเลขรับเฉพาะเงินสดไม่ผูกสมาชิก — ส่งบิลและคืนชุดเลขก่อนใช้สมาชิก แต้ม หรือพร้อมเพย์' }] };
+      }
+      // Prepared cash is durable BEFORE any transport, and uses one replay identity even online.
+      if (options.transport && snapshot?.heldBlocks.length && input.basket.tender === 'cash' && !input.basket.memberAttached) return sellOnDevice(input);
+
+      if (mayUseServer(queue).allowed && online !== false) {
         const numbers = pendingNumbers(at);
         try {
           const receipt = await input.serverSale(numbers);
@@ -471,7 +670,7 @@ export function createTillStore(options: {
           }
           return { ok: true, where: 'server', receipt, warnings: [] };
         } catch (error) {
-          if (error instanceof ApiError) {
+          if (error instanceof ApiError || !storageHealthy || options.transport) {
             // The server answered. Its refusal is the shop's answer, and this file's job
             // is not to route around it.
             throw error;
@@ -482,6 +681,7 @@ export function createTillStore(options: {
       }
 
       return sellOnDevice(input);
+      });
     },
   };
 }
@@ -546,11 +746,11 @@ export function offlineNotice(state: TillStoreState): {
  * differently from "none left": one is a shop that never borrowed, the other is a shop
  * whose last numbers are about to run out and needs somebody to connect it.
  */
-export function numbersRemaining(snapshot: TillSnapshot | null): {
+export function numbersRemaining(snapshot: TillSnapshot | null, at = new Date()): {
   receipt: number | null;
   call: number | null;
 } {
-  const held = (kind: NumberBlock['kind']) => snapshot?.heldBlocks.find((e) => e.block.kind === kind);
+  const held = (kind: NumberBlock['kind']) => snapshot?.heldBlocks.find((e) => e.block.kind === kind && (kind !== 'queue' || e.block.day === bangkokDateString(at)));
   const receipt = held('receipt');
   const call = held('queue');
   return {

@@ -25,8 +25,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
 import { firstName } from '@/lib/display-view';
 import { formatThb } from '@/lib/money';
-import { createDeviceStorage } from '@/lib/offline-db';
-import type { OfflineBasket, OfflineCatalogueEntry } from '@/lib/offline-sale-rules';
+import { acquireTillWriter, createDeviceStorage } from '@/lib/offline-db';
+import { offlineSellableQty, tallyOfflineSales, type OfflineBasket, type OfflineCatalogueEntry } from '@/lib/offline-sale-rules';
 import type { PaymentIntentView } from '@/lib/payment-intents-view';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import type { ProductView } from '@/lib/product-view';
@@ -133,6 +133,8 @@ export function useTill({
   initialProducts,
   initialTotal,
   shift,
+  shiftLoaded,
+  cashierId,
   shop,
   onSold,
   discountLimitThb,
@@ -141,6 +143,8 @@ export function useTill({
   initialProducts: ProductView[];
   initialTotal: number;
   shift: Shift | null;
+  shiftLoaded: boolean;
+  cashierId: string;
   /**
    * The shop as the server rendered it, which is what the device keeps for offline use.
    *
@@ -211,6 +215,11 @@ export function useTill({
     storeRef.current = createTillStore({
       storage: createDeviceStorage(),
       deviceLabel: DEVICE_LABEL,
+      cashierId,
+      transport: {
+        borrow: (body) => apiPost('/api/v1/pos/number-blocks', body),
+        sync: (body) => apiPost('/api/v1/pos/sync', body),
+      },
     });
   }
   const store = storeRef.current;
@@ -219,6 +228,11 @@ export function useTill({
   const [offline, setOffline] = useState<TillStoreState | null>(null);
   /** The last offline sale's warnings, in the device's own words — shown, not just logged. */
   const [offlineWarning, setOfflineWarning] = useState<string | null>(null);
+  const [writer, setWriter] = useState(false);
+  const writerRef = useRef(false);
+  const [deviceBusy, setDeviceBusy] = useState(false);
+  const syncBusy = useRef(false);
+  const checkoutBusy = useRef(false);
 
   /**
    * Everything this device has seen of the catalogue, by product.
@@ -244,7 +258,9 @@ export function useTill({
          */
         available: product.availableQty,
         safetyQty: product.offlineSafetyQty,
-        isActive: true,
+        isActive: product.isActive,
+        barcode: product.barcode, categoryId: product.categoryId, categoryName: product.categoryName,
+        categoryKey: product.categoryKey, imageUrl: product.imageUrl,
       });
     }
   }, []);
@@ -256,7 +272,8 @@ export function useTill({
    * bookkeeping, and a screen that could invent or drop a borrowed range is a screen that can
    * put a hole in a series.
    */
-  const persistSnapshot = useCallback(async (): Promise<void> => {
+  const persistSnapshot = useCallback(async (force = false): Promise<void> => {
+    if (!writerRef.current || !shiftLoaded || store.getState().online === false || (syncBusy.current && !force)) return;
     await store.saveSnapshot({
       capturedAt: new Date().toISOString(),
       deviceLabel: DEVICE_LABEL,
@@ -272,7 +289,7 @@ export function useTill({
       heldBlocks: store.getState().snapshot?.heldBlocks ?? [],
     });
     setOffline(store.getState());
-  }, [shop, shift, store]);
+  }, [shop, shift, shiftLoaded, store]);
 
   /*
    * Reads what the device kept, then learns about the network from the browser.
@@ -283,8 +300,16 @@ export function useTill({
    * offline must go back to trying the server, and only the browser can tell it.
    */
   useEffect(() => {
+    let disposed = false;
+    let release: (() => void) | null = null;
     void (async () => {
+      release = await acquireTillWriter();
+      if (disposed) { release?.(); return; }
+      writerRef.current = Boolean(release);
+      setWriter(Boolean(release));
       await store.load();
+      for (const entry of store.getState().snapshot?.catalogue ?? []) catalogueRef.current.set(entry.productId, entry);
+      remember(initialProducts);
       if (typeof navigator !== 'undefined') {
         store.setOnline(navigator.onLine);
       }
@@ -298,6 +323,9 @@ export function useTill({
     window.addEventListener('online', sync);
     window.addEventListener('offline', sync);
     return () => {
+      disposed = true;
+      writerRef.current = false;
+      release?.();
       window.removeEventListener('online', sync);
       window.removeEventListener('offline', sync);
     };
@@ -309,7 +337,7 @@ export function useTill({
     if (!offline?.loaded) {
       return;
     }
-    void persistSnapshot();
+    void persistSnapshot().catch(() => { setOffline(store.getState()); setOfflineWarning('เก็บข้อมูลในเครื่องไม่ได้ — ห้ามรับเงินออฟไลน์'); });
   }, [offline?.loaded, products, persistSnapshot]);
 
   /**
@@ -345,13 +373,24 @@ export function useTill({
         );
         // And the device's copy moves with it: a page that went stale offline is a page that
         // prices a shelf the shop has already sold.
-        if (changed) {
+        if (changed && store.getState().queue.length === 0 && !syncBusy.current) {
           remember([changed]);
         }
       },
       [remember],
     ),
   );
+
+  const localProducts = useCallback((query: string, category: number | null): ProductView[] => {
+    const state = store.getState();
+    const sold = tallyOfflineSales(state.queue);
+    return (state.snapshot?.catalogue ?? []).filter((entry) => entry.isActive && (!category || entry.categoryId === category) &&
+      (!query.trim() || entry.name.toLowerCase().includes(query.trim().toLowerCase()) || entry.barcode?.includes(query.trim())))
+      .map((entry) => ({ id: entry.productId, name: entry.name, barcode: entry.barcode ?? null, categoryId: entry.categoryId ?? null,
+        categoryName: entry.categoryName ?? null, categoryKey: entry.categoryKey ?? 'default', salePrice: entry.priceThb,
+        stockQty: entry.available, reservedQty: 0, availableQty: Math.max(0, offlineSellableQty(entry, sold)),
+        offlineSafetyQty: entry.safetyQty, imageUrl: entry.imageUrl ?? null, isActive: entry.isActive }));
+  }, [store]);
 
   const loadPage = useCallback(
     async (options: {
@@ -360,6 +399,10 @@ export function useTill({
       /** Appends the next page instead of replacing the grid. */
       offset?: number;
     }): Promise<void> => {
+      if (store.getState().online === false || store.getState().queue.length > 0) {
+        const cached = localProducts(options.search, options.categoryId);
+        setProducts(cached); setTotal(cached.length); return;
+      }
       setLoadingCatalogue(true);
       try {
         const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
@@ -377,9 +420,11 @@ export function useTill({
           credentials: 'same-origin',
         });
         if (!response.ok) {
-          throw new Error('อ่านรายการสินค้าไม่สำเร็จ');
+          throw new ApiError('อ่านรายการสินค้าไม่สำเร็จ — ตรวจสิทธิ์หรือรอเซิร์ฟเวอร์ก่อน', response.status, 'CATALOGUE_UNAVAILABLE');
         }
         const body = (await response.json()) as { data: ProductView[] };
+        store.setOnline(true);
+        setOffline(store.getState());
 
         setProducts((current) =>
           options.offset && options.offset > 0 ? [...current, ...body.data] : body.data,
@@ -390,12 +435,17 @@ export function useTill({
         // list simply looking finished.
         setTotal(Number(response.headers.get('X-Total-Count') ?? body.data.length));
       } catch (caught) {
+        if (!(caught instanceof ApiError)) {
+          store.setOnline(false); setOffline(store.getState());
+          const cached = localProducts(options.search, options.categoryId);
+          setProducts(cached); setTotal(cached.length);
+        }
         setError(caught instanceof Error ? caught.message : 'อ่านรายการสินค้าไม่สำเร็จ');
       } finally {
         setLoadingCatalogue(false);
       }
     },
-    [],
+    [store, localProducts, remember],
   );
 
   /** Re-reads the current page. Used after a sale, so the counts are authoritative. */
@@ -445,7 +495,7 @@ export function useTill({
   const canPay =
     Boolean(shift) &&
     lines.length > 0 &&
-    !busy &&
+    !busy && offline?.loaded === true && writer && !deviceBusy &&
     (tenderMode === 'promptpay' ? cashDue === 0 : received >= cashDue);
 
   const addProduct = useCallback((product: ProductView) => {
@@ -497,7 +547,8 @@ export function useTill({
 
       const local =
         products.find((product) => product.barcode === term) ??
-        products.find((product) => product.name.toLowerCase() === term.toLowerCase());
+        products.find((product) => product.name.toLowerCase() === term.toLowerCase()) ??
+        localProducts(term, null).find((product) => product.barcode === term || product.name.toLowerCase() === term.toLowerCase());
 
       if (local) {
         addProduct(local);
@@ -506,6 +557,7 @@ export function useTill({
         return;
       }
 
+      if (store.getState().online === false) { setError('ไม่พบสินค้านี้ในแคช — ต่อเน็ตเพื่อโหลดก่อนขาย'); return; }
       try {
         const found = await apiFetch<ProductView[]>(
           `/api/v1/products?barcode=${encodeURIComponent(term)}&limit=1`,
@@ -533,7 +585,7 @@ export function useTill({
         scanInput.current?.focus();
       }
     },
-    [addProduct, products, remember],
+    [addProduct, products, remember, store, localProducts],
   );
 
   const setQuantity = useCallback((productId: string, quantity: number): void => {
@@ -574,6 +626,9 @@ export function useTill({
   }, []);
 
   const findMember = useCallback(async (): Promise<void> => {
+    if (store.getState().online === false || store.getState().snapshot?.heldBlocks.length || store.getState().queue.length) {
+      setMemberError('ใช้สมาชิกไม่ได้ในโหมดนี้ — ส่งบิลและคืนชุดเลขก่อน'); return;
+    }
     setMemberError(null);
     try {
       const found = await apiFetch<TillMember[]>(
@@ -587,7 +642,7 @@ export function useTill({
     } catch (caught) {
       setMemberError(caught instanceof Error ? caught.message : 'ค้นหาสมาชิกไม่สำเร็จ');
     }
-  }, [attachMember, memberQuery]);
+  }, [attachMember, memberQuery, store]);
 
   /**
    * Issues a QR for the amount that will be transferred.
@@ -732,8 +787,14 @@ export function useTill({
   }, [lines, subtotal, discountValue, pointsValue, due, received, change, member, intent]);
 
   const checkout = useCallback(async (intentRef?: string): Promise<SaleResult | null> => {
+    if (!writerRef.current || !store.getState().loaded || syncBusy.current || checkoutBusy.current) { setError('เครื่องนี้ยังไม่พร้อมหรือมีแท็บอื่นเปิดขายอยู่ — ปิดแท็บอื่นแล้วเปิดใหม่'); return null; }
     if (!shift) {
       setError('ต้องเปิดลิ้นชักก่อนรับชำระเงิน');
+      return null;
+    }
+    const deviceState = store.getState();
+    if ((deviceState.snapshot?.heldBlocks.length || deviceState.queue.length) && deviceState.snapshot?.shift?.id !== shift.id) {
+      setError('ข้อมูลในเครื่องเป็นของกะเดิม — เข้าระบบด้วยบัญชีเดิม ส่งบิลและคืนชุดเลขก่อนขาย');
       return null;
     }
     if (lines.length === 0) {
@@ -741,9 +802,11 @@ export function useTill({
       return null;
     }
 
+    checkoutBusy.current = true;
     setBusy(true);
     setError(null);
 
+    try {
     /*
      * The discount is judged before the sale is attempted, not after it is
      * refused. The server enforces the same limit — this is the prompt, and the
@@ -753,6 +816,7 @@ export function useTill({
      */
     let approvalToken: string | null = null;
     if (
+      deviceState.online !== false && deviceState.queue.length === 0 && (deviceState.snapshot?.heldBlocks.length ?? 0) === 0 &&
       requestApproval &&
       discountLimitThb !== undefined &&
       discountValue > discountLimitThb
@@ -768,7 +832,6 @@ export function useTill({
       }
     }
 
-    try {
       const pointsToRedeem =
         usePoints && member ? Math.floor(member.pointsBalance / 100) * 100 : 0;
 
@@ -798,6 +861,26 @@ export function useTill({
         discountThb: discountValue,
       };
 
+      if (deviceState.online !== false && deviceState.snapshot?.heldBlocks.length && deviceState.queue.length === 0) {
+        // Reads are safe to retry; never translate a server's refusal into a local sale.
+        // A changed price needs a new cashier confirmation before money is taken.
+        let fresh: ProductView[] = [];
+        try { fresh = await Promise.all(lines.map((line) => apiFetch<ProductView>(`/api/v1/products/${line.productId}`))); }
+        catch (caught) {
+          if (caught instanceof ApiError) throw caught;
+          // No write was attempted: safely switch to the already prepared promise.
+          store.setOnline(false);
+          setOffline(store.getState());
+        }
+        if (fresh.some((product) => !product.isActive || product.availableQty < (lines.find((line) => line.productId === product.id)?.quantity ?? 0))) throw new Error('สินค้าปิดขายหรือสต็อกไม่พอ — ตรวจตะกร้าก่อนรับเงิน');
+        remember(fresh);
+        await persistSnapshot();
+        const changedPrice = fresh.some((product) => lines.some((line) => line.productId === product.id && line.unitPrice !== product.salePrice));
+        if (changedPrice) {
+          setLines((current) => current.map((line) => ({ ...line, unitPrice: fresh.find((product) => product.id === line.productId)?.salePrice ?? line.unitPrice })));
+          throw new Error('ราคาสินค้าเปลี่ยนแล้ว — ตรวจยอดใหม่และยืนยันรับเงินอีกครั้ง');
+        }
+      }
       const outcome = await store.sell({
         basket,
         // The cash the cashier entered, or exactly the bill when they entered nothing — the
@@ -850,6 +933,7 @@ export function useTill({
       setTenderMode('cash');
       consumedRef.current = null;
 
+      setOffline(store.getState());
       if (outcome.where === 'server') {
         await onSold();
         await reload();
@@ -861,20 +945,30 @@ export function useTill({
          * queue is sent (phase 4).
          */
         setOffline(store.getState());
+        const cached = localProducts(search, categoryId);
+        setProducts(cached); setTotal(cached.length);
       }
       scanInput.current?.focus();
       return outcome.receipt as SaleResult;
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'ชำระเงินไม่สำเร็จ กรุณาลองใหม่',
+        caught instanceof Error ? caught.message : 'ชำระเงินไม่สำเร็จ — ตรวจบิลก่อนรับเงินอีกครั้ง',
       );
       return null;
     } finally {
+      checkoutBusy.current = false;
       setBusy(false);
     }
   }, [
     cashDue,
     clearCart,
+    categoryId,
+    localProducts,
+    search,
+    requestApproval,
+    discountLimitThb,
+    remember,
+    persistSnapshot,
     discountValue,
     lines,
     member,
@@ -892,7 +986,80 @@ export function useTill({
   // Assigned after the fact for the reason given where the ref is declared.
   checkoutRef.current = checkout;
 
+  const sendPending = useCallback(async (manual = true, release = false): Promise<void> => {
+    if (!writerRef.current || syncBusy.current || checkoutBusy.current || busy) throw new Error('เครื่องยังไม่พร้อมหรือกำลังรับเงิน — รอก่อนส่งบิลหรือปิดกะ');
+    syncBusy.current = true; setDeviceBusy(true);
+    try {
+      await store.sync(manual, release);
+      setOffline(store.getState());
+      if (store.getState().queue.length === 0) {
+        store.setOnline(true);
+        // Seed from the acknowledged conservative stock before refreshing visible rows;
+        // otherwise the hook's pre-replay map could add the sold units back on disk.
+        catalogueRef.current.clear();
+        for (const product of store.getState().snapshot?.catalogue ?? []) catalogueRef.current.set(product.productId, product);
+        await onSold(); await reload();
+        await persistSnapshot(true);
+      }
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : 'ส่งบิลไม่สำเร็จ';
+      setOfflineWarning(message); throw caught;
+    } finally { setOffline(store.getState()); syncBusy.current = false; setDeviceBusy(false); }
+  }, [store, onSold, reload, busy, persistSnapshot]);
+
+  // Keep the device mutex through the server close, not just through replay.
+  const closePreparedShift = useCallback(async (close: () => Promise<unknown>): Promise<void> => {
+    if (!writerRef.current || syncBusy.current || checkoutBusy.current || busy) throw new Error('หยุดรับเงินและรอเครื่องพร้อมก่อนปิดกะ');
+    syncBusy.current = true;
+    setDeviceBusy(true);
+    try {
+      await store.sync(true, true);
+      const state = store.getState();
+      if (state.queue.length || state.snapshot?.heldBlocks.length) throw new Error('ส่งบิลและคืนชุดเลขให้ครบก่อนปิดกะ');
+      await close();
+    } finally {
+      setOffline(store.getState());
+      syncBusy.current = false;
+      setDeviceBusy(false);
+    }
+  }, [store, busy]);
+
+  const prepareOffline = useCallback(async (label: string): Promise<void> => {
+    if (!writerRef.current || busy || checkoutBusy.current || syncBusy.current) throw new Error('มีแท็บอื่นเปิดขายอยู่ หรือกำลังรับเงิน');
+    syncBusy.current = true;
+    setDeviceBusy(true);
+    try {
+      if (!navigator.onLine || !shiftLoaded || !shift) throw new Error('ต่อเน็ตและเปิดลิ้นชักก่อนเตรียมเครื่อง');
+      // Refresh every cached SKU, not only the visible page, before making a stock promise.
+      const refreshed: ProductView[] = [];
+      for (let offset = 0; ; offset += PAGE_SIZE) {
+        const response = await fetch(`/api/v1/products?limit=${PAGE_SIZE}&offset=${offset}`, { credentials: 'same-origin' });
+        if (!response.ok) throw new ApiError('เตรียมรายการสินค้าไม่สำเร็จ — ลองใหม่เมื่อเซิร์ฟเวอร์พร้อม', response.status, 'CATALOGUE_UNAVAILABLE');
+        const body = await response.json() as { data: ProductView[] };
+        refreshed.push(...body.data);
+        const count = Number(response.headers.get('X-Total-Count') ?? body.data.length);
+        if (offset + body.data.length >= count || body.data.length === 0) break;
+      }
+      catalogueRef.current.clear();
+      remember(refreshed);
+      store.setOnline(true);
+      await persistSnapshot(true); await store.prepare(label); setOffline(store.getState());
+    } finally { setOffline(store.getState()); syncBusy.current = false; setDeviceBusy(false); }
+  }, [store, busy, persistSnapshot, remember, shift, shiftLoaded]);
+
+  useEffect(() => {
+    const send = (): void => {
+      if (navigator.onLine && writerRef.current && !busy && store.getState().queue.length) void sendPending(false).catch(() => undefined);
+    };
+    const timer = window.setInterval(send, 10_000);
+    window.addEventListener('online', send);
+    send();
+    return () => { clearInterval(timer); window.removeEventListener('online', send); };
+  }, [busy, sendPending, store]);
+
   return {
+    writer, deviceBusy, sendPending, prepareOffline, closePreparedShift,
+    markLocalTicket: async (ref: string, state: 'ready' | 'collected') => { await store.markTicket(ref, state); setOffline(store.getState()); },
     // catalogue
     products,
     total,

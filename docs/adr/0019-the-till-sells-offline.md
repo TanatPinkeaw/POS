@@ -15,8 +15,22 @@ by the same `vat.ts`/`money.ts` the online sale uses**. The shop's reserve is re
 field at `/admin/products` to set it), so decision 3's safety quantity is the shop's own
 number rather than a hardcoded zero. The till is **wired through the store**: every sale is
 a server call or a device call, a device sale queues on the device and prints its own
-numbers, and the till says what it is (`offlineNotice`). What is not built: the replay.
-Nothing borrows, and a shop still cannot sell offline.
+numbers, and the till says what it is (`offlineNotice`).
+
+**Decision 4 and decision 5 are built too, on the server.** `orders.client_ref` and
+`orders.sold_at` have their migration; `sale-instant.ts` states which instant and which day a
+sale is filed under and is what every day-bucketed read now goes through; `offline-sales.ts`
+is the replay behind `POST /api/v1/pos/sync` (idempotent, the device's own prices as the
+record, the shortage accepted and named, the loans closed after the bills); the dashboard
+carries the negative-stock task. Decision 3's "lets stock go negative" needed two database
+constraints relaxed to be true at all — see the cost table below, which is where the price of
+the decision actually landed.
+
+**Completion (2026-10-01).** Explicit preparation, durable device bills, ordered
+replay, local tickets and close/release are wired to the cashier screen. Chromium
+with real IndexedDB and PostgreSQL is a release/CI gate, not only a code-reading
+claim. Admin recovery appears on the dashboard and requires checking actual paper
+and stopping the old device; it does not recover missing money records.
 
 **Context.** Every sale in this system needs the network. The catalogue is paged in, the
 member is looked up, the payment intent is opened, the sale is written, and — the part that
@@ -78,6 +92,18 @@ Three interviews produced it, and each answer moved the design:
    Rejected: **refuse the bill at sync.** A record that contradicts the customer's receipt,
    and a shop arguing about money it has already taken.
 
+   The price this one turned out to carry, found when the replay was built rather than when
+   the decision was taken: **`stock_qty < 0` was forbidden by the database**, by
+   `chk_products_stock_qty_non_negative` and by `chk_stock_availability` (`stock_qty >=
+   reserved_qty`, which a shortage breaks too whenever a pre-order is holding the last unit).
+   Neither can be narrowed to "only for a replay" — a CHECK sees the row and the row does not
+   say why it is being written — so both were dropped
+   (`20260118000000_offline_stock_shortage`). Every mutating path keeps the `WHERE` clause that
+   was doing the work all along, `reserved_qty >= 0` stays, and what replaces the constraint is
+   that the negative count *is* the task: reachable only through `settleReplayedSale`, listed
+   on the dashboard, gone when somebody counts the shelf. Recorded in ADR 0001's hand-written
+   section, which no longer claims those two.
+
 4. **A bill belongs to the day it was sold, not the day it was synced.** `orders.sold_at` is
    added, non-null, and every day-bucketed read moves onto it. A 21:00 sale synced at 08:12
    lands on yesterday's takings, because a daily reconciliation that moves money between days
@@ -88,7 +114,29 @@ Three interviews produced it, and each answer moved the design:
    write **one** order. Same shape as `credit_notes (order_id, sequence)`: the API checks, the
    database is what makes it true.
 
-6. **The customer display goes quiet, and that is stated rather than designed away.** It is a
+6. **Durability precedes confirmation, and uncertainty is not a new sale.**
+   Preparation persists each reservation UUID before borrowing so a lost response
+   can be retried. Device bills and moved numbers commit in one IndexedDB transaction;
+   request success alone is insufficient. A native Web Lock admits one writer tab.
+   Failed reads/writes block device money rather than pretending a memory fallback
+   survives reload. The original cashier and drawer are retained until bills and loans
+   are settled; normal close is guarded on the server as well as in the screen.
+
+   Prepared cash uses this durable/replay identity **even online**. With no pending
+   bills, online active-stock/price reads precede confirmation and changed prices need
+   a new cashier confirmation. While pending, the cached promise remains frozen.
+   A read failure is safe to retry; a posting failure is not evidence of rollback.
+   Ordinary unprepared sales keep their server path, never silently fall back offline.
+   Prepared mode is cash-only without members; send/release restores normal tenders.
+   This deliberately narrows prepared online behavior rather than maintaining two
+   ambiguous posting paths that could record two sales for one handover.
+
+   Rejected: falling back offline after a failed ordinary POST. A server can commit
+   and lose the response; without an identity written beforehand that is a double
+   payment and stock movement. Rejected: lease-clock cross-tab locking or volatile
+   fallback, neither of which can promise exactly one durable writer.
+
+7. **The customer display goes quiet, and that is stated rather than designed away.** It is a
    second browser reaching the same server, so with no connection there is nothing to tell it.
    The till's own board still shows what it has not sent, which is what lets the bar make the
    drink.
@@ -103,6 +151,7 @@ re-established by hand:
 | `sellFromStock`'s conditional `UPDATE` | a snapshot check in a pure module, plus the shop's safety quantity |
 | The shop row's counters, bumped inside the sale's transaction | a reservation row, a freeze, and a report the device has to make |
 | `UNIQUE (queue_day, queue_number)` | a block per day, and a device clock that could still name the wrong day |
+| `CHECK (stock_qty >= 0)` and `chk_stock_availability`, the last row-level backstop against overselling | the guarded `WHERE` in each mutation, which was always the real guard, plus a negative count that is visible as a task |
 | `cash_shifts` and one open shift | a shift snapshot on the device |
 | `audit_logs` that refuses UPDATE and DELETE, and a PIN verified server-side | nothing equivalent — which is why refunds, voids and over-limit discounts are refused offline |
 
@@ -112,24 +161,18 @@ that would land inside a held range rather than issuing one out of order.
 
 ### Gaps this knowingly leaves open
 
-- **A device must not borrow yet, for a new reason.** The sale path *does* accept a
-  device's own number now, so a block can be issued from online. What is missing is the
-  other direction: a bill closed offline sits in the device's queue with no way to reach the
-  shop until the replay exists, and `mayUseServer` then keeps that device off the server for
-  selling at all (a number printed but unsent is a hole in the series the moment anything
-  takes a number after it). So a shop that borrowed today could sell offline once and then
-  be unable to sell online until phase 4's sync lands. Borrowing is wired with the replay,
-  not before it.
-- **The offline till's screens have no automated test either.** `route:audit` proves every
-  screen renders styled, and nothing proves a *behaviour*: no test in this repository has ever
-  loaded a browser. So the notice, the queue count and an offline sale are verified by reading
-  the code and by a human walking through an outage — the same standing gap the README records.
-- **The device adapter has no automated test.** The suite runs in a Node environment and the
-  repository refuses the dependency that would fake IndexedDB, so the decisions all live in
-  pure modules and the adapter is kept decision-free. The *seam above it* is tested
-  (`tests/till-store.test.ts`) because the store takes its storage as a port; what is
-  untested is the file that opens a database and reads a record. `route:audit` plus a human
-  walking through an outage is the whole proof for that layer.
+- **No cold offline launch.** The already-loaded page can keep trading; a browser
+  cannot fetch a fresh Next page with no network. There is no service worker. Do not
+  close/reload during an outage or clear site data while bills/loans are pending.
+- **Browser data is still browser data.** Chromium commit/abort/reload and tab
+  exclusivity are tested, not hardware power-loss, OS eviction or every browser.
+  IndexedDB and Web Locks require a supported secure origin (HTTPS or localhost).
+- **A bill can reach the shop after its drawer was counted.** The money was taken before the
+  count, so the bill is recorded against the shift it was sold under rather than forced into
+  the open one — but that shift's stored `expected_cash` was computed without it, and the row
+  is now short by the amount of the replayed cash. The replay warns in Thai and records
+  `drawerCounted` in the audit row, which is how somebody finds out; nothing recomputes the
+  closed shift, and a shop that wants that number right must recount it.
 - **The reserve protects a device from itself and nothing else.** `offline_safety_qty` is
   read into the device's catalogue snapshot and consulted only by `offlineSellableQty`; the
   server's own oversell guard never looks at it, so a reserve does not hold stock back from
@@ -142,14 +185,14 @@ that would land inside a held range rather than issuing one out of order.
 - **A block that runs out stops tax invoices.** The till may sell no VAT bill until it is
   online again; the shop's only lever is a larger block, and the runbook has to say so in
   plain Thai.
-- **An offline bill is recorded at the device's price, and phase 4 has to keep it.** The
-  queue carries `unitPrice` per line, because the customer paid those figures and re-pricing
-  the bill from a catalogue that moved on would be money disagreeing with a slip. The
-  replay's endpoint therefore has to accept a device-supplied price, with the catalogue's
-  own price logged beside it — that is the owner's "what the till sold at" (user story 29),
-  and it is a write path that does not exist yet.
+- **An offline bill's prices are the device's, and only the audit row says they differ.**
+  The replay writes `order_items.unit_price` from the queue — the customer paid those figures
+  — and records every line where the catalogue has since moved in the `offline_sale_synced`
+  detail. What does *not* exist is a screen: an owner who wants to see "what the till sold at"
+  reads the audit trail, not a report. The same row carries the tax rate the slip printed
+  beside the shop's current one, and which products the replay drove negative.
 - **Two full days offline ends call numbers.** Bills keep being sold and are flagged as ones
   that got no number — an unfiled ticket, not an error state.
 - **The customer display is stale for the duration of the outage.**
 - **No shop has run any of this.** Like everything else here, "green" means correct as far as
-  the tests reach, and no test in this repository has ever loaded a browser.
+  the tests reach, including actual Chromium; it is not evidence of shop field use.

@@ -73,6 +73,8 @@ export type OrdersMinAggregateOutputType = {
   points_earned: number | null
   points_redeemed: number | null
   cancel_reason: string | null
+  client_ref: string | null
+  sold_at: Date | null
   created_at: Date | null
   confirmed_at: Date | null
   ready_at: Date | null
@@ -103,6 +105,8 @@ export type OrdersMaxAggregateOutputType = {
   points_earned: number | null
   points_redeemed: number | null
   cancel_reason: string | null
+  client_ref: string | null
+  sold_at: Date | null
   created_at: Date | null
   confirmed_at: Date | null
   ready_at: Date | null
@@ -133,6 +137,8 @@ export type OrdersCountAggregateOutputType = {
   points_earned: number
   points_redeemed: number
   cancel_reason: number
+  client_ref: number
+  sold_at: number
   created_at: number
   confirmed_at: number
   ready_at: number
@@ -189,6 +195,8 @@ export type OrdersMinAggregateInputType = {
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
+  client_ref?: true
+  sold_at?: true
   created_at?: true
   confirmed_at?: true
   ready_at?: true
@@ -219,6 +227,8 @@ export type OrdersMaxAggregateInputType = {
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
+  client_ref?: true
+  sold_at?: true
   created_at?: true
   confirmed_at?: true
   ready_at?: true
@@ -249,6 +259,8 @@ export type OrdersCountAggregateInputType = {
   points_earned?: true
   points_redeemed?: true
   cancel_reason?: true
+  client_ref?: true
+  sold_at?: true
   created_at?: true
   confirmed_at?: true
   ready_at?: true
@@ -366,6 +378,8 @@ export type OrdersGroupByOutputType = {
   points_earned: number
   points_redeemed: number
   cancel_reason: string | null
+  client_ref: string | null
+  sold_at: Date
   created_at: Date
   confirmed_at: Date | null
   ready_at: Date | null
@@ -419,6 +433,8 @@ export type ordersWhereInput = {
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
+  client_ref?: Prisma.StringNullableFilter<"orders"> | string | null
+  sold_at?: Prisma.DateTimeFilter<"orders"> | Date | string
   created_at?: Prisma.DateTimeFilter<"orders"> | Date | string
   confirmed_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   ready_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
@@ -457,6 +473,8 @@ export type ordersOrderByWithRelationInput = {
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrderInput | Prisma.SortOrder
+  client_ref?: Prisma.SortOrderInput | Prisma.SortOrder
+  sold_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   confirmed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   ready_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -476,6 +494,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   order_number?: string
   receipt_number?: string
+  client_ref?: string
   queue_day_queue_number?: Prisma.ordersQueue_dayQueue_numberCompoundUniqueInput
   AND?: Prisma.ordersWhereInput | Prisma.ordersWhereInput[]
   OR?: Prisma.ordersWhereInput[]
@@ -499,6 +518,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
+  sold_at?: Prisma.DateTimeFilter<"orders"> | Date | string
   created_at?: Prisma.DateTimeFilter<"orders"> | Date | string
   confirmed_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   ready_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
@@ -512,7 +532,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   payment_intents?: Prisma.Payment_intentsListRelationFilter
   credit_notes?: Prisma.Credit_notesListRelationFilter
   notifications?: Prisma.NotificationsListRelationFilter
-}, "id" | "order_number" | "receipt_number" | "queue_day_queue_number">
+}, "id" | "order_number" | "receipt_number" | "client_ref" | "queue_day_queue_number">
 
 export type ordersOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -537,6 +557,8 @@ export type ordersOrderByWithAggregationInput = {
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrderInput | Prisma.SortOrder
+  client_ref?: Prisma.SortOrderInput | Prisma.SortOrder
+  sold_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   confirmed_at?: Prisma.SortOrderInput | Prisma.SortOrder
   ready_at?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -575,6 +597,8 @@ export type ordersScalarWhereWithAggregatesInput = {
   points_earned?: Prisma.IntWithAggregatesFilter<"orders"> | number
   points_redeemed?: Prisma.IntWithAggregatesFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
+  client_ref?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
+  sold_at?: Prisma.DateTimeWithAggregatesFilter<"orders"> | Date | string
   created_at?: Prisma.DateTimeWithAggregatesFilter<"orders"> | Date | string
   confirmed_at?: Prisma.DateTimeNullableWithAggregatesFilter<"orders"> | Date | string | null
   ready_at?: Prisma.DateTimeNullableWithAggregatesFilter<"orders"> | Date | string | null
@@ -603,6 +627,8 @@ export type ordersCreateInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -641,6 +667,8 @@ export type ordersUncheckedCreateInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -675,6 +703,8 @@ export type ordersUpdateInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -713,6 +743,8 @@ export type ordersUncheckedUpdateInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -749,6 +781,8 @@ export type ordersCreateManyInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -777,6 +811,8 @@ export type ordersUpdateManyMutationInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -807,6 +843,8 @@ export type ordersUncheckedUpdateManyInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -852,6 +890,8 @@ export type ordersCountOrderByAggregateInput = {
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
+  client_ref?: Prisma.SortOrder
+  sold_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   confirmed_at?: Prisma.SortOrder
   ready_at?: Prisma.SortOrder
@@ -894,6 +934,8 @@ export type ordersMaxOrderByAggregateInput = {
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
+  client_ref?: Prisma.SortOrder
+  sold_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   confirmed_at?: Prisma.SortOrder
   ready_at?: Prisma.SortOrder
@@ -924,6 +966,8 @@ export type ordersMinOrderByAggregateInput = {
   points_earned?: Prisma.SortOrder
   points_redeemed?: Prisma.SortOrder
   cancel_reason?: Prisma.SortOrder
+  client_ref?: Prisma.SortOrder
+  sold_at?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   confirmed_at?: Prisma.SortOrder
   ready_at?: Prisma.SortOrder
@@ -1160,6 +1204,8 @@ export type ordersCreateWithoutCustomerInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1196,6 +1242,8 @@ export type ordersUncheckedCreateWithoutCustomerInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1240,6 +1288,8 @@ export type ordersCreateWithoutCashierInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1276,6 +1326,8 @@ export type ordersUncheckedCreateWithoutCashierInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1341,6 +1393,8 @@ export type ordersScalarWhereInput = {
   points_earned?: Prisma.IntFilter<"orders"> | number
   points_redeemed?: Prisma.IntFilter<"orders"> | number
   cancel_reason?: Prisma.StringNullableFilter<"orders"> | string | null
+  client_ref?: Prisma.StringNullableFilter<"orders"> | string | null
+  sold_at?: Prisma.DateTimeFilter<"orders"> | Date | string
   created_at?: Prisma.DateTimeFilter<"orders"> | Date | string
   confirmed_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   ready_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
@@ -1385,6 +1439,8 @@ export type ordersCreateWithoutItemsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1422,6 +1478,8 @@ export type ordersUncheckedCreateWithoutItemsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1471,6 +1529,8 @@ export type ordersUpdateWithoutItemsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1508,6 +1568,8 @@ export type ordersUncheckedUpdateWithoutItemsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1541,6 +1603,8 @@ export type ordersCreateWithoutPaymentsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1578,6 +1642,8 @@ export type ordersUncheckedCreateWithoutPaymentsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1627,6 +1693,8 @@ export type ordersUpdateWithoutPaymentsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1664,6 +1732,8 @@ export type ordersUncheckedUpdateWithoutPaymentsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1697,6 +1767,8 @@ export type ordersCreateWithoutCredit_notesInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1734,6 +1806,8 @@ export type ordersUncheckedCreateWithoutCredit_notesInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1783,6 +1857,8 @@ export type ordersUpdateWithoutCredit_notesInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1820,6 +1896,8 @@ export type ordersUncheckedUpdateWithoutCredit_notesInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1853,6 +1931,8 @@ export type ordersCreateWithoutPayment_intentsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1890,6 +1970,8 @@ export type ordersUncheckedCreateWithoutPayment_intentsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -1939,6 +2021,8 @@ export type ordersUpdateWithoutPayment_intentsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -1976,6 +2060,8 @@ export type ordersUncheckedUpdateWithoutPayment_intentsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2009,6 +2095,8 @@ export type ordersCreateWithoutNotificationsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -2046,6 +2134,8 @@ export type ordersUncheckedCreateWithoutNotificationsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -2095,6 +2185,8 @@ export type ordersUpdateWithoutNotificationsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2132,6 +2224,8 @@ export type ordersUncheckedUpdateWithoutNotificationsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2165,6 +2259,8 @@ export type ordersCreateWithoutPoint_transactionsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -2202,6 +2298,8 @@ export type ordersUncheckedCreateWithoutPoint_transactionsInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -2251,6 +2349,8 @@ export type ordersUpdateWithoutPoint_transactionsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2288,6 +2388,8 @@ export type ordersUncheckedUpdateWithoutPoint_transactionsInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2322,6 +2424,8 @@ export type ordersCreateManyCustomerInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -2351,6 +2455,8 @@ export type ordersCreateManyCashierInput = {
   points_earned?: number
   points_redeemed?: number
   cancel_reason?: string | null
+  client_ref?: string | null
+  sold_at?: Date | string
   created_at?: Date | string
   confirmed_at?: Date | string | null
   ready_at?: Date | string | null
@@ -2379,6 +2485,8 @@ export type ordersUpdateWithoutCustomerInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2415,6 +2523,8 @@ export type ordersUncheckedUpdateWithoutCustomerInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2450,6 +2560,8 @@ export type ordersUncheckedUpdateManyWithoutCustomerInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2478,6 +2590,8 @@ export type ordersUpdateWithoutCashierInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2514,6 +2628,8 @@ export type ordersUncheckedUpdateWithoutCashierInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2549,6 +2665,8 @@ export type ordersUncheckedUpdateManyWithoutCashierInput = {
   points_earned?: Prisma.IntFieldUpdateOperationsInput | number
   points_redeemed?: Prisma.IntFieldUpdateOperationsInput | number
   cancel_reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  client_ref?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  sold_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   confirmed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   ready_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
@@ -2655,6 +2773,8 @@ export type ordersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
+  client_ref?: boolean
+  sold_at?: boolean
   created_at?: boolean
   confirmed_at?: boolean
   ready_at?: boolean
@@ -2694,6 +2814,8 @@ export type ordersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
+  client_ref?: boolean
+  sold_at?: boolean
   created_at?: boolean
   confirmed_at?: boolean
   ready_at?: boolean
@@ -2726,6 +2848,8 @@ export type ordersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
+  client_ref?: boolean
+  sold_at?: boolean
   created_at?: boolean
   confirmed_at?: boolean
   ready_at?: boolean
@@ -2758,6 +2882,8 @@ export type ordersSelectScalar = {
   points_earned?: boolean
   points_redeemed?: boolean
   cancel_reason?: boolean
+  client_ref?: boolean
+  sold_at?: boolean
   created_at?: boolean
   confirmed_at?: boolean
   ready_at?: boolean
@@ -2765,7 +2891,7 @@ export type ordersSelectScalar = {
   cancelled_at?: boolean
 }
 
-export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "fulfilment" | "points_earned" | "points_redeemed" | "cancel_reason" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
+export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "fulfilment" | "points_earned" | "points_redeemed" | "cancel_reason" | "client_ref" | "sold_at" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
 export type ordersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customer?: boolean | Prisma.orders$customerArgs<ExtArgs>
   cashier?: boolean | Prisma.orders$cashierArgs<ExtArgs>
@@ -2847,6 +2973,33 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     points_earned: number
     points_redeemed: number
     cancel_reason: string | null
+    /**
+     * *
+     *    * The device's own identity for a bill it closed with no connection (ADR 0019).
+     *    *
+     *    * A UUID the till generated, unique here — which is what makes the replay idempotent:
+     *    * a retry after a timeout, or the same batch sent twice, writes one order because the
+     *    * second insert is refused by this index. Null on every bill the server witnessed,
+     *    * so `client_ref IS NOT NULL` is also the answer to "was this recorded offline".
+     */
+    client_ref: string | null
+    /**
+     * *
+     *    * The instant the sale happened for the books — the day every day-bucketed read
+     *    * files it under, and the reason `created_at` is no longer asked (ADR 0019
+     *    * decision 4; the rule is `src/lib/sale-instant.ts`).
+     *    *
+     *    * For an ordinary sale this is the server's now, the same instant `completed_at`
+     *    * gets. For a replayed offline bill it is the **device's** instant, which is why the
+     *    * two columns exist separately: a walk-in sale completed at 21:00 and synced at 08:12
+     *    * is yesterday's takings, and `created_at`/`completed_at` would file it today.
+     *    *
+     *    * A pre-order that is still pending carries the creation instant here and nothing reads
+     *    * it — every day bucket also filters on a terminal status, because a sale that has not
+     *    * happened yet has no sale instant. `completeOrder` sets it at handover, which is when
+     *    * the goods and the money actually moved.
+     */
+    sold_at: Date
     created_at: Date
     confirmed_at: Date | null
     ready_at: Date | null
@@ -3305,6 +3458,8 @@ export interface ordersFieldRefs {
   readonly points_earned: Prisma.FieldRef<"orders", 'Int'>
   readonly points_redeemed: Prisma.FieldRef<"orders", 'Int'>
   readonly cancel_reason: Prisma.FieldRef<"orders", 'String'>
+  readonly client_ref: Prisma.FieldRef<"orders", 'String'>
+  readonly sold_at: Prisma.FieldRef<"orders", 'DateTime'>
   readonly created_at: Prisma.FieldRef<"orders", 'DateTime'>
   readonly confirmed_at: Prisma.FieldRef<"orders", 'DateTime'>
   readonly ready_at: Prisma.FieldRef<"orders", 'DateTime'>

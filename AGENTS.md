@@ -12,6 +12,21 @@ new and durable, put it in the file that owns it.
 
 ---
 
+## Agent skills
+
+### Issue tracker
+
+Local Markdown, one ticket per file under `.scratch/<feature>/issues/`.
+See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Standard skill vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context glossary and ADRs. See `docs/agents/domain.md`.
+
 ## Who maintains this
 
 **The agent working in this repo is the one who develops and maintains this system.**
@@ -69,17 +84,15 @@ Recorded so a session starts from the truth rather than from the last commit mes
   product image (a photo is a link now — ADR 0014), RTL, object storage, and a
   reconciliation over a date range rather than a day.
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no
-  browser end-to-end test in CI (`route:audit` stands in for one — see Traps), the
+  field pilot; Chromium now exercises the offline flow in CI, but the
   restore in `docs/homelab-deploy.md` §7 is a recipe that no script, check or CI job
   rehearses, nothing has ever loaded `deploy/systemd/` — those units were reviewed by
   reading, never by `systemd-analyze verify` or a real boot — there is no
-  experience of real data volume in reports or analytics, and **the till's device
-  storage has no automated test at all**: `offline-db.ts` is IndexedDB, the suite is a
-  Node environment, and the repository refuses the dependency that would fake it (rule
-  2). The offline *decisions* and the seam above it are tested
-  (`tests/till-store.test.ts`, with storage injected); the file that opens the database
-  is not. "Green" means *correct as far as the tests reach*; it does not mean a shop has
-  used it.
+  experience of real data volume in reports or analytics. **Actual IndexedDB and
+  the cashier outage/replay flow are now tested** by `scripts/offline-browser.ts`;
+  Playwright is an explicitly approved dev-only dependency, not a fake database.
+  Hardware power loss, browser eviction and physical printer behavior remain
+  unmeasured. "Green" means *correct as far as the tests reach*, not shop field use.
 
 ---
 
@@ -147,7 +160,8 @@ owner.
 | `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
 | `npm run build` / `npm run start` | Production build, then the same custom server. | — |
 | `npm run verify` | `typecheck` → `ui:audit` → `doc:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
-| `npm run verify:all` | That gate, then everything that needs a built, served app: `acceptance` → `route:audit` → `limiter:race`, in that order, stopping at the first failure. One build, made by the journey and reused. What CI runs. | Postgres |
+| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `limiter:race` → `offline:browser`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium |
+| `npm run offline:browser` | Actual Chromium/IndexedDB offline cash, replay/reconnect and recovery on a test-only scratch schema; `-- --skip-build` reuses the build. Install with `npx playwright install chromium`. | TEST_DATABASE_URL + Chromium |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
@@ -267,7 +281,8 @@ weight. They are checked in `prisma/schema.prisma` and asserted by the suite.
   sales included: a number issued *beside* a borrowed range could never be placed in
   the series afterwards. So the walk-in sale takes the device's own number
   (`deviceNumbers`) and `claimNumberFromBlock` judges it — open loan, inside the range,
-  and **strictly past the mark**: a number at or below the deepest one the loan has
+  and **exactly next for invoices** (strictly past the mark for call numbers): a
+  number at or below the deepest one the loan has
   recorded is two customers and one ticket, which is why that refusal is a 409 and
   not a `ValidationError`.
 - **`payments.amount` is always positive**, and `payments.direction`
@@ -354,13 +369,14 @@ Then, for anything a person will look at:
   scratch schema, and drives the whole journey.
 
 **CI runs all of it** (`.github/workflows/verify.yml`): `verify` in one job, then
-`acceptance` + `route:audit --skip-build` + `limiter:race --skip-build` in a second,
+`acceptance` + `route:audit --skip-build` + `limiter:race --skip-build` +
+`offline:browser --skip-build` in a second,
 each with a PostgreSQL 17 service. Node is pinned by `.nvmrc` and `engines.node`, so
 the version the suite runs on is the version a renter is told to install.
 
-Locally the same thing is **one command**, `npm run verify:all`: it runs those four in
+Locally the same thing is **one command**, `npm run verify:all`: it runs those five in
 dependency order — nothing is built for the first, the journey builds once, and the
-last two walk the artefact it produced — and stops at the first failure, because every
+last three walk the artefact it produced — and stops at the first failure, because every
 later gate would be measuring a commit that is already known to be broken. It is the
 release check; `verify` alone is the inner loop. The two jobs and this command are
 deliberately the same set, so CI cannot go green on something this does not run.

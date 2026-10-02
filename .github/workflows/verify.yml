@@ -124,3 +124,13 @@ jobs:
       # both — the deployment ADR 0012 exists for. Same scratch schema and port
       # story as the audit above, and the same reuse of the build.
       - run: npm run limiter:race -- --skip-build
+
+      # Real browser/IndexedDB, never a memory or fake database adapter.
+      - run: npx playwright install --with-deps chromium
+      - run: npm run offline:browser -- --skip-build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: offline-browser-evidence
+          path: test-results/
+          if-no-files-found: ignore

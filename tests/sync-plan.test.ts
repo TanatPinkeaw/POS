@@ -25,6 +25,8 @@ function bill(overrides: Partial<QueuedBill> = {}): QueuedBill {
     soldDay: '2026-09-29',
     lines: [{ productId: 'p-coffee', quantity: 1, unitPrice: 45 }],
     totalThb: 45,
+    receivedThb: 45,
+    tax: { isVatInvoice: false, vatRatePercent: null, netThb: 45, vatThb: 0 },
     attempts: 0,
     nextAttemptAt: NOW,
     ...overrides,
@@ -62,7 +64,7 @@ describe('what an automatic attempt may try', () => {
     const failed = recordFailure(bill(), NOW);
     const due = dueForReplay([failed, bill({ clientRef: 'next', sequence: 2 })], NOW);
 
-    expect(due.map((entry) => entry.clientRef)).toEqual(['next']);
+    expect(due.map((entry) => entry.clientRef)).toEqual([]);
   });
 
   it('comes back to it once the wait is over', () => {
@@ -149,6 +151,6 @@ describe('what the till’s banner says', () => {
     const summary = pendingSummary([recordFailure(bill(), NOW), bill({ clientRef: 'later', sequence: 2 })], NOW);
 
     expect(summary.count).toBe(2);
-    expect(summary.dueCount).toBe(1);
+    expect(summary.dueCount).toBe(0);
   });
 });

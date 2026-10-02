@@ -14,6 +14,7 @@
 import { listAttendanceRows } from './attendance';
 import { prisma } from './db';
 import { fromDecimal } from './money';
+import { soldIn } from './sale-instant';
 import {
   REPORT_TITLES,
   adjustmentReasonLabel,
@@ -92,7 +93,13 @@ async function salesSummaryRows(range: ReportRange): Promise<ReportCell[][]> {
        * written down in ADR 0004 rather than left as a surprise in a spreadsheet.
        */
       status: { in: ['completed', 'refunded'] },
-      completed_at: { gte: range.fromDate, lt: range.toExclusive },
+      /*
+       * The range is a range of *sale instants*, not of when the server heard about them
+       * (`soldIn`, ADR 0019 decision 4): a bill closed offline at 21:00 and replayed at 08:12
+       * belongs to the day it was sold, and this sheet is the one an owner reads against the
+       * bank statement.
+       */
+      ...soldIn({ from: range.fromDate, toExclusive: range.toExclusive }),
     },
     orderBy: { completed_at: 'asc' },
     include: {
@@ -112,7 +119,12 @@ async function salesSummaryRows(range: ReportRange): Promise<ReportCell[][]> {
 
   return orders.map((order) => [
     order.order_number,
-    bangkokDateTimeString(order.completed_at ?? order.created_at),
+    /*
+     * When the sale happened, which for a replayed bill is the device's instant rather than
+     * the moment it arrived. The sheet is read beside the till's own slips, so it has to name
+     * the time on the slip.
+     */
+    bangkokDateTimeString(order.sold_at),
     orderTypeLabel(order.order_type),
     fromDecimal(order.subtotal_amount),
     fromDecimal(order.discount_amount),
@@ -140,7 +152,9 @@ async function productPerformanceRows(range: ReportRange): Promise<ReportCell[][
       // same period disagree about the same transaction.
       order: {
         status: { in: ['completed', 'refunded'] },
-        completed_at: { gte: range.fromDate, lt: range.toExclusive },
+        // The same window as the sales summary, for the same reason — the two sheets of one
+        // period must not disagree about which sales are in it.
+        ...soldIn({ from: range.fromDate, toExclusive: range.toExclusive }),
       },
     },
     select: {

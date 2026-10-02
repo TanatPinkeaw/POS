@@ -26,6 +26,7 @@
     "acceptance": "tsx scripts/acceptance.ts",
     "route:audit": "tsx scripts/route-audit.ts",
     "limiter:race": "tsx scripts/rate-limit-race.ts",
+    "offline:browser": "tsx scripts/offline-browser.ts",
     "bank:bridge": "tsx scripts/bank-bridge.ts",
     "notify:worker": "tsx scripts/notify-worker.ts",
     "backup": "tsx scripts/backup.ts",
@@ -59,6 +60,7 @@
     "zod": "^4.1.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^24.7.0",
     "@types/pg": "^8.23.1",
     "@types/qrcode": "^1.5.5",

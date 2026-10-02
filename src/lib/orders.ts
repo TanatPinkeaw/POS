@@ -40,7 +40,7 @@ import { verifyPickupToken } from './pickup-token';
 import { applyPointChange } from './points';
 import { buildSettlement, type SettlementBreakdown, type SettlementRequest } from './settlement';
 import { formatQueueNumber } from './queue-number';
-import { claimNumberFromBlock } from './number-blocks';
+import { assertNumberBlocksOwnedBy, claimNumberFromBlock } from './number-blocks';
 import {
   allocateQueueNumber,
   allocateReceiptNumber,
@@ -182,7 +182,7 @@ async function priceCart(db: Db, lines: CartLine[]): Promise<PricedLine[]> {
  * numbered with yesterday's date is the kind of thing a shop notices and nobody
  * can reproduce later.
  */
-async function nextOrderNumber(db: Db): Promise<string> {
+export async function nextOrderNumber(db: Db): Promise<string> {
   const rows = await db.$queryRaw<{ order_number: string }[]>`
     SELECT 'PO-' || to_char(NOW() AT TIME ZONE 'Asia/Bangkok', 'YYYYMMDD') || '-' ||
            lpad(nextval('order_number_seq')::text, 6, '0') AS order_number
@@ -247,8 +247,13 @@ async function customerPointsBalance(db: Db, customerId: string | null): Promise
 
 /**
  * The tax facts frozen onto one sale, plus the receipt number it consumes.
+ *
+ * Exported with `resolveSaleTax` because the offline replay needs exactly this step and
+ * must not grow a second copy of it: the moment a sale decides to issue a tax invoice is
+ * the moment a receipt number is claimed or allocated, and two implementations of that
+ * would be two ways for the series to acquire a hole.
  */
-interface SaleTax {
+export interface SaleTax {
   breakdown: VatBreakdown;
   receiptNumber: string | null;
   vatRateUsed: number | null;
@@ -292,7 +297,7 @@ export interface DeviceNumbers {
  * receipt number, so the moment the decision to issue one is made is the moment the number
  * has to be either claimed or allocated.
  */
-async function resolveSaleTax(
+export async function resolveSaleTax(
   db: Db,
   amountThb: number,
   at: Date,
@@ -343,6 +348,7 @@ async function resolveSaleTax(
       blockId: deviceReceipt.blockId,
       kind: 'receipt',
       value: deviceReceipt.value,
+      day: bangkokDateString(at),
     });
 
     /*
@@ -441,8 +447,12 @@ function lineSummaries(priced: PricedLine[]): OrderLineSummary[] {
  * not from a second read of the clock: an offline bill replayed in the morning belongs to
  * the day it was sold (phase 4 of the spec), and a number that was right when it was
  * printed must not become wrong because the sync was late.
+ *
+ * Exported for `offline-sales.ts`, which replays a bill under exactly this rule: the day a
+ * claim is judged against is the *sale's* instant, and a second implementation of that is
+ * a second answer to a question the numbering protocol cannot afford two answers to.
  */
-async function claimCallNumber(
+export async function claimCallNumber(
   tx: Db,
   claim: DeviceNumberClaim,
   at: Date,
@@ -509,6 +519,7 @@ export async function createPosSale(input: {
      */
     if (input.deviceNumbers) {
       await lockShopRow(tx);
+      await assertNumberBlocksOwnedBy(tx, [input.deviceNumbers.receipt, input.deviceNumbers.call], input.cashierId);
     }
 
     const priced = await priceCart(tx, input.lines);
@@ -577,6 +588,15 @@ export async function createPosSale(input: {
         points_redeemed: settlement.pointsRedeemed,
         completed_at: at,
         /*
+         * The instant the books file this under, which for a sale the server witnessed
+         * is the same instant as `completed_at`. Stated explicitly rather than left to
+         * the column's default, because "the default equals the sale instant" is a
+         * coincidence that stops being true in exactly one case — the replay in
+         * `offline-sales.ts` — and a rule that holds only by coincidence is the one a
+         * later edit breaks (`src/lib/sale-instant.ts`).
+         */
+        sold_at: at,
+        /*
          * Walk-in only, and stated here rather than inferred later from
          * `order_type`: this is the path where a customer waits for their goods,
          * so this is where the number that waits with them is minted.
@@ -628,6 +648,12 @@ export async function createPosSale(input: {
         amount: leg.amount,
         received_amount: leg.method === 'cash' ? (input.settlement.receivedCash ?? leg.amount) : null,
         change_amount: leg.method === 'cash' ? settlement.changeThb : null,
+        /*
+         * The instant the money moved, which is the sale's own instant rather than the
+         * database's `now()` — the same figure that reaches `sold_at`, so a payment-day
+         * bucket and a sales-day bucket cannot disagree about which day a bill is in.
+         */
+        paid_at: at,
       })),
     });
 
@@ -1004,7 +1030,13 @@ export async function completeOrder(input: {
      * handover already has two identifiers — the bill number and the PIN it was
      * collected with (ADR 0017).
      */
-    const tax = await resolveSaleTax(tx, finalAmount, new Date());
+    /*
+     * One instant for the handover, taken once: it stamps the tax document, the payment
+     * legs and `sold_at`, and a collection at 23:59 must not be filed under tomorrow
+     * because the tax step and the status change each read the clock for themselves.
+     */
+    const at = new Date();
+    const tax = await resolveSaleTax(tx, finalAmount, at);
 
     for (const item of order.items) {
       const balanceAfter = await commitReservedStock(tx, {
@@ -1029,6 +1061,7 @@ export async function completeOrder(input: {
         amount: leg.amount,
         received_amount: leg.method === 'cash' ? (input.settlement.receivedCash ?? leg.amount) : null,
         change_amount: leg.method === 'cash' ? settlement.changeThb : null,
+        paid_at: at,
       })),
     });
 
@@ -1055,7 +1088,14 @@ export async function completeOrder(input: {
       where: { id: order.id },
       data: {
         status: 'completed',
-        completed_at: new Date(),
+        completed_at: at,
+        /*
+         * A pre-order's sale instant is its handover, not its placement: the goods and the
+         * money moved here. `placePreOrder` leaves the column at its default (the
+         * placement instant) and nothing reads it there, because every day-bucketed
+         * query also filters on a terminal status.
+         */
+        sold_at: at,
         cashier_id: input.employeeId,
         discount_amount: discountTotal,
         final_amount: finalAmount,

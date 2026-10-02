@@ -75,7 +75,29 @@ async function counters(): Promise<{ receipt: number; queue: number; queueDay: s
   };
 }
 
+describe('independent days', () => {
+  it('can close today after reserving tomorrow without losing either counter', async () => {
+    await allocateQueueNumber(prisma, MIDDAY(TODAY));
+    const today = await borrowCallNumbers(TODAY);
+    await borrowCallNumbers(TOMORROW);
+    await reportNumberBlock({ id: today.id, lastUsed: 5, userId: people.employeeId });
+    expect((await allocateQueueNumber(prisma, MIDDAY(TODAY)))?.value).toBe(6);
+    expect(await allocateQueueNumber(prisma, MIDDAY(TOMORROW))).toBeNull();
+  });
+});
+
 describe('borrowing a range', () => {
+  it('retries the same reservation without advancing the counter twice', async () => {
+    const id = crypto.randomUUID();
+    const request = { id, series: 'receipt' as const, size: 10, deviceLabel: 'counter', userId: people.employeeId };
+    const [first, second] = await Promise.all([openNumberBlock(request), openNumberBlock(request)]);
+    expect(first.id).toBe(second.id);
+    expect(first.from).toBe(1);
+    expect(second.to).toBe(10);
+    expect(await prisma.number_blocks.count()).toBe(1);
+    await expect(openNumberBlock({ ...request, userId: people.adminId })).rejects.toMatchObject({ code: 'NUMBER_BLOCK_ID_CONFLICT' });
+  });
+
   it('moves the shop’s counter to the end of it, and records who asked', async () => {
     const block = await borrowReceipts();
 

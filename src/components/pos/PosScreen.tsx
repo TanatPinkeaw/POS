@@ -23,12 +23,14 @@ export function PosScreen({
   initialTotal,
   categories,
   shop,
+  cashierId,
 }: {
   initialProducts: ProductView[];
   initialTotal: number;
   categories: CatalogueCategory[];
   /** Handed to the receipt so it prints the shop's own identity. */
   shop: ShopView;
+  cashierId: string;
 }) {
   return (
     <Till
@@ -36,6 +38,7 @@ export function PosScreen({
       initialTotal={initialTotal}
       categories={categories}
       shop={shop}
+      cashierId={cashierId}
     />
   );
 }

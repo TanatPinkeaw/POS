@@ -2228,6 +2228,8 @@ export const OrdersScalarFieldEnum = {
   points_earned: 'points_earned',
   points_redeemed: 'points_redeemed',
   cancel_reason: 'cancel_reason',
+  client_ref: 'client_ref',
+  sold_at: 'sold_at',
   created_at: 'created_at',
   confirmed_at: 'confirmed_at',
   ready_at: 'ready_at',

@@ -1,7 +1,7 @@
 /**
  * Every gate, in the order they depend on each other, as one command.
  *
- * The four stay separate commands, and that is not an accident to be tidied away: a
+ * The gates stay separate commands, and that is not an accident to be tidied away: a
  * failing unit test should report in two minutes rather than after a Next build, which
  * is exactly why CI splits them into two jobs. What this adds is the *release*
  * question asked once — is this commit green all the way through — without four
@@ -15,8 +15,9 @@
  *      also the only step that does.
  *   3. `route:audit` — every screen renders styled, against the build step 2 produced.
  *   4. `limiter:race` — two servers, one database, one limit (ADR 0012).
+ *   5. `offline:browser` — actual Chromium storage and cashier outage/replay journey.
  *
- * Steps 3 and 4 reuse step 2's build with `--skip-build`, deliberately. A release
+ * Steps 3–5 reuse step 2's build with `--skip-build`, deliberately. A release
  * check should be checking *one* artefact: rebuilding between gates would mean the
  * markup the audit walked is not the markup the journey sold through, and a build that
  * differs by nothing still costs a minute each time. `--skip-build` therefore means
@@ -77,6 +78,10 @@ const steps: Step[] = [
     label: 'limiter race (two servers, one database, one limit)',
     command: `npm run limiter:race --${reuseBuild}${keepFlag}`,
   },
+  {
+    label: 'offline browser (Chromium, IndexedDB, cash replay and drawer close)',
+    command: `npm run offline:browser --${reuseBuild}${keepFlag}`,
+  },
 ];
 
 /** `1m 04s` rather than `64`, because a sweep is measured in minutes. */
@@ -92,8 +97,8 @@ console.log('POS — every gate, in order');
 console.log('==========================');
 console.log(
   skipBuild
-    ? '\n4 steps. No build: every step reuses the existing `.next`.'
-    : '\n4 steps. The build is made once, by the journey, and the later gates reuse it.',
+    ? '\n5 steps. No build: every step reuses the existing `.next`.'
+    : '\n5 steps. The build is made once, by the journey, and the later gates reuse it.',
 );
 
 const results: Result[] = [];

@@ -16,7 +16,7 @@
  *      inside the caller's transaction, so a sale that rolls back does not burn
  *      a number and the series stays gapless.
  */
-import type { shops } from '../generated/prisma/client';
+import { Prisma, type shops } from '../generated/prisma/client';
 
 import { bangkokDateString, bangkokParts, dateColumnFromDay } from './bangkok-time';
 import { prisma } from './db';
@@ -259,6 +259,28 @@ export async function allocateReceiptNumber(
 }
 
 /**
+ * The number the queue counter must resume from on `day`, as a SQL fragment.
+ *
+ * The shop row remembers the last number it issued, but `queue_running_day` resets the
+ * counter at Bangkok midnight — and a blind reset to zero is exactly the bug this guards.
+ * A device that reserved tomorrow's call numbers before today ended has already advanced
+ * the counter, so "start again at 1" would reissue numbers that are already printed on
+ * slips. History is what keeps the reset honest: the highest number actually sold today
+ * (`orders.queue_number`) and the highest reported loan mark for today
+ * (`number_blocks.last_used_number`) — whichever is further.
+ *
+ * A fragment rather than two inline expressions because `allocateQueueNumber` here and
+ * `openNumberBlock` in `number-blocks.ts` need precisely this, and a second copy of a
+ * numbering rule is a second answer that cannot afford to drift.
+ */
+export function queueCounterSeed(day: string | null): Prisma.Sql {
+  return Prisma.sql`GREATEST(
+               COALESCE((SELECT MAX(queue_number) FROM orders WHERE queue_day = ${day}::date), 0),
+               COALESCE((SELECT MAX(last_used_number) FROM number_blocks WHERE series = 'queue' AND day = ${day}::date AND reported_at IS NOT NULL), 0)
+             )`;
+}
+
+/**
  * Reserves the next call number for the day, or null when no shop is set up.
  *
  * Same serialisation as `allocateReceiptNumber`, and for the same reason: the
@@ -289,7 +311,7 @@ export async function allocateQueueNumber(
     UPDATE "shops"
        SET "queue_running_number" = CASE
              WHEN "queue_running_day" = ${day}::date THEN "queue_running_number" + 1
-             ELSE 1
+             ELSE ${queueCounterSeed(day)} + 1
            END,
            "queue_running_day" = ${day}::date
      WHERE "id" = ${SHOP_ROW_ID}

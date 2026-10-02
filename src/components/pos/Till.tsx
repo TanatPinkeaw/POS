@@ -23,7 +23,7 @@ import type { ProductView } from '@/lib/product-view';
 import type { ShopView } from '@/lib/shop-view';
 import { vatLabel } from '@/lib/shop-view';
 import { APPROVAL_HEADER } from '@/lib/supervisor-view';
-import { offlineNotice } from '@/lib/till-store';
+import { numbersRemaining, offlineNotice } from '@/lib/till-store';
 
 import { PaySheet } from './PaySheet';
 import { RefundDialog, type RefundTarget } from './RefundDialog';
@@ -57,11 +57,13 @@ export function Till({
   initialTotal,
   categories,
   shop,
+  cashierId,
 }: {
   initialProducts: ProductView[];
   initialTotal: number;
   categories: CatalogueCategory[];
   shop: ShopView;
+  cashierId: string;
 }) {
   const { shift, defaultInitialCash, loading, refresh, open, close } = useOpenShift();
   const [payOpen, setPayOpen] = useState(false);
@@ -70,6 +72,8 @@ export function Till({
   const [shiftError, setShiftError] = useState<string | null>(null);
   const [initialCash, setInitialCash] = useState('');
   const [actualCash, setActualCash] = useState('');
+  const [deviceLabel, setDeviceLabel] = useState('เครื่องหน้าร้าน');
+  const [prepareOpen, setPrepareOpen] = useState(false);
   /*
    * The bill being refunded, if any. Held here rather than inside the receipt
    * overlay because the refund outlives it: the sheet closes, the dialog stays
@@ -85,6 +89,8 @@ export function Till({
     initialProducts,
     initialTotal,
     shift,
+    shiftLoaded: !loading,
+    cashierId,
     shop,
     onSold: refresh,
     discountLimitThb: shop.supervisorDiscountLimitThb,
@@ -184,7 +190,8 @@ export function Till({
     setShiftBusy(true);
     setShiftError(null);
     try {
-      await close(Number(actualCash || 0));
+      if (!till.writer || till.busy || till.deviceBusy) throw new Error('รอเครื่องพร้อมและหยุดรับเงินก่อนปิดกะ');
+      await till.closePreparedShift(() => close(Number(actualCash || 0)));
       setShiftOpen(false);
       setActualCash('');
     } catch (caught) {
@@ -250,6 +257,27 @@ export function Till({
         </div>
       </div>
 
+      {!till.writer && till.offline?.loaded ? <InlineNotice tone="danger">เครื่องนี้ไม่ได้สิทธิ์เขียนบิล — ปิดแท็บขายอื่นแล้วเปิดหน้านี้ใหม่</InlineNotice> : null}
+      <div className="ln-row">
+        <Button variant="secondary" disabled={!shift || !till.writer || till.busy || till.deviceBusy} onClick={() => setPrepareOpen(true)}>เตรียมเครื่องขายออฟไลน์</Button>
+        <Button variant="secondary" loading={till.deviceBusy} disabled={!till.writer || till.busy} onClick={() => void till.sendPending().catch(() => undefined)}>ส่งบิลตอนนี้</Button>
+        {till.offline?.snapshot?.heldBlocks.length ? <Button variant="secondary" disabled={!till.writer || till.busy || till.deviceBusy} onClick={() => void till.sendPending(true, true).catch(() => undefined)}>ส่งบิลและคืนชุดเลข</Button> : null}
+        {till.offline?.snapshot?.heldBlocks.length ? <span>เลขใบกำกับเหลือ {numbersRemaining(till.offline.snapshot).receipt ?? '—'} · เลขคิวเหลือ {numbersRemaining(till.offline.snapshot).call ?? '—'}</span> : null}
+      </div>
+      {till.offline?.snapshot ? <p>แคช {till.offline.snapshot.catalogue.length} รายการ · บันทึก {bangkokTimeString(new Date(till.offline.snapshot.capturedAt))} · เปิดหน้าใหม่ขณะออฟไลน์ไม่ได้</p> : null}
+      {till.offline?.lastSyncMessage ? <InlineNotice tone="info">{till.offline.lastSyncMessage}</InlineNotice> : null}
+      <Overlay open={prepareOpen} onClose={() => setPrepareOpen(false)} title="เตรียมเครื่องขายออฟไลน์" footer={<Button loading={till.deviceBusy} onClick={() => void till.prepareOffline(deviceLabel).then(() => setPrepareOpen(false)).catch((error: unknown) => till.setOfflineWarning(error instanceof Error ? error.message : 'เตรียมเครื่องไม่สำเร็จ'))}>ยืนยันเตรียมเครื่อง</Button>}>
+        <InlineNotice tone="warning">เครื่องนี้จะถือเลขใบกำกับและเลขคิว ร้านออกเลขชุดเดียวกันจากเครื่องอื่นไม่ได้จนคืนชุดเลข เครื่องที่เตรียมแล้วรับเฉพาะเงินสดไม่ผูกสมาชิกแม้เน็ตกลับมา ส่งบิลและคืนชุดเลขก่อนใช้พร้อมเพย์ สมาชิก หรือส่วนลดอนุมัติ ต้องส่งบิลให้ครบก่อนปิดกะ ห้ามล้างข้อมูลเบราว์เซอร์</InlineNotice>
+        <TextField id="offline-device-label" label="ชื่อเครื่อง" value={deviceLabel} onChange={(event) => setDeviceLabel(event.target.value)} help="ใช้ระบุเครื่องที่ถือชุดเลข ไม่ใช่รหัสผ่าน" />
+      </Overlay>
+      {till.offline?.queue.some((bill) => bill.fulfilment !== 'collected') ? <section aria-label="คิวในเครื่อง">
+        <h2>คิวในเครื่อง · ยังไม่ส่ง</h2>
+        {till.offline.queue.filter((bill) => bill.fulfilment !== 'collected').map((bill) => <div key={bill.clientRef}>
+          <strong>{bill.numbers?.call?.value ?? 'ไม่มีเลขคิว'}</strong> · {bill.lines.map((line) => `${till.offline?.snapshot?.catalogue.find((p) => p.productId === line.productId)?.name ?? 'สินค้า'} ×${line.quantity}`).join(' · ')}
+          <Button variant="secondary" disabled={till.deviceBusy || !till.writer} onClick={() => void till.markLocalTicket(bill.clientRef, bill.fulfilment === 'ready' ? 'collected' : 'ready').catch(() => till.setOfflineWarning('บันทึกคิวไม่ได้'))}>{bill.fulfilment === 'ready' ? 'รับแล้ว' : 'เสร็จแล้ว'}</Button>
+          {bill.refusal ? <p role="alert">{bill.refusal}</p> : null}
+        </div>)}
+      </section> : null}
       {device ? (
         <InlineNotice tone={device.tone} title={device.title}>
           {device.body}

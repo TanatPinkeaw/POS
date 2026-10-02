@@ -310,7 +310,7 @@ that `migrate dev` would propose dropping.
 | The wizard says the system is already set up | Correct — a shop row exists. It will not re-initialise. To start over on a *throwaway* database only: `DELETE FROM shops;` then reload `/setup`. |
 | Forgot the administrator password | Reset it from the database, replacing the phone number and hash. Generate a hash, then: `UPDATE users SET password_hash = '<hash>' WHERE phone = '08xxxxxxxx';` |
 | A sale is refused with "drawer is not open" | Open the drawer first (`/pos` → เปิดลิ้นชัก). This is deliberate: cash must belong to a drawer. |
-| The till shows a bar reading **โหมดออฟไลน์**, and sales are refused with "ต่อเน็ตก่อนขาย" | The till cannot reach its server: the shop's connection dropped, the router is down, or the machine this runs on was restarted. Check the till's own network first, then `docs/homelab-deploy.md` §4. **Selling with no connection is not enabled in this version** (ADR 0019) — the till says so instead of failing silently, and the refusal names what is missing. This is the one symptom where the honest fix is "get the line back". |
+| The till shows a bar reading **โหมดออฟไลน์**, and a sale is refused with "ต่อเน็ตก่อนขาย" | The till cannot reach its server: the shop's connection dropped, the router is down, or the machine this runs on was restarted. Check the till's own network first, then `docs/homelab-deploy.md` §4. Cash still works on a till that was **explicitly prepared** while online (§10) — that is the whole point of preparing before an outage. A till that was never prepared refuses the sale instead of failing silently, and the refusal names what is missing, because it has no catalogue or numbers on the device. |
 | Imported stock twice | Stock was added twice, as documented. Correct it with a stock adjustment (`REASON_CORRECTION`) so the audit trail explains it. |
 | Signing in works on this machine but not on a tablet | The production session cookie is `Secure`, so it is only stored over `https://` — browsers exempt `localhost`, which is why the server itself works and the tablet does not. The deployment needs a secure URL; see `docs/homelab-deploy.md` §4. |
 | `pg_dump: command not found` from `npm run backup` | Only the PostgreSQL client is missing: `apt install postgresql-client-17` for a 17 server (the plain package is usually a version behind, which fails differently — `aborting because of server version mismatch`). Windows gets one with the PostgreSQL installer. |
@@ -338,18 +338,9 @@ Recorded here so nobody discovers it during service:
   `/admin/settings`.
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.
-- **No offline selling.** The till needs the network it is served from. When that network
-drops the till now says so — a bar above the basket, and a refusal that names the next step
-rather than a generic error — but it cannot take money for a bill it cannot record, so a shop
-with no connection cannot trade yet. The work is specified (`docs/offline-till-spec.md`,
-ADR 0019) and half built; what is missing is the sending, so nothing may borrow numbers
-until that lands.
-
-  One setting from that work is already on the product list: **กันออฟไลน์**
-  (`/admin/products` → `กันออฟไลน์` on a row). It is how many of an item the till must
-  *not* sell while the network is down — the last two bottles a pre-order is on its way to
-  collect, say. It changes no online sale and nothing today depends on it, because the till
-  cannot sell offline yet; set it if you already know which items you would protect.
+- **No cold offline start.** Cash works on an already-loaded, explicitly prepared
+  till; opening a new page with no connection does not. Offline PromptPay, member
+  lookup/points, pre-orders and refunds are not supported. See the procedure below.
 - No rate limiting on anything you are *signed in* to, with one exception:
   **enrolling customers**. Signing in, the supervisor PIN, the setup wizard,
   display pairing and the bank webhook are counted because they need no session;
@@ -358,3 +349,49 @@ until that lands.
   the account — so a colleague at the next till is unaffected, and signing out does
   not reset it. Nothing a person types reaches ten. A password typed wrong ten
   times in a quarter of an hour still makes you wait, one account at a time.
+
+## 10. Prepare the till before a network outage
+
+1. Use Chrome/Edge on **HTTPS or localhost**, normal browser storage, and only one
+   selling tab. Open the drawer while connected. Do not use private browsing or
+   clear site data while the till holds bills or numbers.
+2. Choose **เตรียมเครื่องขายออฟไลน์**, enter **ชื่อเครื่อง**, read the warning and
+   confirm. Preparation downloads the active catalogue in pages and borrows 200
+   invoice numbers (VAT shops) plus 200 call numbers each for today and tomorrow.
+   Check the **แคช** item count/time and remaining numbers before relying on it.
+   If preparation is interrupted, use the same device/account to retry or send/release;
+   the persisted request identity recovers an uncertain borrow.
+3. The prepared till is **cash-only without members even online**. For ordinary
+   PromptPay, points/member or approved over-limit discounts, choose **ส่งบิลและ
+   คืนชุดเลข** first. Do not prepare a second device: the borrowed series is frozen
+   elsewhere, and this is not multi-register support.
+4. During an outage, stay on this loaded page. Search/scan the cached products and
+   take cash normally. **ยืนยันรับเงิน** succeeds only after the local transaction
+   commits. A storage error means **do not confirm receipt of money**: check the
+   device, do not keep pressing or clear its data. Pending money is not yet in the
+   server drawer figure. The **คิวในเครื่อง** buttons **เสร็จแล้ว / รับแล้ว** record
+   the local ticket; the customer display and other queue screens remain stale.
+5. **กันออฟไลน์** on the product row is the quantity kept back from the device's
+   snapshot. It does not reserve shelf stock against pre-orders/online sales. The
+   offline promise is weaker; replay accepts goods already handed over, and stock
+   disagreement becomes **สต็อกติดลบ — ต้องนับของจริง** on the admin dashboard.
+6. When connected, sending is automatic (reconnect/ten-second timer with retry
+   backoff); **ส่งบิลตอนนี้** retries immediately. A refused bill stays on the device
+   with its reason; later bills are not skipped. Keep the **same cashier account
+   and original drawer** until all bills have sent. Never delete a refused bill.
+7. Before normal **ปิดลิ้นชัก**, stop taking payments, reconnect and let the till
+   send every bill and return unused numbers. A failure leaves the drawer open.
+   The server also refuses a close while that cashier holds an open loan. If invoice
+   numbers run out, send/release while online and prepare again; at a year boundary
+   return the old invoice set and prepare a new one before selling.
+8. If the old device can never return, an admin uses **ชุดเลขออฟไลน์ที่ยังไม่คืน**
+   → **ตรวจและคืนชุดเลข**. Stop that device from selling, inspect **every actual
+   printed document**, enter the last printed number (blank only if none ever
+   printed), and check the evidence confirmation. The server's latest mark is not
+   evidence of unsent paper. Recovery unfreezes numbering but does **not** reconstruct
+   missing payments/stock; reconcile them separately with an accountant. Do not use
+   this to bypass an ordinary pending sync.
+
+The browser journey is automated with real Chromium/IndexedDB, not a field pilot.
+Device power loss, browser eviction and the actual receipt printer still need a
+shop rehearsal. A new page or refresh during a total outage cannot load the app.
