@@ -125,6 +125,9 @@ is a matter for the shop's own agreement outside this system.
   a full refund lands the balance on zero); a payout already made leaves a negative balance the
   next payout nets. The dashboard's stock valuation counts only owned products, and the
   consigned stock and shares owed are reported beside it in a separate block whose owed figure
-  is the ledger's own sum — so a consignor's goods are never filed as the shop's own. Nothing
-  yet refuses a consigned product offline or shows a consignor what they are owed — those are
-  tickets 07–09 under `.scratch/consignment/`.
+  is the ledger's own sum — so a consignor's goods are never filed as the shop's own. The till's
+  own view of a product carries `isConsigned`, the offline catalogue snapshot keeps it, and the
+  offline decision refuses a consigned line with a Thai message that names the next step
+  (connect) — while a pre-order, which completes online, is untouched. Nothing yet shows a
+  consignor what they are owed from the customer portal — that is ticket 09 under
+  `.scratch/consignment/`.

@@ -42,6 +42,15 @@ export interface ProductView {
    * Zero means no reserve. It is a device rule; nothing on the online sale path reads it.
    */
   offlineSafetyQty: number;
+  /**
+   * Whether the goods belong to a consignor rather than the shop (ADR 0023).
+   *
+   * The till needs this only for the offline path: a consigned sale owes a share the device
+   * cannot compute or record, so the offline rule refuses it (ADR 0023 §8). Online sale and
+   * pre-order read it nowhere — presence here is not a restriction on selling, which is why
+   * it is a boolean and not the consignor's identity.
+   */
+  isConsigned: boolean;
   /** A link to the picture, wherever the shop keeps it. Not necessarily renderable. */
   imageUrl: string | null;
   isActive: boolean;
@@ -60,6 +69,7 @@ export interface ProductRow {
   offline_safety_qty: number;
   image_url: string | null;
   is_active: boolean;
+  consignor_user_id: string | null;
 }
 
 export function toProductView(product: ProductRow): ProductView {
@@ -78,6 +88,7 @@ export function toProductView(product: ProductRow): ProductView {
       reserved_qty: product.reserved_qty,
     }),
     offlineSafetyQty: product.offline_safety_qty,
+    isConsigned: product.consignor_user_id !== null,
     imageUrl: product.image_url,
     isActive: product.is_active,
   };

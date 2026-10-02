@@ -64,8 +64,8 @@ function snapshot(overrides: Partial<TillSnapshot> = {}): TillSnapshot {
       supervisorDiscountLimitThb: 50,
     },
     catalogue: [
-      { productId: 'p-coffee', name: 'กาแฟเย็น', priceThb: 45, available: 10, safetyQty: 0, isActive: true },
-      { productId: 'p-cake', name: 'เค้กชิ้น', priceThb: 65, available: 4, safetyQty: 1, isActive: true },
+      { productId: 'p-coffee', name: 'กาแฟเย็น', priceThb: 45, available: 10, safetyQty: 0, isActive: true, consigned: false },
+      { productId: 'p-cake', name: 'เค้กชิ้น', priceThb: 65, available: 4, safetyQty: 1, isActive: true, consigned: false },
     ],
     shift: { id: 7, initialCashThb: 2000 },
     heldBlocks: [RECEIPT_BLOCK, CALL_BLOCK],

@@ -259,6 +259,8 @@ export function useTill({
         available: product.availableQty,
         safetyQty: product.offlineSafetyQty,
         isActive: product.isActive,
+        // A consignor's goods cannot be sold with no connection (ADR 0023 §8).
+        consigned: product.isConsigned,
         barcode: product.barcode, categoryId: product.categoryId, categoryName: product.categoryName,
         categoryKey: product.categoryKey, imageUrl: product.imageUrl,
       });
@@ -389,7 +391,7 @@ export function useTill({
       .map((entry) => ({ id: entry.productId, name: entry.name, barcode: entry.barcode ?? null, categoryId: entry.categoryId ?? null,
         categoryName: entry.categoryName ?? null, categoryKey: entry.categoryKey ?? 'default', salePrice: entry.priceThb,
         stockQty: entry.available, reservedQty: 0, availableQty: Math.max(0, offlineSellableQty(entry, sold)),
-        offlineSafetyQty: entry.safetyQty, imageUrl: entry.imageUrl ?? null, isActive: entry.isActive }));
+        offlineSafetyQty: entry.safetyQty, isConsigned: entry.consigned, imageUrl: entry.imageUrl ?? null, isActive: entry.isActive }));
   }, [store]);
 
   const loadPage = useCallback(

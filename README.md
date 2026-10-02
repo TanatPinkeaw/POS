@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1076 tests across 76 files: unit + integration
+npm test                # 1080 tests across 77 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 180 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 26 screens render, and render styled
@@ -787,9 +787,11 @@ transaction: a debit proportional to the units returned, with the note that clos
 taking the remainder so the debits sum to the credit exactly, and a payout already made leaving
 a negative balance the next payout nets. **Consigned goods stay outside the shop's own
 figures**: the dashboard's stock valuation counts only owned products, and the consigned stock
-and the shares owed are stated separately (the shares-owed figure is the ledger's own sum). Not
-yet built: a consigned product is not refused offline, and a consignor cannot see what they are
-owed.
+and the shares owed are stated separately (the shares-owed figure is the ledger's own sum).
+**A consigned product cannot be sold offline**, by decision: the device carries a flag that says
+the goods are a consignor's, and the till refuses the sale with a Thai message that names the
+next step (connect), while a pre-order — which completes online — is unaffected. Not yet built:
+a consignor cannot see what they are owed from the customer portal (ticket 09).
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Customer messages on LINE.** The shop's own group can be reached, but a

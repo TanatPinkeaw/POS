@@ -28,6 +28,7 @@ const COFFEE: OfflineCatalogueEntry = {
   available: 10,
   safetyQty: 0,
   isActive: true,
+  consigned: false,
 };
 
 const CAKE: OfflineCatalogueEntry = {
@@ -37,6 +38,7 @@ const CAKE: OfflineCatalogueEntry = {
   available: 4,
   safetyQty: 1,
   isActive: true,
+  consigned: false,
 };
 
 const RETIRED: OfflineCatalogueEntry = {
@@ -46,6 +48,18 @@ const RETIRED: OfflineCatalogueEntry = {
   available: 5,
   safetyQty: 0,
   isActive: false,
+  consigned: false,
+};
+
+/** A consignor's goods — plenty in stock, and still unsellable with no connection. */
+const CONSIGNED: OfflineCatalogueEntry = {
+  productId: 'p-consigned',
+  name: 'ของฝากขาย',
+  priceThb: 100,
+  available: 20,
+  safetyQty: 0,
+  isActive: true,
+  consigned: true,
 };
 
 function callBlock(overrides: Partial<NumberBlock> = {}): NumberBlock {
@@ -76,7 +90,7 @@ function context(overrides: Partial<OfflineSaleContext> = {}): OfflineSaleContex
     vatRatePercent: 7,
     pricesIncludeVat: true,
     receiptPrefix: 'FR',
-    catalogue: [COFFEE, CAKE, RETIRED],
+    catalogue: [COFFEE, CAKE, RETIRED, CONSIGNED],
     callBlocks: [callBlock(), callBlock({ day: TOMORROW, from: 101, to: 200 })],
     receiptBlock: vatReceiptBlock(),
     pending: [],
@@ -184,6 +198,27 @@ describe('what the counter cannot do with no connection', () => {
     const decision = decideOfflineSale(basket({ lines: [{ productId: 'p-old', quantity: 1 }] }), context());
 
     expect(refusalCodes(decision)).toEqual(['product_inactive']);
+  });
+
+  it('refuses a consigned product, and says to connect to sell it', () => {
+    // The stock is plentiful, so the only thing standing between the sale and the till is
+    // who owns the goods: offline the device can neither compute the consignor's share nor
+    // record it (ADR 0023 §8).
+    const decision = decideOfflineSale(
+      basket({ lines: [{ productId: 'p-consigned', quantity: 1 }] }),
+      context(),
+    );
+
+    expect(decision.allowed).toBe(false);
+    if (decision.allowed) return;
+    expect(refusalCodes(decision)).toEqual(['consigned_offline']);
+    // The message names the fix — connect — rather than only the rule.
+    expect(decision.refusals[0]?.message).toContain('ต้องต่อเน็ต');
+    expect(decision.refusals[0]?.productId).toBe('p-consigned');
+  });
+
+  it('does not refuse a shop-owned product as if it were consigned', () => {
+    expect(decideOfflineSale(basket(), context()).allowed).toBe(true);
   });
 
   it('refuses a tax invoice when no number is left, rather than inventing one', () => {

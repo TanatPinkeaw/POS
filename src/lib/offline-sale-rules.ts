@@ -53,6 +53,14 @@ export interface OfflineCatalogueEntry {
   /** The quantity this shop keeps back from offline selling (ADR 0019 decision 3). */
   readonly safetyQty: number;
   readonly isActive: boolean;
+  /**
+   * True when the goods belong to a consignor rather than the shop (ADR 0023 §8).
+   *
+   * A consigned sale owes the consignor a share, and offline the device has neither the
+   * percent nor anywhere to record the debt — so the offline rule refuses rather than
+   * promise a share it cannot write. Online sale and pre-order do not read this.
+   */
+  readonly consigned: boolean;
   readonly barcode?: string | null;
   readonly categoryId?: number | null;
   readonly categoryName?: string | null;
@@ -116,6 +124,7 @@ export type OfflineRefusalCode =
   | 'discount_needs_supervisor'
   | 'product_unknown'
   | 'product_inactive'
+  | 'consigned_offline'
   | 'stock_below_safety'
   | 'no_receipt_numbers';
 
@@ -284,6 +293,21 @@ function collectRefusals(
       refusals.push({
         code: 'product_inactive',
         message: `สินค้า "${entry.name}" ปิดการขายอยู่`,
+        productId,
+      });
+      continue;
+    }
+    /*
+     * Consigned goods are the one product the till may not sell with no connection (ADR
+     * 0023 §8): the sale would owe the consignor a share the device can neither compute
+     * nor record. The refusal names the next step — connect — rather than the rule.
+     */
+    if (entry.consigned) {
+      refusals.push({
+        code: 'consigned_offline',
+        message:
+          `สินค้า "${entry.name}" เป็นสินค้าฝากขาย ขายออฟไลน์ไม่ได้ — ` +
+          'ต้องต่อเน็ตก่อนขาย เพื่อบันทึกส่วนแบ่งให้ผู้ฝากขาย',
         productId,
       });
       continue;
