@@ -93,6 +93,16 @@ describe('the drawer this device remembers', () => {
     expect(await readDeviceDrawer()).toBeNull();
   });
 
+  it('refuses a record written before the drawer carried its takings', async () => {
+    // IndexedDB outlives a deployment: a device prepared before this feature shipped still
+    // holds the two-field drawer it wrote then, and drawing it would put "เริ่ม Invalid
+    // Date" over the counter. No migration runs — the record is rebuilt from the server on
+    // the next online load — so the answer is no until then.
+    const older = { id: 7, initialCashThb: 2000 };
+    stored.state = { snapshot: snapshot({ shift: older as typeof SHIFT }), queue: [] };
+    expect(await readDeviceDrawer()).toBeNull();
+  });
+
   it('answers "no" rather than throwing when the store is broken', async () => {
     // The storage contract is that a failed read must not take the till screen down with
     // it — there is simply nothing to remember, and the till then says so in its own words.

@@ -51,5 +51,19 @@ export async function readDeviceDrawer(): Promise<DeviceDrawer | null> {
     return null;
   }
 
+  /*
+   * The recorded shift must have the shape this code knows how to draw.
+   *
+   * IndexedDB outlives a deployment, so a device prepared *before* this feature shipped
+   * still holds the two-field drawer it wrote then (`id` and the float), and a till that
+   * boots from it would render "เริ่ม Invalid Date" over the counter. There is no migration
+   * to run here — the record is rebuilt from the server on the next online load — so the
+   * honest answer for an older record is no, and the till says it has no drawer until it
+   * has spoken to the shop once. That is a refusal, and every rule in this module is one.
+   */
+  if (typeof snapshot.shift.openedAt !== 'string') {
+    return null;
+  }
+
   return { shift: snapshot.shift, capturedAt: snapshot.capturedAt, deviceLabel: snapshot.deviceLabel };
 }
