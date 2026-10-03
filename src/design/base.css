@@ -278,6 +278,10 @@ html .ln-cut {
  * height instead of feeding an A4 sheet. A 58mm roll is the one alternative, and it
  * is a single value for a shop that has one; `ln-receipt-58` in the rules below
  * already narrows the sheet for it.
+ *
+ * The privacy notice is the exception that proves the rule: it claims a *named*
+ * page (`ln-a4`, in its own module) because `@page` cannot be scoped by a selector.
+ * A named page leaves this unnamed one as the default, so a receipt is unaffected.
  */
 @page {
   size: 80mm auto;

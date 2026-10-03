@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { BrandMark } from '@/brand/BrandMark';
@@ -64,7 +65,16 @@ export default async function ShopSignInPage() {
         <CustomerSignIn googleClientId={readGoogleClientId()} />
       </div>
 
-      <p className={styles.footer}>{BRAND.taglineEn}</p>
+      <p className={styles.footer}>
+        {BRAND.taglineEn}
+        {' · '}
+        {/*
+          The door a customer walks in through is the one place they are told what the
+          shop does with their phone number, which is the first moment a notice can be
+          read by the person it is about (ADR 0020 collects a number and a name here).
+        */}
+        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคล</Link>
+      </p>
     </main>
   );
 }

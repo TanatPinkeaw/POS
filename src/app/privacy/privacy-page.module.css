@@ -1,0 +1,130 @@
+/*
+ * The privacy notice page.
+ *
+ * A reading column, not a dashboard. It is a document a person is meant to finish, so
+ * the measure is capped at something a line of Thai text can sit in without the eye
+ * losing its place — the same reasoning as a receipt's page box, and the opposite
+ * requirement, which is why the two live apart.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: var(--ln-space-5) var(--ln-space-4);
+  background: var(--ln-bg);
+}
+
+.sheet {
+  width: 100%;
+  max-width: 46rem;
+  padding: var(--ln-space-6) var(--ln-space-5);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-lg);
+  background: var(--ln-surface);
+  box-shadow: var(--ln-shadow-sm);
+}
+
+.heading {
+  margin: 0 0 var(--ln-space-2);
+  font-size: var(--ln-size-xl);
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.shopName {
+  margin: 0 0 var(--ln-space-2);
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-base);
+}
+
+.effective {
+  margin: 0 0 var(--ln-space-5);
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.section {
+  margin-top: var(--ln-space-5);
+}
+
+.sectionHeading {
+  margin: 0 0 var(--ln-space-2);
+  font-size: var(--ln-size-lg);
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.body {
+  margin: 0;
+  color: var(--ln-text);
+  font-size: var(--ln-size-base);
+  line-height: 1.8;
+}
+
+.list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--ln-text);
+  font-size: var(--ln-size-base);
+  line-height: 1.8;
+}
+
+.list li + li {
+  margin-top: var(--ln-space-1);
+}
+
+/*
+ * The one line a customer should not miss on a first read: what this system does *not*
+ * ask for. It is set apart because it is the reassuring half of the notice and it would
+ * otherwise read as another clause.
+ */
+.notCollected {
+  margin-top: var(--ln-space-3);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border-inline-start: 3px solid var(--ln-brand);
+  background: var(--ln-surface-2);
+  border-radius: var(--ln-radius-sm);
+  font-size: var(--ln-size-base);
+  line-height: 1.8;
+}
+
+.contact {
+  margin: 0;
+  padding: var(--ln-space-4);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface-2);
+  font-size: var(--ln-size-base);
+  line-height: 1.9;
+}
+
+/*
+ * Paper.
+ *
+ * `@page` in `base.css` is 80mm for the thermal receipt, and a shop that printed this
+ * notice on it would get a strip of unreadable text. Named pages are the one way a
+ * document can ask for its own paper — `@page` itself cannot be scoped by a selector —
+ * so the notice claims `ln-a4` and keeps everything else.
+ */
+@media print {
+  @page ln-a4 {
+    size: A4;
+    margin: 16mm;
+  }
+
+  .page {
+    page: ln-a4;
+    padding: 0;
+    background: #ffffff;
+  }
+
+  .sheet {
+    max-width: none;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

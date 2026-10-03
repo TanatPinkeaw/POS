@@ -163,6 +163,13 @@ export function isPublicPath(pathname: string): boolean {
     pathname === '/setup' ||
     pathname === '/display' ||
     /*
+     * The shop's privacy notice. Public because of who it is for rather than what it
+     * holds: a notice a walk-in with no account cannot read is not notice, and the
+     * point of asking a customer for a phone number at `/shop` is void if the answer
+     * sits behind the door that phone number opens. Exact, like `/shop`.
+     */
+    pathname === '/privacy' ||
+    /*
      * The customer's own door (ADR 0020 §3): `/shop` is the screen a person with no
      * account reaches to become one, so it cannot itself require a session. It is
      * exact, not a prefix — `/shop/products` and the rest of the area stay guarded.

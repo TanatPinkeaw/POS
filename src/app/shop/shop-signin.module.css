@@ -109,4 +109,20 @@
 .footer {
   font-size: var(--ln-size-xs);
   color: var(--ln-text-subtle);
+  text-align: center;
+}
+
+/*
+ * The notice link inside the footer.
+ *
+ * Inherits the footer's size, because a privacy notice is not what a person came to this
+ * screen for — but it must be reachable by a finger, so it carries the till's tap
+ * minimum rather than the footer's type size.
+ */
+.footer a {
+  display: inline-block;
+  min-height: var(--ln-tap);
+  padding: var(--ln-space-1) var(--ln-space-2);
+  color: var(--ln-text-muted);
+  text-decoration: underline;
 }

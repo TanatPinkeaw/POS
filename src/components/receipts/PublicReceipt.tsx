@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { Button } from '@/components/ds';
 import { Receipt, type ReceiptData } from '@/components/pos/Receipt';
 import { receiptImageDataUrl } from '@/lib/receipt-image';
@@ -42,6 +44,16 @@ export function PublicReceipt({ shop, data }: { shop: ShopView; data: ReceiptDat
       </div>
 
       <Receipt shop={shop} data={data} when={data.createdAt} />
+
+      {/*
+        The walk-in's only route to the shop's notice, and the one that matters: a customer
+        who never made an account and never gave a phone number still holds a document
+        built from their purchase, and this is the page that carries it. `ln-no-print` with
+        the buttons, so a printed slip stays a slip.
+      */}
+      <p className={`${styles.privacy} ln-no-print`}>
+        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคลของร้าน</Link>
+      </p>
     </main>
   );
 }

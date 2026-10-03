@@ -21,3 +21,22 @@
   display: flex;
   gap: var(--ln-space-3);
 }
+
+/*
+ * The notice link under the slip.
+ *
+ * Sized for a thumb rather than for the receipt's paper: this is the customer's phone,
+ * not a till, so it takes the tap minimum even though the slip around it does not.
+ */
+.privacy {
+  font-size: var(--ln-size-sm);
+  text-align: center;
+}
+
+.privacy a {
+  display: inline-block;
+  min-height: var(--ln-tap);
+  padding: var(--ln-space-1) var(--ln-space-2);
+  color: var(--ln-text-muted);
+  text-decoration: underline;
+}

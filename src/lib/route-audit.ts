@@ -88,6 +88,7 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/pos/preorders', area: 'pos', session: 'cashier', landsOn: '/pos/preorders', label: 'the pre-order board' },
   { path: '/shop', area: 'public', session: 'none', landsOn: '/shop', label: 'the customer sign-in, both doors' },
   { path: '/receipts', area: 'public', session: 'none', landsOn: '/receipts', label: 'the receipt a signed link opens' },
+  { path: '/privacy', area: 'public', session: 'none', landsOn: '/privacy', label: 'the shop privacy notice' },
   { path: '/shop/products', area: 'shop', session: 'member', landsOn: '/shop/products', label: 'the member catalogue' },
   { path: '/shop/orders', area: 'shop', session: 'member', landsOn: '/shop/orders', label: 'the member orders' },
   { path: '/shop/account', area: 'shop', session: 'member', landsOn: '/shop/account', label: 'the member account' },
