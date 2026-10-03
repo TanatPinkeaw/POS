@@ -213,6 +213,7 @@ npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
+npm run otp:gateway     # prints a sign-in OTP instead of texting it (local dev)
 ```
 
 `npm run verify:all` is those gates in dependency order and nothing new: types and
@@ -379,6 +380,25 @@ The list is loaded whole and filtered in the browser, with the customer's points
 order count alongside the date they joined. Closing an account stops them signing in
 and leaves their orders, points and uncollected parcels exactly where they are —
 staff can still find them by the phone number they already know.
+
+### The customer's own door (`/shop`)
+
+A customer reaches the portal from `/shop`, the one screen in the shop area a person
+with no account may open — it is how they get one. Two doors sit side by side:
+
+- **Continue with Google**, for a customer who found the shop online (ADR 0020). The
+  Google credential is verified in-process against Google's JWKS; on a first visit the
+  customer then proves a phone by OTP, and the name comes from their Google profile.
+- **Phone and password**, for a customer the shop enrolled at the counter.
+
+Both rest on one value. Leave `GOOGLE_CLIENT_ID` unset and the Google door is still
+present, but says plainly that the shop has not configured it rather than showing a
+button that cannot work. To try it on your own machine: create an OAuth 2.0 **Web
+client** in Google Cloud Console with authorized JavaScript origin
+`http://localhost:3000`, set `GOOGLE_CLIENT_ID` in `.env`, and — because a first
+sign-in proves a phone — stand up a gateway for the OTP with `npm run otp:gateway`,
+pointing `OTP_CHANNEL=webhook` and `OTP_WEBHOOK_URL=http://localhost:4100/otp` at it.
+The code is then printed where you can read it and type it in.
 
 ### Collecting a pre-order (SRS §3)
 
