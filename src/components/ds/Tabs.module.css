@@ -116,6 +116,16 @@
   box-shadow: var(--ln-shadow-sm);
 }
 
+/*
+ * A segmented option is a real button, and on a till it is a real tap target. The
+ * 6px the group's own padding and border take back leaves the option at 42px — just
+ * under the 44px floor — so the till keeps 4 of them instead and the group grows by
+ * two pixels rather than the option shrinking under a thumb.
+ */
+[data-density='touch'] .segmented .tab {
+  min-height: calc(var(--ln-control-h) - 4px);
+}
+
 /* On a till the selected category has to be findable in peripheral vision. */
 [data-density='touch'] .segmented .selected {
   background: var(--ln-brand);

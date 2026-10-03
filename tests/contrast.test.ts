@@ -468,4 +468,18 @@ describe('density tokens', () => {
     const tap = Number.parseFloat(/--ln-tap:\s*(\d+)px/.exec(touch)?.[1] ?? '0');
     expect(tap).toBeGreaterThanOrEqual(44);
   });
+
+  it('sizes every touch control height at 44px or more', () => {
+    /*
+     * Every control the till draws its own size from, held to the same floor as
+     * `--ln-tap`. The small button was the one that slipped: at 40px it sat under a
+     * 48px sibling in the same row, which is the shape of the bug rather than a
+     * number nobody would notice.
+     */
+    const touch = source.slice(source.indexOf("[data-density='touch']"));
+    for (const token of ['--ln-control-h', '--ln-control-h-sm', '--ln-control-h-lg']) {
+      const value = Number.parseFloat(new RegExp(`${token}:\\s*(\\d+)px`).exec(touch)?.[1] ?? '0');
+      expect(value, `${token} is under the 44px touch floor`).toBeGreaterThanOrEqual(44);
+    }
+  });
 });

@@ -162,6 +162,16 @@
   position: relative;
 }
 
+/*
+ * On a till the sidebar is a touch target rather than a menu read with a mouse: the
+ * row that is 38px under a desk is reached for with a thumb at the counter, and 38
+ * is under the 44px floor. The desk keeps its density; the till uses the control
+ * height the rest of its controls are already built from.
+ */
+[data-density='touch'] .link {
+  min-height: var(--ln-control-h);
+}
+
 .link:hover {
   background: var(--ln-surface-2);
   color: var(--ln-text);

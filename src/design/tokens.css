@@ -310,7 +310,13 @@ html:root,
   --ln-size-3xl: 2.25rem;
 
   --ln-control-h: 48px;
-  --ln-control-h-sm: 40px;
+  /*
+   * 44, not 40. The small button is still a button, and on a till it is reached for
+   * with the same thumb as the large one — the customer-enrol button on the bill was
+   * the case that found this, sitting at 40 next to 48s. 44 is the floor the density
+   * test in `contrast.test.ts` holds every touch control to.
+   */
+  --ln-control-h-sm: 44px;
   --ln-control-h-lg: 56px;
   --ln-tap: 48px;
 
