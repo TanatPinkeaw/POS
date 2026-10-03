@@ -205,41 +205,55 @@ export function PaySheet({
           </div>
         ) : (
           <>
-            <div>
-              <div className={styles.settingsRow}>
-                <span className={styles.settingsLabel}>เงินสดที่ต้องเก็บ</span>
-                <span className={styles.settingsValue}>{formatThb(till.cashDue)}</span>
+            {/*
+              The keypad gets its own column once the sheet is wide enough for one.
+
+              The pad is the tallest thing here — five rows of keys — and the amount,
+              the quick notes and the change are all short, so stacking them made the
+              sheet taller than the screen and pushed the bottom of the pad below it.
+              Side by side, the two columns are only as tall as the pad, and the money
+              sits where the cashier's eye already is. A phone, where the sheet is
+              full-width and there is no second column to have, keeps the single stack.
+            */}
+            <div className={styles.payCash}>
+              <div className={styles.payCashMoney}>
+                <div>
+                  <div className={styles.settingsRow}>
+                    <span className={styles.settingsLabel}>เงินสดที่ต้องเก็บ</span>
+                    <span className={styles.settingsValue}>{formatThb(till.cashDue)}</span>
+                  </div>
+                  <div className={styles.settingsRow}>
+                    <span className={styles.settingsLabel}>
+                      <label htmlFor="received">รับเงินมา (บาท)</label>
+                    </span>
+                    <span className={styles.settingsValue}>
+                      {till.receivedCash === '' ? '—' : formatThb(Number(till.receivedCash))}
+                    </span>
+                  </div>
+                  <input id="received" className="ln-visually-hidden" value={till.receivedCash} readOnly />
+                </div>
+
+                <QuickCash
+                  onPick={(amount) => till.setReceivedCash(String(amount))}
+                  onExact={() => till.setReceivedCash(String(till.cashDue))}
+                />
+
+                <div
+                  className={`${styles.changeDue} ${till.change > 0 ? '' : styles.changeZero}`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span>{short ? 'ยังไม่พอ' : 'เงินทอน'}</span>
+                  <span>{short ? formatThb(Math.abs(till.change)) : formatThb(till.change)}</span>
+                </div>
               </div>
-              <div className={styles.settingsRow}>
-                <span className={styles.settingsLabel}>
-                  <label htmlFor="received">รับเงินมา (บาท)</label>
-                </span>
-                <span className={styles.settingsValue}>
-                  {till.receivedCash === '' ? '—' : formatThb(Number(till.receivedCash))}
-                </span>
-              </div>
-              <input id="received" className="ln-visually-hidden" value={till.receivedCash} readOnly />
+
+              <Numpad
+                onInput={appendDigit}
+                onBackspace={() => till.setReceivedCash((current) => current.slice(0, -1))}
+                onClear={() => till.setReceivedCash('')}
+              />
             </div>
-
-            <QuickCash
-              onPick={(amount) => till.setReceivedCash(String(amount))}
-              onExact={() => till.setReceivedCash(String(till.cashDue))}
-            />
-
-            <div
-              className={`${styles.changeDue} ${till.change > 0 ? '' : styles.changeZero}`}
-              role="status"
-              aria-live="polite"
-            >
-              <span>{short ? 'ยังไม่พอ' : 'เงินทอน'}</span>
-              <span>{short ? formatThb(Math.abs(till.change)) : formatThb(till.change)}</span>
-            </div>
-
-            <Numpad
-              onInput={appendDigit}
-              onBackspace={() => till.setReceivedCash((current) => current.slice(0, -1))}
-              onClear={() => till.setReceivedCash('')}
-            />
           </>
         )}
       </div>

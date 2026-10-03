@@ -493,3 +493,33 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * The cash tender, two columns wide enough for two.
+ *
+ * The stack this replaces was taller than the screen at every resolution the till is
+ * used on, because the keypad is five rows of 60px keys while the amount, the quick
+ * notes and the change are each short — so the bottom of the pad, and the ล้าง key with
+ * it, sat below the fold and the amount being entered could not be watched while it was
+ * typed. Side by side the row is only as tall as the pad, which is what takes the till's
+ * one working screen out of a scroll view. A phone keeps the single column, because at
+ * that width there is no second column to put anything in.
+ */
+.payCash {
+  display: grid;
+  gap: var(--ln-space-4);
+}
+
+.payCashMoney {
+  display: grid;
+  align-content: start;
+  gap: var(--ln-space-4);
+}
+
+@media (min-width: 720px) {
+  .payCash {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    align-items: start;
+    gap: var(--ln-space-5);
+  }
+}
