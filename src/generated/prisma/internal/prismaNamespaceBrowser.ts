@@ -61,6 +61,7 @@ export const ModelName = {
   time_logs: 'time_logs',
   cash_shifts: 'cash_shifts',
   audit_logs: 'audit_logs',
+  notice_acknowledgements: 'notice_acknowledgements',
   rate_limit_buckets: 'rate_limit_buckets',
   otp_challenges: 'otp_challenges',
   orders: 'orders',
@@ -259,6 +260,17 @@ export const Audit_logsScalarFieldEnum = {
 } as const
 
 export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
+
+
+export const Notice_acknowledgementsScalarFieldEnum = {
+  id: 'id',
+  customer_user_id: 'customer_user_id',
+  notice_version: 'notice_version',
+  notice_url: 'notice_url',
+  acknowledged_at: 'acknowledged_at'
+} as const
+
+export type Notice_acknowledgementsScalarFieldEnum = (typeof Notice_acknowledgementsScalarFieldEnum)[keyof typeof Notice_acknowledgementsScalarFieldEnum]
 
 
 export const Rate_limit_bucketsScalarFieldEnum = {

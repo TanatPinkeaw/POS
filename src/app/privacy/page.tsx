@@ -2,6 +2,10 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { loadShop } from '@/lib/shop';
+import {
+  CUSTOMER_NOTICE_EFFECTIVE_FROM,
+  noticeEffectiveDateLabel,
+} from '@/lib/privacy-notice';
 import { shopDisplayName } from '@/lib/shop-view';
 
 import styles from './privacy-page.module.css';
@@ -14,12 +18,14 @@ export const metadata: Metadata = {
 /**
  * When this notice took effect.
  *
- * A date, not a computed value, because it is a fact about the shop's practice rather
- * than about today — and because a notice that silently moved its own effective date
+ * A literal rather than a computed value, because it is a fact about the shop's practice
+ * and not about today — and because a notice that silently moved its own effective date
  * would say the shop changed its mind when nothing did. Change it in the same commit as
- * any change to what the system actually does.
+ * any change to what the system actually does, in `privacy-notice.ts`, which is also
+ * what the signup route compares against: the page showing one date and a signup
+ * acknowledging another is the exact state the version exists to prevent.
  */
-const EFFECTIVE_FROM = '3 ตุลาคม 2569';
+const EFFECTIVE_FROM = noticeEffectiveDateLabel(CUSTOMER_NOTICE_EFFECTIVE_FROM);
 
 /**
  * The shop's privacy notice **to its customers** — in Thai, at `/privacy`.

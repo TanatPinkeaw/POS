@@ -1,0 +1,125 @@
+/*
+ * The inline privacy notice at signup.
+ *
+ * A reading panel, not a form field. It borrows the measure of the notice page — a
+ * column a line of Thai can sit in — but at a size a phone can scroll with a thumb,
+ * because this is read standing up at a counter rather than sat down with coffee.
+ */
+
+/*
+ * The brand border, not a generic border.
+ *
+ * This is the one place on the customer sign-in door where something that is not a
+ * control has to be unmistakably different from a control. A customer who cannot tell
+ * the notice from an input will scroll past it, and the shop keeps a record of an
+ * acknowledgement they never made.
+ */
+.panel {
+  padding: var(--ln-space-4);
+  border-inline-start: 3px solid var(--ln-brand);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface-2);
+}
+
+.title {
+  margin: 0 0 var(--ln-space-2);
+  color: var(--ln-text);
+  font-size: var(--ln-size-base);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.effective {
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+  font-weight: 400;
+}
+
+/*
+ * The scroll box.
+ *
+ * `max-height` is a product decision dressed as a layout one: the gate only means
+ * something if there is an end to reach, so the box is capped rather than fitted to its
+ * content. `tabIndex` is not optional here — without it a keyboard reader scrolls the
+ * page around the box and can never reach the text inside it.
+ */
+.box {
+  max-height: 13rem;
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface);
+  overflow-y: auto;
+  /* Touch scrolling, without the library. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.box:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}
+
+.paragraph {
+  margin: 0;
+  color: var(--ln-text);
+  font-size: var(--ln-size-base);
+  line-height: 1.75;
+}
+
+.paragraph + .paragraph {
+  margin-top: var(--ln-space-3);
+}
+
+.link {
+  color: var(--ln-brand);
+  text-decoration: underline;
+}
+
+.hint {
+  margin: var(--ln-space-2) 0 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+  min-height: 1.5em;
+}
+
+/*
+ * The tick.
+ *
+ * The label is the target, not the 20px box, so the whole row takes `--ln-tap` — which is
+ * the same rule the sign-in door's fields follow, and the reason this row is a `label`
+ * wrapping both rather than an input with a nearby text node.
+ */
+.tick {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ln-space-3);
+  margin-top: var(--ln-space-2);
+  min-height: var(--ln-tap);
+  padding: var(--ln-space-2) 0;
+  color: var(--ln-text);
+  font-size: var(--ln-size-base);
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.tick input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  /* Aligned to the first line of Thai text rather than centred against four lines. */
+  margin-block-start: 2px;
+  flex: 0 0 auto;
+}
+
+/*
+ * A locked tick is disabled but must still *look* locked.
+ *
+ * `cursor: not-allowed` on the row, because the control inside it cannot show one —
+ * and a customer who taps it and sees nothing change needs the reason to be visible,
+ * which the hint above the row states in words.
+ */
+.tick:has(input:disabled) {
+  color: var(--ln-text-muted);
+  cursor: not-allowed;
+}

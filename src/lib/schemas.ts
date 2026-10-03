@@ -55,6 +55,17 @@ export const googleSignupSchema = z.object({
   idToken: z.string().trim().min(1, 'A Google credential is required'),
   phone: z.string().trim().max(20).optional(),
   fullName: z.string().trim().min(1).max(100).optional(),
+  /**
+   * The privacy notice the customer read, checked against the current version in
+   * `identity.ts`.
+   *
+   * Shaped as a loose string rather than refined to the exact version here, on purpose.
+   * A schema that pinned the current version would answer "malformed" to a stale page —
+   * a wrong kind of wrong, telling the browser its request was nonsense rather than that
+   * the shop has a newer notice to read. The version lives in one place
+   * (`privacy-notice.ts`) and the refusal there can say so in Thai.
+   */
+  noticeVersion: z.string().trim().max(10).optional(),
 });
 
 /**

@@ -77,6 +77,12 @@ const TABLES_IN_DELETE_ORDER = [
   'number_blocks',
   'products',
   'categories',
+  // Before `users`, and the only row here whose foreign key is RESTRICT rather than
+  // CASCADE — because the record that a customer was shown the privacy notice is meant
+  // to outlive the account. A reset is the one place that must delete it anyway, which
+  // is why it is listed here rather than left to the cascade: left out, every suite that
+  // creates a customer fails on the FK instead of on what it was testing.
+  'notice_acknowledgements',
   'users',
   // The shop is a singleton with no dependants, but it must be cleared between
   // tests: a leftover row would make the next test's deployment look configured.
@@ -106,6 +112,7 @@ const IDENTITY_SEQUENCES = [
   'credit_note_items_id_seq',
   'display_devices_id_seq',
   'inbound_payments_id_seq',
+  'notice_acknowledgements_id_seq',
   'notifications_id_seq',
   'order_items_id_seq',
   'payment_intents_id_seq',

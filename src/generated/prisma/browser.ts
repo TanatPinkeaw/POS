@@ -105,6 +105,39 @@ export type cash_shifts = Prisma.cash_shiftsModel
  */
 export type audit_logs = Prisma.audit_logsModel
 /**
+ * Model notice_acknowledgements
+ * *
+ *  * That a customer was shown the privacy notice, and which text they saw.
+ *  *
+ *  * The Act requires the shop to *inform* its customers what it does with their data, and
+ *  * this is the record that it did. It sits next to `audit_logs` because it is the same
+ *  * kind of thing — an immutable line a shop may later have to produce — with two
+ *  * differences that are deliberate.
+ *  *
+ *  * **Its actor is the customer, not staff.** `audit_logs` records what a person *did*
+ *  * inside the system; this records something that happened *to* them. So there is no
+ *  * `authorized_by`, and the nullable `actor_user_id` of `audit_logs` is not a model here:
+ *  * a customer is always present.
+ *  *
+ *  * **It does not cascade.** Every other table pointing at a person cascades, because
+ *  * losing the person should lose their rows. This one is RESTRICT, because the record
+ *  * that somebody was informed has to outlive the account it is about — and it can,
+ *  * because it holds an id, a version and a date, and nothing else about them. That is
+ *  * the honest answer to a deletion request that reaches this far: the proof outlives the
+ *  * profile, the profile does not outlive itself.
+ *  *
+ *  * **Append-only, like `audit_logs`.** The notice will be edited — its retention periods
+ *  * follow the shop's configuration — and a record that the next signup overwrites is not
+ *  * evidence. A customer who acknowledged September's text keeps that row after the
+ *  * notice is revised, so the shop can still say what they were shown on the day.
+ *  *
+ *  * `notice_version` is the effective date of the text (`src/lib/privacy-notice.ts`), not
+ *  * a counter, so it is a fact about the document rather than about how many times the
+ *  * repository has edited it — two shops running the same build can disagree about the
+ *  * second and must not disagree about the first.
+ */
+export type notice_acknowledgements = Prisma.notice_acknowledgementsModel
+/**
  * Model rate_limit_buckets
  * *
  *  * One rate limiter bucket, shared by every process (ADR 0012).

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 import { loadShop } from '@/lib/shop';
+import { noticeEffectiveDateLabel } from '@/lib/privacy-notice';
 import { shopDisplayName } from '@/lib/shop-view';
 
 import styles from '../privacy-page.module.css';
@@ -10,6 +11,17 @@ export const metadata: Metadata = {
   title: 'นโยบายคุ้มครองข้อมูลส่วนบุคคล · พนักงาน',
   description: 'ร้านเก็บข้อมูลพนักงานอะไร เก็บไว้ทำไม ใครเห็น และพนักงานมีสิทธิอะไร',
 };
+
+/**
+ * When the staff notice took effect.
+ *
+ * Its own literal, deliberately *not* the customer's date: the two notices are different
+ * documents with different subjects, and they were not written on the same day nor
+ * revised on it. The customer version also lives in `privacy-notice.ts`, because the
+ * signup route compares against it; this one has no gate in front of it, so its date
+ * is simply a fact stated here.
+ */
+const STAFF_NOTICE_EFFECTIVE_FROM = '2026-10-03';
 
 /**
  * The shop's privacy notice **to its staff** — in Thai, at `/privacy/staff`.
@@ -64,7 +76,9 @@ export default async function StaffPrivacyPage() {
           <br />
           <strong>เจ้าของข้อมูลส่วนบุคคล:</strong> คุณ — ผู้อ่านหน้านี้
         </p>
-        <p className={styles.effective}>มีผลตั้งแต่ 3 ตุลาคม 2569</p>
+        <p className={styles.effective}>
+          มีผลตั้งแต่ {noticeEffectiveDateLabel(STAFF_NOTICE_EFFECTIVE_FROM)}
+        </p>
 
         <p className={styles.body}>
           หน้านี้อธิบายว่าร้านเก็บข้อมูลเกี่ยวกับการทำงานของคุณอะไร เก็บไว้ทำไม

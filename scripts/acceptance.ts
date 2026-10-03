@@ -42,6 +42,7 @@ import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 
 import { roundThb } from '../src/lib/money';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
+import { CURRENT_CUSTOMER_NOTICE_VERSION } from '../src/lib/privacy-notice';
 
 import {
   Session,
@@ -449,6 +450,30 @@ async function countUsersWithPhone(url: string, phone: string): Promise<number> 
       [phone],
     );
     return Number(rows.rows[0]?.count ?? '0');
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * The notice version recorded against a customer, or `none`.
+ *
+ * Read straight from the scratch schema rather than through the API, because there is
+ * no route that exposes it — deliberately: "was this customer told what we do with
+ * their data" is a question for the shop, answered over its own database, and building
+ * an endpoint for it would put the answer on the internet. An absent row is reported as
+ * `none` rather than an empty string so a failing check reads as a missing record
+ * instead of an empty one.
+ */
+async function acknowledgedNoticeVersion(url: string, userId: string): Promise<string> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    const rows = await client.query<{ notice_version: string }>(
+      'SELECT "notice_version" FROM "notice_acknowledgements" WHERE "customer_user_id" = $1',
+      [userId],
+    );
+    return rows.rows[0]?.notice_version ?? 'none';
   } finally {
     await client.end();
   }
@@ -2179,7 +2204,14 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     const newSession = new Session(() => base);
     const created = await newSession.call<GoogleSignupDto>('/api/v1/auth/signup', {
       method: 'POST',
-      body: { idToken: await googleIdToken(newSubject), phone: newPhone },
+      body: {
+        idToken: await googleIdToken(newSubject),
+        phone: newPhone,
+        // A customer is shown the privacy notice in the signup flow and confirms it, and
+        // a signup that creates an account now demands the version they read — so the
+        // journey carries the same value the browser does.
+        noticeVersion: CURRENT_CUSTOMER_NOTICE_VERSION,
+      },
     });
     check(
       'the phone alone makes the customer, with no code to prove it',
@@ -2204,7 +2236,46 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       again,
     );
 
-    // (b) A number the counter already enrolled is refused, never linked. The row must
+    // The shop's evidence that it told this customer what it does with their data. It is
+    // the reason the gate exists at all, so the journey reads it back rather than
+    // trusting that the signup wrote it.
+    const recordedVersion = await acknowledgedNoticeVersion(seedGuardUrl, created.id);
+    check(
+      'and the notice version they were shown is on the record',
+      recordedVersion === CURRENT_CUSTOMER_NOTICE_VERSION,
+      recordedVersion,
+    );
+
+    // (b) A signup that never showed the notice makes no customer at all. The gate is a
+    //     real refusal over HTTP, not a browser courtesy: a request sent without ever
+    //     loading the page is the case the server has to stop.
+    const unread = await anonymous.request('/api/v1/auth/signup', {
+      method: 'POST',
+      body: { idToken: await googleIdToken('accept-google-unread'), phone: '0862220099' },
+    });
+    check(
+      'a signup that did not show the notice is refused (422)',
+      unread.status === 422,
+      unread.status,
+    );
+
+    // And a stale page — one holding the previous revision — is refused rather than
+    // allowed to acknowledge text the shop has since replaced.
+    const stale = await anonymous.request('/api/v1/auth/signup', {
+      method: 'POST',
+      body: {
+        idToken: await googleIdToken('accept-google-stale'),
+        phone: '0862220098',
+        noticeVersion: '2020-01-01',
+      },
+    });
+    check(
+      'a signup naming a superseded notice version is refused (422)',
+      stale.status === 422,
+      stale.status,
+    );
+
+    // (c) A number the counter already enrolled is refused, never linked. The row must
     //     come out of the attempt exactly as the counter left it.
     await setPointsBalance(seedGuardUrl, enrolled.id, 120);
     const takeover = await anonymous.request('/api/v1/auth/signup', {

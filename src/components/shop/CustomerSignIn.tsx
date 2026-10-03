@@ -5,8 +5,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, InlineNotice, TextField } from '@/components/ds';
 import { apiPost } from '@/lib/client-api';
+import { CURRENT_CUSTOMER_NOTICE_VERSION } from '@/lib/privacy-notice';
 
 import styles from '@/app/shop/shop-signin.module.css';
+
+import { NoticeAcknowledge } from './NoticeAcknowledge';
 
 interface LoginResponse {
   role: 'member' | 'employee' | 'admin';
@@ -98,6 +101,8 @@ function GoogleDoor({
   const [needsPhone, setNeedsPhone] = useState(false);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
+  /** Whether the customer has confirmed reading the privacy notice. */
+  const [acknowledged, setAcknowledged] = useState(false);
 
   /*
    * The id token is held in a ref rather than state: it is a credential the
@@ -167,12 +172,18 @@ function GoogleDoor({
   }, [googleClientId, handleCredential]);
 
   /**
-   * The first sign-in: the phone and nothing else.
+   * The first sign-in: the phone, the notice, and nothing else.
    *
    * No code is asked for (ADR 0020 §5): Google proves the Google account, and the
    * number is only where the new customer's points and orders will hang. A number that
    * already has a customer is refused by the server rather than linked, which is the
    * one answer the screen has to relay in Thai.
+   *
+   * **The notice is part of this step, not a step of its own.** The customer arrived
+   * here to buy something, and a separate screen between the phone and the button is a
+   * screen they will dismiss. So it sits inline, above the button, and the button stays
+   * disabled until it has been read — the shop's duty to inform, discharged in the flow
+   * rather than parked one click away.
    */
   async function completeSignup(): Promise<void> {
     if (idToken.current === null) {
@@ -184,6 +195,7 @@ function GoogleDoor({
       const result = await apiPost<SignupResponse>('/api/v1/auth/signup', {
         idToken: idToken.current,
         phone: phone.trim(),
+        noticeVersion: CURRENT_CUSTOMER_NOTICE_VERSION,
       });
       onSignedIn(result.redirectTo);
     } catch (caught) {
@@ -216,10 +228,11 @@ function GoogleDoor({
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
           />
+          <NoticeAcknowledge acknowledged={acknowledged} onChange={setAcknowledged} />
           <Button
             variant="primary"
             loading={busy}
-            disabled={phone.trim().length === 0}
+            disabled={phone.trim().length === 0 || !acknowledged}
             onClick={() => void completeSignup()}
           >
             ยืนยันและเข้าสู่ระบบ

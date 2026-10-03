@@ -9,8 +9,20 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ConflictError, ValidationError } from '@/lib/errors';
 import { completeCustomerGoogleSignIn, findCustomerByGoogleSubject } from '@/lib/identity';
+import { CURRENT_CUSTOMER_NOTICE_VERSION } from '@/lib/privacy-notice';
 
 import { prisma, resetDatabase, seedPeople } from './helpers/test-db';
+
+/**
+ * The version these tests acknowledge when they create a customer.
+ *
+ * A signup that makes an account now demands one (`identity.ts`), because that is the
+ * only moment the shop can tell a customer what it does with their data. This suite is
+ * about *identity* — one Google account, one customer, no takeover by typed number — so
+ * it supplies the current version rather than testing the gate here; the gate's own
+ * tests live in `notice-acknowledgement.test.ts`.
+ */
+const CURRENT_NOTICE_VERSION = CURRENT_CUSTOMER_NOTICE_VERSION;
 
 /** A verified Google identity, as `verifyGoogleIdToken` would return one. */
 function google(subject: string, overrides: Partial<{ email: string | null; fullName: string | null }> = {}) {
@@ -44,6 +56,7 @@ describe('a first Google sign-in', () => {
     const result = await completeCustomerGoogleSignIn({
       identity: google('new-customer'),
       phone,
+      noticeVersion: CURRENT_NOTICE_VERSION,
     });
 
     expect(result.created).toBe(true);
@@ -57,6 +70,7 @@ describe('a first Google sign-in', () => {
     const result = await completeCustomerGoogleSignIn({
       identity: google('named'),
       phone: '0891112223',
+      noticeVersion: CURRENT_NOTICE_VERSION,
     });
 
     const row = await prisma.users.findUniqueOrThrow({ where: { id: result.id } });
@@ -67,6 +81,7 @@ describe('a first Google sign-in', () => {
     const result = await completeCustomerGoogleSignIn({
       identity: google('renamed'),
       phone: '0891112224',
+      noticeVersion: CURRENT_NOTICE_VERSION,
       fullName: 'น้องใหม่',
     });
 
@@ -91,6 +106,7 @@ describe('a number that is already somebody', () => {
     const failure = (await completeCustomerGoogleSignIn({
       identity: google('would-be-thief'),
       phone: memberPhone,
+      noticeVersion: CURRENT_NOTICE_VERSION,
     }).catch((error: unknown) => error)) as ConflictError;
 
     expect(failure.code).toBe('PHONE_ALREADY_REGISTERED');
@@ -106,6 +122,7 @@ describe('a number that is already somebody', () => {
     const failure = (await completeCustomerGoogleSignIn({
       identity: google('dashed'),
       phone: '090-000-0001',
+      noticeVersion: CURRENT_NOTICE_VERSION,
     }).catch((error: unknown) => error)) as ConflictError;
 
     expect(failure.code).toBe('PHONE_ALREADY_REGISTERED');
@@ -115,6 +132,7 @@ describe('a number that is already somebody', () => {
     const failure = (await completeCustomerGoogleSignIn({
       identity: google('staff-number'),
       phone: staffPhone,
+      noticeVersion: CURRENT_NOTICE_VERSION,
     }).catch((error: unknown) => error)) as ConflictError;
 
     expect(failure.code).toBe('PHONE_BELONGS_TO_STAFF');
@@ -127,7 +145,11 @@ describe('a number that is already somebody', () => {
 describe('one Google account, one customer', () => {
   it('signs the same subject back in without a number', async () => {
     const phone = '0891112225';
-    const first = await completeCustomerGoogleSignIn({ identity: google('again'), phone });
+    const first = await completeCustomerGoogleSignIn({
+      identity: google('again'),
+      phone,
+      noticeVersion: CURRENT_NOTICE_VERSION,
+    });
 
     // The subject now resolves to a row, so the very first check answers and the
     // number is not even read — a returning account needs none.
@@ -143,6 +165,7 @@ describe('one Google account, one customer', () => {
     const first = await completeCustomerGoogleSignIn({
       identity: google('one-account'),
       phone: '0891112226',
+      noticeVersion: CURRENT_NOTICE_VERSION,
     });
 
     // Presenting a different number while already being somebody signs straight in;
@@ -150,6 +173,7 @@ describe('one Google account, one customer', () => {
     const second = await completeCustomerGoogleSignIn({
       identity: google('one-account'),
       phone: '0891112227',
+      noticeVersion: CURRENT_NOTICE_VERSION,
     });
 
     expect(second.id).toBe(first.id);

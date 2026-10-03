@@ -34,6 +34,10 @@ import type { GoogleIdentity } from './google-id-token';
 import { consumeOtpChallenge } from './otp-store';
 import { hashPassword } from './password';
 import { normalisePhone } from './phone';
+import {
+  isCurrentCustomerNotice,
+  recordNoticeAcknowledgement,
+} from './privacy-notice';
 
 /** The customer behind a Google subject, if the door has been used before. */
 export interface CustomerRow {
@@ -112,6 +116,18 @@ export async function completeCustomerGoogleSignIn(input: {
   phone?: string;
   /** What the customer wants to be called; the Google name is the fallback. */
   fullName?: string;
+  /**
+   * The privacy notice the customer was shown, required only when a new customer is
+   * made.
+   *
+   * **Optional in the type but required in practice on the create path.** Step 1
+   * returns early for a returning customer, and a returning customer was told the
+   * notice when they first arrived — asking for it again would ask a shop to re-collect
+   * something it already holds, and would fail every sign-in by somebody who signed up
+   * before this existed. So the field is only demanded at the point where an account is
+   * actually created, which is the only point where the shop's duty to inform arises.
+   */
+  noticeVersion?: string;
 }): Promise<CustomerSignIn> {
   const subject = input.identity.subject;
 
@@ -152,27 +168,76 @@ export async function completeCustomerGoogleSignIn(input: {
 
   // 4. A number nobody owns: a new customer, with a password nobody knows.
   const fullName = input.fullName?.trim() || input.identity.fullName?.trim() || 'ลูกค้า';
+
+  /*
+   * The notice, checked here rather than in the route.
+   *
+   * It is the check that matters most in this file and it is three lines long: the shop
+   * is required to inform a customer what it does with their data, and the only moment
+   * this shop can do that for a walk-in is the moment the account appears. So the
+   * version the customer acknowledged is demanded *before* the row exists, and an
+   * absent or stale one refuses the signup.
+   *
+   * It belongs here, not in the route handler, because this is the function that knows
+   * whether an account is being created. A returning customer (step 1) has already been
+   * told and never reaches this line, so demanding a notice at the route would ask a
+   * returning customer to acknowledge a notice they have already acknowledged — and
+   * would refuse every account that predates this table.
+   *
+   * The message names the notice rather than saying "invalid version", because the only
+   * way to arrive here with a bad value is a browser that is holding an out-of-date page
+   * while the shop is running a newer build.
+   */
+  const noticeVersion = input.noticeVersion?.trim() ?? '';
+  if (!isCurrentCustomerNotice(noticeVersion)) {
+    throw new ValidationError(
+      'กรุณาอ่านและยืนยันนโยบายคุ้มครองข้อมูลส่วนบุคคลก่อนสร้างบัญชี',
+      'NOTICE_NOT_ACKNOWLEDGED',
+    );
+  }
+
   try {
-    const created = await prisma.users.create({
-      data: {
-        full_name: fullName,
-        phone,
-        email: input.identity.email,
-        // A random hash, not a null and not a known one: the phone+password door is
-        // closed until the customer sets a password of their own.
-        password_hash: await hashPassword(randomBytes(24).toString('base64url')),
-        role: 'member',
-        google_subject: subject,
-        is_active: true,
-      },
-      select: CUSTOMER_SELECT,
-    });
-    await recordAudit({
-      action: 'member_created',
-      actorUserId: created.id,
-      targetType: 'user',
-      targetId: created.id,
-      detail: { phone, via: 'google' },
+    /*
+     * The customer and the acknowledgement in one transaction.
+     *
+     * Written sequentially they would be two facts that could disagree: a failure
+     * between them leaves an account the shop cannot show any record of having told
+     * anybody about — the exact state this row exists to rule out, and the one a
+     * regulator would find first. `recordAudit` has always accepted a `db` for this
+     * reason; it is the same transaction now, and the same argument.
+     */
+    const created = await prisma.$transaction(async (tx) => {
+      const customer = await tx.users.create({
+        data: {
+          full_name: fullName,
+          phone,
+          email: input.identity.email,
+          // A random hash, not a null and not a known one: the phone+password door is
+          // closed until the customer sets a password of their own.
+          password_hash: await hashPassword(randomBytes(24).toString('base64url')),
+          role: 'member',
+          google_subject: subject,
+          is_active: true,
+        },
+        select: CUSTOMER_SELECT,
+      });
+      await recordNoticeAcknowledgement(tx, {
+        customerUserId: customer.id,
+        noticeVersion,
+      });
+      await recordAudit(
+        {
+          action: 'member_created',
+          actorUserId: customer.id,
+          targetType: 'user',
+          targetId: customer.id,
+          // The version rides along with the audit row so the trail and the evidence
+          // cannot be read differently: both name the same text, on the same day.
+          detail: { phone, via: 'google', noticeVersion },
+        },
+        tx,
+      );
+      return customer;
     });
     return { ...toCustomer(created), created: true };
   } catch (error) {

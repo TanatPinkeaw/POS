@@ -407,6 +407,7 @@ export const ModelName = {
   time_logs: 'time_logs',
   cash_shifts: 'cash_shifts',
   audit_logs: 'audit_logs',
+  notice_acknowledgements: 'notice_acknowledgements',
   rate_limit_buckets: 'rate_limit_buckets',
   otp_challenges: 'otp_challenges',
   orders: 'orders',
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1177,6 +1178,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.audit_logsCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.Audit_logsCountAggregateOutputType> | number
+        }
+      }
+    }
+    notice_acknowledgements: {
+      payload: Prisma.$notice_acknowledgementsPayload<ExtArgs>
+      fields: Prisma.notice_acknowledgementsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.notice_acknowledgementsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.notice_acknowledgementsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>
+        }
+        findFirst: {
+          args: Prisma.notice_acknowledgementsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.notice_acknowledgementsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>
+        }
+        findMany: {
+          args: Prisma.notice_acknowledgementsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>[]
+        }
+        create: {
+          args: Prisma.notice_acknowledgementsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>
+        }
+        createMany: {
+          args: Prisma.notice_acknowledgementsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.notice_acknowledgementsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>[]
+        }
+        delete: {
+          args: Prisma.notice_acknowledgementsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>
+        }
+        update: {
+          args: Prisma.notice_acknowledgementsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>
+        }
+        deleteMany: {
+          args: Prisma.notice_acknowledgementsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.notice_acknowledgementsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.notice_acknowledgementsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>[]
+        }
+        upsert: {
+          args: Prisma.notice_acknowledgementsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$notice_acknowledgementsPayload>
+        }
+        aggregate: {
+          args: Prisma.Notice_acknowledgementsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNotice_acknowledgements>
+        }
+        groupBy: {
+          args: Prisma.notice_acknowledgementsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Notice_acknowledgementsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.notice_acknowledgementsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Notice_acknowledgementsCountAggregateOutputType> | number
         }
       }
     }
@@ -2423,6 +2498,17 @@ export const Audit_logsScalarFieldEnum = {
 export type Audit_logsScalarFieldEnum = (typeof Audit_logsScalarFieldEnum)[keyof typeof Audit_logsScalarFieldEnum]
 
 
+export const Notice_acknowledgementsScalarFieldEnum = {
+  id: 'id',
+  customer_user_id: 'customer_user_id',
+  notice_version: 'notice_version',
+  notice_url: 'notice_url',
+  acknowledged_at: 'acknowledged_at'
+} as const
+
+export type Notice_acknowledgementsScalarFieldEnum = (typeof Notice_acknowledgementsScalarFieldEnum)[keyof typeof Notice_acknowledgementsScalarFieldEnum]
+
+
 export const Rate_limit_bucketsScalarFieldEnum = {
   bucket_key: 'bucket_key',
   tokens: 'tokens',
@@ -3224,6 +3310,7 @@ export type GlobalOmitConfig = {
   time_logs?: Prisma.time_logsOmit
   cash_shifts?: Prisma.cash_shiftsOmit
   audit_logs?: Prisma.audit_logsOmit
+  notice_acknowledgements?: Prisma.notice_acknowledgementsOmit
   rate_limit_buckets?: Prisma.rate_limit_bucketsOmit
   otp_challenges?: Prisma.otp_challengesOmit
   orders?: Prisma.ordersOmit
