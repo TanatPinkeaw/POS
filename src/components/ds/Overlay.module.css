@@ -68,6 +68,27 @@
   }
 }
 
+/*
+ * The large panel. Declared after `.modal` / `.sheet` on purpose: the three selectors
+ * have the same specificity, so source order is what lets `lg` actually widen a sheet.
+ * On a phone the sheet is already edge-to-edge and only the height is worth raising;
+ * on a desk the width is what the keypad was missing.
+ */
+.modal.sizeLg {
+  max-width: 44rem;
+}
+
+.sheet.sizeLg {
+  max-width: 44rem;
+  max-height: 92vh;
+}
+
+@media (min-width: 768px) {
+  .sheet.sizeLg {
+    max-height: 92vh;
+  }
+}
+
 .header {
   display: flex;
   align-items: center;

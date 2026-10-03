@@ -500,6 +500,29 @@ export function useTill({
     !busy && offline?.loaded === true && writer && !deviceBusy &&
     (tenderMode === 'promptpay' ? cashDue === 0 : received >= cashDue);
 
+  /*
+   * Why the bill cannot be taken yet, in the cashier's own words — null when it can.
+   *
+   * The pay sheet disables its confirm button rather than hiding it, which is the right
+   * choice, but a disabled button that does not say why is one the cashier taps, and taps
+   * again, while the customer waits. Two of the reasons are invisible from inside the sheet
+   * — the drawer being shut and *this tab* not holding the till lock — because the notices
+   * for them sit on the page the sheet is covering. Ordered by what the cashier can act on:
+   * the drawer and the lock are theirs; the busy flags belong to the device. A short cash
+   * tender is deliberately left out, because the change row already says "ยังไม่พอ".
+   */
+  const payBlockedReason = canPay
+    ? null
+    : !shift
+      ? 'ยังไม่เปิดลิ้นชัก — เปิดก่อนจึงจะรับชำระเงินได้'
+      : !writer
+        ? 'เครื่องนี้ไม่ได้สิทธิ์เขียนบิล — ปิดแท็บขายอื่นแล้วเปิดหน้านี้ใหม่'
+        : offline?.loaded !== true
+          ? 'กำลังเตรียมข้อมูลในเครื่อง — รอสักครู่'
+          : deviceBusy || busy
+            ? 'กำลังบันทึกบิล — รอสักครู่'
+            : null;
+
   const addProduct = useCallback((product: ProductView) => {
     setError(null);
     setLines((current) => {
@@ -1113,6 +1136,8 @@ export function useTill({
     setSplitPromptpay,
     change,
     canPay,
+    /** Set when ยืนยันรับเงิน is disabled for a reason the sheet should say out loud. */
+    payBlockedReason,
     // outcome
     busy,
     error,

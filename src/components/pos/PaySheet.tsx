@@ -90,6 +90,7 @@ export function PaySheet({
       open={open}
       onClose={onClose}
       variant="sheet"
+      size="lg"
       title="รับชำระเงิน"
       description={`ยอดที่ต้องเก็บ ${formatThb(till.due)}`}
       footer={
@@ -126,6 +127,14 @@ export function PaySheet({
     >
       <div style={{ display: 'grid', gap: 'var(--ln-space-4)' }}>
         {till.error ? <InlineNotice tone="danger">{till.error}</InlineNotice> : null}
+        {/*
+          Said inside the sheet, not just on the page behind it: a cashier who cannot take
+          the money is looking here. This is the never-silent half of a button that stays
+          visible and disabled rather than disappearing.
+        */}
+        {!waitingForTransfer && till.payBlockedReason ? (
+          <InlineNotice tone="warning">{till.payBlockedReason}</InlineNotice>
+        ) : null}
         {deviceCashOnly ? <InlineNotice tone="warning">รับเฉพาะเงินสดไม่ผูกสมาชิก — ส่งบิลและคืนชุดเลขก่อนใช้พร้อมเพย์ สมาชิก หรือแต้ม</InlineNotice> : null}
         <Tabs
           label="วิธีชำระเงิน"

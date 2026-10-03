@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1092 tests across 79 files: unit + integration
+npm test                # 1094 tests across 80 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 191 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 27 screens render, and render styled

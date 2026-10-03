@@ -107,6 +107,16 @@ interface OverlayProps {
   /** A sheet rises from the bottom edge; right for a thumb, wrong for a form. */
   variant?: 'modal' | 'sheet';
   wide?: boolean;
+  /**
+   * A larger panel, for the screens an operator works *inside* rather than dismisses.
+   *
+   * The pay sheet is the case this exists for: taking money is the one till screen a
+   * cashier spends real time on, and the default sheet's 30rem / 70vh left the keypad
+   * half below the fold, so the amount being entered could not be seen while it was
+   * being typed. `md` is the default; `lg` trades the dialog's usual width for the
+   * keypad's — the buttons stay put and the money stops scrolling.
+   */
+  size?: 'md' | 'lg';
   /** Hides the close button when the only way out is a deliberate action. */
   hideClose?: boolean;
 }
@@ -120,6 +130,7 @@ export function Overlay({
   footer,
   variant = 'modal',
   wide = false,
+  size = 'md',
   hideClose = false,
 }: OverlayProps) {
   const panelRef = useOverlay(open, onClose);
@@ -153,7 +164,7 @@ export function Overlay({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className={`${styles.panel} ${isSheet ? styles.sheet : styles.modal} ${wide ? styles.wide : ''}`}
+        className={`${styles.panel} ${isSheet ? styles.sheet : styles.modal} ${wide ? styles.wide : ''} ${size === 'lg' ? styles.sizeLg : ''}`}
       >
         <header className={styles.header}>
           <div>

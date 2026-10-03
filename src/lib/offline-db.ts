@@ -148,13 +148,59 @@ export function createDeviceStorage(): TillStorage {
  *
  * Resolves with a `release` function while holding the lock, or `null` when the browser has
  * no Web Locks (older engines) or another tab already holds it.
+ *
+ * The underlying request is coalesced per document, and that is load-bearing under React's
+ * development StrictMode. StrictMode mounts an effect, tears it down, and mounts it again;
+ * the teardown runs before the first `navigator.locks.request` has resolved, so there is no
+ * release function for it to call yet. A second, uncoalesced request made while the first is
+ * still held makes `ifAvailable` answer "no" — and the till then decides another tab is
+ * selling when the only other "tab" was itself, leaving ยืนยันรับเงิน disabled for the whole
+ * session. Counting the holders means the second mount shares the first request, and the lock
+ * is dropped only when the last holder lets go. Two real tabs are still two documents, each
+ * making its own request, so cross-tab detection is unchanged.
  */
-export async function acquireTillWriter(): Promise<(() => void) | null> {
-  if (typeof navigator === 'undefined' || !navigator.locks) return null;
+let tillWriterLock: { request: Promise<(() => void) | null>; holders: number } | null = null;
+
+function requestTillWriterLock(): Promise<(() => void) | null> {
   return new Promise((resolve) => {
     void navigator.locks.request('pos-till-writer', { ifAvailable: true }, async (lock) => {
       if (!lock) { resolve(null); return; }
       await new Promise<void>((release) => resolve(release));
     }).catch(() => resolve(null));
+  });
+}
+
+export function acquireTillWriter(): Promise<(() => void) | null> {
+  if (typeof navigator === 'undefined' || !navigator.locks) return Promise.resolve(null);
+
+  const entry = (tillWriterLock ??= { request: requestTillWriterLock(), holders: 0 });
+  entry.holders += 1;
+
+  return entry.request.then((release) => {
+    if (release === null) {
+      // Another document holds the lock, so this caller is not the writer and there is
+      // nothing to release later. Kept distinct from a shared request that succeeded:
+      // `Boolean(release)` is how the till decides whether it may sell.
+      entry.holders -= 1;
+      if (entry.holders <= 0 && tillWriterLock === entry) {
+        tillWriterLock = null;
+      }
+      return null;
+    }
+
+    let finished = false;
+    return () => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      entry.holders -= 1;
+      if (entry.holders <= 0) {
+        if (tillWriterLock === entry) {
+          tillWriterLock = null;
+        }
+        release();
+      }
+    };
   });
 }
