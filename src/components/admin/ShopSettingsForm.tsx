@@ -12,6 +12,15 @@
  * The VAT-dependent fields only exist while the shop is VAT-registered: showing a
  * tax id box to a shop that has none invites a value that would then print on
  * every receipt.
+ *
+ * The two decimal fields hold their **text** in state, not their number.
+ *
+ * Storing `Number(event.target.value)` and rendering `String(number)` looks
+ * harmless and is not: `Number("1.")` is `1`, so the moment a decimal point is
+ * typed it is parsed away and the field is re-rendered without it — "1.5" arrives
+ * as "15", and an operator typing 7.5 into the VAT rate silently sets 75%. The
+ * draft stays a string here and is converted once, on save, which is also how the
+ * setup wizard already does it.
  */
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -45,6 +54,20 @@ export function ShopSettingsForm({
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
 
+  /*
+   * The two decimal fields keep what was typed, as typed.
+   *
+   * The `shop` object stays the source of truth for everything else; these are the
+   * text half of the same values, and they are what the inputs render. A blank
+   * field is a legitimate draft (it is how a person clears one to retype it), so
+   * blank parses as 0 — the same thing the old `|| 0` did — and the two are kept in
+   * step by the change handlers below.
+   */
+  const [vatRateDraft, setVatRateDraft] = useState(String(initialShop.vatRate));
+  const [discountLimitDraft, setDiscountLimitDraft] = useState(
+    String(initialShop.supervisorDiscountLimitThb),
+  );
+
   const nextReceipt = formatReceiptNumber(
     shop.receiptPrefix,
     previewYear,
@@ -63,11 +86,12 @@ export function ShopSettingsForm({
         address: shop.address,
         phone: shop.phone,
         isVatRegistered: shop.isVatRegistered,
-        vatRate: shop.vatRate,
+        // Parsed once, here, from the text the operator is actually looking at.
+        vatRate: Number(vatRateDraft) || 0,
         receiptPrefix: shop.receiptPrefix,
         receiptFooter: shop.receiptFooter,
         logoUrl: shop.logoUrl,
-        supervisorDiscountLimitThb: shop.supervisorDiscountLimitThb,
+        supervisorDiscountLimitThb: Number(discountLimitDraft) || 0,
         // Blank means "no PromptPay", which is a state rather than a gap: the
         // till then asks a cashier to confirm the transfer instead of issuing a
         // code. Both fields clear together, because half a setting cannot build
@@ -76,6 +100,11 @@ export function ShopSettingsForm({
         promptpayType: shop.promptpayId ? shop.promptpayType : null,
       });
       setShop(updated);
+      // Re-seeded from the server's answer, so a value the server normalised is shown
+      // normalised. The draft and the shop cannot drift, because only the server writes
+      // `updated` and this is the one place the drafts are set from it.
+      setVatRateDraft(String(updated.vatRate));
+      setDiscountLimitDraft(String(updated.supervisorDiscountLimitThb));
       setNotice({ tone: 'success', text: 'บันทึกการตั้งค่าแล้ว' });
       router.refresh();
     } catch (error) {
@@ -192,10 +221,8 @@ export function ShopSettingsForm({
                   autoComplete="off"
                   inputMode="decimal"
                   className="ln-num"
-                  value={String(shop.vatRate)}
-                  onChange={(event) =>
-                    setShop({ ...shop, vatRate: Number(event.target.value) || 0 })
-                  }
+                  value={vatRateDraft}
+                  onChange={(event) => setVatRateDraft(event.target.value)}
                 />
               </FieldRow>
             ) : null}
@@ -212,13 +239,8 @@ export function ShopSettingsForm({
                 inputMode="decimal"
                 className="ln-num"
                 help="เกินวงเงินนี้ เครื่องขายจะขอ PIN ผู้ดูแลก่อนจึงจะให้ส่วนลดได้ (ตั้ง 0 = ให้ส่วนลดทุกบาทต้องมีผู้อนุมัติ)"
-                value={String(shop.supervisorDiscountLimitThb)}
-                onChange={(event) =>
-                  setShop({
-                    ...shop,
-                    supervisorDiscountLimitThb: Number(event.target.value) || 0,
-                  })
-                }
+                value={discountLimitDraft}
+                onChange={(event) => setDiscountLimitDraft(event.target.value)}
               />
             </FieldRow>
 

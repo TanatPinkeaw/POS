@@ -495,6 +495,16 @@
 }
 
 /*
+ * The value and its ล้าง button, held as one unit on the right of the amount row, so
+ * the clear reads as part of the figure it empties rather than as another figure.
+ */
+.settingsValueGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+}
+
+/*
  * The cash tender, two columns wide enough for two.
  *
  * The stack this replaces was taller than the screen at every resolution the till is

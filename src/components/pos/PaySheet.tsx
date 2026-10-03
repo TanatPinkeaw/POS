@@ -226,8 +226,28 @@ export function PaySheet({
                     <span className={styles.settingsLabel}>
                       <label htmlFor="received">รับเงินมา (บาท)</label>
                     </span>
-                    <span className={styles.settingsValue}>
-                      {till.receivedCash === '' ? '—' : formatThb(Number(till.receivedCash))}
+                    <span className={styles.settingsValueGroup}>
+                      <span className={styles.settingsValue}>
+                        {till.receivedCash === '' ? '—' : formatThb(Number(till.receivedCash))}
+                      </span>
+                      {/*
+                        ล้าง belongs to the amount, not to the keypad.
+
+                        As the pad's thirteenth key it needed a row to itself, and a
+                        row of one key is a row the cashier pays for with a taller
+                        sheet — which is what pushed the pad under the fold before the
+                        two-column layout existed. Beside the figure it clears, the
+                        meaning is also plainer: it empties *this* amount, and it reads
+                        as unavailable when there is nothing to empty.
+                      */}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={till.receivedCash === ''}
+                        onClick={() => till.setReceivedCash('')}
+                      >
+                        ล้าง
+                      </Button>
                     </span>
                   </div>
                   <input id="received" className="ln-visually-hidden" value={till.receivedCash} readOnly />
@@ -248,10 +268,11 @@ export function PaySheet({
                 </div>
               </div>
 
+              {/* Twelve keys, four clean rows: `onClear` is deliberately not passed — ล้าง
+                  sits with the amount above (see the note there). */}
               <Numpad
                 onInput={appendDigit}
                 onBackspace={() => till.setReceivedCash((current) => current.slice(0, -1))}
-                onClear={() => till.setReceivedCash('')}
               />
             </div>
           </>
