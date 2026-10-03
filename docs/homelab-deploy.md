@@ -86,8 +86,9 @@ Three things about that sequence are worth knowing before you run it:
   `NODE_ENV=production`, which expects the `.next` directory a build leaves behind.
   `/opt/pos/.next` is part of the deployment, not a cache you can prune.
 - **`npm run setup` applies migrations, and so does §8.** The installer also creates
-  `pos_test`, which nothing in a shop uses; it is the suite's database (it truncates
-  its tables, which is why it is a separate database). Leaving it alone is fine.
+  `pos_test`, which nothing in a shop uses; it is the suite's database (its tables
+  are emptied between tests, which is why it is a separate database). Leaving it
+  alone is fine.
 
 The app reads `.env` from its working directory (`src/lib/env.ts`), so `.env` stays in
 `/opt/pos` and is never copied into `/etc`. Real environment variables win over the

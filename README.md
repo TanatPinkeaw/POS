@@ -159,7 +159,7 @@ The equivalent by hand is to create the role and both databases as the superuser
 
 `DATABASE_URL`, `TEST_DATABASE_URL`, and `AUTH_SECRET` are the three settings that
 matter. Tests **refuse to run** unless the test database name contains `test`,
-because they truncate tables.
+because they empty tables between tests.
 
 ### 2. First run — the setup wizard
 

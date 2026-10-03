@@ -10,12 +10,44 @@ import { hash } from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { SYSTEM_USER_ID, SYSTEM_USER_NAME, SYSTEM_USER_PHONE } from '@/lib/system-user';
 
-/** Every table, most dependent first is unnecessary thanks to CASCADE. */
-const TABLES = [
-  'audit_logs',
-  // Listed explicitly even though CASCADE would reach them: the payment intents
-  // and the paired displays are money and authority, and a reset that quietly
-  // skipped them would leave a payable QR behind for the next test.
+/**
+ * Every application table the reset empties, and the order it must empty them
+ * in: a child before every row it points at, because the reset no longer leans
+ * on `CASCADE`.
+ *
+ * This used to be one `TRUNCATE ... RESTART IDENTITY CASCADE`. Measured on the
+ * development machine, that costs about 13ms *per table in the list* —
+ * PostgreSQL hands each truncated relation a fresh file, and Windows makes
+ * creating one expensive — so 24 tables cost ~300ms before a single assertion
+ * runs, and the suite paid it once per test. Ordered `DELETE`s are ~10x cheaper
+ * and, joined into one statement below, one round trip.
+ *
+ * `audit_logs` is deliberately absent from this list: a `BEFORE DELETE` trigger
+ * refuses to delete a trail row (the 20260104 migration), so `resetDatabase`
+ * handles it separately, lifting that trigger just long enough to empty it.
+ * `credit_note_items` and `inbound_payments` are listed here even though the old
+ * `CASCADE` swept them up implicitly — with `DELETE` there is no cascade, and a
+ * table left out now fails loudly instead of silently leaving rows behind for
+ * the next test.
+ *
+ * The ordering is also why this stays an explicit list rather than a catalogue
+ * query: the tests that matter most here are for money and authority, and a
+ * comment naming why each group is present is worth more than the automation.
+ *
+ * `audit_logs` is emptied through a guarded `DELETE` rather than a `TRUNCATE`
+ * because a `TRUNCATE` bypasses the append-only trigger silently, while lifting
+ * the trigger for the length of the reset says out loud what the fixture is
+ * doing. `tests/audit.test.ts` proves the trigger is back on afterwards, which
+ * is what makes the temporary lift safe.
+ */
+const TABLES_IN_DELETE_ORDER = [
+  // Reached from `credit_notes` and `order_items`; a leftover row would make the
+  // next test's refund look like a double refund (unique index on the order it
+  // reverses) or corrupt a line's returnable quantity.
+  'credit_note_items',
+  // Borrowed money that arrived by bank transfer; the intent it matched must be
+  // deleted first, so this precedes `payment_intents`.
+  'inbound_payments',
   'payment_intents',
   'display_devices',
   'point_transactions',
@@ -25,13 +57,12 @@ const TABLES = [
   'consignor_payables',
   'consignor_payouts',
   'payments',
-  // Listed for the same reason the intents are: a leftover credit note would make
-  // the next test's refund look like a double refund, because the guard against
-  // one is a unique index on the order it reverses.
+  // A leftover credit note would make the next test's refund look like a double
+  // refund, because the guard against one is a unique index on the order it
+  // reverses.
   'credit_notes',
-  // Cascade from `orders` would reach these too, but they are written *in* the
-  // same transactions as orders and a leftover row would make the next test's
-  // dedupe assertion pass for the wrong reason.
+  // Written *in* the same transactions as orders, so a leftover row would make the
+  // next test's dedupe assertion pass for the wrong reason.
   'notifications',
   'order_items',
   'orders',
@@ -59,13 +90,56 @@ const TABLES = [
   'otp_challenges',
 ];
 
+/**
+ * The sequences behind the autoincrement columns.
+ *
+ * They are rewound with a single batched `setval`, because the reset is
+ * documented as restarting identity and a suite that assumed "the first drawer
+ * is 1" would otherwise quietly start at whatever the previous file left behind.
+ */
+const IDENTITY_SEQUENCES = [
+  'audit_logs_id_seq',
+  'cash_shifts_id_seq',
+  'categories_id_seq',
+  'consignor_payables_id_seq',
+  'consignor_payouts_id_seq',
+  'credit_note_items_id_seq',
+  'display_devices_id_seq',
+  'inbound_payments_id_seq',
+  'notifications_id_seq',
+  'order_items_id_seq',
+  'payment_intents_id_seq',
+  'payments_id_seq',
+  'point_transactions_id_seq',
+  'stock_logs_id_seq',
+  'time_logs_id_seq',
+  'work_schedules_id_seq',
+];
+
 export { prisma };
 
-/** Empties the database and restarts identity sequences. */
+/**
+ * Empties the database and restarts identity sequences.
+ *
+ * The whole thing is one `$executeRawUnsafe`: the pg driver adapter sends an
+ * unsafe raw query through the simple query protocol, so the statements travel
+ * as one round trip in one implicit transaction. If any of them fails the rest
+ * are skipped and the transaction rolls back, which is what a reset wants — a
+ * half-empty database would be worse than a loud failure.
+ */
 export async function resetDatabase(): Promise<void> {
-  await prisma.$executeRawUnsafe(
-    `TRUNCATE ${TABLES.map((table) => `"${table}"`).join(', ')} RESTART IDENTITY CASCADE`,
-  );
+  const statements = [
+    // The one table whose own trigger refuses a `DELETE`. It is lifted for the
+    // length of this reset — the whole batch is one implicit transaction, so a
+    // failure anywhere rolls the lift back and leaves the trail guarded.
+    'ALTER TABLE "audit_logs" DISABLE TRIGGER "audit_logs_append_only"',
+    'DELETE FROM "audit_logs"',
+    'ALTER TABLE "audit_logs" ENABLE TRIGGER "audit_logs_append_only"',
+    ...TABLES_IN_DELETE_ORDER.map((table) => `DELETE FROM "${table}"`),
+    `SELECT ${IDENTITY_SEQUENCES.map((seq) => `setval('"${seq}"', 1, false)`).join(', ')}`,
+  ];
+
+  await prisma.$executeRawUnsafe(statements.join(';\n'));
 }
 
 export interface TestPeople {
