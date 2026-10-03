@@ -505,31 +505,58 @@
 }
 
 /*
- * The cash tender, two columns wide enough for two.
+ * The cash tender, two columns whenever the sheet itself has room for two.
  *
  * The stack this replaces was taller than the screen at every resolution the till is
- * used on, because the keypad is five rows of 60px keys while the amount, the quick
- * notes and the change are each short — so the bottom of the pad, and the ล้าง key with
- * it, sat below the fold and the amount being entered could not be watched while it was
- * typed. Side by side the row is only as tall as the pad, which is what takes the till's
- * one working screen out of a scroll view. A phone keeps the single column, because at
- * that width there is no second column to put anything in.
+ * used on, because the keypad is four rows of 60px keys while the amount, the quick
+ * notes and the change are each short — so the bottom of the pad sat below the fold and
+ * the amount being entered could not be watched while it was typed. Side by side the row
+ * is only as tall as the pad, which is what takes the till's one working screen out of a
+ * scroll view.
+ *
+ * Whether there is room for two columns is a question about *this sheet*, not about the
+ * window. The sheet stops growing at 44rem, so a 700px window holds almost as much money
+ * and keypad as a 1280px one does, and a media query on the viewport could not tell those
+ * two apart — it stacked the pad under the money inside a panel that had already been
+ * measured to hold both, and the cashier got a scrolling sheet on a screen with 300px of
+ * room to spare. Wrapping asks the question the right way round: each block states the
+ * width it wants to be read at, and the row breaks only when the sum of the two no longer
+ * fits. A phone still stacks, because at 372px there is genuinely no second column.
  */
 .payCash {
-  display: grid;
-  gap: var(--ln-space-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--ln-space-5);
 }
 
 .payCashMoney {
   display: grid;
   align-content: start;
   gap: var(--ln-space-4);
+  /*
+   * 20rem: the amount row, the six notes and the change, each read without wrapping.
+   * Grows into whatever the pad does not claim, so a wider sheet spends the extra width
+   * on the money rather than leaving it in the margin.
+   */
+  flex: 1 1 20rem;
+  min-width: 0;
 }
 
-@media (min-width: 720px) {
-  .payCash {
-    grid-template-columns: minmax(0, 1fr) 18rem;
-    align-items: start;
-    gap: var(--ln-space-5);
-  }
+/*
+ * The keypad's own share of the row, and the width the row breaks at.
+ *
+ * `flex-grow: 0` is the point: the pad is a fixed 18rem and the money column takes
+ * everything left over. Sharing the spare width between the two instead costs the money
+ * column eleven pixels on a desk, and eleven pixels is the difference between the six
+ * quick notes fitting on one line and พอดี dropping to a line of its own.
+ *
+ * No `min-width` either: these are 60px touch targets, but they are laid out in three
+ * equal columns, so a narrower pad means a squarer key and not a smaller one — and on
+ * the smallest phone in the shop, refusing to go narrower than 18rem would push the whole
+ * sheet sideways instead of stacking it.
+ */
+.payCashPad {
+  flex: 0 1 18rem;
+  min-width: 0;
 }

@@ -269,11 +269,15 @@ export function PaySheet({
               </div>
 
               {/* Twelve keys, four clean rows: `onClear` is deliberately not passed — ล้าง
-                  sits with the amount above (see the note there). */}
-              <Numpad
-                onInput={appendDigit}
-                onBackspace={() => till.setReceivedCash((current) => current.slice(0, -1))}
-              />
+                  sits with the amount above (see the note there). The wrapper is what the
+                  flex row measures, so the pad's share of the sheet is a width the CSS can
+                  ask about rather than a viewport breakpoint it has to guess at. */}
+              <div className={styles.payCashPad}>
+                <Numpad
+                  onInput={appendDigit}
+                  onBackspace={() => till.setReceivedCash((current) => current.slice(0, -1))}
+                />
+              </div>
             </div>
           </>
         )}
