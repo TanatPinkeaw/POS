@@ -13,7 +13,7 @@ second does not. That is the spine of the order below.
 ## Effort 1 — Land the offline till
 
 **State.** Built, reviewed on both axes, and **green** when it landed: `npm run verify:all` ran
-all five gates (the tree has grown since — `verify` is now 80 files and 1095 tests). It is
+all five gates (the tree has grown since — `verify` is now 82 files and 1109 tests). It is
 **landed on `main`** as its own commit (`83bacc9`), on top of the base tree.
 
 **What it unlocks.** A shop keeps selling cash when its connection drops, with the numbers,

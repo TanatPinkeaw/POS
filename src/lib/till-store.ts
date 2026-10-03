@@ -80,6 +80,29 @@ export interface HeldBlock {
 }
 
 /**
+ * The open drawer as the device remembers it.
+ *
+ * Carries the takings and the opening time beside the id, because a till opened with no
+ * network still has to *say* what the shift is worth: the cashier is told the drawer is
+ * open, and a drawer described only by its id would leave them wondering which one, and
+ * the shift's own figures would have to be blanked. Every figure here is as of
+ * `capturedAt` — a snapshot, not a live balance, and the screen says so.
+ *
+ * Deliberately absent: the closing figures (`actualCashThb`, the discrepancy), because a
+ * device never closes a drawer. Inventing them would be inventing the one thing only a
+ * person standing at the drawer can know.
+ */
+export interface DeviceShift {
+  readonly id: number;
+  readonly initialCashThb: number;
+  readonly openedAt: string;
+  readonly cashSalesThb: number;
+  readonly cashPayoutsThb: number;
+  readonly expectedCashThb: number;
+  readonly orderCount: number;
+}
+
+/**
  * Everything the device needs to keep selling with no connection.
  *
  * The customer list is deliberately absent, as are points and pre-orders: the cheapest
@@ -94,7 +117,7 @@ export interface TillSnapshot {
   readonly shop: OfflineShopSettings;
   readonly catalogue: readonly OfflineCatalogueEntry[];
   /** The open drawer. Offline a drawer cannot be opened, only spent from. */
-  readonly shift: { readonly id: number; readonly initialCashThb: number } | null;
+  readonly shift: DeviceShift | null;
   readonly heldBlocks: readonly HeldBlock[];
 }
 

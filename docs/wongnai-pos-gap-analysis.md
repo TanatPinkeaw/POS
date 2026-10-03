@@ -200,13 +200,17 @@ customer lands on that bill when it closes. `POST /api/v1/members` is now
 `['employee', 'admin']`; editing an account stayed admin-only, because adding one is a
 counter act and changing how one signs in is not.
 
-### 4.4 A till that survives a flaky connection — operational risk
+### 4.4 A till that survives a flaky connection — **closed**
 
-Network loss currently means no sales. Theirs is an installed app. Shape: install
-the PWA, cache the app shell and the last catalogue snapshot, and make the offline
-state *explicit* (refuse the checkout with a clear message rather than failing
-silently). A full offline sales queue with stock reconciliation is a much bigger
-promise and should be a separate decision.
+Done, and further than the shape this section first proposed. ADR 0019 built the part
+that was called "a much bigger promise and should be a separate decision" — a full
+offline sales queue with number loans and stock reconciliation, refusing in the
+operator's own words rather than failing silently. ADR 0024 closed the rest: a prepared
+till keeps its own shell, so it opens with no connection at all, and the drawer is the
+one thing it may answer from memory — from a prepared device only, and labelled as read
+from the machine. The API is never cached; a route the device did not prepare gets an
+honest "no connection" page. What remains unbuilt is named in README's *Not built yet*:
+offline PromptPay/member/refund, a second register, and RSC payloads.
 
 ### 4.5 Multi-branch and a second register — growth
 
@@ -264,8 +268,8 @@ Stated here rather than implied anywhere above:
 
 **Then the things that keep a growing shop:**
 
-4. **Offline-tolerant till** (§4.4) — app-shell caching plus an explicit offline
-   state. Argue separately about a sales queue.
+4. ~~**Offline-tolerant till** (§4.4)~~ — **done**, ADR 0019 and ADR 0024: a prepared
+   till keeps selling cash with no connection, including from a cold start.
 5. **Product images and shop logo** (§4.6) — small, visible, makes the catalogue
    feel real.
 6. **Second register at one shop** (ADR 0002 §4) — revisit before a shop buys a
@@ -295,7 +299,7 @@ Stated here rather than implied anywhere above:
 - A renter issues its first tax invoice → item 1 moves from "soon" to "now".
 - A renter asks for a second branch or a second till → items 6 and 7.
 - A customer misses a pickup because they were not told → item 2.
-- Network outages start costing sales → item 4.
+- Network outages start costing sales → item 4 (done; a cold launch is what was left).
 - We decide to serve restaurants → re-read §2 in its entirety, because half of the
   ➖ entries become ❌.
 - Wongnai changes its pricing or ships a stock-reservation model → re-fetch and

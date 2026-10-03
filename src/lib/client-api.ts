@@ -63,6 +63,22 @@ async function readEnvelope<T>(response: Response): Promise<T> {
   return body?.data as T;
 }
 
+/**
+ * Whether a request failed without the server ever answering it.
+ *
+ * `apiFetch` has two failure shapes and no third: an `ApiError`, which means a response
+ * arrived and the server said no, and the `TypeError` `fetch` throws when the request never
+ * left the machine. The difference is not cosmetic — an outage and a refusal call for
+ * opposite behaviour. A refusal is the server's answer and must be shown (a locked PIN, a
+ * shelf that is empty, a session that expired); an outage is an absence of answers, and it
+ * is the one case where a device may answer from what it already knows (ADR 0019, ADR 0024).
+ * Anything read as an outage that was really a refusal would let a stale answer stand in
+ * for the server's, so this is deliberately narrow.
+ */
+export function isOfflineFailure(error: unknown): boolean {
+  return !(error instanceof ApiError);
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
     credentials: 'same-origin',

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import type { ChildProcess } from 'node:child_process';
-import { chromium, expect, type Browser, type Page } from '@playwright/test';
+import { chromium, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import ts from 'typescript';
 import { Session, csvForm, freePort, loadEnv, resetScratchSchema, scratchUrl, shell, startServer, stopServer, waitForServer } from './harness';
 
@@ -206,8 +206,15 @@ async function main(): Promise<void> {
     browser = await chromium.launch();
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     await context.addCookies([{ name: 'pos_session', value: cashier.cookieHeader().slice('pos_session='.length), url: base, httpOnly: true, sameSite: 'Lax' }]);
-    const page = await context.newPage();
-    const errors: string[] = []; page.on('pageerror', (error) => errors.push(error.message));
+    const errors: string[] = [];
+    /** Opens a page that reports its own failures — including one the worker served. */
+    const opened = async (target: BrowserContext): Promise<Page> => {
+      const created = await target.newPage();
+      created.on('pageerror', (error) => errors.push(error.message));
+      return created;
+    };
+    // Reassigned below, when the journey reboots the till to prove a cold launch.
+    let page = await opened(context);
     await page.goto(`${base}/pos`);
     await expect(page.getByRole('button', { name: 'เตรียมเครื่องขายออฟไลน์' })).toBeEnabled();
     await storageProbe(page);
@@ -276,6 +283,47 @@ async function main(): Promise<void> {
     await context.setOffline(false);
     await expect.poll(async () => (await state(page)).queue.length, { timeout: 20_000 }).toBe(0);
     check((await cashier.call<unknown[]>('/api/v1/orders')).length === 2, 'reconnect sends automatically without a manual click');
+
+    /*
+     * The cold launch — ADR 0024. Everything above needed a page that was open when the
+     * network died; a real outage ends with the machine rebooting, and then the till has to
+     * open with nothing but what the device kept. The steps are in the order they really
+     * happen, because the order is most of the risk:
+     *
+     *   wait for the worker to be in charge, then navigate once more, because a document is
+     *   stored by the navigation that happens *while* a worker is controlling — the one
+     *   that installed it arrived before anything was listening;
+     *   prove the shell is stored rather than assuming it;
+     *   close the tab (the machine's other end), open a new one, and go with no network.
+     */
+    await page.waitForFunction(() => navigator.serviceWorker?.controller !== null);
+    await page.reload();
+    await expect.poll(() => page.evaluate(async (origin) => {
+      const cache = await caches.open('ln-till-shell-v1');
+      return Boolean(await cache.match(`${origin}/pos`));
+    }, base)).toBe(true);
+    check(true, 'a visit while the worker is in charge stores the till screen');
+    await context.setOffline(true);
+    await page.close();
+    const cold = await opened(context);
+    await cold.goto(`${base}/pos`);
+    await expect(cold.getByRole('heading', { name: 'ขายหน้าร้าน' })).toBeVisible(); checks++;
+    await expect(cold.getByText('ลิ้นชักเปิดอยู่')).toBeVisible(); checks++;
+    check(await cold.getByText('ลิ้นชักนี้มาจากข้อมูลในเครื่อง').isVisible(), 'the cold till knows which drawer it is in, and says where it read it from');
+    check(await cold.getByRole('button', { name: 'รับชำระเงิน · ฿0.00' }).isDisabled(), 'an empty bill is still refused — the cold launch did not weaken the till');
+    // The money path must not be answered from the cache, or a stale price would be sold.
+    check(await cold.evaluate(() => fetch('/api/v1/shifts/current').then(() => 'served', () => 'refused')) === 'refused', 'the API is never served from the shell cache');
+    await cold.getByRole('button', { name: /^สินค้าทดสอบ 000/ }).click();
+    await cold.getByRole('button', { name: /รับชำระ|ชำระเงิน/ }).first().click();
+    await cold.getByRole('button', { name: 'พอดี', exact: true }).click();
+    await cold.getByRole('button', { name: 'ยืนยันรับเงิน', exact: true }).click();
+    await expect(cold.getByRole('button', { name: 'ปิดและขายต่อ' })).toBeVisible();
+    await cold.getByRole('button', { name: 'ปิดและขายต่อ' }).click();
+    check((await state(cold)).queue.length === 1, 'a bill taken on a cold-launched till is committed to its own queue');
+    await context.setOffline(false);
+    await expect.poll(async () => (await state(cold)).queue.length, { timeout: 20_000 }).toBe(0);
+    check((await cashier.call<unknown[]>('/api/v1/orders')).length === 3, 'the cold launch bill reaches the shop when the line comes back');
+    page = cold;
     await page.getByRole('button', { name: 'ปิดลิ้นชัก', exact: true }).first().click();
     await page.getByLabel('นับได้จริง (บาท)').fill('700');
     await page.getByRole('dialog').getByRole('button', { name: 'ปิดลิ้นชัก', exact: true }).click();

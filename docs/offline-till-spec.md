@@ -19,7 +19,12 @@ a changed price requires cashier reconfirmation. Cash is then committed locally
 with one replay identity before any posting. Network uncertainty never produces
 an alternate sale. Pending bills use the frozen cached prices rather than rebasing
 mid-queue. Unprepared tills retain the ordinary server flow and do not accept
-offline money. There is no cold offline app launch or service worker.
+offline money. **A prepared till also launches with no connection** (ADR 0024): a
+hand-written service worker keeps the four till screens and their hashed assets, and the
+drawer is the one thing the device may answer from memory — from a *prepared* device
+only, and labelled as read from the machine. Nothing else is cached: the API is never
+answered from the cache, and any route outside the four prepared screens gets an honest
+"no connection" page rather than a document from an unknown moment.
 
 The screen shows cache age/count, remaining numbers, pending money, refused bills
 and local preparing/ready/collected tickets. Reconnect and a ten-second timer send
@@ -33,8 +38,10 @@ explicit actual-document/old-device-stopped confirmation.
 
 The pure money/number/retry rules, injected store seam, real PostgreSQL replay,
 and actual Chromium/IndexedDB journey all have automated coverage. Browser proof
-runs as `npm run offline:browser` and is part of `verify:all` and CI. Shop field use,
-physical printer behavior and cold offline launch are not claims this proves.
+runs as `npm run offline:browser` and is part of `verify:all` and CI, and it now includes
+the cold launch: the tab is closed, a new one is opened with the context offline, and the
+till sells a cash bill that reaches the shop when the line comes back. Shop field use and
+physical printer behavior are not claims this proves.
 
 Anything this document names as a later command is written **without** the `npm run`
 prefix on purpose: `doc:audit` (ADR 0013) fails a document that runs a command which does
@@ -420,7 +427,7 @@ are checked without a browser and without a server, the same way `refund-plan.ts
 | --- | --- | --- |
 | Pure | `offline-sale-rules.ts`, `number-block.ts`, `sync-plan.ts`, `sale-instant.ts` | `refund-plan.test.ts`, `queue-number.test.ts`, `fulfilment.test.ts` |
 | Server, real Postgres | The freeze while a block is open; reserve → spend → report leaving **no gap**; cancelling an unused block; the same `client_ref` twice writing one order; negative stock accepted with a task; the device's price recorded; a batch stopping at a refusal | `offline-replay.test.ts`, `device-numbers.test.ts`, `inventory-concurrency.test.ts`, `credit-notes.test.ts` |
-| The browser journey | Actual IndexedDB request-success/transaction-abort, reload, exclusive tabs, cached barcode beyond 60 items, cash receipt, local ticket, response lost after commit, reconnect sending, close/release, online price reconfirmation, failed checkout commit, admin recovery | `scripts/offline-browser.ts` |
+| The browser journey | Actual IndexedDB request-success/transaction-abort, reload, exclusive tabs, cached barcode beyond 60 items, cash receipt, local ticket, response lost after commit, reconnect sending, close/release, online price reconfirmation, failed checkout commit, **a cold launch with no network (closed tab, new tab, cash sale, reconnect)**, the API proven unserved from the cache, admin recovery | `scripts/offline-browser.ts` |
 
 Playwright is an explicitly approved **development-only** dependency, not a fake
 IndexedDB library or production runtime. Install its Chromium binary with

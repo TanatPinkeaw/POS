@@ -1,3 +1,4 @@
+import { OfflineShellRegistrar } from '@/components/pos/OfflineShellRegistrar';
 import { AreaLayout } from '@/components/shell/AreaLayout';
 import type { NavItem } from '@/components/shell/AppShell';
 import { requireShellUser } from '@/lib/shell';
@@ -43,6 +44,12 @@ export default async function PosLayout({
   const nav = user.role === 'admin' ? [...POS_NAV, ADMIN_RETURN] : POS_NAV;
   return (
     <AreaLayout user={user} nav={nav} density="touch" variant="till">
+      {/*
+        So a prepared till can be opened with the network gone (ADR 0024). In the till area
+        and nowhere else, and in a production build only — see the component for why both
+        of those are deliberate rather than incidental.
+      */}
+      <OfflineShellRegistrar />
       {children}
     </AreaLayout>
   );

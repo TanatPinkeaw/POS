@@ -287,7 +287,22 @@ export function useTill({
         supervisorDiscountLimitThb: shop.supervisorDiscountLimitThb,
       },
       catalogue: [...catalogueRef.current.values()],
-      shift: shift ? { id: shift.id, initialCashThb: shift.initialCashThb } : null,
+      /*
+       * The drawer is written whole, not as an id: a till opened with no network still has
+       * to say which shift it is in and what that shift has taken, or the header would have
+       * to blank the one figure a cashier reads between bills (ADR 0024).
+       */
+      shift: shift
+        ? {
+            id: shift.id,
+            initialCashThb: shift.initialCashThb,
+            openedAt: shift.openedAt,
+            cashSalesThb: shift.cashSalesThb,
+            cashPayoutsThb: shift.cashPayoutsThb,
+            expectedCashThb: shift.expectedCashThb,
+            orderCount: shift.orderCount,
+          }
+        : null,
       heldBlocks: store.getState().snapshot?.heldBlocks ?? [],
     });
     setOffline(store.getState());

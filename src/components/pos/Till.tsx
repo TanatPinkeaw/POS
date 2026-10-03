@@ -66,7 +66,7 @@ export function Till({
   shop: ShopView;
   cashierId: string;
 }) {
-  const { shift, defaultInitialCash, loading, refresh, open, close } = useOpenShift();
+  const { shift, source: shiftSource, deviceNotice, defaultInitialCash, loading, refresh, open, close } = useOpenShift();
   const [payOpen, setPayOpen] = useState(false);
   const [shiftOpen, setShiftOpen] = useState(false);
   const [shiftBusy, setShiftBusy] = useState(false);
@@ -220,12 +220,20 @@ export function Till({
               ? `ลิ้นชักเปิดอยู่ · เริ่ม ${bangkokTimeString(new Date(shift.openedAt))}`
               : 'ยังไม่เปิดลิ้นชัก — เปิดก่อนจึงจะรับชำระเงินได้'}
           </p>
+          {/*
+            Said here, under the drawer, rather than in place of it — because the drawer is
+            real and only its *figures* are remembered (ADR 0024). Hiding the shift because
+            the network is gone would stop a sale the till is already equipped to keep; the
+            number that needs the caveat is the takings, so that is what carries one.
+          */}
+          {deviceNotice ? <p className={styles.hint}>{deviceNotice}</p> : null}
         </div>
 
         <div className={styles.tillBarActions}>
           {shift ? (
             <Pill tone="success" icon="drawer">
-              รายรับกะนี้ <Money amount={shift.cashSalesThb} />
+              รายรับกะนี้ {shiftSource === 'device' ? '(จากเครื่อง) ' : ''}
+              <Money amount={shift.cashSalesThb} />
             </Pill>
           ) : (
             <Pill tone="warning" icon="warning">

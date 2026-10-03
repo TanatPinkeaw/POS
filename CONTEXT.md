@@ -79,10 +79,13 @@ re-litigate (the reasoning, when it lands, goes into an ADR):
    on a box we run. Whether that is one shop or ADR 0016's multi-tenant build is
    **not** settled: nothing about a single shop needs the tenant seam, and the
    release plan is seven phases of work that a first sale does not require.
-4. **A network outage must be visible, not silent.** Today a lost connection is a
-   till that does nothing; the requirement is that the refusal names itself. Full
-   offline selling (a queued local sale that has to reconcile stock later) is
-   deliberately not taken on until a shop loses money to an outage.
+4. **A network outage must be visible, not silent — and the till keeps selling.**
+   Originally the requirement was only that a refusal named itself. Full offline
+   selling (a queued local sale that reconciles stock later) was deliberately not
+   taken on until a shop lost money to an outage, and then it was: ADR 0019 built
+   the queue, number loans and reconciliation, and ADR 0024 closed the cold launch
+   so a rebooted till opens with no connection at all. Still refused on purpose:
+   PromptPay, member lookup, refunds and any page the device did not prepare.
 5. **The call board is always on.** Every walk-in bill mints a number and appears
    on `/pos/queue`; a shop that never calls a number ignores the screen. No
    per-shop switch — a switch is a setting a shop can get wrong on day one, and a

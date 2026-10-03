@@ -32,6 +32,7 @@ import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import { ROLE_LABEL } from '@/lib/roles';
 import { playPreOrderChime, primeAudio } from '@/lib/sound';
 import { THEME_COOKIE_MAX_AGE, THEME_COOKIE_NAME, parseTheme, type Theme } from '@/lib/theme';
+import { useIsOffline } from '@/lib/use-online';
 
 import { useRealtime, useRealtimeEvent } from '../realtime/RealtimeProvider';
 import styles from './AppShell.module.css';
@@ -56,6 +57,58 @@ export interface ShellUser {
 }
 
 const MINI_KEY = 'ln.sidebar.mini';
+
+/**
+ * One sidebar entry, drawn as a router link or as a plain anchor.
+ *
+ * With no network a client-side navigation is a request the router cannot make: it fetches a
+ * rendered payload, not a document, and a service worker must not hand it a cached HTML file
+ * to answer with (ADR 0024). So while the browser believes it is offline the link becomes an
+ * ordinary anchor — the browser loads a real document, and the worker serves the one it
+ * stored on the last successful visit. The cashier tapping "คิวเครื่องดื่ม" on a dead line gets
+ * that screen, instead of an error boundary.
+ *
+ * Only `href` changes. Same element, same classes, same badge, so nothing about the frame's
+ * appearance or its accessibility depends on which one is drawn.
+ */
+function NavEntry({
+  item,
+  active,
+  plain,
+  badge,
+  onClick,
+}: {
+  item: NavItem;
+  active: boolean;
+  /** Offline navigation is a full document load; the router cannot be asked. */
+  plain: boolean;
+  badge?: ReactNode;
+  onClick?: () => void;
+}) {
+  const className = `${styles.link} ${active ? styles.linkActive : ''}`;
+  const inner = (
+    <>
+      <span className={styles.linkIcon} aria-hidden="true">
+        <Icon name={item.icon} size={18} />
+      </span>
+      <span className={styles.linkLabel}>{item.label}</span>
+      {badge}
+    </>
+  );
+
+  if (plain) {
+    return (
+      <a href={item.href} className={className} aria-current={active ? 'page' : undefined} onClick={onClick}>
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <Link href={item.href} className={className} aria-current={active ? 'page' : undefined} onClick={onClick}>
+      {inner}
+    </Link>
+  );
+}
 
 /**
  * The connection indicator.
@@ -180,6 +233,13 @@ export function AppShell({
     nav.map((item) => item.href),
   );
 
+  /*
+   * Offline navigation is a document load rather than a router change — see `NavEntry`.
+   * Read from the browser rather than from the socket indicator: the socket can be down
+   * while the network is fine, and a cashier on a captive portal needs the plain link.
+   */
+  const offline = useIsOffline();
+
   const sidebar = (
     <nav className={styles.sidebar} aria-label="เมนูหลัก">
       <Link href={nav[0]?.href ?? '/'} className={styles.brand}>
@@ -202,38 +262,35 @@ export function AppShell({
           const showBadge = item.badgedByPreOrders && preOrderAlert > 0;
 
           return (
-            <Link
+            <NavEntry
               key={item.href}
-              href={item.href}
-              className={`${styles.link} ${active ? styles.linkActive : ''}`}
-              aria-current={active ? 'page' : undefined}
+              item={item}
+              active={active}
+              plain={offline}
               onClick={() => {
                 if (item.badgedByPreOrders) {
                   setPreOrderAlert(0);
                 }
               }}
-            >
-              <span className={styles.linkIcon} aria-hidden="true">
-                <Icon name={item.icon} size={18} />
-              </span>
-              <span className={styles.linkLabel}>{item.label}</span>
-              {showBadge ? (
-                /*
-                 * The count is a status, not decoration: it is announced as a
-                 * number of new pre-orders, not as the digit a sighted operator
-                 * happens to see beside a nav item.
-                 */
-                <span
-                  className={styles.linkBadge}
-                  role="status"
-                  aria-label={`พรีออเดอร์ใหม่ ${preOrderAlert} รายการ`}
-                >
-                  <span aria-hidden="true" className={`${styles.badge} ln-num`}>
-                    {preOrderAlert}
+              badge={
+                showBadge ? (
+                  /*
+                   * The count is a status, not decoration: it is announced as a
+                   * number of new pre-orders, not as the digit a sighted operator
+                   * happens to see beside a nav item.
+                   */
+                  <span
+                    className={styles.linkBadge}
+                    role="status"
+                    aria-label={`พรีออเดอร์ใหม่ ${preOrderAlert} รายการ`}
+                  >
+                    <span aria-hidden="true" className={`${styles.badge} ln-num`}>
+                      {preOrderAlert}
+                    </span>
                   </span>
-                </span>
-              ) : null}
-            </Link>
+                ) : null
+              }
+            />
           );
         })}
       </div>
@@ -266,22 +323,9 @@ export function AppShell({
               </span>
             </Link>
             <div className={styles.nav}>
-              {nav.map((item) => {
-                const active = item.href === activeHref;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`${styles.link} ${active ? styles.linkActive : ''}`}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    <span className={styles.linkIcon} aria-hidden="true">
-                      <Icon name={item.icon} size={18} />
-                    </span>
-                    <span className={styles.linkLabel}>{item.label}</span>
-                  </Link>
-                );
-              })}
+              {nav.map((item) => (
+                <NavEntry key={item.href} item={item} active={item.href === activeHref} plain={offline} />
+              ))}
             </div>
           </nav>
         </>

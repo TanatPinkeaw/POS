@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1095 tests across 80 files: unit + integration
+npm test                # 1109 tests across 82 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 191 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 27 screens render, and render styled
@@ -810,6 +810,7 @@ goes through them.
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
 | `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
+| `docs/adr/0024-a-prepared-till-launches-without-the-network.md` | The cold launch: a prepared till keeps its own shell so it opens with no connection, what the worker may and may not cache (never the API), the drawer as the one thing a device may answer from memory, and offline navigation as a document load rather than a router change. |
 | `docs/offline-till-spec.md` | Shipped prepared cash offline flow: durable storage, exclusive writer, borrowed numbers, ordered idempotent replay, original cashier/shift, local tickets, close/release and admin recovery; actual Chromium proof and explicit limits. |
 | `docs/roadmap.md` | The next three efforts in order — the offline till to land, customer identity with electronic receipts and the role matrix, then consigned goods — and which document changes with each. |
 | `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
@@ -852,9 +853,13 @@ for the customer to scan, print or read down the phone.
   returns, and a photo host that goes down shows placeholders.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
   audit-log viewer are in — see below.)
-- **Cold offline app launch.** Prepared, already-loaded tills sell cash offline
-  (ADR 0019); fetching a new page without a connection is not supported. There is
-  no service worker, offline PromptPay/member/refund or second-register promise.
+- **The offline till beyond the cold launch.** A prepared till now opens with no
+  connection at all — shell, drawer and catalogue all from the device (ADR 0024) —
+  and a rebooted machine is no longer an asterisk on every guarantee in ADR 0019.
+  What is still not promised: an offline page outside the four the device prepared,
+  offline PromptPay, member lookup or refunds, a second register, and RSC payloads
+  (so a link inside a page body still fails offline, where the nav does not). The
+  worker needs HTTPS or localhost, which `docs/homelab-deploy.md` already requires.
 - **Waiting times as a report.** A walk-in ticket now records both when it was paid for
   and when the goods were ready (ADR 0018), so how long customers actually wait is a fact
   the database holds — and no screen or workbook reads it yet.

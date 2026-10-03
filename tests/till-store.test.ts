@@ -18,6 +18,7 @@ import {
   createTillStore,
   numbersRemaining,
   offlineNotice,
+  type DeviceShift,
   type HeldBlock,
   type PersistedTill,
   type TillReceipt,
@@ -52,6 +53,23 @@ const CALL_BLOCK: HeldBlock = {
   block: { kind: 'queue', day: TODAY, from: 1, to: 100, lastUsed: null },
 };
 
+/**
+ * The drawer as the device remembers it.
+ *
+ * The takings and the opening time are here because a till opened with no network still has
+ * to be able to say which shift it is in (ADR 0024); `till-writer-lock`-style tests only
+ * ever look at the id, so the rest is spelled out once rather than in every case.
+ */
+const DRAWER: DeviceShift = {
+  id: 7,
+  initialCashThb: 2000,
+  openedAt: AT.toISOString(),
+  cashSalesThb: 0,
+  cashPayoutsThb: 0,
+  expectedCashThb: 2000,
+  orderCount: 0,
+};
+
 function snapshot(overrides: Partial<TillSnapshot> = {}): TillSnapshot {
   return {
     capturedAt: AT.toISOString(),
@@ -67,7 +85,7 @@ function snapshot(overrides: Partial<TillSnapshot> = {}): TillSnapshot {
       { productId: 'p-coffee', name: 'กาแฟเย็น', priceThb: 45, available: 10, safetyQty: 0, isActive: true, consigned: false },
       { productId: 'p-cake', name: 'เค้กชิ้น', priceThb: 65, available: 4, safetyQty: 1, isActive: true, consigned: false },
     ],
-    shift: { id: 7, initialCashThb: 2000 },
+    shift: DRAWER,
     heldBlocks: [RECEIPT_BLOCK, CALL_BLOCK],
     ...overrides,
   };
@@ -175,7 +193,7 @@ describe('prepared transport', () => {
 
   it('preserves the loan drawer until all loans are released', async () => {
     const { store } = await readyStore();
-    await expect(store.saveSnapshot(snapshot({ shift: { id: 8, initialCashThb: 0 } }))).rejects.toThrow();
+    await expect(store.saveSnapshot(snapshot({ shift: { ...DRAWER, id: 8, initialCashThb: 0 } }))).rejects.toThrow();
     expect(store.getState().snapshot?.shift?.id).toBe(7);
   });
 
