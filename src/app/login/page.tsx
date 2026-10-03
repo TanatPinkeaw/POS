@@ -55,7 +55,17 @@ export default async function LoginPage() {
     (await prisma.users.count({ where: { phone: DEMO_ACCOUNTS[0]?.phone ?? '0800000001' } })) > 0;
 
   return (
-    <main className={styles.page}>
+    /*
+     * Touch density, because the same door is the till's.
+     *
+     * This page sits outside every density scope, so it took the desk's sizes for
+     * everyone: 14px fields in 34px controls, the size at which iOS Safari zooms the
+     * viewport on focus. The people who reach it are not all at a desk — a cashier
+     * signs in on the till tablet, which is the same touch density the selling screen
+     * runs at — and there is no session yet to tell the two apart, so the larger sizes
+     * are the safe default for a screen that is typed once and then left.
+     */
+    <main className={styles.page} data-density="touch">
       <div className={styles.card}>
         <div className={styles.head}>
           {/*
