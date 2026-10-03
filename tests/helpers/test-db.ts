@@ -20,8 +20,10 @@ const TABLES = [
   'display_devices',
   'point_transactions',
   // The consignor ledger is money owed to a person, and a leftover row would make
-  // the next test's balance wrong rather than merely present (ADR 0023).
+  // the next test's balance wrong rather than merely present (ADR 0023). The payout
+  // statements are listed before the ledger rows that point at them.
   'consignor_payables',
+  'consignor_payouts',
   'payments',
   // Listed for the same reason the intents are: a leftover credit note would make
   // the next test's refund look like a double refund, because the guard against

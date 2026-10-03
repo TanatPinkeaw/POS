@@ -25,6 +25,8 @@ export interface ShiftSummary {
   closedAt: Date | null;
   initialCashThb: number;
   cashSalesThb: number;
+  /** Cash paid out to consignors from this drawer (ADR 0023 §6). */
+  cashPayoutsThb: number;
   expectedCashThb: number;
   actualCashThb: number | null;
   discrepancyThb: number | null;
@@ -66,6 +68,24 @@ async function cashSalesForShift(db: Db, shiftId: number): Promise<number> {
 }
 
 /**
+ * Cash paid out of this drawer to consignors (ADR 0023 §6).
+ *
+ * A cash payout names the drawer it came from, so the money is counted the same way a
+ * cash refund is: it left the till, and the close-of-shift count must know. A transfer
+ * carries no `shift_id` and never appears here.
+ */
+async function cashPayoutsForShift(db: Db, shiftId: number): Promise<number> {
+  const rows = await db.$queryRaw<{ total: unknown }[]>`
+    SELECT COALESCE(SUM("amount_thb"), 0) AS total
+      FROM "consignor_payouts"
+     WHERE "shift_id" = ${shiftId}
+       AND "method" = 'cash'
+  `;
+  const row = rows[0];
+  return row ? Number(row.total) : 0;
+}
+
+/**
  * How many bills this shift closed.
  *
  * Refund legs are excluded, and that is not bookkeeping pedantry: a refund leg
@@ -88,7 +108,12 @@ async function orderCountForShift(db: Db, shiftId: number): Promise<number> {
 async function summarize(db: Db, shift: cash_shifts): Promise<ShiftSummary> {
   const initialCashThb = fromDecimal(shift.initial_cash);
   const cashSalesThb = await cashSalesForShift(db, shift.id);
-  const expectedCashThb = computeExpectedCash({ initialCash: initialCashThb, cashSales: cashSalesThb });
+  const cashPayoutsThb = await cashPayoutsForShift(db, shift.id);
+  const expectedCashThb = computeExpectedCash({
+    initialCash: initialCashThb,
+    cashSales: cashSalesThb,
+    cashPayouts: cashPayoutsThb,
+  });
   const actualCashThb = shift.actual_cash === null ? null : fromDecimal(shift.actual_cash);
 
   const discrepancyThb =
@@ -97,6 +122,7 @@ async function summarize(db: Db, shift: cash_shifts): Promise<ShiftSummary> {
       : computeCashDiscrepancy({
           initialCash: initialCashThb,
           cashSales: cashSalesThb,
+          cashPayouts: cashPayoutsThb,
           actualCash: actualCashThb,
         });
 
@@ -107,6 +133,7 @@ async function summarize(db: Db, shift: cash_shifts): Promise<ShiftSummary> {
     closedAt: shift.closed_at,
     initialCashThb,
     cashSalesThb,
+    cashPayoutsThb,
     expectedCashThb,
     actualCashThb,
     discrepancyThb,
@@ -200,9 +227,11 @@ export async function closeShift(input: {
     }
     const initialCashThb = fromDecimal(existing.initial_cash);
     const cashSalesThb = await cashSalesForShift(tx, input.shiftId);
+    const cashPayoutsThb = await cashPayoutsForShift(tx, input.shiftId);
     const expectedCashThb = computeExpectedCash({
       initialCash: initialCashThb,
       cashSales: cashSalesThb,
+      cashPayouts: cashPayoutsThb,
     });
     const actualCashThb = roundThb(input.actualCash);
 

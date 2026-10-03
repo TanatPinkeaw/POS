@@ -205,10 +205,10 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1080 tests across 77 files: unit + integration
+npm test                # 1089 tests across 78 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 180 checks of the whole renter journey, from an empty schema
-npm run route:audit     # all 26 screens render, and render styled
+npm run route:audit     # all 27 screens render, and render styled
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
@@ -790,8 +790,14 @@ figures**: the dashboard's stock valuation counts only owned products, and the c
 and the shares owed are stated separately (the shares-owed figure is the ledger's own sum).
 **A consigned product cannot be sold offline**, by decision: the device carries a flag that says
 the goods are a consignor's, and the till refuses the sale with a Thai message that names the
-next step (connect), while a pre-order — which completes online — is unaffected. Not yet built:
-a consignor cannot see what they are owed from the customer portal (ticket 09).
+next step (connect), while a pre-order — which completes online — is unaffected. **A payout
+settles the ledger**: from `/admin/consignors` an admin pays a consignor by the open drawer or by
+the shop's banking app (ADR 0004 — cash needs an open drawer and carries its shift; a transfer
+never touches one), a payout cannot exceed the balance owed, the statement it produces lists the
+sales and refunds it settles, the debit points back at that statement, and the whole thing is one
+audited transaction (`consignment_paid`). A cash payout is counted out of the drawer, so the
+close still reconciles. Not yet built: a consignor cannot see what they are owed from the customer
+portal (ticket 09).
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Customer messages on LINE.** The shop's own group can be reached, but a

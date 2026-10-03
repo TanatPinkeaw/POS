@@ -17,7 +17,7 @@
  * deliberately so — see `offSiteReferences`. Three properties are worth more than
  * cleverness:
  *
- *   * **The route list is data.** Twenty-one paths across four areas, each with the
+ *   * **The route list is data.** Twenty-two paths across four areas, each with the
  *     session it needs and the path it must land on. That table is also the only
  *     place the areas are written down outside `roles.ts`, so a screen that is
  *     moved and forgotten shows up as a redirect to a page the audit did not
@@ -62,7 +62,7 @@ export interface RouteSpec {
 /**
  * Every screen this application serves, and how to reach it.
  *
- * Seventeen distinct paths; the root is listed four times because it is a
+ * Eighteen distinct paths; the root is listed four times because it is a
  * role-aware redirect and the interesting part of it is where each role lands.
  */
 export const ROUTE_WALK: readonly RouteSpec[] = [
@@ -75,6 +75,7 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/display', area: 'public', session: 'none', landsOn: '/display', label: 'the customer display' },
   { path: '/admin/dashboard', area: 'admin', session: 'admin', landsOn: '/admin/dashboard', label: 'the manager dashboard' },
   { path: '/admin/products', area: 'admin', session: 'admin', landsOn: '/admin/products', label: 'the catalogue' },
+  { path: '/admin/consignors', area: 'admin', session: 'admin', landsOn: '/admin/consignors', label: 'the consignors' },
   { path: '/admin/members', area: 'admin', session: 'admin', landsOn: '/admin/members', label: 'the customers' },
   { path: '/admin/audit', area: 'admin', session: 'admin', landsOn: '/admin/audit', label: 'the audit trail' },
   { path: '/admin/reports', area: 'admin', session: 'admin', landsOn: '/admin/reports', label: 'the reports' },

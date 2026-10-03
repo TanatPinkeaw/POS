@@ -73,6 +73,7 @@ export const ModelName = {
   notifications: 'notifications',
   display_devices: 'display_devices',
   consignor_payables: 'consignor_payables',
+  consignor_payouts: 'consignor_payouts',
   point_transactions: 'point_transactions'
 } as const
 
@@ -462,11 +463,26 @@ export const Consignor_payablesScalarFieldEnum = {
   order_id: 'order_id',
   order_item_id: 'order_item_id',
   product_id: 'product_id',
+  payout_id: 'payout_id',
   description: 'description',
   created_at: 'created_at'
 } as const
 
 export type Consignor_payablesScalarFieldEnum = (typeof Consignor_payablesScalarFieldEnum)[keyof typeof Consignor_payablesScalarFieldEnum]
+
+
+export const Consignor_payoutsScalarFieldEnum = {
+  id: 'id',
+  consignor_user_id: 'consignor_user_id',
+  method: 'method',
+  amount_thb: 'amount_thb',
+  shift_id: 'shift_id',
+  note: 'note',
+  created_by: 'created_by',
+  created_at: 'created_at'
+} as const
+
+export type Consignor_payoutsScalarFieldEnum = (typeof Consignor_payoutsScalarFieldEnum)[keyof typeof Consignor_payoutsScalarFieldEnum]
 
 
 export const Point_transactionsScalarFieldEnum = {

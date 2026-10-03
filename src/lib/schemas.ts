@@ -302,6 +302,21 @@ export const consignmentWithdrawalSchema = z.object({
 });
 
 /**
+ * Paying a consignor what the shop owes them (ADR 0023 §6).
+ *
+ * The amount is positive — a payout moves money — and the method is the two doors money
+ * actually leaves through: the drawer or the shop's own banking app. `shiftId` is only
+ * meaningful for cash, and the library refuses cash without an open drawer regardless of
+ * what arrives here, so this is a shape check rather than the rule.
+ */
+export const consignmentPayoutSchema = z.object({
+  amountThb: z.number().positive().max(9_999_999_999.99),
+  method: z.enum(['cash', 'promptpay']),
+  shiftId: z.number().int().positive().nullable().optional(),
+  note: z.string().trim().max(255).nullable().optional(),
+});
+
+/**
  * SRS §4.3: a manual adjustment is only accepted with an enumerated reason, so
  * an unexplained stock change cannot enter the audit trail.
  */

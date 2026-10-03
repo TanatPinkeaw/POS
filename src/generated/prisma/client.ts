@@ -313,6 +313,23 @@ export type display_devices = Prisma.display_devicesModel
  */
 export type consignor_payables = Prisma.consignor_payablesModel
 /**
+ * Model consignor_payouts
+ * *
+ *  * A settlement of what the shop owed a consignor (ADR 0023 §6).
+ *  *
+ *  * The second money-out document in this system, and deliberately a document rather
+ *  * than a flag on the ledger: the ledger says "this much is owed", and a payout says
+ *  * "that debt was settled like this, on this day, by this person". The ledger's payout
+ *  * row points here (`consignor_payables.payout_id`), so the arithmetic and the paper
+ *  * behind it can never be separated.
+ *  *
+ *  * `method` is the same enum a refund uses, and the same rule applies: `cash` comes out
+ *  * of an open drawer and carries its `shift_id`; `promptpay` is a transfer the admin
+ *  * already made in the shop's own app and touches no drawer, so it carries none. The
+ *  * migration states that as a CHECK rather than leaving it to each code path.
+ */
+export type consignor_payouts = Prisma.consignor_payoutsModel
+/**
  * Model point_transactions
  * 
  */

@@ -382,6 +382,14 @@ enum audit_action {
    * should not have to read a term change to find it.
    */
   consignment_withdrawn
+  /**
+   * The shop settled what it owed a consignor, by drawer or transfer (ADR 0023 §6).
+   * Its own action because this is money leaving the shop to somebody outside it:
+   * "who was paid, how much, and out of which drawer" is the question the trail
+   * exists to answer, and the detail carries the method, the actor and the balance
+   * the settlement moved from and to.
+   */
+  consignment_paid
 }
 
 // ---------------------------------------------------------------- users
@@ -438,6 +446,8 @@ model users {
   // ------------------------------------------------ consignment (ADR 0023)
   consigned_products  products[]           @relation("consigned_products")
   consignor_payables  consignor_payables[] @relation("payable_consignor")
+  consignor_payouts         consignor_payouts[] @relation("payout_consignor")
+  consignor_payouts_created consignor_payouts[] @relation("payout_creator")
 }
 
 // ---------------------------------------------------------------- catalog
@@ -566,10 +576,11 @@ model cash_shifts {
 
   opener          users             @relation("shift_opener", fields: [opened_by], references: [id])
   closer          users?            @relation("shift_closer", fields: [closed_by], references: [id])
-  payments        payments[]
-  audit_logs      audit_logs[]
-  payment_intents payment_intents[]
-  credit_notes    credit_notes[]
+  payments          payments[]
+  audit_logs        audit_logs[]
+  payment_intents   payment_intents[]
+  credit_notes      credit_notes[]
+  consignor_payouts consignor_payouts[]
 
   @@index([status])
 }
@@ -1200,18 +1211,64 @@ model consignor_payables {
   /** The line that sold, so a refund can name exactly what went back. */
   order_item_id     BigInt?
   product_id        String?                @db.Uuid
+  /**
+   * The settlement this debit is, for a payout — and null for every other kind.
+   * Enforced by the migration as `(kind = 'payout') = (payout_id IS NOT NULL)`, the
+   * same shape `payments.credit_note_id` uses, so money can never leave the ledger
+   * without a statement behind it.
+   */
+  payout_id         BigInt?
   description       String?                @db.VarChar(255)
   created_at        DateTime               @default(now()) @db.Timestamptz(6)
 
   // Restrict rather than cascade: this is the shop's liability to a real person, and
   // deleting them must not quietly erase what they are owed.
-  consignor  users        @relation("payable_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
-  order      orders?      @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  order_item order_items? @relation(fields: [order_item_id], references: [id], onDelete: SetNull)
-  product    products?    @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  consignor  users             @relation("payable_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  order      orders?           @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  order_item order_items?      @relation(fields: [order_item_id], references: [id], onDelete: SetNull)
+  product    products?         @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  payout     consignor_payouts? @relation(fields: [payout_id], references: [id], onDelete: SetNull)
 
   @@index([consignor_user_id, created_at])
   @@index([order_id])
+  @@index([payout_id])
+}
+
+/**
+ * A settlement of what the shop owed a consignor (ADR 0023 §6).
+ *
+ * The second money-out document in this system, and deliberately a document rather
+ * than a flag on the ledger: the ledger says "this much is owed", and a payout says
+ * "that debt was settled like this, on this day, by this person". The ledger's payout
+ * row points here (`consignor_payables.payout_id`), so the arithmetic and the paper
+ * behind it can never be separated.
+ *
+ * `method` is the same enum a refund uses, and the same rule applies: `cash` comes out
+ * of an open drawer and carries its `shift_id`; `promptpay` is a transfer the admin
+ * already made in the shop's own app and touches no drawer, so it carries none. The
+ * migration states that as a CHECK rather than leaving it to each code path.
+ */
+model consignor_payouts {
+  id                BigInt         @id @default(autoincrement())
+  consignor_user_id String         @db.Uuid
+  /** `cash` out of a drawer, or `promptpay` handed over in the shop's own app. */
+  method            payment_method
+  /** Always positive: the money that left the shop. */
+  amount_thb        Decimal        @db.Decimal(12, 2)
+  /** The drawer a cash payout came out of; null for a transfer. */
+  shift_id          Int?
+  note              String?        @db.VarChar(255)
+  /** The admin who settled it. */
+  created_by        String         @db.Uuid
+  created_at        DateTime       @default(now()) @db.Timestamptz(6)
+
+  consignor users              @relation("payout_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  creator   users              @relation("payout_creator", fields: [created_by], references: [id], onDelete: Restrict)
+  shift     cash_shifts?       @relation(fields: [shift_id], references: [id], onDelete: SetNull)
+  payables  consignor_payables[]
+
+  @@index([consignor_user_id, created_at])
+  @@index([shift_id])
 }
 
 model point_transactions {

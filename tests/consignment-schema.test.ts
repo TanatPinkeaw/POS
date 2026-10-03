@@ -11,10 +11,13 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { prisma, resetDatabase, seedPeople } from './helpers/test-db';
 
 let memberId: string;
+let adminId: string;
 
 beforeEach(async () => {
   await resetDatabase();
-  memberId = (await seedPeople()).memberId;
+  const people = await seedPeople();
+  memberId = people.memberId;
+  adminId = people.adminId;
 });
 
 afterAll(async () => {
@@ -62,11 +65,26 @@ describe('a consigned product', () => {
 
 describe('the consignor ledger', () => {
   it('sums a credit and a debit to the balance owed', async () => {
+    // A payout debit must name the statement it settles (ticket 08): money never leaves
+    // the ledger without the paper behind it, so the row is written through a payout.
+    const payout = await prisma.consignor_payouts.create({
+      data: {
+        consignor_user_id: memberId,
+        method: 'promptpay',
+        amount_thb: 25,
+        created_by: adminId,
+      },
+    });
     await prisma.consignor_payables.create({
       data: { consignor_user_id: memberId, kind: 'sale', amount_thb: 60 },
     });
     await prisma.consignor_payables.create({
-      data: { consignor_user_id: memberId, kind: 'payout', amount_thb: -25 },
+      data: {
+        consignor_user_id: memberId,
+        kind: 'payout',
+        amount_thb: -25,
+        payout_id: payout.id,
+      },
     });
 
     const rows = await prisma.consignor_payables.findMany({ where: { consignor_user_id: memberId } });

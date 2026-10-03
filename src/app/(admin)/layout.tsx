@@ -6,6 +6,7 @@ import { requireShellUser } from '@/lib/shell';
 const ADMIN_NAV: NavItem[] = [
   { href: '/admin/dashboard', label: 'แดชบอร์ด', icon: 'dashboard' },
   { href: '/admin/products', label: 'สินค้าและสต็อก', icon: 'box' },
+  { href: '/admin/consignors', label: 'ฝากขาย & จ่ายเงิน', icon: 'cash' },
   { href: '/admin/staff', label: 'พนักงาน', icon: 'users' },
   { href: '/admin/members', label: 'ลูกค้า', icon: 'user' },
   { href: '/admin/schedules', label: 'ตารางงาน & เวลา', icon: 'calendar' },

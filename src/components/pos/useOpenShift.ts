@@ -12,6 +12,7 @@ export interface Shift {
   closedAt: string | null;
   initialCashThb: number;
   cashSalesThb: number;
+  cashPayoutsThb: number;
   expectedCashThb: number;
   actualCashThb: number | null;
   discrepancyThb: number | null;

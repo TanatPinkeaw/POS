@@ -43,12 +43,14 @@ export type Consignor_payablesAvgAggregateOutputType = {
   id: number | null
   amount_thb: runtime.Decimal | null
   order_item_id: number | null
+  payout_id: number | null
 }
 
 export type Consignor_payablesSumAggregateOutputType = {
   id: bigint | null
   amount_thb: runtime.Decimal | null
   order_item_id: bigint | null
+  payout_id: bigint | null
 }
 
 export type Consignor_payablesMinAggregateOutputType = {
@@ -59,6 +61,7 @@ export type Consignor_payablesMinAggregateOutputType = {
   order_id: string | null
   order_item_id: bigint | null
   product_id: string | null
+  payout_id: bigint | null
   description: string | null
   created_at: Date | null
 }
@@ -71,6 +74,7 @@ export type Consignor_payablesMaxAggregateOutputType = {
   order_id: string | null
   order_item_id: bigint | null
   product_id: string | null
+  payout_id: bigint | null
   description: string | null
   created_at: Date | null
 }
@@ -83,6 +87,7 @@ export type Consignor_payablesCountAggregateOutputType = {
   order_id: number
   order_item_id: number
   product_id: number
+  payout_id: number
   description: number
   created_at: number
   _all: number
@@ -93,12 +98,14 @@ export type Consignor_payablesAvgAggregateInputType = {
   id?: true
   amount_thb?: true
   order_item_id?: true
+  payout_id?: true
 }
 
 export type Consignor_payablesSumAggregateInputType = {
   id?: true
   amount_thb?: true
   order_item_id?: true
+  payout_id?: true
 }
 
 export type Consignor_payablesMinAggregateInputType = {
@@ -109,6 +116,7 @@ export type Consignor_payablesMinAggregateInputType = {
   order_id?: true
   order_item_id?: true
   product_id?: true
+  payout_id?: true
   description?: true
   created_at?: true
 }
@@ -121,6 +129,7 @@ export type Consignor_payablesMaxAggregateInputType = {
   order_id?: true
   order_item_id?: true
   product_id?: true
+  payout_id?: true
   description?: true
   created_at?: true
 }
@@ -133,6 +142,7 @@ export type Consignor_payablesCountAggregateInputType = {
   order_id?: true
   order_item_id?: true
   product_id?: true
+  payout_id?: true
   description?: true
   created_at?: true
   _all?: true
@@ -232,6 +242,7 @@ export type Consignor_payablesGroupByOutputType = {
   order_id: string | null
   order_item_id: bigint | null
   product_id: string | null
+  payout_id: bigint | null
   description: string | null
   created_at: Date
   _count: Consignor_payablesCountAggregateOutputType | null
@@ -267,12 +278,14 @@ export type consignor_payablesWhereInput = {
   order_id?: Prisma.UuidNullableFilter<"consignor_payables"> | string | null
   order_item_id?: Prisma.BigIntNullableFilter<"consignor_payables"> | bigint | number | null
   product_id?: Prisma.UuidNullableFilter<"consignor_payables"> | string | null
+  payout_id?: Prisma.BigIntNullableFilter<"consignor_payables"> | bigint | number | null
   description?: Prisma.StringNullableFilter<"consignor_payables"> | string | null
   created_at?: Prisma.DateTimeFilter<"consignor_payables"> | Date | string
   consignor?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   order?: Prisma.XOR<Prisma.OrdersNullableScalarRelationFilter, Prisma.ordersWhereInput> | null
   order_item?: Prisma.XOR<Prisma.Order_itemsNullableScalarRelationFilter, Prisma.order_itemsWhereInput> | null
   product?: Prisma.XOR<Prisma.ProductsNullableScalarRelationFilter, Prisma.productsWhereInput> | null
+  payout?: Prisma.XOR<Prisma.Consignor_payoutsNullableScalarRelationFilter, Prisma.consignor_payoutsWhereInput> | null
 }
 
 export type consignor_payablesOrderByWithRelationInput = {
@@ -283,12 +296,14 @@ export type consignor_payablesOrderByWithRelationInput = {
   order_id?: Prisma.SortOrderInput | Prisma.SortOrder
   order_item_id?: Prisma.SortOrderInput | Prisma.SortOrder
   product_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  payout_id?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   consignor?: Prisma.usersOrderByWithRelationInput
   order?: Prisma.ordersOrderByWithRelationInput
   order_item?: Prisma.order_itemsOrderByWithRelationInput
   product?: Prisma.productsOrderByWithRelationInput
+  payout?: Prisma.consignor_payoutsOrderByWithRelationInput
 }
 
 export type consignor_payablesWhereUniqueInput = Prisma.AtLeast<{
@@ -302,12 +317,14 @@ export type consignor_payablesWhereUniqueInput = Prisma.AtLeast<{
   order_id?: Prisma.UuidNullableFilter<"consignor_payables"> | string | null
   order_item_id?: Prisma.BigIntNullableFilter<"consignor_payables"> | bigint | number | null
   product_id?: Prisma.UuidNullableFilter<"consignor_payables"> | string | null
+  payout_id?: Prisma.BigIntNullableFilter<"consignor_payables"> | bigint | number | null
   description?: Prisma.StringNullableFilter<"consignor_payables"> | string | null
   created_at?: Prisma.DateTimeFilter<"consignor_payables"> | Date | string
   consignor?: Prisma.XOR<Prisma.UsersScalarRelationFilter, Prisma.usersWhereInput>
   order?: Prisma.XOR<Prisma.OrdersNullableScalarRelationFilter, Prisma.ordersWhereInput> | null
   order_item?: Prisma.XOR<Prisma.Order_itemsNullableScalarRelationFilter, Prisma.order_itemsWhereInput> | null
   product?: Prisma.XOR<Prisma.ProductsNullableScalarRelationFilter, Prisma.productsWhereInput> | null
+  payout?: Prisma.XOR<Prisma.Consignor_payoutsNullableScalarRelationFilter, Prisma.consignor_payoutsWhereInput> | null
 }, "id">
 
 export type consignor_payablesOrderByWithAggregationInput = {
@@ -318,6 +335,7 @@ export type consignor_payablesOrderByWithAggregationInput = {
   order_id?: Prisma.SortOrderInput | Prisma.SortOrder
   order_item_id?: Prisma.SortOrderInput | Prisma.SortOrder
   product_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  payout_id?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   _count?: Prisma.consignor_payablesCountOrderByAggregateInput
@@ -338,6 +356,7 @@ export type consignor_payablesScalarWhereWithAggregatesInput = {
   order_id?: Prisma.UuidNullableWithAggregatesFilter<"consignor_payables"> | string | null
   order_item_id?: Prisma.BigIntNullableWithAggregatesFilter<"consignor_payables"> | bigint | number | null
   product_id?: Prisma.UuidNullableWithAggregatesFilter<"consignor_payables"> | string | null
+  payout_id?: Prisma.BigIntNullableWithAggregatesFilter<"consignor_payables"> | bigint | number | null
   description?: Prisma.StringNullableWithAggregatesFilter<"consignor_payables"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"consignor_payables"> | Date | string
 }
@@ -352,6 +371,7 @@ export type consignor_payablesCreateInput = {
   order?: Prisma.ordersCreateNestedOneWithoutConsignor_payablesInput
   order_item?: Prisma.order_itemsCreateNestedOneWithoutConsignor_payablesInput
   product?: Prisma.productsCreateNestedOneWithoutConsignor_payablesInput
+  payout?: Prisma.consignor_payoutsCreateNestedOneWithoutPayablesInput
 }
 
 export type consignor_payablesUncheckedCreateInput = {
@@ -362,6 +382,7 @@ export type consignor_payablesUncheckedCreateInput = {
   order_id?: string | null
   order_item_id?: bigint | number | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -376,6 +397,7 @@ export type consignor_payablesUpdateInput = {
   order?: Prisma.ordersUpdateOneWithoutConsignor_payablesNestedInput
   order_item?: Prisma.order_itemsUpdateOneWithoutConsignor_payablesNestedInput
   product?: Prisma.productsUpdateOneWithoutConsignor_payablesNestedInput
+  payout?: Prisma.consignor_payoutsUpdateOneWithoutPayablesNestedInput
 }
 
 export type consignor_payablesUncheckedUpdateInput = {
@@ -386,6 +408,7 @@ export type consignor_payablesUncheckedUpdateInput = {
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -398,6 +421,7 @@ export type consignor_payablesCreateManyInput = {
   order_id?: string | null
   order_item_id?: bigint | number | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -418,6 +442,7 @@ export type consignor_payablesUncheckedUpdateManyInput = {
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -440,6 +465,7 @@ export type consignor_payablesCountOrderByAggregateInput = {
   order_id?: Prisma.SortOrder
   order_item_id?: Prisma.SortOrder
   product_id?: Prisma.SortOrder
+  payout_id?: Prisma.SortOrder
   description?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -448,6 +474,7 @@ export type consignor_payablesAvgOrderByAggregateInput = {
   id?: Prisma.SortOrder
   amount_thb?: Prisma.SortOrder
   order_item_id?: Prisma.SortOrder
+  payout_id?: Prisma.SortOrder
 }
 
 export type consignor_payablesMaxOrderByAggregateInput = {
@@ -458,6 +485,7 @@ export type consignor_payablesMaxOrderByAggregateInput = {
   order_id?: Prisma.SortOrder
   order_item_id?: Prisma.SortOrder
   product_id?: Prisma.SortOrder
+  payout_id?: Prisma.SortOrder
   description?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -470,6 +498,7 @@ export type consignor_payablesMinOrderByAggregateInput = {
   order_id?: Prisma.SortOrder
   order_item_id?: Prisma.SortOrder
   product_id?: Prisma.SortOrder
+  payout_id?: Prisma.SortOrder
   description?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
 }
@@ -478,6 +507,7 @@ export type consignor_payablesSumOrderByAggregateInput = {
   id?: Prisma.SortOrder
   amount_thb?: Prisma.SortOrder
   order_item_id?: Prisma.SortOrder
+  payout_id?: Prisma.SortOrder
 }
 
 export type consignor_payablesCreateNestedManyWithoutConsignorInput = {
@@ -660,6 +690,48 @@ export type NullableBigIntFieldUpdateOperationsInput = {
   divide?: bigint | number
 }
 
+export type consignor_payablesCreateNestedManyWithoutPayoutInput = {
+  create?: Prisma.XOR<Prisma.consignor_payablesCreateWithoutPayoutInput, Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput> | Prisma.consignor_payablesCreateWithoutPayoutInput[] | Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput[]
+  connectOrCreate?: Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput | Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput[]
+  createMany?: Prisma.consignor_payablesCreateManyPayoutInputEnvelope
+  connect?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+}
+
+export type consignor_payablesUncheckedCreateNestedManyWithoutPayoutInput = {
+  create?: Prisma.XOR<Prisma.consignor_payablesCreateWithoutPayoutInput, Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput> | Prisma.consignor_payablesCreateWithoutPayoutInput[] | Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput[]
+  connectOrCreate?: Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput | Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput[]
+  createMany?: Prisma.consignor_payablesCreateManyPayoutInputEnvelope
+  connect?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+}
+
+export type consignor_payablesUpdateManyWithoutPayoutNestedInput = {
+  create?: Prisma.XOR<Prisma.consignor_payablesCreateWithoutPayoutInput, Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput> | Prisma.consignor_payablesCreateWithoutPayoutInput[] | Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput[]
+  connectOrCreate?: Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput | Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput[]
+  upsert?: Prisma.consignor_payablesUpsertWithWhereUniqueWithoutPayoutInput | Prisma.consignor_payablesUpsertWithWhereUniqueWithoutPayoutInput[]
+  createMany?: Prisma.consignor_payablesCreateManyPayoutInputEnvelope
+  set?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  disconnect?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  delete?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  connect?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  update?: Prisma.consignor_payablesUpdateWithWhereUniqueWithoutPayoutInput | Prisma.consignor_payablesUpdateWithWhereUniqueWithoutPayoutInput[]
+  updateMany?: Prisma.consignor_payablesUpdateManyWithWhereWithoutPayoutInput | Prisma.consignor_payablesUpdateManyWithWhereWithoutPayoutInput[]
+  deleteMany?: Prisma.consignor_payablesScalarWhereInput | Prisma.consignor_payablesScalarWhereInput[]
+}
+
+export type consignor_payablesUncheckedUpdateManyWithoutPayoutNestedInput = {
+  create?: Prisma.XOR<Prisma.consignor_payablesCreateWithoutPayoutInput, Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput> | Prisma.consignor_payablesCreateWithoutPayoutInput[] | Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput[]
+  connectOrCreate?: Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput | Prisma.consignor_payablesCreateOrConnectWithoutPayoutInput[]
+  upsert?: Prisma.consignor_payablesUpsertWithWhereUniqueWithoutPayoutInput | Prisma.consignor_payablesUpsertWithWhereUniqueWithoutPayoutInput[]
+  createMany?: Prisma.consignor_payablesCreateManyPayoutInputEnvelope
+  set?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  disconnect?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  delete?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  connect?: Prisma.consignor_payablesWhereUniqueInput | Prisma.consignor_payablesWhereUniqueInput[]
+  update?: Prisma.consignor_payablesUpdateWithWhereUniqueWithoutPayoutInput | Prisma.consignor_payablesUpdateWithWhereUniqueWithoutPayoutInput[]
+  updateMany?: Prisma.consignor_payablesUpdateManyWithWhereWithoutPayoutInput | Prisma.consignor_payablesUpdateManyWithWhereWithoutPayoutInput[]
+  deleteMany?: Prisma.consignor_payablesScalarWhereInput | Prisma.consignor_payablesScalarWhereInput[]
+}
+
 export type consignor_payablesCreateWithoutConsignorInput = {
   id?: bigint | number
   kind: $Enums.consignor_payable_kind
@@ -669,6 +741,7 @@ export type consignor_payablesCreateWithoutConsignorInput = {
   order?: Prisma.ordersCreateNestedOneWithoutConsignor_payablesInput
   order_item?: Prisma.order_itemsCreateNestedOneWithoutConsignor_payablesInput
   product?: Prisma.productsCreateNestedOneWithoutConsignor_payablesInput
+  payout?: Prisma.consignor_payoutsCreateNestedOneWithoutPayablesInput
 }
 
 export type consignor_payablesUncheckedCreateWithoutConsignorInput = {
@@ -678,6 +751,7 @@ export type consignor_payablesUncheckedCreateWithoutConsignorInput = {
   order_id?: string | null
   order_item_id?: bigint | number | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -719,6 +793,7 @@ export type consignor_payablesScalarWhereInput = {
   order_id?: Prisma.UuidNullableFilter<"consignor_payables"> | string | null
   order_item_id?: Prisma.BigIntNullableFilter<"consignor_payables"> | bigint | number | null
   product_id?: Prisma.UuidNullableFilter<"consignor_payables"> | string | null
+  payout_id?: Prisma.BigIntNullableFilter<"consignor_payables"> | bigint | number | null
   description?: Prisma.StringNullableFilter<"consignor_payables"> | string | null
   created_at?: Prisma.DateTimeFilter<"consignor_payables"> | Date | string
 }
@@ -732,6 +807,7 @@ export type consignor_payablesCreateWithoutProductInput = {
   consignor: Prisma.usersCreateNestedOneWithoutConsignor_payablesInput
   order?: Prisma.ordersCreateNestedOneWithoutConsignor_payablesInput
   order_item?: Prisma.order_itemsCreateNestedOneWithoutConsignor_payablesInput
+  payout?: Prisma.consignor_payoutsCreateNestedOneWithoutPayablesInput
 }
 
 export type consignor_payablesUncheckedCreateWithoutProductInput = {
@@ -741,6 +817,7 @@ export type consignor_payablesUncheckedCreateWithoutProductInput = {
   amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: string | null
   order_item_id?: bigint | number | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -780,6 +857,7 @@ export type consignor_payablesCreateWithoutOrderInput = {
   consignor: Prisma.usersCreateNestedOneWithoutConsignor_payablesInput
   order_item?: Prisma.order_itemsCreateNestedOneWithoutConsignor_payablesInput
   product?: Prisma.productsCreateNestedOneWithoutConsignor_payablesInput
+  payout?: Prisma.consignor_payoutsCreateNestedOneWithoutPayablesInput
 }
 
 export type consignor_payablesUncheckedCreateWithoutOrderInput = {
@@ -789,6 +867,7 @@ export type consignor_payablesUncheckedCreateWithoutOrderInput = {
   amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
   order_item_id?: bigint | number | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -828,6 +907,7 @@ export type consignor_payablesCreateWithoutOrder_itemInput = {
   consignor: Prisma.usersCreateNestedOneWithoutConsignor_payablesInput
   order?: Prisma.ordersCreateNestedOneWithoutConsignor_payablesInput
   product?: Prisma.productsCreateNestedOneWithoutConsignor_payablesInput
+  payout?: Prisma.consignor_payoutsCreateNestedOneWithoutPayablesInput
 }
 
 export type consignor_payablesUncheckedCreateWithoutOrder_itemInput = {
@@ -837,6 +917,7 @@ export type consignor_payablesUncheckedCreateWithoutOrder_itemInput = {
   amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: string | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -867,6 +948,56 @@ export type consignor_payablesUpdateManyWithWhereWithoutOrder_itemInput = {
   data: Prisma.XOR<Prisma.consignor_payablesUpdateManyMutationInput, Prisma.consignor_payablesUncheckedUpdateManyWithoutOrder_itemInput>
 }
 
+export type consignor_payablesCreateWithoutPayoutInput = {
+  id?: bigint | number
+  kind: $Enums.consignor_payable_kind
+  amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
+  description?: string | null
+  created_at?: Date | string
+  consignor: Prisma.usersCreateNestedOneWithoutConsignor_payablesInput
+  order?: Prisma.ordersCreateNestedOneWithoutConsignor_payablesInput
+  order_item?: Prisma.order_itemsCreateNestedOneWithoutConsignor_payablesInput
+  product?: Prisma.productsCreateNestedOneWithoutConsignor_payablesInput
+}
+
+export type consignor_payablesUncheckedCreateWithoutPayoutInput = {
+  id?: bigint | number
+  consignor_user_id: string
+  kind: $Enums.consignor_payable_kind
+  amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
+  order_id?: string | null
+  order_item_id?: bigint | number | null
+  product_id?: string | null
+  description?: string | null
+  created_at?: Date | string
+}
+
+export type consignor_payablesCreateOrConnectWithoutPayoutInput = {
+  where: Prisma.consignor_payablesWhereUniqueInput
+  create: Prisma.XOR<Prisma.consignor_payablesCreateWithoutPayoutInput, Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput>
+}
+
+export type consignor_payablesCreateManyPayoutInputEnvelope = {
+  data: Prisma.consignor_payablesCreateManyPayoutInput | Prisma.consignor_payablesCreateManyPayoutInput[]
+  skipDuplicates?: boolean
+}
+
+export type consignor_payablesUpsertWithWhereUniqueWithoutPayoutInput = {
+  where: Prisma.consignor_payablesWhereUniqueInput
+  update: Prisma.XOR<Prisma.consignor_payablesUpdateWithoutPayoutInput, Prisma.consignor_payablesUncheckedUpdateWithoutPayoutInput>
+  create: Prisma.XOR<Prisma.consignor_payablesCreateWithoutPayoutInput, Prisma.consignor_payablesUncheckedCreateWithoutPayoutInput>
+}
+
+export type consignor_payablesUpdateWithWhereUniqueWithoutPayoutInput = {
+  where: Prisma.consignor_payablesWhereUniqueInput
+  data: Prisma.XOR<Prisma.consignor_payablesUpdateWithoutPayoutInput, Prisma.consignor_payablesUncheckedUpdateWithoutPayoutInput>
+}
+
+export type consignor_payablesUpdateManyWithWhereWithoutPayoutInput = {
+  where: Prisma.consignor_payablesScalarWhereInput
+  data: Prisma.XOR<Prisma.consignor_payablesUpdateManyMutationInput, Prisma.consignor_payablesUncheckedUpdateManyWithoutPayoutInput>
+}
+
 export type consignor_payablesCreateManyConsignorInput = {
   id?: bigint | number
   kind: $Enums.consignor_payable_kind
@@ -874,6 +1005,7 @@ export type consignor_payablesCreateManyConsignorInput = {
   order_id?: string | null
   order_item_id?: bigint | number | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -887,6 +1019,7 @@ export type consignor_payablesUpdateWithoutConsignorInput = {
   order?: Prisma.ordersUpdateOneWithoutConsignor_payablesNestedInput
   order_item?: Prisma.order_itemsUpdateOneWithoutConsignor_payablesNestedInput
   product?: Prisma.productsUpdateOneWithoutConsignor_payablesNestedInput
+  payout?: Prisma.consignor_payoutsUpdateOneWithoutPayablesNestedInput
 }
 
 export type consignor_payablesUncheckedUpdateWithoutConsignorInput = {
@@ -896,6 +1029,7 @@ export type consignor_payablesUncheckedUpdateWithoutConsignorInput = {
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -907,6 +1041,7 @@ export type consignor_payablesUncheckedUpdateManyWithoutConsignorInput = {
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -918,6 +1053,7 @@ export type consignor_payablesCreateManyProductInput = {
   amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: string | null
   order_item_id?: bigint | number | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -931,6 +1067,7 @@ export type consignor_payablesUpdateWithoutProductInput = {
   consignor?: Prisma.usersUpdateOneRequiredWithoutConsignor_payablesNestedInput
   order?: Prisma.ordersUpdateOneWithoutConsignor_payablesNestedInput
   order_item?: Prisma.order_itemsUpdateOneWithoutConsignor_payablesNestedInput
+  payout?: Prisma.consignor_payoutsUpdateOneWithoutPayablesNestedInput
 }
 
 export type consignor_payablesUncheckedUpdateWithoutProductInput = {
@@ -940,6 +1077,7 @@ export type consignor_payablesUncheckedUpdateWithoutProductInput = {
   amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -951,6 +1089,7 @@ export type consignor_payablesUncheckedUpdateManyWithoutProductInput = {
   amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -962,6 +1101,7 @@ export type consignor_payablesCreateManyOrderInput = {
   amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
   order_item_id?: bigint | number | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -975,6 +1115,7 @@ export type consignor_payablesUpdateWithoutOrderInput = {
   consignor?: Prisma.usersUpdateOneRequiredWithoutConsignor_payablesNestedInput
   order_item?: Prisma.order_itemsUpdateOneWithoutConsignor_payablesNestedInput
   product?: Prisma.productsUpdateOneWithoutConsignor_payablesNestedInput
+  payout?: Prisma.consignor_payoutsUpdateOneWithoutPayablesNestedInput
 }
 
 export type consignor_payablesUncheckedUpdateWithoutOrderInput = {
@@ -984,6 +1125,7 @@ export type consignor_payablesUncheckedUpdateWithoutOrderInput = {
   amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -995,6 +1137,7 @@ export type consignor_payablesUncheckedUpdateManyWithoutOrderInput = {
   amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1006,6 +1149,7 @@ export type consignor_payablesCreateManyOrder_itemInput = {
   amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: string | null
   product_id?: string | null
+  payout_id?: bigint | number | null
   description?: string | null
   created_at?: Date | string
 }
@@ -1019,6 +1163,7 @@ export type consignor_payablesUpdateWithoutOrder_itemInput = {
   consignor?: Prisma.usersUpdateOneRequiredWithoutConsignor_payablesNestedInput
   order?: Prisma.ordersUpdateOneWithoutConsignor_payablesNestedInput
   product?: Prisma.productsUpdateOneWithoutConsignor_payablesNestedInput
+  payout?: Prisma.consignor_payoutsUpdateOneWithoutPayablesNestedInput
 }
 
 export type consignor_payablesUncheckedUpdateWithoutOrder_itemInput = {
@@ -1028,6 +1173,7 @@ export type consignor_payablesUncheckedUpdateWithoutOrder_itemInput = {
   amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1038,6 +1184,55 @@ export type consignor_payablesUncheckedUpdateManyWithoutOrder_itemInput = {
   kind?: Prisma.Enumconsignor_payable_kindFieldUpdateOperationsInput | $Enums.consignor_payable_kind
   amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  payout_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type consignor_payablesCreateManyPayoutInput = {
+  id?: bigint | number
+  consignor_user_id: string
+  kind: $Enums.consignor_payable_kind
+  amount_thb: runtime.Decimal | runtime.DecimalJsLike | number | string
+  order_id?: string | null
+  order_item_id?: bigint | number | null
+  product_id?: string | null
+  description?: string | null
+  created_at?: Date | string
+}
+
+export type consignor_payablesUpdateWithoutPayoutInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  kind?: Prisma.Enumconsignor_payable_kindFieldUpdateOperationsInput | $Enums.consignor_payable_kind
+  amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  consignor?: Prisma.usersUpdateOneRequiredWithoutConsignor_payablesNestedInput
+  order?: Prisma.ordersUpdateOneWithoutConsignor_payablesNestedInput
+  order_item?: Prisma.order_itemsUpdateOneWithoutConsignor_payablesNestedInput
+  product?: Prisma.productsUpdateOneWithoutConsignor_payablesNestedInput
+}
+
+export type consignor_payablesUncheckedUpdateWithoutPayoutInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  consignor_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.Enumconsignor_payable_kindFieldUpdateOperationsInput | $Enums.consignor_payable_kind
+  amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+  product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type consignor_payablesUncheckedUpdateManyWithoutPayoutInput = {
+  id?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
+  consignor_user_id?: Prisma.StringFieldUpdateOperationsInput | string
+  kind?: Prisma.Enumconsignor_payable_kindFieldUpdateOperationsInput | $Enums.consignor_payable_kind
+  amount_thb?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  order_item_id?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   product_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -1053,12 +1248,14 @@ export type consignor_payablesSelect<ExtArgs extends runtime.Types.Extensions.In
   order_id?: boolean
   order_item_id?: boolean
   product_id?: boolean
+  payout_id?: boolean
   description?: boolean
   created_at?: boolean
   consignor?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   order?: boolean | Prisma.consignor_payables$orderArgs<ExtArgs>
   order_item?: boolean | Prisma.consignor_payables$order_itemArgs<ExtArgs>
   product?: boolean | Prisma.consignor_payables$productArgs<ExtArgs>
+  payout?: boolean | Prisma.consignor_payables$payoutArgs<ExtArgs>
 }, ExtArgs["result"]["consignor_payables"]>
 
 export type consignor_payablesSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1069,12 +1266,14 @@ export type consignor_payablesSelectCreateManyAndReturn<ExtArgs extends runtime.
   order_id?: boolean
   order_item_id?: boolean
   product_id?: boolean
+  payout_id?: boolean
   description?: boolean
   created_at?: boolean
   consignor?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   order?: boolean | Prisma.consignor_payables$orderArgs<ExtArgs>
   order_item?: boolean | Prisma.consignor_payables$order_itemArgs<ExtArgs>
   product?: boolean | Prisma.consignor_payables$productArgs<ExtArgs>
+  payout?: boolean | Prisma.consignor_payables$payoutArgs<ExtArgs>
 }, ExtArgs["result"]["consignor_payables"]>
 
 export type consignor_payablesSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1085,12 +1284,14 @@ export type consignor_payablesSelectUpdateManyAndReturn<ExtArgs extends runtime.
   order_id?: boolean
   order_item_id?: boolean
   product_id?: boolean
+  payout_id?: boolean
   description?: boolean
   created_at?: boolean
   consignor?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   order?: boolean | Prisma.consignor_payables$orderArgs<ExtArgs>
   order_item?: boolean | Prisma.consignor_payables$order_itemArgs<ExtArgs>
   product?: boolean | Prisma.consignor_payables$productArgs<ExtArgs>
+  payout?: boolean | Prisma.consignor_payables$payoutArgs<ExtArgs>
 }, ExtArgs["result"]["consignor_payables"]>
 
 export type consignor_payablesSelectScalar = {
@@ -1101,28 +1302,32 @@ export type consignor_payablesSelectScalar = {
   order_id?: boolean
   order_item_id?: boolean
   product_id?: boolean
+  payout_id?: boolean
   description?: boolean
   created_at?: boolean
 }
 
-export type consignor_payablesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "consignor_user_id" | "kind" | "amount_thb" | "order_id" | "order_item_id" | "product_id" | "description" | "created_at", ExtArgs["result"]["consignor_payables"]>
+export type consignor_payablesOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "consignor_user_id" | "kind" | "amount_thb" | "order_id" | "order_item_id" | "product_id" | "payout_id" | "description" | "created_at", ExtArgs["result"]["consignor_payables"]>
 export type consignor_payablesInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   consignor?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   order?: boolean | Prisma.consignor_payables$orderArgs<ExtArgs>
   order_item?: boolean | Prisma.consignor_payables$order_itemArgs<ExtArgs>
   product?: boolean | Prisma.consignor_payables$productArgs<ExtArgs>
+  payout?: boolean | Prisma.consignor_payables$payoutArgs<ExtArgs>
 }
 export type consignor_payablesIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   consignor?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   order?: boolean | Prisma.consignor_payables$orderArgs<ExtArgs>
   order_item?: boolean | Prisma.consignor_payables$order_itemArgs<ExtArgs>
   product?: boolean | Prisma.consignor_payables$productArgs<ExtArgs>
+  payout?: boolean | Prisma.consignor_payables$payoutArgs<ExtArgs>
 }
 export type consignor_payablesIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   consignor?: boolean | Prisma.usersDefaultArgs<ExtArgs>
   order?: boolean | Prisma.consignor_payables$orderArgs<ExtArgs>
   order_item?: boolean | Prisma.consignor_payables$order_itemArgs<ExtArgs>
   product?: boolean | Prisma.consignor_payables$productArgs<ExtArgs>
+  payout?: boolean | Prisma.consignor_payables$payoutArgs<ExtArgs>
 }
 
 export type $consignor_payablesPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1132,6 +1337,7 @@ export type $consignor_payablesPayload<ExtArgs extends runtime.Types.Extensions.
     order: Prisma.$ordersPayload<ExtArgs> | null
     order_item: Prisma.$order_itemsPayload<ExtArgs> | null
     product: Prisma.$productsPayload<ExtArgs> | null
+    payout: Prisma.$consignor_payoutsPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: bigint
@@ -1150,6 +1356,14 @@ export type $consignor_payablesPayload<ExtArgs extends runtime.Types.Extensions.
      */
     order_item_id: bigint | null
     product_id: string | null
+    /**
+     * *
+     *    * The settlement this debit is, for a payout — and null for every other kind.
+     *    * Enforced by the migration as `(kind = 'payout') = (payout_id IS NOT NULL)`, the
+     *    * same shape `payments.credit_note_id` uses, so money can never leave the ledger
+     *    * without a statement behind it.
+     */
+    payout_id: bigint | null
     description: string | null
     created_at: Date
   }, ExtArgs["result"]["consignor_payables"]>
@@ -1550,6 +1764,7 @@ export interface Prisma__consignor_payablesClient<T, Null = never, ExtArgs exten
   order<T extends Prisma.consignor_payables$orderArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.consignor_payables$orderArgs<ExtArgs>>): Prisma.Prisma__ordersClient<runtime.Types.Result.GetResult<Prisma.$ordersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   order_item<T extends Prisma.consignor_payables$order_itemArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.consignor_payables$order_itemArgs<ExtArgs>>): Prisma.Prisma__order_itemsClient<runtime.Types.Result.GetResult<Prisma.$order_itemsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   product<T extends Prisma.consignor_payables$productArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.consignor_payables$productArgs<ExtArgs>>): Prisma.Prisma__productsClient<runtime.Types.Result.GetResult<Prisma.$productsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  payout<T extends Prisma.consignor_payables$payoutArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.consignor_payables$payoutArgs<ExtArgs>>): Prisma.Prisma__consignor_payoutsClient<runtime.Types.Result.GetResult<Prisma.$consignor_payoutsPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1586,6 +1801,7 @@ export interface consignor_payablesFieldRefs {
   readonly order_id: Prisma.FieldRef<"consignor_payables", 'String'>
   readonly order_item_id: Prisma.FieldRef<"consignor_payables", 'BigInt'>
   readonly product_id: Prisma.FieldRef<"consignor_payables", 'String'>
+  readonly payout_id: Prisma.FieldRef<"consignor_payables", 'BigInt'>
   readonly description: Prisma.FieldRef<"consignor_payables", 'String'>
   readonly created_at: Prisma.FieldRef<"consignor_payables", 'DateTime'>
 }
@@ -2043,6 +2259,25 @@ export type consignor_payables$productArgs<ExtArgs extends runtime.Types.Extensi
    */
   include?: Prisma.productsInclude<ExtArgs> | null
   where?: Prisma.productsWhereInput
+}
+
+/**
+ * consignor_payables.payout
+ */
+export type consignor_payables$payoutArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignor_payouts
+   */
+  select?: Prisma.consignor_payoutsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignor_payouts
+   */
+  omit?: Prisma.consignor_payoutsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignor_payoutsInclude<ExtArgs> | null
+  where?: Prisma.consignor_payoutsWhereInput
 }
 
 /**

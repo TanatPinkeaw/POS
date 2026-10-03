@@ -419,6 +419,7 @@ export const ModelName = {
   notifications: 'notifications',
   display_devices: 'display_devices',
   consignor_payables: 'consignor_payables',
+  consignor_payouts: 'consignor_payouts',
   point_transactions: 'point_transactions'
 } as const
 
@@ -435,7 +436,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2067,6 +2068,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    consignor_payouts: {
+      payload: Prisma.$consignor_payoutsPayload<ExtArgs>
+      fields: Prisma.consignor_payoutsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.consignor_payoutsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.consignor_payoutsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>
+        }
+        findFirst: {
+          args: Prisma.consignor_payoutsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.consignor_payoutsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>
+        }
+        findMany: {
+          args: Prisma.consignor_payoutsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>[]
+        }
+        create: {
+          args: Prisma.consignor_payoutsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>
+        }
+        createMany: {
+          args: Prisma.consignor_payoutsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.consignor_payoutsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>[]
+        }
+        delete: {
+          args: Prisma.consignor_payoutsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>
+        }
+        update: {
+          args: Prisma.consignor_payoutsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>
+        }
+        deleteMany: {
+          args: Prisma.consignor_payoutsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.consignor_payoutsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.consignor_payoutsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>[]
+        }
+        upsert: {
+          args: Prisma.consignor_payoutsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignor_payoutsPayload>
+        }
+        aggregate: {
+          args: Prisma.Consignor_payoutsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateConsignor_payouts>
+        }
+        groupBy: {
+          args: Prisma.consignor_payoutsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Consignor_payoutsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.consignor_payoutsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Consignor_payoutsCountAggregateOutputType> | number
+        }
+      }
+    }
     point_transactions: {
       payload: Prisma.$point_transactionsPayload<ExtArgs>
       fields: Prisma.point_transactionsFieldRefs
@@ -2550,11 +2625,26 @@ export const Consignor_payablesScalarFieldEnum = {
   order_id: 'order_id',
   order_item_id: 'order_item_id',
   product_id: 'product_id',
+  payout_id: 'payout_id',
   description: 'description',
   created_at: 'created_at'
 } as const
 
 export type Consignor_payablesScalarFieldEnum = (typeof Consignor_payablesScalarFieldEnum)[keyof typeof Consignor_payablesScalarFieldEnum]
+
+
+export const Consignor_payoutsScalarFieldEnum = {
+  id: 'id',
+  consignor_user_id: 'consignor_user_id',
+  method: 'method',
+  amount_thb: 'amount_thb',
+  shift_id: 'shift_id',
+  note: 'note',
+  created_by: 'created_by',
+  created_at: 'created_at'
+} as const
+
+export type Consignor_payoutsScalarFieldEnum = (typeof Consignor_payoutsScalarFieldEnum)[keyof typeof Consignor_payoutsScalarFieldEnum]
 
 
 export const Point_transactionsScalarFieldEnum = {
@@ -3146,6 +3236,7 @@ export type GlobalOmitConfig = {
   notifications?: Prisma.notificationsOmit
   display_devices?: Prisma.display_devicesOmit
   consignor_payables?: Prisma.consignor_payablesOmit
+  consignor_payouts?: Prisma.consignor_payoutsOmit
   point_transactions?: Prisma.point_transactionsOmit
 }
 

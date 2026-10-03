@@ -228,13 +228,24 @@ describe('refunding a consigned sale', () => {
     await consign(product.id, 40);
 
     const { orderId } = await sell(shiftId, product.id, 1);
-    // The share was paid out before the customer returned the item.
+    // The share was paid out before the customer returned the item. The debit names
+    // the statement it settles (ticket 08) — a payout row cannot stand alone.
+    const payout = await prisma.consignor_payouts.create({
+      data: {
+        consignor_user_id: people.memberId,
+        method: 'promptpay',
+        amount_thb: 40,
+        note: 'จ่ายส่วนแบ่ง',
+        created_by: people.adminId,
+      },
+    });
     await prisma.consignor_payables.create({
       data: {
         consignor_user_id: people.memberId,
         kind: 'payout',
         amount_thb: -40,
         description: 'จ่ายส่วนแบ่ง',
+        payout_id: payout.id,
       },
     });
     expect(await balanceFor(people.memberId)).toBe(0);

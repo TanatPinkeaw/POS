@@ -266,6 +266,7 @@ export type cash_shiftsWhereInput = {
   audit_logs?: Prisma.Audit_logsListRelationFilter
   payment_intents?: Prisma.Payment_intentsListRelationFilter
   credit_notes?: Prisma.Credit_notesListRelationFilter
+  consignor_payouts?: Prisma.Consignor_payoutsListRelationFilter
 }
 
 export type cash_shiftsOrderByWithRelationInput = {
@@ -284,6 +285,7 @@ export type cash_shiftsOrderByWithRelationInput = {
   audit_logs?: Prisma.audit_logsOrderByRelationAggregateInput
   payment_intents?: Prisma.payment_intentsOrderByRelationAggregateInput
   credit_notes?: Prisma.credit_notesOrderByRelationAggregateInput
+  consignor_payouts?: Prisma.consignor_payoutsOrderByRelationAggregateInput
 }
 
 export type cash_shiftsWhereUniqueInput = Prisma.AtLeast<{
@@ -305,6 +307,7 @@ export type cash_shiftsWhereUniqueInput = Prisma.AtLeast<{
   audit_logs?: Prisma.Audit_logsListRelationFilter
   payment_intents?: Prisma.Payment_intentsListRelationFilter
   credit_notes?: Prisma.Credit_notesListRelationFilter
+  consignor_payouts?: Prisma.Consignor_payoutsListRelationFilter
 }, "id">
 
 export type cash_shiftsOrderByWithAggregationInput = {
@@ -352,6 +355,7 @@ export type cash_shiftsCreateInput = {
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateInput = {
@@ -368,6 +372,7 @@ export type cash_shiftsUncheckedCreateInput = {
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUpdateInput = {
@@ -383,6 +388,7 @@ export type cash_shiftsUpdateInput = {
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateInput = {
@@ -399,6 +405,7 @@ export type cash_shiftsUncheckedUpdateInput = {
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateManyInput = {
@@ -662,6 +669,22 @@ export type cash_shiftsUpdateOneRequiredWithoutPayment_intentsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutPayment_intentsInput, Prisma.cash_shiftsUpdateWithoutPayment_intentsInput>, Prisma.cash_shiftsUncheckedUpdateWithoutPayment_intentsInput>
 }
 
+export type cash_shiftsCreateNestedOneWithoutConsignor_payoutsInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutConsignor_payoutsInput, Prisma.cash_shiftsUncheckedCreateWithoutConsignor_payoutsInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutConsignor_payoutsInput
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+}
+
+export type cash_shiftsUpdateOneWithoutConsignor_payoutsNestedInput = {
+  create?: Prisma.XOR<Prisma.cash_shiftsCreateWithoutConsignor_payoutsInput, Prisma.cash_shiftsUncheckedCreateWithoutConsignor_payoutsInput>
+  connectOrCreate?: Prisma.cash_shiftsCreateOrConnectWithoutConsignor_payoutsInput
+  upsert?: Prisma.cash_shiftsUpsertWithoutConsignor_payoutsInput
+  disconnect?: Prisma.cash_shiftsWhereInput | boolean
+  delete?: Prisma.cash_shiftsWhereInput | boolean
+  connect?: Prisma.cash_shiftsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.cash_shiftsUpdateToOneWithWhereWithoutConsignor_payoutsInput, Prisma.cash_shiftsUpdateWithoutConsignor_payoutsInput>, Prisma.cash_shiftsUncheckedUpdateWithoutConsignor_payoutsInput>
+}
+
 export type cash_shiftsCreateWithoutOpenerInput = {
   opened_at?: Date | string
   closed_at?: Date | string | null
@@ -674,6 +697,7 @@ export type cash_shiftsCreateWithoutOpenerInput = {
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutOpenerInput = {
@@ -689,6 +713,7 @@ export type cash_shiftsUncheckedCreateWithoutOpenerInput = {
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutOpenerInput = {
@@ -713,6 +738,7 @@ export type cash_shiftsCreateWithoutCloserInput = {
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutCloserInput = {
@@ -728,6 +754,7 @@ export type cash_shiftsUncheckedCreateWithoutCloserInput = {
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutCloserInput = {
@@ -799,6 +826,7 @@ export type cash_shiftsCreateWithoutAudit_logsInput = {
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutAudit_logsInput = {
@@ -814,6 +842,7 @@ export type cash_shiftsUncheckedCreateWithoutAudit_logsInput = {
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutAudit_logsInput = {
@@ -844,6 +873,7 @@ export type cash_shiftsUpdateWithoutAudit_logsInput = {
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutAudit_logsInput = {
@@ -859,6 +889,7 @@ export type cash_shiftsUncheckedUpdateWithoutAudit_logsInput = {
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateWithoutPaymentsInput = {
@@ -873,6 +904,7 @@ export type cash_shiftsCreateWithoutPaymentsInput = {
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutPaymentsInput = {
@@ -888,6 +920,7 @@ export type cash_shiftsUncheckedCreateWithoutPaymentsInput = {
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutPaymentsInput = {
@@ -918,6 +951,7 @@ export type cash_shiftsUpdateWithoutPaymentsInput = {
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutPaymentsInput = {
@@ -933,6 +967,7 @@ export type cash_shiftsUncheckedUpdateWithoutPaymentsInput = {
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateWithoutCredit_notesInput = {
@@ -947,6 +982,7 @@ export type cash_shiftsCreateWithoutCredit_notesInput = {
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutCredit_notesInput = {
@@ -962,6 +998,7 @@ export type cash_shiftsUncheckedCreateWithoutCredit_notesInput = {
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutCredit_notesInput = {
@@ -992,6 +1029,7 @@ export type cash_shiftsUpdateWithoutCredit_notesInput = {
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutCredit_notesInput = {
@@ -1007,6 +1045,7 @@ export type cash_shiftsUncheckedUpdateWithoutCredit_notesInput = {
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsCreateWithoutPayment_intentsInput = {
@@ -1021,6 +1060,7 @@ export type cash_shiftsCreateWithoutPayment_intentsInput = {
   payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsUncheckedCreateWithoutPayment_intentsInput = {
@@ -1036,6 +1076,7 @@ export type cash_shiftsUncheckedCreateWithoutPayment_intentsInput = {
   payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
   audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
   credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutShiftInput
 }
 
 export type cash_shiftsCreateOrConnectWithoutPayment_intentsInput = {
@@ -1066,6 +1107,7 @@ export type cash_shiftsUpdateWithoutPayment_intentsInput = {
   payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutPayment_intentsInput = {
@@ -1080,6 +1122,85 @@ export type cash_shiftsUncheckedUpdateWithoutPayment_intentsInput = {
   status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
   payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsCreateWithoutConsignor_payoutsInput = {
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  opener: Prisma.usersCreateNestedOneWithoutShifts_openedInput
+  closer?: Prisma.usersCreateNestedOneWithoutShifts_closedInput
+  payments?: Prisma.paymentsCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsUncheckedCreateWithoutConsignor_payoutsInput = {
+  id?: number
+  opened_by: string
+  closed_by?: string | null
+  opened_at?: Date | string
+  closed_at?: Date | string | null
+  initial_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedCreateNestedManyWithoutShiftInput
+  audit_logs?: Prisma.audit_logsUncheckedCreateNestedManyWithoutShiftInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutShiftInput
+  credit_notes?: Prisma.credit_notesUncheckedCreateNestedManyWithoutShiftInput
+}
+
+export type cash_shiftsCreateOrConnectWithoutConsignor_payoutsInput = {
+  where: Prisma.cash_shiftsWhereUniqueInput
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutConsignor_payoutsInput, Prisma.cash_shiftsUncheckedCreateWithoutConsignor_payoutsInput>
+}
+
+export type cash_shiftsUpsertWithoutConsignor_payoutsInput = {
+  update: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutConsignor_payoutsInput, Prisma.cash_shiftsUncheckedUpdateWithoutConsignor_payoutsInput>
+  create: Prisma.XOR<Prisma.cash_shiftsCreateWithoutConsignor_payoutsInput, Prisma.cash_shiftsUncheckedCreateWithoutConsignor_payoutsInput>
+  where?: Prisma.cash_shiftsWhereInput
+}
+
+export type cash_shiftsUpdateToOneWithWhereWithoutConsignor_payoutsInput = {
+  where?: Prisma.cash_shiftsWhereInput
+  data: Prisma.XOR<Prisma.cash_shiftsUpdateWithoutConsignor_payoutsInput, Prisma.cash_shiftsUncheckedUpdateWithoutConsignor_payoutsInput>
+}
+
+export type cash_shiftsUpdateWithoutConsignor_payoutsInput = {
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  opener?: Prisma.usersUpdateOneRequiredWithoutShifts_openedNestedInput
+  closer?: Prisma.usersUpdateOneWithoutShifts_closedNestedInput
+  payments?: Prisma.paymentsUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
+  credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+}
+
+export type cash_shiftsUncheckedUpdateWithoutConsignor_payoutsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  opened_by?: Prisma.StringFieldUpdateOperationsInput | string
+  closed_by?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  opened_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  closed_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  initial_cash?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  expected_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  actual_cash?: Prisma.NullableDecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string | null
+  status?: Prisma.Enumshift_statusFieldUpdateOperationsInput | $Enums.shift_status
+  payments?: Prisma.paymentsUncheckedUpdateManyWithoutShiftNestedInput
+  audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
 }
 
@@ -1117,6 +1238,7 @@ export type cash_shiftsUpdateWithoutOpenerInput = {
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutOpenerInput = {
@@ -1132,6 +1254,7 @@ export type cash_shiftsUncheckedUpdateWithoutOpenerInput = {
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateManyWithoutOpenerInput = {
@@ -1157,6 +1280,7 @@ export type cash_shiftsUpdateWithoutCloserInput = {
   audit_logs?: Prisma.audit_logsUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateWithoutCloserInput = {
@@ -1172,6 +1296,7 @@ export type cash_shiftsUncheckedUpdateWithoutCloserInput = {
   audit_logs?: Prisma.audit_logsUncheckedUpdateManyWithoutShiftNestedInput
   payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutShiftNestedInput
   credit_notes?: Prisma.credit_notesUncheckedUpdateManyWithoutShiftNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutShiftNestedInput
 }
 
 export type cash_shiftsUncheckedUpdateManyWithoutCloserInput = {
@@ -1195,6 +1320,7 @@ export type Cash_shiftsCountOutputType = {
   audit_logs: number
   payment_intents: number
   credit_notes: number
+  consignor_payouts: number
 }
 
 export type Cash_shiftsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1202,6 +1328,7 @@ export type Cash_shiftsCountOutputTypeSelect<ExtArgs extends runtime.Types.Exten
   audit_logs?: boolean | Cash_shiftsCountOutputTypeCountAudit_logsArgs
   payment_intents?: boolean | Cash_shiftsCountOutputTypeCountPayment_intentsArgs
   credit_notes?: boolean | Cash_shiftsCountOutputTypeCountCredit_notesArgs
+  consignor_payouts?: boolean | Cash_shiftsCountOutputTypeCountConsignor_payoutsArgs
 }
 
 /**
@@ -1242,6 +1369,13 @@ export type Cash_shiftsCountOutputTypeCountCredit_notesArgs<ExtArgs extends runt
   where?: Prisma.credit_notesWhereInput
 }
 
+/**
+ * Cash_shiftsCountOutputType without action
+ */
+export type Cash_shiftsCountOutputTypeCountConsignor_payoutsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.consignor_payoutsWhereInput
+}
+
 
 export type cash_shiftsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1259,6 +1393,7 @@ export type cash_shiftsSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   audit_logs?: boolean | Prisma.cash_shifts$audit_logsArgs<ExtArgs>
   payment_intents?: boolean | Prisma.cash_shifts$payment_intentsArgs<ExtArgs>
   credit_notes?: boolean | Prisma.cash_shifts$credit_notesArgs<ExtArgs>
+  consignor_payouts?: boolean | Prisma.cash_shifts$consignor_payoutsArgs<ExtArgs>
   _count?: boolean | Prisma.Cash_shiftsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["cash_shifts"]>
 
@@ -1310,6 +1445,7 @@ export type cash_shiftsInclude<ExtArgs extends runtime.Types.Extensions.Internal
   audit_logs?: boolean | Prisma.cash_shifts$audit_logsArgs<ExtArgs>
   payment_intents?: boolean | Prisma.cash_shifts$payment_intentsArgs<ExtArgs>
   credit_notes?: boolean | Prisma.cash_shifts$credit_notesArgs<ExtArgs>
+  consignor_payouts?: boolean | Prisma.cash_shifts$consignor_payoutsArgs<ExtArgs>
   _count?: boolean | Prisma.Cash_shiftsCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type cash_shiftsIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1330,6 +1466,7 @@ export type $cash_shiftsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     audit_logs: Prisma.$audit_logsPayload<ExtArgs>[]
     payment_intents: Prisma.$payment_intentsPayload<ExtArgs>[]
     credit_notes: Prisma.$credit_notesPayload<ExtArgs>[]
+    consignor_payouts: Prisma.$consignor_payoutsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1741,6 +1878,7 @@ export interface Prisma__cash_shiftsClient<T, Null = never, ExtArgs extends runt
   audit_logs<T extends Prisma.cash_shifts$audit_logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$audit_logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$audit_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   payment_intents<T extends Prisma.cash_shifts$payment_intentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$payment_intentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$payment_intentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   credit_notes<T extends Prisma.cash_shifts$credit_notesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$credit_notesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$credit_notesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  consignor_payouts<T extends Prisma.cash_shifts$consignor_payoutsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.cash_shifts$consignor_payoutsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payoutsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2292,6 +2430,30 @@ export type cash_shifts$credit_notesArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.Credit_notesScalarFieldEnum | Prisma.Credit_notesScalarFieldEnum[]
+}
+
+/**
+ * cash_shifts.consignor_payouts
+ */
+export type cash_shifts$consignor_payoutsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignor_payouts
+   */
+  select?: Prisma.consignor_payoutsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignor_payouts
+   */
+  omit?: Prisma.consignor_payoutsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignor_payoutsInclude<ExtArgs> | null
+  where?: Prisma.consignor_payoutsWhereInput
+  orderBy?: Prisma.consignor_payoutsOrderByWithRelationInput | Prisma.consignor_payoutsOrderByWithRelationInput[]
+  cursor?: Prisma.consignor_payoutsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Consignor_payoutsScalarFieldEnum | Prisma.Consignor_payoutsScalarFieldEnum[]
 }
 
 /**

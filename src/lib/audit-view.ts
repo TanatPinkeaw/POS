@@ -28,7 +28,8 @@ export type AuditAction =
   | 'member_updated'
   | 'offline_sale_synced'
   | 'consignment_set'
-  | 'consignment_withdrawn';
+  | 'consignment_withdrawn'
+  | 'consignment_paid';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -48,6 +49,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'offline_sale_synced',
   'consignment_set',
   'consignment_withdrawn',
+  'consignment_paid',
 ];
 
 /**
@@ -75,6 +77,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   offline_sale_synced: 'บิลที่ขายตอนเน็ตหลุด (ส่งเข้าระบบแล้ว)',
   consignment_set: 'ตั้ง/แก้เงื่อนไขฝากขาย',
   consignment_withdrawn: 'ถอนสินค้าฝากขาย',
+  consignment_paid: 'จ่ายส่วนแบ่งฝากขาย',
 };
 
 /**
@@ -126,6 +129,8 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   consignment_set: 'neutral',
   // Goods leaving with their owner, and a liability ending — worth a second read.
   consignment_withdrawn: 'info',
+  // Money leaving the shop to somebody outside it, the same concern as a refund.
+  consignment_paid: 'danger',
 };
 
 /**

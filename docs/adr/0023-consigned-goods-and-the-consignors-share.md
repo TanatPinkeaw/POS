@@ -112,7 +112,8 @@ is a matter for the shop's own agreement outside this system.
 - **Accountant sign-off on principal versus agent** and on revenue recognition is required
   before a shop trades this way; this ADR records the shape, not the tax opinion.
 - **No online consignment sale** in v1, by decision, not oversight.
-- **The sale and its refund move the ledger; the rest is not built.** A product carries a consignor and a
+- **The sale, its refund and the payout move the ledger; the consignor's own view is not
+  built.** A product carries a consignor and a
   share, `consignor_payables` is the ledger, the pure rule that turns a net sale into a share
   and a refund's reversal lives in `src/lib/consignment-rules.ts`, and an admin can consign a
   product or withdraw unsold goods from `/admin/products` — each audited. `recordConsignorShares`
@@ -128,6 +129,14 @@ is a matter for the shop's own agreement outside this system.
   is the ledger's own sum — so a consignor's goods are never filed as the shop's own. The till's
   own view of a product carries `isConsigned`, the offline catalogue snapshot keeps it, and the
   offline decision refuses a consigned line with a Thai message that names the next step
-  (connect) — while a pre-order, which completes online, is untouched. Nothing yet shows a
-  consignor what they are owed from the customer portal — that is ticket 09 under
+  (connect) — while a pre-order, which completes online, is untouched. **The payout is built**
+  (`src/lib/consignment-payout.ts`): `payConsignor` settles a consignor's balance from the open
+  drawer or by transfer (ADR 0004 — cash requires an open `cash_shifts` row and carries its
+  shift, a transfer carries none), refuses an amount above the balance, and in one transaction
+  writes a `consignor_payouts` row (the statement), the ledger's `payout` debit pointing back at
+  it via `payout_id` (the `chk_consignor_payables_payout` CHECK keeps the debit and its paper
+  inseparable) and an audit row (`consignment_paid`). A cash payout counts out of the drawer, so
+  the shift close still reconciles. `/admin/consignors` is the admin screen: the balances owed,
+  each consignor's account, a payout form, and the statement a payout produced. Nothing yet shows
+  a consignor what they are owed from the customer portal — that is ticket 09 under
   `.scratch/consignment/`.
