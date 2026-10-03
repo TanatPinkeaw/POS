@@ -52,7 +52,7 @@ export function PublicReceipt({ shop, data }: { shop: ShopView; data: ReceiptDat
         the buttons, so a printed slip stays a slip.
       */}
       <p className={`${styles.privacy} ln-no-print`}>
-        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคลของร้าน</Link>
+        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคลสำหรับลูกค้า</Link>
       </p>
     </main>
   );

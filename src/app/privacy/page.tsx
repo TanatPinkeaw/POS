@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 
 import { loadShop } from '@/lib/shop';
 import { shopDisplayName } from '@/lib/shop-view';
@@ -6,8 +7,8 @@ import { shopDisplayName } from '@/lib/shop-view';
 import styles from './privacy-page.module.css';
 
 export const metadata: Metadata = {
-  title: 'นโยบายคุ้มครองข้อมูลส่วนบุคคล',
-  description: 'ร้านเก็บข้อมูลของคุณอะไร เก็บไว้ทำไม ใครเห็น และคุณมีสิทธิอะไร',
+  title: 'นโยบายคุ้มครองข้อมูลส่วนบุคคล · ลูกค้า',
+  description: 'ร้านเก็บข้อมูลลูกค้าอะไร เก็บไว้ทำไม ใครเห็น และลูกค้ามีสิทธิอะไร',
 };
 
 /**
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
 const EFFECTIVE_FROM = '3 ตุลาคม 2569';
 
 /**
- * The shop's privacy notice — what a customer is told, in Thai, at `/privacy`.
+ * The shop's privacy notice **to its customers** — in Thai, at `/privacy`.
  *
  * **Why this is a page and not a document in `docs/`.** `docs/pdpa-research.md` found
  * that even a business exempt from the Act's record of processing is still expected to
@@ -29,10 +30,28 @@ const EFFECTIVE_FROM = '3 ตุลาคม 2569';
  * repository is a notice no customer is ever shown; one rendered from the shop's own row
  * cannot go stale against the shop's own name, phone number or address.
  *
- * **Who it speaks for.** The shop is the data controller here — one shop per deployment
- * on hardware it controls (ADR 0002 §1) — so this is the *shop's* notice and the shop's
- * duties, not a promise this software makes on its own. That is why it says who may see
- * the data (a cashier at the counter, the owner) instead of only listing fields.
+ * **Who it is for, and who it is about.** Two different parties meet in this document
+ * and the Act insists they are named, because a notice that does not say who is
+ * collecting whose data leaves the reader unable to hold anybody to it:
+ *
+ *   * the **shop** is the *controller* (ผู้ควบคุมข้อมูลส่วนบุคคล) — one shop per
+ *     deployment, on hardware it controls (ADR 0002 §1), so the duties here are the
+ *     shop's, not a promise this software makes on its own;
+ *   * the **reader** is the *data subject* (เจ้าของข้อมูลส่วนบุคคล).
+ *
+ * So the page says "ร้าน" where it means the controller and "คุณ" where it means the
+ * person reading, and never the other way round. That distinction is the whole reason
+ * §3 is not titled "who we share with" — the shop is on one side of that sentence too.
+ *
+ * **Staff are not the reader, so their data is not here.** An earlier draft of this page
+ * listed attendance records ("ข้อมูลการเข้า–ออกงาน") alongside purchase history, which
+ * told a customer at the counter that the shop keeps a clock on its own employees — a
+ * disclosure about somebody else's data, made to the wrong reader, in a document that
+ * otherwise has to be the one thing a customer is *entitled* to read. Staff are data
+ * subjects too, with their own notice: see `staff/page.tsx`. The overlap is real in the
+ * schema — `users` is one table for both, and a person can be a member and a cashier in
+ * the same row — but the *notice* is addressed to one reader at a time, so the two
+ * pages list what that reader's own record contains and leave the rest out.
  *
  * **The numbers here are the defaults this code ships with**, which is the only kind a
  * notice can carry without being a lie: thirty days is `RECEIPT_ACCESS_DAYS`' default
@@ -63,36 +82,48 @@ export default async function PrivacyPage() {
   return (
     <div className={styles.page}>
       <article className={styles.sheet}>
+        <p className={styles.audience}>
+          นโยบายนี้สำหรับ <strong>ลูกค้า</strong> ของร้าน
+        </p>
         <h1 className={styles.heading}>นโยบายคุ้มครองข้อมูลส่วนบุคคล</h1>
-        <p className={styles.shopName}>
-          {contact.legalName ?? contact.name}
-          {contact.legalName ? ` (${contact.name})` : ''}
+        <p className={styles.parties}>
+          <strong>ผู้ควบคุมข้อมูลส่วนบุคคล:</strong> {contact.legalName ?? contact.name}
+          {contact.legalName ? ` (${contact.name})` : ''} — ต่อไปในหน้านี้เรียกว่า “ร้าน”
+          <br />
+          <strong>เจ้าของข้อมูลส่วนบุคคล:</strong> คุณ — ผู้อ่านหน้านี้
         </p>
         <p className={styles.effective}>มีผลตั้งแต่ {EFFECTIVE_FROM}</p>
 
         <p className={styles.body}>
           หน้านี้อธิบายว่าร้านเก็บข้อมูลของคุณอะไร เก็บไว้ทำไม ใครมีสิทธิ์เห็น
-          และคุณมีสิทธิอะไร เราเก็บเฉพาะที่จำเป็นต่อการขายและการให้บริการหลังการขาย
+          และคุณมีสิทธิอะไร ร้านเก็บเฉพาะที่จำเป็นต่อการขายและการให้บริการหลังการขาย
           ไม่มีการขายหรือเปิดเผยข้อมูลของคุณเพื่อการตลาด
+        </p>
+        <p className={styles.body}>
+          หากคุณเป็น<strong>พนักงานของร้าน</strong> ให้ดู
+          <Link href="/privacy/staff" className={styles.inlineLink}>
+            นโยบายสำหรับพนักงาน
+          </Link>
+          แทน เพราะข้อมูลที่ร้านเก็บเกี่ยวกับการทำงานของคุณอยู่ในนโยบายนั้น
         </p>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionHeading}>1. ข้อมูลที่เราเก็บ</h2>
+          <h2 className={styles.sectionHeading}>1. ข้อมูลลูกค้าที่ร้านเก็บ</h2>
           <ul className={styles.list}>
             <li>ชื่อ–นามสกุล และเบอร์โทรศัพท์ — เวลาสมัครสมาชิก หรือให้พนักงานเปิดบัญชีให้ที่เคาน์เตอร์</li>
             <li>บัญชี Google — เฉพาะเมื่อคุณเลือกเข้าสู่ระบบด้วย Google ที่หน้าเข้าสู่ระบบลูกค้า</li>
             <li>ประวัติการซื้อขาย ยอดแต้มสะสม และยอดค้างชำระของคุณ</li>
             <li>ข้อมูลการสั่งซื้อล่วงหน้า รวมถึงรหัสรับของ 4 หลักที่ใช้รับสินค้า</li>
-            <li>ข้อมูลการเข้า–ออกงาน เฉพาะกรณีที่คุณเป็นพนักงานของร้าน</li>
+            <li>รายการที่คุณขายสินค้าให้ร้านแบบฝากขาย (consignment) ถ้าคุณมี</li>
           </ul>
           <p className={styles.notCollected}>
-            <strong>สิ่งที่เราไม่ขอ:</strong> ไม่ขอเลขประจำตัวประชาชน ไม่ขอข้อมูลสุขภาพ
+            <strong>สิ่งที่ร้านไม่ขอจากคุณ:</strong> ไม่ขอเลขประจำตัวประชาชน ไม่ขอข้อมูลสุขภาพ
             ไม่ขอรูปบัตรประชาชน และไม่ขอเลขบัญชีธนาคารของคุณ
           </p>
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionHeading}>2. ทำไมต้องเก็บ</h2>
+          <h2 className={styles.sectionHeading}>2. ทำไมร้านจึงเก็บ</h2>
           <ul className={styles.list}>
             <li>
               <strong>เพื่อออกใบเสร็จและใบกำกับภาษี</strong> — เป็นหน้าที่ตามสัญญาที่คุณซื้อสินค้า
@@ -113,6 +144,10 @@ export default async function PrivacyPage() {
 
         <section className={styles.section}>
           <h2 className={styles.sectionHeading}>3. ใครมีสิทธิ์เห็นข้อมูลของคุณ</h2>
+          <p className={styles.body}>
+            ร้านเป็นผู้ควบคุมข้อมูลของคุณ แต่ร้านไม่ได้ดูข้อมูลทุกส่วนด้วยตัวเอง
+            พนักงานแต่ละตำแหน่งเห็นเฉพาะเท่าที่งานของตำแหน่งนั้นต้องใช้
+          </p>
           <ul className={styles.list}>
             <li>
               <strong>พนักงานที่ให้บริการ</strong> — เห็นเฉพาะชื่อและเบอร์โทรที่จำเป็นต่อการขาย
@@ -152,7 +187,7 @@ export default async function PrivacyPage() {
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionHeading}>5. เก็บข้อมูลไว้นานเท่าไหร่</h2>
+          <h2 className={styles.sectionHeading}>5. ร้านเก็บข้อมูลลูกค้าไว้นานเท่าไหร่</h2>
           <ul className={styles.list}>
             <li>
               <strong>ใบเสร็จและใบกำกับภาษี</strong> — เก็บไว้ตามระยะเวลาที่กฎหมายภาษีกำหนดสำหรับเอกสารทางการเงิน
@@ -220,11 +255,12 @@ export default async function PrivacyPage() {
         </section>
 
         <section className={styles.section}>
-          <h2 className={styles.sectionHeading}>8. ติดต่อและร้องเรียน</h2>
+          <h2 className={styles.sectionHeading}>8. ติดต่อผู้ควบคุมข้อมูล และร้องเรียน</h2>
           <p className={styles.contact}>
-            <strong>ร้าน</strong>
+            <strong>ผู้ควบคุมข้อมูลส่วนบุคคล</strong>
             <br />
             {contact.legalName ?? contact.name}
+            {contact.legalName ? ` (${contact.name})` : ''}
             {contact.address ? (
               <>
                 <br />
@@ -240,7 +276,7 @@ export default async function PrivacyPage() {
           </p>
           <p className={styles.body}>
             หากร้านไม่ปฏิบัติตามนโยบายนี้ คุณสามารถร้องเรียนต่อสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคล (สคส.)
-            ได้ที่ <strong>pdpc.or.th</strong>
+            ได้ที่ <strong>pdpc.or.th</strong> — หรือร้องเรียนต่อร้านโดยตรงตามข้อมูลข้างต้นก่อน
           </p>
         </section>
       </article>

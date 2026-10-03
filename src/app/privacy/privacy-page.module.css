@@ -33,6 +33,43 @@
   line-height: 1.35;
 }
 
+/*
+ * Who the document is addressed to.
+ *
+ * Two notices now share this stylesheet, one per data subject, because the Act expects
+ * a notice to be read by *somebody*: telling a customer about attendance records, or an
+ * employee about purchase history, is disclosure to the wrong reader. The audience line
+ * sits above the title so the reader knows which of the two they are holding before they
+ * start, and the parties line below it names the controller and the data subject — the
+ * two the Act requires to be identifiable, and the two this system keeps least
+ * obviously distinct (one `users` table holds both).
+ */
+.audience {
+  margin: 0 0 var(--ln-space-2);
+  color: var(--ln-brand);
+  font-size: var(--ln-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.parties {
+  margin: 0 0 var(--ln-space-2);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-sm);
+  background: var(--ln-surface-2);
+  color: var(--ln-text);
+  font-size: var(--ln-size-base);
+  line-height: 1.9;
+}
+
+.inlineLink {
+  display: inline-block;
+  padding: 0 var(--ln-space-1);
+  color: var(--ln-link, var(--ln-brand));
+  text-decoration: underline;
+}
+
 .shopName {
   margin: 0 0 var(--ln-space-2);
   color: var(--ln-text-muted);

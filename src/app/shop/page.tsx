@@ -73,7 +73,7 @@ export default async function ShopSignInPage() {
           shop does with their phone number, which is the first moment a notice can be
           read by the person it is about (ADR 0020 collects a number and a name here).
         */}
-        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคล</Link>
+        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคลสำหรับลูกค้า</Link>
       </p>
     </main>
   );
