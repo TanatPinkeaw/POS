@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1089 tests across 78 files: unit + integration
+npm test                # 1093 tests across 79 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 180 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 27 screens render, and render styled
@@ -697,6 +697,39 @@ table for free.
 
 ---
 
+## Consigned goods (ฝากขาย)
+
+A member leaves goods with the shop and the shop sells them as principal, owing an agreed
+percentage of the net (excluding VAT) — decided in `docs/adr/0023-consigned-goods-and-the-consignors-share.md`
+and built across nine tickets under `.scratch/consignment/`.
+
+**One product is either shop-owned or consigned, never both.** A consignor and a share sit on
+`products` together (the database refuses the two moving apart); a share of the net excluding
+VAT is written to a `consignor_payables` ledger as one credit per consigned line, *inside the
+sale's own transaction* at both completion sites (the walk-in bill and the pre-order handover),
+so a sale that rolls back owes nobody. A refund claws the share back in the refund's own
+transaction, proportional to the units returned, and a payout already taken just leaves a
+negative balance the next payout nets.
+
+**Consigned goods stay outside the shop's own figures.** The dashboard's stock valuation counts
+only owned products; the consigned stock and the shares owed are reported separately, and the
+shares-owed figure is the ledger's own sum. A consigned product also **cannot be sold offline**,
+by decision: the device carries a flag and the till refuses the line with a Thai message that
+names the next step (connect) — a pre-order, which completes online, is unaffected.
+
+**Money leaves the shop the way it always does** — from the open drawer or by hand in the shop's
+banking app (ADR 0004), never an automatic transfer. From `/admin/consignors` an admin settles a
+consignor's balance (cash needs an open drawer and carries its shift; a transfer never touches
+one), a payout cannot exceed what is owed, and the statement it produces lists the sales and
+refunds it settles — the ledger debit points back at that statement, so the arithmetic and the
+paper can never be separated. A cash payout is counted out of the drawer, so the close still
+reconciles. The whole act is one transaction and one audit row (`consignment_paid`).
+
+**The consignor sees their own position** in the customer portal's **ฝากขาย** tab: what the shop
+owes, the goods they have left with the shop and how much of each has sold, and every movement —
+a payout reading as a settled statement, a refund as a reversal. The view is scoped to the
+signed-in member's session, so one phone number can never read another's balance.
+
 ## Deliberate deviations and additions
 
 See `docs/adr/0001-schema-deviations-from-srs.md` (the schema) and
@@ -777,27 +810,6 @@ month downloadable, a signed link for a walk-in). Built end to end: the customer
 order; a walk-in's signed link opens a printable **receipt page** with no session; and the
 counter can hand one over — the till's receipt sheet mints a fresh link and shows a QR and URL
 for the customer to scan, print or read down the phone.
-- **Consigned goods (ฝากขาย).** Decided in ADR 0023 (an owner and a share on `products`, a
-payables ledger, sold as principal, never offline in v1). Partly built: an admin can consign a
-product to a member with an agreed share and withdraw unsold goods from `/admin/products`, each
-audited; the share rule is a pure module; and a consigned sale **writes its payable credit in
-the sale's own transaction**, at both a walk-in bill and a pre-order handover, so a sale that
-rolls back owes nobody. **A refund claws the share back**, also in the refund's own
-transaction: a debit proportional to the units returned, with the note that closes a line
-taking the remainder so the debits sum to the credit exactly, and a payout already made leaving
-a negative balance the next payout nets. **Consigned goods stay outside the shop's own
-figures**: the dashboard's stock valuation counts only owned products, and the consigned stock
-and the shares owed are stated separately (the shares-owed figure is the ledger's own sum).
-**A consigned product cannot be sold offline**, by decision: the device carries a flag that says
-the goods are a consignor's, and the till refuses the sale with a Thai message that names the
-next step (connect), while a pre-order — which completes online — is unaffected. **A payout
-settles the ledger**: from `/admin/consignors` an admin pays a consignor by the open drawer or by
-the shop's banking app (ADR 0004 — cash needs an open drawer and carries its shift; a transfer
-never touches one), a payout cannot exceed the balance owed, the statement it produces lists the
-sales and refunds it settles, the debit points back at that statement, and the whole thing is one
-audited transaction (`consignment_paid`). A cash payout is counted out of the drawer, so the
-close still reconciles. Not yet built: a consignor cannot see what they are owed from the customer
-portal (ticket 09).
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
 - **Customer messages on LINE.** The shop's own group can be reached, but a

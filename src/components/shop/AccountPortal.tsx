@@ -51,6 +51,31 @@ interface ReceiptPayload {
   receipt: ReceiptData;
 }
 
+interface ConsignmentItem {
+  productId: string;
+  name: string;
+  sharePercent: number;
+  onHandQty: number;
+  soldQty: number;
+  refundedQty: number;
+  earnedThb: number;
+}
+
+interface ConsignmentEntry {
+  id: string;
+  kind: 'sale' | 'refund' | 'payout';
+  description: string | null;
+  amountThb: number;
+  at: string;
+  payoutId: string | null;
+}
+
+interface ConsignmentPage {
+  balanceThb: number;
+  items: ConsignmentItem[];
+  entries: ConsignmentEntry[];
+}
+
 /**
  * The customer's own account — points, receipts and their number (ADR 0020, ADR 0021).
  *
@@ -81,12 +106,14 @@ export function AccountPortal({
         items={[
           { key: 'points', label: 'คะแนน', badge: pointsBalance.toLocaleString('en-US') },
           { key: 'receipts', label: 'ใบเสร็จ' },
+          { key: 'consignment', label: 'ฝากขาย' },
           { key: 'phone', label: 'เบอร์โทรศัพท์' },
         ]}
       />
 
       {tab === 'points' ? <PointsPanel /> : null}
       {tab === 'receipts' ? <ReceiptsPanel /> : null}
+      {tab === 'consignment' ? <ConsignmentPanel /> : null}
       {tab === 'phone' ? <PhonePanel phone={phone} /> : null}
     </Stack>
   );
@@ -284,6 +311,132 @@ function ReceiptsPanel() {
     </Stack>
   );
 }
+
+/* ------------------------------------------------------------- consignment */
+
+/**
+ * The member's own consignment position (ADR 0023).
+ *
+ * The same three figures the owner pays against, read through the member's session:
+ * what the shop owes (`balanceThb` — the ledger's own sum), the goods they have left
+ * with the shop (and how much of each has sold), and every movement, newest first. A
+ * payout is a `payout` line and reads as a settled statement; a refund is a `refund`
+ * line and reads as a reversal. A member who has consigned nothing gets the empty
+ * state rather than an empty card, because "nothing yet" and "something went wrong"
+ * must not look alike.
+ */
+function ConsignmentPanel() {
+  const [page, setPage] = useState<ConsignmentPage | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setPage(await apiFetch<ConsignmentPage>('/api/v1/consignment'));
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'โหลดข้อมูลฝากขายไม่สำเร็จ');
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+  // A sale or refund moves this ledger, so it is worth refreshing with the orders.
+  useRealtimeEvent(REALTIME_EVENTS.orderUpdated, useCallback(() => void load(), [load]));
+
+  if (page === null && error === null) {
+    return <Spinner />;
+  }
+
+  const hasItems = page !== null && page.items.length > 0;
+  const hasEntries = page !== null && page.entries.length > 0;
+
+  return (
+    <Stack gap="md">
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+
+      {page ? (
+        <Card
+          title="ยอดค้างจ่ายฝากขาย"
+          subtitle="ส่วนแบ่งจากสินค้าที่คุณฝากร้านขาย"
+          actions={
+            <Pill tone={page.balanceThb > 0 ? 'success' : 'neutral'} icon="coins">
+              <Money amount={page.balanceThb} />
+            </Pill>
+          }
+        >
+          <p className="ln-muted">
+            ส่วนแบ่งคิดจากยอดขายสุทธิ (ไม่รวม VAT) ตามเปอร์เซ็นต์ที่ตกลงไว้ — ร้านจะโอนหรือจ่ายจาก
+            ลิ้นชักให้คุณ พร้อมใบสำคัญทุกครั้ง
+          </p>
+        </Card>
+      ) : null}
+
+      {page && !hasItems && !hasEntries ? (
+        <Card>
+          <EmptyState
+            icon="box"
+            title="ยังไม่มีสินค้าฝากขาย"
+            description="เมื่อคุณฝากสินค้ากับร้านและร้านขายได้ ยอดส่วนแบ่งจะแสดงที่นี่"
+          />
+        </Card>
+      ) : null}
+
+      {page && hasItems ? (
+        <Card title="สินค้าที่ฝากขาย" subtitle="ส่วนแบ่ง · คงเหลือ · ขายแล้ว">
+          <ul className={styles.ledger}>
+            {page.items.map((item) => (
+              <li key={item.productId} className={styles.ledgerRow}>
+                <div className={styles.ledgerMain}>
+                  <span className={styles.ledgerWhat}>{item.name}</span>
+                  <span className="ln-muted">
+                    ส่วนแบ่ง {item.sharePercent}% · คงเหลือ {item.onHandQty} · ขายแล้ว {item.soldQty}
+                    {item.refundedQty > 0 ? ` · คืน ${item.refundedQty}` : ''}
+                  </span>
+                </div>
+                <div className={styles.ledgerFigures}>
+                  <Money amount={item.earnedThb} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      {page && hasEntries ? (
+        <Card title="ความเคลื่อนไหว" subtitle="ใหม่สุดก่อน">
+          <ul className={styles.ledger}>
+            {page.entries.map((entry) => (
+              <li key={entry.id} className={styles.ledgerRow}>
+                <div className={styles.ledgerMain}>
+                  <span className={styles.ledgerWhat}>
+                    {entry.description ?? CONSIGNMENT_KIND_LABEL[entry.kind]}
+                  </span>
+                  <span className="ln-muted">{new Date(entry.at).toLocaleString('th-TH')}</span>
+                </div>
+                <div className={styles.ledgerFigures}>
+                  <Money amount={entry.amountThb} signed />
+                  {entry.kind === 'payout' ? (
+                    <Pill tone="success" icon="check">
+                      จ่ายแล้ว
+                    </Pill>
+                  ) : null}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+    </Stack>
+  );
+}
+
+/** The fallback wording for a movement whose description is missing. */
+const CONSIGNMENT_KIND_LABEL: Record<ConsignmentEntry['kind'], string> = {
+  sale: 'ยอดขาย',
+  refund: 'คืนสินค้า',
+  payout: 'จ่ายเงิน',
+};
 
 /* ------------------------------------------------------------------- phone */
 

@@ -13,7 +13,7 @@ second does not. That is the spine of the order below.
 ## Effort 1 — Land the offline till
 
 **State.** Built, reviewed on both axes, and **green** when it landed: `npm run verify:all` ran
-all five gates (the tree has grown since — `verify` is now 78 files and 1089 tests). It is
+all five gates (the tree has grown since — `verify` is now 79 files and 1093 tests). It is
 **landed on `main`** as its own commit (`83bacc9`), on top of the base tree.
 
 **What it unlocks.** A shop keeps selling cash when its connection drops, with the numbers,
@@ -71,14 +71,15 @@ receipt is delivered. The ADRs are already written.
 ## Effort 3 — Consigned goods (ฝากขาย)
 
 **State.** Designed in ADR 0023; specified and ticketed under `.scratch/consignment/`;
-**in progress** — ticket 01 (the owner and the payable ledger on the schema), ticket 02 (the
-pure share rule), ticket 03 (an admin consigning a product and withdrawing it, each audited),
-ticket 04 (the share recorded in the sale's own transaction, at both completion sites),
-ticket 05 (a refund clawing the share back, in the refund's own transaction), ticket 06
-(consigned stock and shares owed reported outside the shop's own valuation), ticket 07
-(the till refusing a consigned product offline) and ticket 08 (a payout through the drawer or a
-transfer, with a statement and an audit row) are done and on `main`. Only ticket 09 (the
-consignor's own view of what they are owed) is left. Explicitly touches the money path.
+**complete** (code) — every ticket is done and on `main`: 01 (the owner and the payable ledger
+on the schema), 02 (the pure share rule), 03 (an admin consigning a product and withdrawing it,
+each audited), 04 (the share recorded in the sale's own transaction, at both completion sites),
+05 (a refund clawing the share back, in the refund's own transaction), 06 (consigned stock and
+shares owed reported outside the shop's own valuation), 07 (the till refusing a consigned product
+offline), 08 (a payout through the drawer or a transfer, with a statement and an audit row) and
+09 (the consignor's own view of what they are owed, in the customer portal). The one thing
+outstanding is not code: the accountant's sign-off on principal-versus-agent treatment (ADR 0023),
+which is a release blocker for a real shop. Explicitly touches the money path.
 
 **What it unlocks.** A member leaves goods with the shop; the shop sells them as principal and
 owes an agreed percentage of the net, accrued as a payable and settled through the drawer or a
@@ -86,12 +87,12 @@ transfer (ADR 0023). The consigned share, not a second inventory.
 
 **Order inside it.** The schema (01), the pure share rule (02), admin set-up (03), the share
 recorded at the two sale sites (04), the refund clawback (05), the reporting split (06), the
-never-offline refusal (07) and the payout (08) are done. The consignor's portal view (09, which
-waits on Effort 2) is the one left, and it closes the effort.
+never-offline refusal (07), the payout (08) and the consignor's portal view (09) are done. The
+effort is complete.
 
 **Done when.** A consigned sale writes exactly one payable credit, a refund reverses it, a
-payout nets it with a statement, consigned stock is outside the shop's own valuation, and an
-offline till refuses a consigned product.
+payout nets it with a statement, consigned stock is outside the shop's own valuation, an offline
+till refuses a consigned product, and the consignor can see their own position in the portal.
 
 **Documents.** `README.md` *Not built yet* loses the consignment entry; the ADR gains the
 accountant's answer if it changes the treatment.

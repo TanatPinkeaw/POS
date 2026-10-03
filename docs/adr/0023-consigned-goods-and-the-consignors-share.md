@@ -112,8 +112,8 @@ is a matter for the shop's own agreement outside this system.
 - **Accountant sign-off on principal versus agent** and on revenue recognition is required
   before a shop trades this way; this ADR records the shape, not the tax opinion.
 - **No online consignment sale** in v1, by decision, not oversight.
-- **The sale, its refund and the payout move the ledger; the consignor's own view is not
-  built.** A product carries a consignor and a
+- **The money path is built end to end; only the accountant's sign-off and the online sale
+  remain.** A product carries a consignor and a
   share, `consignor_payables` is the ledger, the pure rule that turns a net sale into a share
   and a refund's reversal lives in `src/lib/consignment-rules.ts`, and an admin can consign a
   product or withdraw unsold goods from `/admin/products` — each audited. `recordConsignorShares`
@@ -137,6 +137,10 @@ is a matter for the shop's own agreement outside this system.
   it via `payout_id` (the `chk_consignor_payables_payout` CHECK keeps the debit and its paper
   inseparable) and an audit row (`consignment_paid`). A cash payout counts out of the drawer, so
   the shift close still reconciles. `/admin/consignors` is the admin screen: the balances owed,
-  each consignor's account, a payout form, and the statement a payout produced. Nothing yet shows
-  a consignor what they are owed from the customer portal — that is ticket 09 under
-  `.scratch/consignment/`.
+  each consignor's account, a payout form, and the statement a payout produced. **The consignor
+  sees their own position** in the customer portal's ฝากขาย tab (`src/lib/consignment-portal.ts`):
+  `loadCustomerConsignment` reads the same ledger by the signed-in member's own id — the balance
+  is the ledger's own sum, the items list what they have left with the shop and how much of each
+  has sold, and every movement appears newest first, a payout reading as a settled statement and
+  a refund as a reversal. Because the read is scoped by the caller's id, one phone number can
+  never see another consignor's balance. That closes every ticket under `.scratch/consignment/`.
