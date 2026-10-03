@@ -1,14 +1,14 @@
 // Seam under test: becoming a customer with Google, and returning as one (ADR 0020).
 //
-// The failure this suite exists to prevent is a split balance: a second row for a
-// person whose phone already has one, with the points and the order history on whichever
-// row they are not looking at. Everything here is about *one* row — created, linked, or
-// refused — and never two.
+// A Google credential proves the Google account, and nothing about the number it
+// arrives with. So the rules this suite pins are: one Google account, one customer;
+// a number nobody owns makes one; and a number that already has a customer — or a
+// member of staff — is refused rather than taken. The failure it exists to prevent is
+// the takeover: attaching a subject to a row on the strength of a typed number.
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 
 import type { ConflictError, ValidationError } from '@/lib/errors';
 import { completeCustomerGoogleSignIn, findCustomerByGoogleSubject } from '@/lib/identity';
-import { issueOtpChallenge } from '@/lib/otp-store';
 
 import { prisma, resetDatabase, seedPeople } from './helpers/test-db';
 
@@ -20,11 +20,6 @@ function google(subject: string, overrides: Partial<{ email: string | null; full
     emailVerified: true,
     fullName: overrides.fullName === undefined ? 'สมชาย จากกูเกิล' : overrides.fullName,
   };
-}
-
-/** A code that is definitely not `code`, so a wrong guess is really wrong. */
-function notThis(code: string): string {
-  return code === '000000' ? '111111' : '000000';
 }
 
 const staffPhone = '0800000001'; // the admin seeded by `seedPeople`
@@ -45,16 +40,13 @@ afterAll(async () => {
 describe('a first Google sign-in', () => {
   it('makes a customer for a phone nobody owns', async () => {
     const phone = '0891112222';
-    const code = await issueOtpChallenge(phone);
 
     const result = await completeCustomerGoogleSignIn({
       identity: google('new-customer'),
       phone,
-      code,
     });
 
     expect(result.created).toBe(true);
-    expect(result.linked).toBe(false);
     expect(result.phone).toBe(phone);
     const row = await prisma.users.findUniqueOrThrow({ where: { id: result.id } });
     expect(row.role).toBe('member');
@@ -62,80 +54,67 @@ describe('a first Google sign-in', () => {
   });
 
   it('takes the Google name when the customer does not give one', async () => {
-    const phone = '0891112223';
-    const code = await issueOtpChallenge(phone);
-
-    const result = await completeCustomerGoogleSignIn({ identity: google('named'), phone, code });
+    const result = await completeCustomerGoogleSignIn({
+      identity: google('named'),
+      phone: '0891112223',
+    });
 
     const row = await prisma.users.findUniqueOrThrow({ where: { id: result.id } });
     expect(row.full_name).toBe('สมชาย จากกูเกิล');
   });
 
   it('prefers the name the customer typed', async () => {
-    const phone = '0891112224';
-    const code = await issueOtpChallenge(phone);
-
     const result = await completeCustomerGoogleSignIn({
       identity: google('renamed'),
-      phone,
-      code,
+      phone: '0891112224',
       fullName: 'น้องใหม่',
     });
 
     const row = await prisma.users.findUniqueOrThrow({ where: { id: result.id } });
     expect(row.full_name).toBe('น้องใหม่');
   });
+
+  it('refuses a first sign-in with no number at all', async () => {
+    const failure = (await completeCustomerGoogleSignIn({
+      identity: google('no-number'),
+    }).catch((error: unknown) => error)) as ValidationError;
+
+    expect(failure.code).toBe('VALIDATION_ERROR');
+    expect(await findCustomerByGoogleSubject('no-number')).toBeNull();
+  });
 });
 
-describe('a Google sign-in for a phone that is already a customer', () => {
-  it('links to that row, keeping the points and the history on one identity', async () => {
+describe('a number that is already somebody', () => {
+  it('refuses a number the counter enrolled, rather than taking the row', async () => {
     await prisma.users.update({ where: { id: memberId }, data: { points_balance: 120 } });
-    // A dashed form of the number, to prove it finds the challenge the counter's
-    // normalised shape issued.
-    const code = await issueOtpChallenge(memberPhone);
 
-    const result = await completeCustomerGoogleSignIn({
-      identity: google('returning'),
-      phone: '090-000-0001',
-      code,
-    });
+    const failure = (await completeCustomerGoogleSignIn({
+      identity: google('would-be-thief'),
+      phone: memberPhone,
+    }).catch((error: unknown) => error)) as ConflictError;
 
-    expect(result.id).toBe(memberId);
-    expect(result.linked).toBe(true);
-    expect(result.created).toBe(false);
-    // The row, and everything hanging off it, is unchanged — same id, same points.
-    expect(result.pointsBalance).toBe(120);
-    expect(await prisma.users.count({ where: { role: 'member' } })).toBe(1);
+    expect(failure.code).toBe('PHONE_ALREADY_REGISTERED');
+    // The row is exactly as the counter left it: same points, still no Google.
     const row = await prisma.users.findUniqueOrThrow({ where: { id: memberId } });
-    expect(row.google_subject).toBe('returning');
     expect(row.points_balance).toBe(120);
+    expect(row.google_subject).toBeNull();
+    expect(await prisma.users.count({ where: { role: 'member' } })).toBe(1);
+    expect(await findCustomerByGoogleSubject('would-be-thief')).toBeNull();
   });
 
-  it('is a plain sign-in the second time, with no code needed', async () => {
-    const first = await issueOtpChallenge(memberPhone);
-    await completeCustomerGoogleSignIn({ identity: google('again'), phone: memberPhone, code: first });
+  it('refuses a number written in another shape, because it is the same number', async () => {
+    const failure = (await completeCustomerGoogleSignIn({
+      identity: google('dashed'),
+      phone: '090-000-0001',
+    }).catch((error: unknown) => error)) as ConflictError;
 
-    // The subject now resolves to a row, so the very first check answers — a bogus
-    // code must never reach the challenge at all.
-    const second = await completeCustomerGoogleSignIn({
-      identity: google('again'),
-      phone: memberPhone,
-      code: '000000',
-    });
-
-    expect(second.id).toBe(memberId);
-    expect(second.created).toBe(false);
-    expect(second.linked).toBe(false);
-    expect(await findCustomerByGoogleSubject('again')).toMatchObject({ id: memberId, phone: memberPhone });
+    expect(failure.code).toBe('PHONE_ALREADY_REGISTERED');
   });
 
   it('refuses a number that belongs to staff, and attaches nothing', async () => {
-    const code = await issueOtpChallenge(staffPhone);
-
     const failure = (await completeCustomerGoogleSignIn({
       identity: google('staff-number'),
       phone: staffPhone,
-      code,
     }).catch((error: unknown) => error)) as ConflictError;
 
     expect(failure.code).toBe('PHONE_BELONGS_TO_STAFF');
@@ -146,63 +125,34 @@ describe('a Google sign-in for a phone that is already a customer', () => {
 });
 
 describe('one Google account, one customer', () => {
-  it('refuses a second Google account on a number already linked', async () => {
-    const first = await issueOtpChallenge(memberPhone);
-    await completeCustomerGoogleSignIn({ identity: google('first-google'), phone: memberPhone, code: first });
+  it('signs the same subject back in without a number', async () => {
+    const phone = '0891112225';
+    const first = await completeCustomerGoogleSignIn({ identity: google('again'), phone });
 
-    const second = await issueOtpChallenge(memberPhone);
-    const failure = (await completeCustomerGoogleSignIn({
-      identity: google('second-google'),
-      phone: memberPhone,
-      code: second,
-    }).catch((error: unknown) => error)) as ConflictError;
+    // The subject now resolves to a row, so the very first check answers and the
+    // number is not even read — a returning account needs none.
+    const second = await completeCustomerGoogleSignIn({ identity: google('again') });
 
-    expect(failure.code).toBe('GOOGLE_ACCOUNT_ALREADY_LINKED');
-    const row = await prisma.users.findUniqueOrThrow({ where: { id: memberId } });
-    expect(row.google_subject).toBe('first-google');
+    expect(second.id).toBe(first.id);
+    expect(second.created).toBe(false);
+    expect(await findCustomerByGoogleSubject('again')).toMatchObject({ id: first.id, phone });
+    expect(await prisma.users.count({ where: { role: 'member' } })).toBe(2); // seeded + this one
   });
 
-  it('refuses the same Google account for a different phone', async () => {
-    const phone = '0891112225';
-    const first = await issueOtpChallenge(phone);
-    await completeCustomerGoogleSignIn({ identity: google('one-account'), phone, code: first });
-
-    const second = await issueOtpChallenge('0891112226');
-    const failure = (await completeCustomerGoogleSignIn({
+  it('cannot be used to make a second customer on a different number', async () => {
+    const first = await completeCustomerGoogleSignIn({
       identity: google('one-account'),
       phone: '0891112226',
-      code: second,
-    }).catch((error: unknown) => error)) as ConflictError;
+    });
 
-    expect(failure.code).toBe('GOOGLE_ACCOUNT_ALREADY_LINKED');
-    // And the second phone is still nobody's: a refusal must not half-create.
-    expect(await prisma.users.findUnique({ where: { phone: '0891112226' } })).toBeNull();
-  });
-});
+    // Presenting a different number while already being somebody signs straight in;
+    // it never creates or moves anything. Moving a number is `changeCustomerPhone`.
+    const second = await completeCustomerGoogleSignIn({
+      identity: google('one-account'),
+      phone: '0891112227',
+    });
 
-describe('the phone still has to be proved', () => {
-  it('refuses a wrong code and creates nobody', async () => {
-    const phone = '0891112227';
-    const code = await issueOtpChallenge(phone);
-
-    const failure = (await completeCustomerGoogleSignIn({
-      identity: google('no-proof'),
-      phone,
-      code: notThis(code),
-    }).catch((error: unknown) => error)) as ValidationError;
-
-    expect(failure.code).toBe('VALIDATION_ERROR');
-    expect(await prisma.users.findUnique({ where: { phone } })).toBeNull();
-    expect(await findCustomerByGoogleSubject('no-proof')).toBeNull();
-  });
-
-  it('refuses a code that was never sent', async () => {
-    const failure = (await completeCustomerGoogleSignIn({
-      identity: google('never-sent'),
-      phone: '0891112228',
-      code: '123456',
-    }).catch((error: unknown) => error)) as ValidationError;
-
-    expect(failure.code).toBe('VALIDATION_ERROR');
+    expect(second.id).toBe(first.id);
+    expect(await prisma.users.findUnique({ where: { phone: '0891112227' } })).toBeNull();
   });
 });

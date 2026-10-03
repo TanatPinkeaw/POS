@@ -205,7 +205,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1093 tests across 79 files: unit + integration
+npm test                # 1092 tests across 79 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 191 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 27 screens render, and render styled
@@ -213,7 +213,7 @@ npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
-npm run otp:gateway     # prints a sign-in OTP instead of texting it (local dev)
+npm run otp:gateway     # prints an OTP instead of texting it (local dev)
 ```
 
 `npm run verify:all` is those gates in dependency order and nothing new: types and
@@ -388,17 +388,18 @@ with no account may open — it is how they get one. Two doors sit side by side:
 
 - **Continue with Google**, for a customer who found the shop online (ADR 0020). The
   Google credential is verified in-process against Google's JWKS; on a first visit the
-  customer then proves a phone by OTP, and the name comes from their Google profile.
+  customer gives a phone number, and the name comes from their Google profile. A number
+  that already has a customer is **refused, not linked** — a typed number proves nothing,
+  and attaching it would be a takeover — so the counter's password is the way into that row.
 - **Phone and password**, for a customer the shop enrolled at the counter.
 
 Both rest on one value. Leave `GOOGLE_CLIENT_ID` unset and the Google door is still
 present, but says plainly that the shop has not configured it rather than showing a
 button that cannot work. To try it on your own machine: create an OAuth 2.0 **Web
 client** in Google Cloud Console with authorized JavaScript origin
-`http://localhost:3000`, set `GOOGLE_CLIENT_ID` in `.env`, and — because a first
-sign-in proves a phone — stand up a gateway for the OTP with `npm run otp:gateway`,
-pointing `OTP_CHANNEL=webhook` and `OTP_WEBHOOK_URL=http://localhost:4100/otp` at it.
-The code is then printed where you can read it and type it in.
+`http://localhost:3000` and set `GOOGLE_CLIENT_ID` in `.env`; a Google sign-in then takes
+a phone number and nothing else. (A **phone change** still proves the new number by OTP;
+`npm run otp:gateway` prints that code instead of texting it — see the command list above.)
 
 ### Collecting a pre-order (SRS §3)
 
@@ -805,7 +806,7 @@ goes through them.
 | `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, and the day that resets inside the statement that bumps it. |
 | `docs/adr/0018-the-board-that-calls-a-number.md` | The drink queue: a second state machine beside the order's status (because `completed` is what the money counts), the board the bar taps through, why only ready numbers reach the customer screen, and today as the board's horizon. |
 | `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to, the replay that makes a device's queue idempotent — and the invariants that move out of the database, including the two stock constraints the shortage case needed relaxed. |
-| `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone OTP, a linked rather than duplicated member, and the phone staying the key — amends ADR 0016 §4. |
+| `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. |
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
 | `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
@@ -818,14 +819,14 @@ goes through them.
 
 Deferred deliberately, and listed here rather than discovered during service:
 
-- **Customer sign-in with Google.** Decided in ADR 0020 (Google plus a phone OTP, with the
-phone still the identity). Built end to end: `/shop` offers **both doors side by side** —
-continue with Google (which proves a phone by OTP when it is a new account) and the counter's
-phone-and-password — a first sign-in with a proved phone makes a `member`, a returning
-customer's Google account **links** to the row that already owns their number rather than
-splitting their points, and a customer can **move their number** by proving the new one by
-OTP. The one gap is the owner's **hosted signup door** (ADR 0016), which waits on the control
-plane that does not exist yet: the shop's owner signs in today the same way staff do.
+- **Customer sign-in with Google.** Decided in ADR 0020 (Google plus a phone, with the phone
+still the identity). Built end to end: `/shop` offers **both doors side by side** — continue
+with Google (which takes a phone number when it is a new account, and **refuses** a number
+another customer or staff member already holds rather than linking, so a typed number can
+never take a row) and the counter's phone-and-password. A first sign-in with a free number
+makes a `member`, and a customer can **move their number** by proving the new one by OTP. The
+one gap is the owner's **hosted signup door** (ADR 0016), which waits on the control plane that
+does not exist yet: the shop's owner signs in today the same way staff do.
 - **Electronic receipts.** Decided in ADR 0021 (an image generated from the order, the last
 month downloadable, a signed link for a walk-in). Built end to end: the customer's own
 **account screen** lists the last month's receipts and downloads each as a PNG drawn from the

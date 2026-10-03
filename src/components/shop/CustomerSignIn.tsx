@@ -14,7 +14,6 @@ interface LoginResponse {
 }
 
 interface GoogleDoorResponse {
-  linked?: boolean;
   needsPhone?: boolean;
   id?: string;
   redirectTo?: string;
@@ -98,8 +97,6 @@ function GoogleDoor({
   /** True once Google's token came back for an account with no customer row yet. */
   const [needsPhone, setNeedsPhone] = useState(false);
   const [phone, setPhone] = useState('');
-  const [code, setCode] = useState('');
-  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
   /*
@@ -169,19 +166,14 @@ function GoogleDoor({
     };
   }, [googleClientId, handleCredential]);
 
-  async function sendCode(): Promise<void> {
-    setError(null);
-    setBusy(true);
-    try {
-      await apiPost('/api/v1/auth/otp', { phone: phone.trim() });
-      setSent(true);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : 'ส่งรหัสไม่สำเร็จ');
-    } finally {
-      setBusy(false);
-    }
-  }
-
+  /**
+   * The first sign-in: the phone and nothing else.
+   *
+   * No code is asked for (ADR 0020 §5): Google proves the Google account, and the
+   * number is only where the new customer's points and orders will hang. A number that
+   * already has a customer is refused by the server rather than linked, which is the
+   * one answer the screen has to relay in Thai.
+   */
   async function completeSignup(): Promise<void> {
     if (idToken.current === null) {
       return;
@@ -192,7 +184,6 @@ function GoogleDoor({
       const result = await apiPost<SignupResponse>('/api/v1/auth/signup', {
         idToken: idToken.current,
         phone: phone.trim(),
-        code: code.trim(),
       });
       onSignedIn(result.redirectTo);
     } catch (caught) {
@@ -216,48 +207,23 @@ function GoogleDoor({
         <div className={styles.googleSlot} ref={slot} />
       ) : (
         <div className={styles.door}>
-          <p className="ln-muted">ยืนยันเบอร์โทรศัพท์เพื่อผูกบัญชี Google ของคุณ</p>
+          <p className="ln-muted">ใช้เบอร์โทรศัพท์ของคุณเพื่อสร้างบัญชีลูกค้า</p>
           <TextField
             id="googlePhone"
             label="เบอร์โทรศัพท์"
             inputMode="tel"
             autoComplete="tel"
             value={phone}
-            onChange={(event) => {
-              setPhone(event.target.value);
-              setSent(false);
-            }}
+            onChange={(event) => setPhone(event.target.value)}
           />
-          {!sent ? (
-            <Button
-              variant="secondary"
-              icon="bell"
-              loading={busy}
-              disabled={phone.trim().length === 0}
-              onClick={() => void sendCode()}
-            >
-              ส่งรหัสยืนยัน
-            </Button>
-          ) : (
-            <>
-              <TextField
-                id="googleCode"
-                label="รหัสยืนยัน 6 หลัก"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
-              />
-              <Button
-                variant="primary"
-                loading={busy}
-                disabled={code.trim().length === 0}
-                onClick={() => void completeSignup()}
-              >
-                ยืนยันและเข้าสู่ระบบ
-              </Button>
-            </>
-          )}
+          <Button
+            variant="primary"
+            loading={busy}
+            disabled={phone.trim().length === 0}
+            onClick={() => void completeSignup()}
+          >
+            ยืนยันและเข้าสู่ระบบ
+          </Button>
         </div>
       )}
     </section>

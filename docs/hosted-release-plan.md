@@ -78,8 +78,8 @@ option that is not open is trusting an unverified token because it arrived over 
 owner's **signup** door and the **customer's** sign-in door; the shop's staff and the owner's
 day-to-day use keep the phone and temporary password the counter already runs. A customer's
 phone stays unique across every role and is what their points hang off, and a first Google
-sign-in links to the member row that already owns the number rather than creating a second
-one.
+sign-in makes a customer only for a number nobody owns — a number that already holds a row is
+refused rather than linked, because a typed number proves nothing (ADR 0020 §4).
 
 ### Phase 2 — provisioning: signing up creates a shop
 

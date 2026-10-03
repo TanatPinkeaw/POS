@@ -318,12 +318,11 @@ interface MemberDto {
  * The Google door's two answers (ADR 0020 §1, §3).
  *
  * A **known** Google account answers like the password door — a session and the
- * customer's own figures — with no `linked`/`needsPhone` at all. An **unknown** one
- * answers `linked: false, needsPhone: true` and a name to prefill, having written
- * nothing. One shape holds both so the journey can assert which one it got.
+ * customer's own figures — with no `needsPhone` at all. An **unknown** one answers
+ * `needsPhone: true` and a name to prefill, having written nothing. One shape holds
+ * both so the journey can assert which one it got.
  */
 interface GoogleDoorDto {
-  linked?: boolean;
   needsPhone?: boolean;
   fullName?: string | null;
   email?: string | null;
@@ -333,14 +332,13 @@ interface GoogleDoorDto {
   redirectTo?: string;
 }
 
-/** What finishing a first Google sign-in answers: made, linked, or neither. */
+/** What finishing a first Google sign-in answers: made, or signed back in. */
 interface GoogleSignupDto {
   id: string;
   role: string;
   fullName: string;
   pointsBalance: number;
   created: boolean;
-  linked: boolean;
   redirectTo: string;
 }
 
@@ -2147,15 +2145,17 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
   }
 
   /* ---------------------------- 16. One customer behind two ways in (ADR 0020) */
-  section('16. A Google sign-in that makes a customer, and one that links');
+  section('16. A Google sign-in that makes a customer, and one it will not take');
   if (seedGuardUrl !== null) {
     /*
-     * The failure this section exists to catch is a split balance (ADR 0020 §4): a
-     * returning customer whose phone already has a row, and a second row made for
-     * the same person with the points left behind on the first. The Google door is
-     * driven against a JWKS this run serves itself, so the whole path — verify the
-     * token, prove the phone, write one row — runs with no live Google. Last,
-     * because the sections above tally the trail globally.
+     * The failure this section exists to catch is a takeover (ADR 0020 §4): a Google
+     * account presenting a number that already belongs to somebody and being handed
+     * that person's points and history. The rule is that this door *makes* a customer
+     * for a number nobody owns and *refuses* one that is already spoken for — it never
+     * links, because a typed number proves nothing (there is no OTP here). The Google
+     * door is driven against a JWKS this run serves itself, so the whole path — verify
+     * the token, write one row — runs with no live Google. Last, because the sections
+     * above tally the trail globally.
      */
 
     // (a) A number nobody owns becomes a customer, with Google supplying the name.
@@ -2167,9 +2167,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     });
     check(
       'an unknown Google account is asked for a phone, not signed in',
-      firstContact.status === 200 &&
-        firstContact.data?.linked === false &&
-        firstContact.data?.needsPhone === true,
+      firstContact.status === 200 && firstContact.data?.needsPhone === true,
       firstContact.data,
     );
     check(
@@ -2178,18 +2176,14 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       firstContact.data?.fullName,
     );
 
-    const newBefore = otpInbox.length;
-    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: newPhone } });
-    const newCode = otpInbox[newBefore]?.code ?? '';
-
     const newSession = new Session(() => base);
     const created = await newSession.call<GoogleSignupDto>('/api/v1/auth/signup', {
       method: 'POST',
-      body: { idToken: await googleIdToken(newSubject), phone: newPhone, code: newCode },
+      body: { idToken: await googleIdToken(newSubject), phone: newPhone },
     });
     check(
-      'the code completes a signup and the phone makes the customer',
-      created.created === true && created.linked === false && created.role === 'member',
+      'the phone alone makes the customer, with no code to prove it',
+      created.created === true && created.role === 'member',
       created,
     );
     const newMe = await newSession.call<{ role: string }>('/api/v1/auth/me');
@@ -2199,79 +2193,66 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       newMe.role,
     );
 
-    // The subject now resolves to that row, so a second visit needs no code at all.
+    // The subject now resolves to that row, so a second visit needs nothing at all.
     const again = await anonymous.call<GoogleDoorDto>('/api/v1/auth/google', {
       method: 'POST',
       body: { idToken: await googleIdToken(newSubject) },
     });
     check(
-      'a second visit with the same Google account signs straight in, with no code',
+      'a second visit with the same Google account signs straight in, with no phone',
       again.id === created.id && again.role === 'member',
       again,
     );
 
-    // (b) A number the counter already enrolled links to that row, never a second.
+    // (b) A number the counter already enrolled is refused, never linked. The row must
+    //     come out of the attempt exactly as the counter left it.
     await setPointsBalance(seedGuardUrl, enrolled.id, 120);
-    const linkSubject = 'accept-google-returning';
-    const linkBefore = otpInbox.length;
-    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: MEMBER.phone } });
-    const linkCode = otpInbox[linkBefore]?.code ?? '';
-
-    const linkSession = new Session(() => base);
-    const linked = await linkSession.call<GoogleSignupDto>('/api/v1/auth/signup', {
+    const takeover = await anonymous.request('/api/v1/auth/signup', {
       method: 'POST',
-      body: {
-        idToken: await googleIdToken(linkSubject, { fullName: 'ชื่อจากกูเกิล' }),
-        phone: MEMBER.phone,
-        code: linkCode,
-      },
+      body: { idToken: await googleIdToken('accept-google-takeover'), phone: MEMBER.phone },
     });
     check(
-      'a Google sign-in on a number the counter enrolled links to that same row',
-      linked.id === enrolled.id && linked.linked === true && linked.created === false,
-      { linkedId: linked.id, enrolledId: enrolled.id },
+      'a Google sign-in on a number the counter enrolled is refused (409)',
+      takeover.status === 409,
+      takeover.status,
+    );
+    const untouched = await member.call<{ phone: string; pointsBalance: number }>(
+      '/api/v1/auth/me',
     );
     check(
-      'and the points earned at the counter stay on that one customer',
-      linked.pointsBalance === 120,
-      linked.pointsBalance,
+      'and the enrolled customer keeps their points and their number',
+      untouched.phone === MEMBER.phone && untouched.pointsBalance === 120,
+      untouched,
     );
     const rowsForPhone = await countUsersWithPhone(seedGuardUrl, MEMBER.phone);
-    check(
-      'without splitting the number into a second customer',
-      rowsForPhone === 1,
-      rowsForPhone,
-    );
+    check('with no second row made for the number', rowsForPhone === 1, rowsForPhone);
 
-    // (c) Now that the number is linked, a different Google account cannot take it.
-    const thiefBefore = otpInbox.length;
-    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: MEMBER.phone } });
-    const thiefCode = otpInbox[thiefBefore]?.code ?? '';
-    const thief = await anonymous.request('/api/v1/auth/signup', {
+    // The refused account left no row behind, so it is still a first-time visitor.
+    const takeoverAgain = await anonymous.call<GoogleDoorDto>('/api/v1/auth/google', {
       method: 'POST',
-      body: {
-        idToken: await googleIdToken('accept-google-thief'),
-        phone: MEMBER.phone,
-        code: thiefCode,
-      },
+      body: { idToken: await googleIdToken('accept-google-takeover') },
     });
     check(
-      'and a second Google account is refused the number (409)',
-      thief.status === 409,
-      thief.status,
+      'and the refused Google account still has no customer of its own',
+      takeoverAgain.needsPhone === true && takeoverAgain.id === undefined,
+      takeoverAgain,
+    );
+
+    // (c) A first sign-in with no number at all is refused before anything is written.
+    const noPhone = await anonymous.request('/api/v1/auth/signup', {
+      method: 'POST',
+      body: { idToken: await googleIdToken('accept-google-nophone') },
+    });
+    check(
+      'a first sign-in with no phone at all is refused (422)',
+      noPhone.status === 422,
+      noPhone.status,
     );
 
     // (d) A number a staff account holds is refused as a customer, and stays staff.
-    const staffBefore = otpInbox.length;
-    await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: ADMIN.phone } });
-    const staffCode = otpInbox[staffBefore]?.code ?? '';
     const staffAttempt = await anonymous.request('/api/v1/auth/signup', {
       method: 'POST',
-      body: {
-        idToken: await googleIdToken('accept-google-staff'),
-        phone: ADMIN.phone,
-        code: staffCode,
-      },
+      body: { idToken: await googleIdToken('accept-google-staff'), phone: ADMIN.phone },
     });
     check(
       'a number a staff account holds is refused as a customer (409)',

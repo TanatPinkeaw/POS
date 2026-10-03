@@ -1,24 +1,24 @@
 /**
  * Becoming a customer with Google, and returning as one (ADR 0020 §3, §4).
  *
- * Two doors lead to a `member` — the counter (ADR 0011) and this one — and the
- * ticket's whole job is that the second never makes a *second* row. The phone is the
- * identity; points and order history hang off the row that owns it. So a Google
- * sign-in that arrives with a phone some customer already has must **link** to that
- * row, and a phone that belongs to staff must be refused rather than duplicated.
+ * Two doors lead to a `member` — the counter (ADR 0011) and this one. The phone is the
+ * identity; points and order history hang off the row that owns it.
  *
- * The order of the checks is the rule, and it is deliberate:
+ * What a Google credential proves is the **Google account**, and nothing about the
+ * number it arrives with. That is the whole shape of the rule here, and it is
+ * deliberately not the OTP door it once was:
  *
  *   1. **A Google account already on a row.** The subject resolves first, so a
- *      returning customer whose number is unchanged signs straight in with no OTP —
- *      ADR 0020 §5 verifies the phone at signup and on a change, not on every visit.
- *      If the same subject arrives with a *different* phone, it is refused: moving a
- *      number is a step-up act (ticket 03), not a side effect of signing in.
- *   2. **The phone proved by OTP.** Consumed before anything is written, so a bad or
- *      expired code cannot create an account or attach a credential.
- *   3. **Who already owns the phone.** A staff number is refused; a customer's row
- *      gets the subject attached (or is already carrying it); only a phone nobody
- *      owns makes a new customer.
+ *      returning customer signs straight in. The number it arrives with is not even
+ *      looked at — the credential is the proof.
+ *   2. **A first sign-in needs a number.** A number nobody owns makes a customer.
+ *   3. **A number somebody owns is refused, never linked.** Attaching the subject to
+ *      a row on the strength of a typed number would hand anybody who can type it the
+ *      points and the history behind that row. Removing the OTP proof is what makes
+ *      this a takeover, so the row is reached with its own password instead.
+ *
+ * `changeCustomerPhone` below is the one act that still proves a number, because moving
+ * the identity is the higher-risk act.
  *
  * Creating a customer here mints a random password hash rather than leaving the
  * column null. The password door is neither required nor closed: the customer can set
@@ -45,16 +45,14 @@ export interface CustomerRow {
   isActive: boolean;
 }
 
-/** What a completed self-signup or link produces, for the session and the screen. */
+/** What a completed self-signup produces, for the session and the screen. */
 export interface CustomerSignIn {
   id: string;
   fullName: string;
   phone: string;
   pointsBalance: number;
-  /** True when this call created the customer row. */
+  /** True when this call created the customer row; false when it signed one back in. */
   created: boolean;
-  /** True when this call attached the Google subject to an existing row. */
-  linked: boolean;
 }
 
 const CUSTOMER_SELECT = {
@@ -91,49 +89,47 @@ export async function findCustomerByGoogleSubject(subject: string): Promise<Cust
 }
 
 /**
- * Signs a verified Google identity in, or makes them a customer, or links them.
+ * Signs a verified Google identity in, or makes them a customer.
  *
  * The caller has *already* verified the id token (`verifyGoogleIdToken`) — this
- * function trusts `identity` and does no crypto of its own. It does own the phone
- * proof: the OTP is consumed here, inside the rule, so there is no path that
- * attaches a Google subject without a proved phone.
+ * function trusts `identity` and does no crypto of its own.
  *
- * `phone` is normalised first, because the OTP was issued under the normalised form
- * (`normalisePhone` at the send door) and the same person typing `080-000-0002` and
- * `0800000002` must find one challenge, not two.
+ * The number is where the care goes, because a Google credential proves the *Google
+ * account* and nothing about the number it is offered with. So a subject that already
+ * resolves to a row signs in, and the number it happens to arrive with is not looked
+ * at; a number nobody owns makes a customer; a number that belongs to staff is
+ * refused, and so is one that belongs to another customer. The last is the change from
+ * the OTP door this replaced — attaching the subject to a stranger's row on the
+ * strength of a typed number would be a takeover, and that row is reached with its own
+ * password instead.
+ *
+ * `phone` is normalised because the counter writes numbers in the same shape
+ * (`normalisePhone`), so the same digits typed two ways are one identity.
  */
 export async function completeCustomerGoogleSignIn(input: {
   identity: GoogleIdentity;
-  phone: string;
-  code: string;
+  /** The number offered on a first sign-in; a returning account needs none. */
+  phone?: string;
   /** What the customer wants to be called; the Google name is the fallback. */
   fullName?: string;
 }): Promise<CustomerSignIn> {
-  const phone = normalisePhone(input.phone);
+  const subject = input.identity.subject;
+
+  // 1. This Google account is already somebody — sign in, and ignore any number: the
+  //    Google credential is the whole proof, and this door never moves a phone.
+  const bySubject = await findCustomerByGoogleSubject(subject);
+  if (bySubject) {
+    return { ...bySubject, created: false };
+  }
+
+  // 2. A first sign-in needs a number to hang the identity on.
+  const phone = normalisePhone(input.phone ?? '');
   if (phone.length === 0) {
     throw new ValidationError('กรุณากรอกเบอร์โทรศัพท์');
   }
-  const subject = input.identity.subject;
 
-  // 1. This Google account is already somebody — sign in, no OTP required.
-  const bySubject = await findCustomerByGoogleSubject(subject);
-  if (bySubject) {
-    if (bySubject.phone !== phone) {
-      throw new ConflictError(
-        'บัญชี Google นี้ผูกกับเบอร์อื่นอยู่แล้ว',
-        'GOOGLE_ACCOUNT_ALREADY_LINKED',
-      );
-    }
-    return { ...bySubject, created: false, linked: false };
-  }
-
-  // 2. Prove the phone before writing anything.
-  if (!(await consumeOtpChallenge(phone, input.code))) {
-    throw new ValidationError('รหัสยืนยันไม่ถูกต้องหรือหมดอายุแล้ว');
-  }
-
-  // 3. Who owns this phone?
-  const byPhone = await prisma.users.findUnique({ where: { phone }, select: { ...CUSTOMER_SELECT, google_subject: true } });
+  // 3. Who already owns this number? Nobody this door may take it from.
+  const byPhone = await prisma.users.findUnique({ where: { phone }, select: { id: true, role: true } });
   if (byPhone) {
     if (byPhone.role !== 'member') {
       throw new ConflictError(
@@ -141,32 +137,20 @@ export async function completeCustomerGoogleSignIn(input: {
         'PHONE_BELONGS_TO_STAFF',
       );
     }
-    if (byPhone.google_subject && byPhone.google_subject !== subject) {
-      throw new ConflictError(
-        'บัญชีนี้ผูกกับบัญชี Google อื่นอยู่แล้ว',
-        'GOOGLE_ACCOUNT_ALREADY_LINKED',
-      );
-    }
-
-    // Link: the same row, so the points and the order history stay put. The name is
-    // deliberately not touched — linking a sign-in door is not a rename, and a
-    // customer who enrolled as "คุณสมชาย" keeps the name the counter wrote down.
-    const linked = await prisma.users.update({
-      where: { id: byPhone.id },
-      data: { google_subject: subject },
-      select: CUSTOMER_SELECT,
-    });
-    await recordAudit({
-      action: 'member_updated',
-      actorUserId: linked.id,
-      targetType: 'user',
-      targetId: linked.id,
-      detail: { fields: ['google'] },
-    });
-    return { ...toCustomer(linked), created: false, linked: true };
+    /*
+     * A number that already has a customer is refused, not linked. The door cannot
+     * prove the number, so linking would mean anybody who can type it inherits the
+     * points and the order history behind that row. The row is reached with its own
+     * password instead — the one the counter handed over when it enrolled them
+     * (ADR 0011) — so nothing is lost, only not gained without a credential.
+     */
+    throw new ConflictError(
+      'เบอร์นี้มีบัญชีลูกค้าอยู่แล้ว — เข้าสู่ระบบด้วยเบอร์และรหัสผ่านก่อน',
+      'PHONE_ALREADY_REGISTERED',
+    );
   }
 
-  // 4. A phone nobody owns: a new customer, with a password nobody knows.
+  // 4. A number nobody owns: a new customer, with a password nobody knows.
   const fullName = input.fullName?.trim() || input.identity.fullName?.trim() || 'ลูกค้า';
   try {
     const created = await prisma.users.create({
@@ -190,13 +174,13 @@ export async function completeCustomerGoogleSignIn(input: {
       targetId: created.id,
       detail: { phone, via: 'google' },
     });
-    return { ...toCustomer(created), created: true, linked: false };
+    return { ...toCustomer(created), created: true };
   } catch (error) {
     /*
-     * The race the two reads above cannot exclude: two requests for one phone (or one
-     * Google account) arriving together, both finding nothing. The database refuses
-     * the second insert on the unique index, and it arrives as the same conflict a
-     * second sign-up should see.
+     * The race the read above cannot exclude: two requests for one phone (or one Google
+     * account) arriving together, both finding nothing. The database refuses the second
+     * insert on the unique index, and it arrives as the same conflict a second sign-up
+     * should see.
      */
     if (isUniqueViolation(error)) {
       throw new ConflictError('เบอร์นี้หรือบัญชี Google นี้ถูกใช้แล้ว', 'DUPLICATE_ACCOUNT');
@@ -214,9 +198,8 @@ export async function completeCustomerGoogleSignIn(input: {
  * moved *to*, not the one being left. A code minted for the old number is therefore
  * useless here: the challenge is looked up by the new one.
  *
- * The order matches `completeCustomerGoogleSignIn`: prove the new number by
- * consuming its challenge, then decide, then write. So a wrong or expired code
- * leaves the row exactly as it was, and no half-moved identity can exist. A new
+ * The order is prove, then decide, then write. So a wrong or expired code leaves the
+ * row exactly as it was, and no half-moved identity can exist. A new
  * number another row already holds is refused rather than stolen, and uniqueness
  * spans every role — a staff number is as taken as another customer's — with the
  * index as the backstop under the read a race could slip between.

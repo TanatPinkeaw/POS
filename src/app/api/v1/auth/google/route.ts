@@ -5,12 +5,12 @@
  * having arrived over TLS. Then one of two things is true:
  *
  *   * **The Google account is already a customer.** Start a session and answer like
- *     the password door does. No OTP — the phone is verified at signup and on a
- *     change, never on an ordinary sign-in (ADR 0020 §5).
- *   * **It is not.** Answer `linked: false` and let the browser collect a phone and a
- *     code, which `POST /api/v1/auth/signup` completes in one call. Deliberately
- *     *nothing* is written here: there is no half-created customer and no pending
- *     identity on the server, so a caller who walks away leaves no row behind.
+ *     the password door does. No code is asked for — the phone is proved when it
+ *     *changes*, never at signup or on an ordinary sign-in (ADR 0020 §5).
+ *   * **It is not.** Answer `needsPhone: true` and let the browser collect a phone,
+ *     which `POST /api/v1/auth/signup` completes in one call. Deliberately *nothing* is
+ *     written here: there is no half-created customer and no pending identity on the
+ *     server, so a caller who walks away leaves no row behind.
  *
  * A Google account that is not a customer can therefore probe this door harmlessly —
  * the answer for an unknown subject is the same shape as for any other, and the id
@@ -33,7 +33,6 @@ export async function POST(request: Request): Promise<Response> {
     if (!customer) {
       // Not a customer yet: the browser must prove a phone (ADR 0020 §3).
       return {
-        linked: false,
         needsPhone: true,
         fullName: identity.fullName,
         email: identity.email,
