@@ -207,7 +207,7 @@ npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
 npm test                # 1093 tests across 79 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 180 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 191 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 27 screens render, and render styled
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
@@ -235,12 +235,14 @@ presupposes the demo data. Acceptance drops a private PostgreSQL schema
 the setup wizard's API, the staff API, a catalogue spreadsheet and a VAT sale —
 asserting that `net + VAT === gross` to the satang, that the first receipt takes
 the renter's own series (`FR-<year>-000001`), that a reprint matches the sale
-exactly, that a customer returning one item of two can come back for the rest, and
-that the demo seed now *refuses* to touch the configured shop.
+exactly, that a customer returning one item of two can come back for the rest, that a
+consignment runs end to end (consign, sell, refund, pay out, with the consignor's own
+portal agreeing at every step), and that the demo seed now *refuses* to touch the
+configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 180 of its
+or that quietly began fetching a font from another origin passes all 191 of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.

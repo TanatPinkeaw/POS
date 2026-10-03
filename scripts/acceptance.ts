@@ -253,6 +253,25 @@ interface RefundDto {
   pointsForgiven: number;
 }
 
+interface ConsignmentView {
+  balanceThb: number;
+  items: {
+    productId: string;
+    name: string;
+    sharePercent: number;
+    onHandQty: number;
+    soldQty: number;
+    refundedQty: number;
+    earnedThb: number;
+  }[];
+  entries: {
+    id: string;
+    kind: 'sale' | 'refund' | 'payout';
+    amountThb: number;
+    payoutId: string | null;
+  }[];
+}
+
 interface CreditNoteDto {
   shop: { name: string; taxId: string | null };
   creditNote: {
@@ -2346,6 +2365,133 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       'and moving onto a number a staff account holds is refused (409)',
       taken.status === 409,
       taken.status,
+    );
+  }
+
+  /* ------------------------- 18. a consignment, end to end */
+  section('18. A consignment: consign, sell, refund, pay out');
+  {
+    /*
+     * ADR 0023, the whole cycle in one place. The pieces are tested in isolation
+     * under `tests/`, but the thing a shop actually does — hand a member's goods to
+     * the till, sell them, take one back, settle up — is only true if it holds
+     * together over real HTTP, with the consignor watching from their own portal.
+     *
+     * The consignor is the counter-enrolled customer (section 11), not the pre-order
+     * one: their number is not moved by section 17, so this stays independent of that
+     * section's ordering.
+     */
+    const consignorId = enrolledByCashier.id;
+
+    const handmade = await admin.call<{ id: string; name: string }>('/api/v1/products', {
+      method: 'POST',
+      body: {
+        name: 'งานฝีมือฝากขาย',
+        barcode: 'LNM0000099',
+        costPrice: 0,
+        salePrice: 107,
+        stockQty: 6,
+      },
+    });
+    check('an admin adds a product to the catalogue', handmade.name === 'งานฝีมือฝากขาย', handmade);
+
+    const terms = await admin.call<{
+      productId: string;
+      consignorUserId: string;
+      sharePercent: number;
+    }>(`/api/v1/products/${handmade.id}/consignment`, {
+      method: 'PATCH',
+      body: { consignorUserId: consignorId, sharePercent: 40 },
+    });
+    check(
+      'and consigns it to the member at 40% of the net',
+      terms.sharePercent === 40 && terms.consignorUserId === consignorId,
+      terms,
+    );
+
+    // Two of the consignor's goods sell at the till, alongside nothing else.
+    const consignedSale = await cashier.call<OrderDto>('/api/v1/orders', {
+      method: 'POST',
+      body: {
+        type: 'pos_walkin',
+        shiftId: secondShift.id,
+        lines: [{ productId: handmade.id, quantity: 2 }],
+        settlement: { cash: 107 * 2 },
+      },
+    });
+    check(
+      'the consigned goods ring up like any other',
+      consignedSale.status === 'completed' && consignedSale.netThb === 200,
+      consignedSale,
+    );
+
+    /*
+     * The consignor's own view, read through their session: ฿200 net at 40% is ฿80,
+     * and two of their units sold.
+     */
+    const afterSale = await counterCustomer.call<ConsignmentView>('/api/v1/consignment');
+    check('the consignor sees the share the sale earned', afterSale.balanceThb === 80, afterSale.balanceThb);
+    check(
+      'and how many of their items sold',
+      afterSale.items[0]?.soldQty === 2 && afterSale.items[0]?.onHandQty === 4,
+      afterSale.items[0],
+    );
+
+    // A refund of one unit claws the share back — inside the refund's own transaction.
+    const consignedDetail = await cashier.call<{
+      items: { id: string; name: string; quantity: number }[];
+    }>(`/api/v1/orders/${consignedSale.orderId}`);
+    const consignedLine = consignedDetail.items[0];
+    const consignGrant = await cashier.call<{ token: string }>('/api/v1/pos/approvals', {
+      method: 'POST',
+      body: {
+        supervisorId: approvers.supervisors[0]?.id,
+        pin: SUPERVISOR_PIN,
+        action: 'refund_order',
+        targetId: consignedSale.orderId,
+      },
+    });
+    const consignedRefund = await cashier.call<RefundDto>(
+      `/api/v1/orders/${consignedSale.orderId}/refund`,
+      {
+        method: 'POST',
+        headers: { 'x-supervisor-token': consignGrant.token },
+        body: {
+          reason: 'ลูกค้าคืนงานฝีมือ 1 ชิ้น',
+          refundMethod: 'cash',
+          shiftId: secondShift.id,
+          lines: [{ orderItemId: consignedLine?.id, quantity: 1 }],
+        },
+      },
+    );
+    check('one of the two units comes back', consignedRefund.partial === true, consignedRefund);
+
+    const afterRefund = await counterCustomer.call<ConsignmentView>('/api/v1/consignment');
+    check('the consignor sees the share clawed back', afterRefund.balanceThb === 40, afterRefund.balanceThb);
+    check(
+      'and reads the reversal as a reversal',
+      afterRefund.entries.some((entry) => entry.kind === 'refund' && entry.amountThb === -40),
+      afterRefund.entries,
+    );
+
+    // The admin settles the rest by transfer — money out, but never automatically.
+    const payout = await admin.call<{ amountThb: number; balanceAfterThb: number }>(
+      `/api/v1/consignors/${consignorId}/payouts`,
+      { method: 'POST', body: { amountThb: 40, method: 'promptpay' } },
+    );
+    check(
+      'an admin pays the balance out by transfer',
+      payout.amountThb === 40 && payout.balanceAfterThb === 0,
+      payout,
+    );
+
+    const afterPayout = await counterCustomer.call<ConsignmentView>('/api/v1/consignment');
+    check('the payout settles the balance to zero', afterPayout.balanceThb === 0, afterPayout.balanceThb);
+    const settled = afterPayout.entries.find((entry) => entry.kind === 'payout');
+    check(
+      'and the consignor reads it as a settled statement',
+      settled?.amountThb === -40 && settled?.payoutId !== null,
+      settled,
     );
   }
 
