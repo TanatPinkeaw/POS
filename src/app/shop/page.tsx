@@ -40,7 +40,17 @@ export default async function ShopSignInPage() {
   const shop = await loadShop();
 
   return (
-    <main className={styles.page}>
+    /*
+     * Touch density, because this screen is the customer's phone and not a desk.
+     *
+     * `/shop` sits outside the `(shop)` route group — a visitor with no account has to
+     * be able to reach it, so it cannot wear the member shell — which also meant it
+     * missed the touch density that shell supplies. Without it the fields arrived at
+     * 14px with 34px targets, and iOS Safari zooms the viewport when a sub-16px field
+     * takes focus, hiding the button the customer was about to press. The density is
+     * applied here instead, so the door is sized for the thumb that reaches it.
+     */
+    <main className={styles.page} data-density="touch">
       <div className={styles.card}>
         <div className={styles.head}>
           <BrandMark size={46} title={BRAND.nameTh} />
