@@ -11,6 +11,10 @@ import { requireShellUser } from '@/lib/shell';
  * is actually sent. The phone is read from the row rather than taken from the session
  * token, so what the portal shows is the number that is true *now* — including
  * immediately after a change made on this same screen.
+ *
+ * The consignment offer form lives inside the ฝากขาย tab rather than on a route of its
+ * own (ADR 0025): it is one panel of this account, and a member who came to ask where
+ * their goods stand should not have to find a second place to send new ones from.
  */
 export default async function ShopAccountPage() {
   const user = await requireShellUser(['member']);

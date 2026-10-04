@@ -32,7 +32,14 @@ interface FieldShellProps {
   children: ReactNode;
 }
 
-function describedBy(id: string, help?: ReactNode, error?: ReactNode): string | undefined {
+/**
+ * The id list that points a control at its own help and error text.
+ *
+ * Exported because `FileField` lives in its own client module (it holds a ref,
+ * and this file must stay free of hooks so server components can keep rendering
+ * the fields) and still has to wire the same two ids.
+ */
+export function describedBy(id: string, help?: ReactNode, error?: ReactNode): string | undefined {
   const ids = [help ? `${id}-help` : null, error ? `${id}-error` : null].filter(Boolean);
   return ids.length > 0 ? ids.join(' ') : undefined;
 }

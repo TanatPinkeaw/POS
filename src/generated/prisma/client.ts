@@ -363,6 +363,26 @@ export type consignor_payables = Prisma.consignor_payablesModel
  */
 export type consignor_payouts = Prisma.consignor_payoutsModel
 /**
+ * Model consignment_submissions
+ * 
+ */
+export type consignment_submissions = Prisma.consignment_submissionsModel
+/**
+ * Model consignment_documents
+ * *
+ *  * A photo or a document the member attached, kept as a link (ADR 0014 extended).
+ *  *
+ *  * The bytes stay where the member put them — a Drive folder, their phone's share
+ *  * sheet — because this deployment holds no files and could not back up or vouch for
+ *  * one. Holding the link and saying so is the same trade a product photo makes.
+ *  *
+ *  * `product_id` is null while the submission waits and is filled in on approval, so one
+ *  * row serves both the inbox an owner reads and the record the member reads afterwards.
+ *  * Two tables would mean copying the links at approval and then keeping the copies
+ *  * honest; this way there is one row per attachment for its whole life.
+ */
+export type consignment_documents = Prisma.consignment_documentsModel
+/**
  * Model point_transactions
  * 
  */

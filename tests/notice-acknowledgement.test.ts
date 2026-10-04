@@ -194,7 +194,12 @@ describe('the version itself', () => {
     expect(isCurrentCustomerNotice(CURRENT_CUSTOMER_NOTICE_VERSION)).toBe(true);
     expect(isCurrentCustomerNotice(undefined)).toBe(false);
     expect(isCurrentCustomerNotice('')).toBe(false);
-    expect(isCurrentCustomerNotice('2026-10-04')).toBe(false);
+    // The one above the current text, which is what a future revision would look
+    // like: an acknowledgement from before it is stale, and must not pass as current.
+    expect(isCurrentCustomerNotice('2026-11-01')).toBe(false);
+    // And the version the notice had before the consignment form was named in it —
+    // every existing member's acknowledgement carries this, which is why it is here.
+    expect(isCurrentCustomerNotice('2026-10-03')).toBe(false);
   });
 
   it('reads as a Buddhist-era date, because the shop\'s tax documents are', () => {

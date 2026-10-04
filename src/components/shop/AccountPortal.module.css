@@ -69,3 +69,63 @@
   margin: 0;
   font-size: var(--ln-size-lg);
 }
+
+/* ------------------------------------------------ the consignment offer form */
+
+/*
+ * Two fields side by side for the two numbers a member types together.
+ *
+ * A member offering goods states a price and a count in the same breath, so putting
+ * them on one row is not decoration — it is the order they think in. They wrap to a
+ * single column on a narrow phone, because two half-width price fields on a 360px
+ * screen is how a decimal point gets typed into the wrong box.
+ */
+.offerRow {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--ln-space-3);
+}
+
+@media (max-width: 30rem) {
+  .offerRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/*
+ * The attachment list, as a fieldset rather than a stack of divs.
+ *
+ * A `fieldset`/`legend` is what makes "รูปสินค้า" and "เอกสาร" two named groups rather
+ * than two more labels in a wall of inputs, and it is what a screen reader announces
+ * when focus enters the second URL box. The border is removed because the design
+ * system's own grouping is a heading and a stack; the default fieldset chrome would be
+ * a second, competing frame.
+ */
+.attachments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+  margin: 0;
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-border-subtle);
+  border-radius: var(--ln-radius-md);
+}
+
+.attachmentsLegend {
+  padding: 0 var(--ln-space-2);
+  font-weight: 600;
+}
+
+/*
+ * One attachment's two fields and its remove button.
+ *
+ * The button sits at the end rather than in a corner of its own, because on a phone
+ * the thumb is already at the bottom of the row it just typed into. `flex-end` aligns
+ * it with the inputs rather than floating it above them.
+ */
+.attachmentRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ln-space-2);
+  align-items: end;
+}

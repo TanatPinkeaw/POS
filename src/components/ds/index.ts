@@ -16,6 +16,7 @@ export { TrendChart } from './Chart';
 export { DataTable, TableSummaryRow, type Column } from './DataTable';
 export { EmptyState, InlineNotice, Loader, Skeleton, SkeletonRows, Spinner } from './Feedback';
 export { FieldRow, FieldShell, SelectField, TextAreaField, TextField, ToggleField } from './Field';
+export { FileField } from './FileField';
 export { Icon } from './Icon';
 export { ICON_NAMES, ICON_PATHS, type IconName } from './icons';
 export {

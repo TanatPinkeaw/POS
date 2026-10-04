@@ -29,7 +29,10 @@ export type AuditAction =
   | 'offline_sale_synced'
   | 'consignment_set'
   | 'consignment_withdrawn'
-  | 'consignment_paid';
+  | 'consignment_paid'
+  | 'consignment_offer_submitted'
+  | 'consignment_submission_approved'
+  | 'consignment_submission_rejected';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -50,6 +53,9 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'consignment_set',
   'consignment_withdrawn',
   'consignment_paid',
+  'consignment_offer_submitted',
+  'consignment_submission_approved',
+  'consignment_submission_rejected',
 ];
 
 /**
@@ -78,6 +84,9 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   consignment_set: 'ตั้ง/แก้เงื่อนไขฝากขาย',
   consignment_withdrawn: 'ถอนสินค้าฝากขาย',
   consignment_paid: 'จ่ายส่วนแบ่งฝากขาย',
+  consignment_offer_submitted: 'สมาชิกส่งคำขอฝากขาย',
+  consignment_submission_approved: 'อนุมัติคำขอฝากขายเป็นสินค้า',
+  consignment_submission_rejected: 'ปฏิเสธคำขอฝากขาย',
 };
 
 /**
@@ -131,6 +140,18 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   consignment_withdrawn: 'info',
   // Money leaving the shop to somebody outside it, the same concern as a refund.
   consignment_paid: 'danger',
+  /*
+   * A member's own offer, signed in and pressed by them. Worth a read even though
+   * nothing is owed yet: the row says who asked for something to go on the shelf, and
+   * its absence would say nothing at all.
+   */
+  consignment_offer_submitted: 'info',
+  // The shop took on goods to sell and agreed the share: bookkeeping, same as
+  // `consignment_set`, which the same click also writes.
+  consignment_submission_approved: 'neutral',
+  // A member's offer turned down. Not a problem in the shop, but the one row of the
+  // three a member may ask to see explained.
+  consignment_submission_rejected: 'warning',
 };
 
 /**

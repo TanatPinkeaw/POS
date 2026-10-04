@@ -36,7 +36,8 @@ export type RateLimitPolicyName =
   | 'inbound_notification'
   | 'member_create'
   | 'otp_send_number'
-  | 'otp_send_address';
+  | 'otp_send_address'
+  | 'consignment_offer';
 
 export interface RateLimitPolicy {
   /** Attempts that may be spent back to back, from an idle caller. */
@@ -170,6 +171,18 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * shape a limiter exists for.
    */
   otp_send_address: { capacity: 10, windowMs: 15 * 60_000 },
+  /**
+   * A member offering their own goods for consignment (ADR 0025). Keyed by the
+   * account rather than the address, exactly like `member_create`: two members on
+   * the shop's one wifi are two people, and neither should spend the other's budget.
+   *
+   * It exists for the same reason that one does — what it makes is durable and an
+   * owner has to work through it — and the ceiling is the same shape. Somebody
+   * offering a tray of things to the shop pauses to photograph it and to type; ten
+   * back to back then one a minute is invisible to that person and stops a script
+   * that has mistaken a retry loop for an offer.
+   */
+  consignment_offer: { capacity: 10, windowMs: 10 * 60_000 },
 };
 
 /** A caller's bucket, as it stands after the last decision about it. */

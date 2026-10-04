@@ -144,3 +144,14 @@ is a matter for the shop's own agreement outside this system.
   has sold, and every movement appears newest first, a payout reading as a settled statement and
   a refund as a reversal. Because the read is scoped by the caller's id, one phone number can
   never see another consignor's balance. That closes every ticket under `.scratch/consignment/`.
+
+## §7 — Where a consignment comes from
+
+Everything above describes a consignment the shop already had. ADR 0025 adds the door a
+member actually walks through: they fill in the offer form in their own ฝากขาย tab, and
+the owner's inbox on `/admin/consignors` decides it. The rule in this ADR is unchanged
+and is the one that runs — an approval calls `setConsignment`, so the share is set by the
+same code, under the same conditions, as it always was. **An offer is not an arrangement:
+only an owner agrees a share.** The documents a member attached follow the product the
+offer became, and the member's own page reads the consignor from their account rather than
+from the offer. See ADR 0025 §2, §3 and §4.

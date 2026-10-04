@@ -108,11 +108,28 @@ describe('what a customer was told', () => {
   });
 
   it('answers "what did they last see" from the newest row', async () => {
+    /*
+     * Both rows are stamped by the fixture rather than by the column default.
+     * Two writes back to back can land inside the same millisecond, and rows that
+     * share an instant have no order the database is obliged to keep — the index
+     * scan is free to return either, so this assertion used to fail on the clock's
+     * luck under a loaded machine rather than on the ordering it is about. The
+     * question here is "which row does newest-first read", so the fixture states
+     * the order instead of waiting for it.
+     */
     await prisma.notice_acknowledgements.create({
-      data: { customer_user_id: memberId, notice_version: '2026-09-01' },
+      data: {
+        customer_user_id: memberId,
+        notice_version: '2026-09-01',
+        acknowledged_at: new Date('2026-09-01T09:00:00.000Z'),
+      },
     });
     await prisma.notice_acknowledgements.create({
-      data: { customer_user_id: memberId, notice_version: '2026-10-03' },
+      data: {
+        customer_user_id: memberId,
+        notice_version: '2026-10-03',
+        acknowledged_at: new Date('2026-10-03T09:00:00.000Z'),
+      },
     });
 
     const newest = await prisma.notice_acknowledgements.findFirstOrThrow({

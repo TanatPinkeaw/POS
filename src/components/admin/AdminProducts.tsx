@@ -15,6 +15,7 @@ import {
   SearchField,
   SelectField,
   Stack,
+  TextAreaField,
   TextField,
   Thumb,
   type Column,
@@ -36,6 +37,11 @@ export interface AdminProduct {
   availableQty: number;
   /** How much of this product the till may not sell offline (ADR 0019). */
   offlineSafetyQty: number;
+  /**
+   * Free text kept with the product. Nothing on screen forces a shop to write
+   * one, so it is the first field to be blank and the last one anybody reads.
+   */
+  description: string | null;
   /** A link to the picture, wherever the shop keeps it — not a file we hold. */
   imageUrl: string | null;
   isActive: boolean;
@@ -74,6 +80,7 @@ const EMPTY_PRODUCT = {
   stockQty: '',
   offlineSafetyQty: '',
   imageUrl: '',
+  description: '',
 };
 
 /**
@@ -120,6 +127,8 @@ export function AdminProducts({
   const [saving, setSaving] = useState(false);
   const [adjustment, setAdjustment] = useState({ delta: '', reason: 'REASON_RESTOCK', note: '' });
   const [newProduct, setNewProduct] = useState(EMPTY_PRODUCT);
+  const [editing, setEditing] = useState<AdminProduct | null>(null);
+  const [editDraft, setEditDraft] = useState(EMPTY_PRODUCT);
   const [editingImage, setEditingImage] = useState<AdminProduct | null>(null);
   const [imageDraft, setImageDraft] = useState('');
   const [editingReserve, setEditingReserve] = useState<AdminProduct | null>(null);
@@ -235,6 +244,81 @@ export function AdminProducts({
     }
   }
 
+  /**
+   * Opening the editor copies the row into a draft rather than editing the table in
+   * place. Three reasons, and the last one is the important one.
+   *
+   * A catalogue is a list of hundreds of rows; a half-typed rename has no business
+   * sitting in it while it is being typed. Escape and Backspace both throw the
+   * draft away, which an inline edit cannot offer. And the save is a `PATCH` that
+   * sends **only the fields this dialog shows**, so a field it does not own — the
+   * picture, the offline reserve, the consignment terms — cannot be cleared by a
+   * form that never showed it.
+   *
+   * Stock is the field it deliberately does not own either. Stock changes only
+   * through the signed adjustment, so that every movement of goods carries a
+   * reason and a `stock_logs` row; a price form that could write `stock_qty` would
+   * be a way to change the shelf without saying why.
+   */
+  function openEdit(product: AdminProduct): void {
+    setError(null);
+    setEditDraft({
+      name: product.name,
+      barcode: product.barcode ?? '',
+      categoryId: product.categoryId === null ? '' : String(product.categoryId),
+      costPrice: String(product.costPrice),
+      salePrice: String(product.salePrice),
+      stockQty: '',
+      offlineSafetyQty: '',
+      imageUrl: '',
+      description: product.description ?? '',
+    });
+    setEditing(product);
+  }
+
+  /** Validated here as well as by the schema, so a typo reads as a Thai field error. */
+  async function saveProduct(): Promise<void> {
+    if (!editing) {
+      return;
+    }
+    const name = editDraft.name.trim();
+    if (name === '') {
+      setError('ชื่อสินค้าต้องไม่ว่าง');
+      return;
+    }
+    const costPrice = Number(editDraft.costPrice === '' ? 0 : editDraft.costPrice);
+    const salePrice = Number(editDraft.salePrice === '' ? 0 : editDraft.salePrice);
+    if (!Number.isFinite(costPrice) || costPrice < 0) {
+      setError('ราคาทุนต้องเป็นตัวเลขที่ไม่ติดลบ');
+      return;
+    }
+    if (!Number.isFinite(salePrice) || salePrice < 0) {
+      setError('ราคาขายต้องเป็นตัวเลขที่ไม่ติดลบ');
+      return;
+    }
+    const barcode = editDraft.barcode.trim();
+
+    setError(null);
+    setSaving(true);
+    try {
+      await apiPatch(`/api/v1/products/${editing.id}`, {
+        name,
+        categoryId: editDraft.categoryId ? Number(editDraft.categoryId) : null,
+        barcode: barcode === '' ? null : barcode,
+        costPrice,
+        salePrice,
+        description: editDraft.description.trim() === '' ? null : editDraft.description.trim(),
+      });
+      setNotice(`บันทึกการแก้ไข "${name}" แล้ว`);
+      setEditing(null);
+      await reload();
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'บันทึกการแก้ไขไม่สำเร็จ');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function createProduct(): Promise<void> {
     setError(null);
     try {
@@ -246,6 +330,7 @@ export function AdminProducts({
         salePrice: Number(newProduct.salePrice || 0),
         stockQty: Number(newProduct.stockQty || 0),
         offlineSafetyQty: Number(newProduct.offlineSafetyQty || 0),
+        description: newProduct.description.trim() || null,
         imageUrl: newProduct.imageUrl.trim() || null,
       });
       setNotice(`เพิ่มสินค้า "${newProduct.name}" แล้ว`);
@@ -506,6 +591,9 @@ export function AdminProducts({
       align: 'end',
       render: (product) => (
         <span className="ln-row">
+          <Button variant="secondary" size="sm" icon="edit" onClick={() => openEdit(product)}>
+            แก้ไข
+          </Button>
           <Button
             variant="secondary"
             size="sm"
@@ -559,7 +647,7 @@ export function AdminProducts({
   return (
     <Stack gap="lg">
       {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
-      {error && !adjusting && !editingImage && !editingReserve && !consigning ? (
+      {error && !adjusting && !editing && !editingImage && !editingReserve && !consigning ? (
         <InlineNotice tone="danger">{error}</InlineNotice>
       ) : null}
 
@@ -620,6 +708,16 @@ export function AdminProducts({
               onChange={(event) => setNewProduct({ ...newProduct, stockQty: event.target.value })}
             />
           </FieldRow>
+
+          <TextAreaField
+            id="np-description"
+            label="คำอธิบายสินค้า"
+            help="เก็บไว้กับสินค้า ถ้าไม่มีให้เว้นว่าง"
+            rows={2}
+            maxLength={1000}
+            value={newProduct.description}
+            onChange={(event) => setNewProduct({ ...newProduct, description: event.target.value })}
+          />
 
           <FieldRow columns={2}>
             <TextField
@@ -732,6 +830,84 @@ export function AdminProducts({
             label="หมายเหตุ"
             value={adjustment.note}
             onChange={(event) => setAdjustment({ ...adjustment, note: event.target.value })}
+          />
+        </Stack>
+      </Overlay>
+
+      <Overlay
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        size="lg"
+        title={editing ? `แก้ไขสินค้า · ${editing.name}` : ''}
+        description="ชื่อ หมวด บาร์โค้ด ราคา และคำอธิบาย — จำนวนสต็อกไม่แก้ที่นี่ ต้องใช้ปุ่มปรับสต็อกเพื่อให้มีเหตุผลกับบันทึก และรูปสินค้าแก้ที่ปุ่มรูปสินค้า"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setEditing(null)} disabled={saving}>
+              ยกเลิก
+            </Button>
+            <Button loading={saving} onClick={() => void saveProduct()}>
+              บันทึก
+            </Button>
+          </>
+        }
+      >
+        <Stack gap="md">
+          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+          <FieldRow columns={2}>
+            <TextField
+              id="edit-name"
+              label="ชื่อสินค้า"
+              value={editDraft.name}
+              onChange={(event) => setEditDraft({ ...editDraft, name: event.target.value })}
+            />
+            <TextField
+              id="edit-barcode"
+              label="บาร์โค้ด"
+              help="เว้นว่างเพื่อเอาบาร์โค้ดออก"
+              className="ln-mono"
+              value={editDraft.barcode}
+              onChange={(event) => setEditDraft({ ...editDraft, barcode: event.target.value })}
+            />
+          </FieldRow>
+          <FieldRow columns={3}>
+            <SelectField
+              id="edit-category"
+              label="หมวดหมู่"
+              value={editDraft.categoryId}
+              onChange={(event) => setEditDraft({ ...editDraft, categoryId: event.target.value })}
+            >
+              <option value="">— ไม่ระบุ —</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </SelectField>
+            <TextField
+              id="edit-cost-price"
+              label="ราคาทุน"
+              inputMode="decimal"
+              className="ln-num"
+              value={editDraft.costPrice}
+              onChange={(event) => setEditDraft({ ...editDraft, costPrice: event.target.value })}
+            />
+            <TextField
+              id="edit-sale-price"
+              label="ราคาขาย"
+              inputMode="decimal"
+              className="ln-num"
+              value={editDraft.salePrice}
+              onChange={(event) => setEditDraft({ ...editDraft, salePrice: event.target.value })}
+            />
+          </FieldRow>
+          <TextAreaField
+            id="edit-description"
+            label="คำอธิบายสินค้า"
+            help="เก็บไว้กับสินค้า ถ้าไม่มีให้เว้นว่าง"
+            rows={2}
+            maxLength={1000}
+            value={editDraft.description}
+            onChange={(event) => setEditDraft({ ...editDraft, description: event.target.value })}
           />
         </Stack>
       </Overlay>

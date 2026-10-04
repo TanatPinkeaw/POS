@@ -332,6 +332,8 @@ export type productsWhereInput = {
   stock_logs?: Prisma.Stock_logsListRelationFilter
   order_items?: Prisma.Order_itemsListRelationFilter
   consignor?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
+  consignment_documents?: Prisma.Consignment_documentsListRelationFilter
+  consignment_submissions?: Prisma.Consignment_submissionsListRelationFilter
   consignor_payables?: Prisma.Consignor_payablesListRelationFilter
 }
 
@@ -356,6 +358,8 @@ export type productsOrderByWithRelationInput = {
   stock_logs?: Prisma.stock_logsOrderByRelationAggregateInput
   order_items?: Prisma.order_itemsOrderByRelationAggregateInput
   consignor?: Prisma.usersOrderByWithRelationInput
+  consignment_documents?: Prisma.consignment_documentsOrderByRelationAggregateInput
+  consignment_submissions?: Prisma.consignment_submissionsOrderByRelationAggregateInput
   consignor_payables?: Prisma.consignor_payablesOrderByRelationAggregateInput
 }
 
@@ -383,6 +387,8 @@ export type productsWhereUniqueInput = Prisma.AtLeast<{
   stock_logs?: Prisma.Stock_logsListRelationFilter
   order_items?: Prisma.Order_itemsListRelationFilter
   consignor?: Prisma.XOR<Prisma.UsersNullableScalarRelationFilter, Prisma.usersWhereInput> | null
+  consignment_documents?: Prisma.Consignment_documentsListRelationFilter
+  consignment_submissions?: Prisma.Consignment_submissionsListRelationFilter
   consignor_payables?: Prisma.Consignor_payablesListRelationFilter
 }, "id" | "barcode">
 
@@ -451,6 +457,8 @@ export type productsCreateInput = {
   stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
   consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
 }
 
@@ -473,6 +481,8 @@ export type productsUncheckedCreateInput = {
   updated_at?: Date | string
   stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -495,6 +505,8 @@ export type productsUpdateInput = {
   stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
   consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
 }
 
@@ -517,6 +529,8 @@ export type productsUncheckedUpdateInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -800,6 +814,38 @@ export type productsUpdateOneWithoutConsignor_payablesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.productsUpdateToOneWithWhereWithoutConsignor_payablesInput, Prisma.productsUpdateWithoutConsignor_payablesInput>, Prisma.productsUncheckedUpdateWithoutConsignor_payablesInput>
 }
 
+export type productsCreateNestedOneWithoutConsignment_submissionsInput = {
+  create?: Prisma.XOR<Prisma.productsCreateWithoutConsignment_submissionsInput, Prisma.productsUncheckedCreateWithoutConsignment_submissionsInput>
+  connectOrCreate?: Prisma.productsCreateOrConnectWithoutConsignment_submissionsInput
+  connect?: Prisma.productsWhereUniqueInput
+}
+
+export type productsUpdateOneWithoutConsignment_submissionsNestedInput = {
+  create?: Prisma.XOR<Prisma.productsCreateWithoutConsignment_submissionsInput, Prisma.productsUncheckedCreateWithoutConsignment_submissionsInput>
+  connectOrCreate?: Prisma.productsCreateOrConnectWithoutConsignment_submissionsInput
+  upsert?: Prisma.productsUpsertWithoutConsignment_submissionsInput
+  disconnect?: Prisma.productsWhereInput | boolean
+  delete?: Prisma.productsWhereInput | boolean
+  connect?: Prisma.productsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.productsUpdateToOneWithWhereWithoutConsignment_submissionsInput, Prisma.productsUpdateWithoutConsignment_submissionsInput>, Prisma.productsUncheckedUpdateWithoutConsignment_submissionsInput>
+}
+
+export type productsCreateNestedOneWithoutConsignment_documentsInput = {
+  create?: Prisma.XOR<Prisma.productsCreateWithoutConsignment_documentsInput, Prisma.productsUncheckedCreateWithoutConsignment_documentsInput>
+  connectOrCreate?: Prisma.productsCreateOrConnectWithoutConsignment_documentsInput
+  connect?: Prisma.productsWhereUniqueInput
+}
+
+export type productsUpdateOneWithoutConsignment_documentsNestedInput = {
+  create?: Prisma.XOR<Prisma.productsCreateWithoutConsignment_documentsInput, Prisma.productsUncheckedCreateWithoutConsignment_documentsInput>
+  connectOrCreate?: Prisma.productsCreateOrConnectWithoutConsignment_documentsInput
+  upsert?: Prisma.productsUpsertWithoutConsignment_documentsInput
+  disconnect?: Prisma.productsWhereInput | boolean
+  delete?: Prisma.productsWhereInput | boolean
+  connect?: Prisma.productsWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.productsUpdateToOneWithWhereWithoutConsignment_documentsInput, Prisma.productsUpdateWithoutConsignment_documentsInput>, Prisma.productsUncheckedUpdateWithoutConsignment_documentsInput>
+}
+
 export type productsCreateWithoutConsignorInput = {
   id?: string
   barcode?: string | null
@@ -818,6 +864,8 @@ export type productsCreateWithoutConsignorInput = {
   category?: Prisma.categoriesCreateNestedOneWithoutProductsInput
   stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
 }
 
@@ -839,6 +887,8 @@ export type productsUncheckedCreateWithoutConsignorInput = {
   updated_at?: Date | string
   stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -908,6 +958,8 @@ export type productsCreateWithoutCategoryInput = {
   stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
   consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
 }
 
@@ -929,6 +981,8 @@ export type productsUncheckedCreateWithoutCategoryInput = {
   updated_at?: Date | string
   stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -976,6 +1030,8 @@ export type productsCreateWithoutStock_logsInput = {
   category?: Prisma.categoriesCreateNestedOneWithoutProductsInput
   order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
   consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
 }
 
@@ -997,6 +1053,8 @@ export type productsUncheckedCreateWithoutStock_logsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -1034,6 +1092,8 @@ export type productsUpdateWithoutStock_logsInput = {
   category?: Prisma.categoriesUpdateOneWithoutProductsNestedInput
   order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
   consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
 }
 
@@ -1055,6 +1115,8 @@ export type productsUncheckedUpdateWithoutStock_logsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1076,6 +1138,8 @@ export type productsCreateWithoutOrder_itemsInput = {
   category?: Prisma.categoriesCreateNestedOneWithoutProductsInput
   stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
   consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
 }
 
@@ -1097,6 +1161,8 @@ export type productsUncheckedCreateWithoutOrder_itemsInput = {
   created_at?: Date | string
   updated_at?: Date | string
   stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
 }
 
@@ -1134,6 +1200,8 @@ export type productsUpdateWithoutOrder_itemsInput = {
   category?: Prisma.categoriesUpdateOneWithoutProductsNestedInput
   stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
   consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
 }
 
@@ -1155,6 +1223,8 @@ export type productsUncheckedUpdateWithoutOrder_itemsInput = {
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1177,6 +1247,8 @@ export type productsCreateWithoutConsignor_payablesInput = {
   stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
   consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
 }
 
 export type productsUncheckedCreateWithoutConsignor_payablesInput = {
@@ -1198,6 +1270,8 @@ export type productsUncheckedCreateWithoutConsignor_payablesInput = {
   updated_at?: Date | string
   stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
   order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
 }
 
 export type productsCreateOrConnectWithoutConsignor_payablesInput = {
@@ -1235,6 +1309,8 @@ export type productsUpdateWithoutConsignor_payablesInput = {
   stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
   consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
 }
 
 export type productsUncheckedUpdateWithoutConsignor_payablesInput = {
@@ -1256,6 +1332,224 @@ export type productsUncheckedUpdateWithoutConsignor_payablesInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
+}
+
+export type productsCreateWithoutConsignment_submissionsInput = {
+  id?: string
+  barcode?: string | null
+  name: string
+  description?: string | null
+  cost_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: number
+  reserved_qty?: number
+  offline_safety_qty?: number
+  image_url?: string | null
+  is_active?: boolean
+  consignor_share_percent?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  category?: Prisma.categoriesCreateNestedOneWithoutProductsInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
+  order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
+  consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_documents?: Prisma.consignment_documentsCreateNestedManyWithoutProductInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
+}
+
+export type productsUncheckedCreateWithoutConsignment_submissionsInput = {
+  id?: string
+  category_id?: number | null
+  barcode?: string | null
+  name: string
+  description?: string | null
+  cost_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: number
+  reserved_qty?: number
+  offline_safety_qty?: number
+  image_url?: string | null
+  is_active?: boolean
+  consignor_user_id?: string | null
+  consignor_share_percent?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
+  order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedCreateNestedManyWithoutProductInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
+}
+
+export type productsCreateOrConnectWithoutConsignment_submissionsInput = {
+  where: Prisma.productsWhereUniqueInput
+  create: Prisma.XOR<Prisma.productsCreateWithoutConsignment_submissionsInput, Prisma.productsUncheckedCreateWithoutConsignment_submissionsInput>
+}
+
+export type productsUpsertWithoutConsignment_submissionsInput = {
+  update: Prisma.XOR<Prisma.productsUpdateWithoutConsignment_submissionsInput, Prisma.productsUncheckedUpdateWithoutConsignment_submissionsInput>
+  create: Prisma.XOR<Prisma.productsCreateWithoutConsignment_submissionsInput, Prisma.productsUncheckedCreateWithoutConsignment_submissionsInput>
+  where?: Prisma.productsWhereInput
+}
+
+export type productsUpdateToOneWithWhereWithoutConsignment_submissionsInput = {
+  where?: Prisma.productsWhereInput
+  data: Prisma.XOR<Prisma.productsUpdateWithoutConsignment_submissionsInput, Prisma.productsUncheckedUpdateWithoutConsignment_submissionsInput>
+}
+
+export type productsUpdateWithoutConsignment_submissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  barcode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cost_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  reserved_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  offline_safety_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  consignor_share_percent?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.categoriesUpdateOneWithoutProductsNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
+  order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
+  consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
+}
+
+export type productsUncheckedUpdateWithoutConsignment_submissionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  barcode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cost_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  reserved_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  offline_safety_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  consignor_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  consignor_share_percent?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
+  order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
+}
+
+export type productsCreateWithoutConsignment_documentsInput = {
+  id?: string
+  barcode?: string | null
+  name: string
+  description?: string | null
+  cost_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: number
+  reserved_qty?: number
+  offline_safety_qty?: number
+  image_url?: string | null
+  is_active?: boolean
+  consignor_share_percent?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  category?: Prisma.categoriesCreateNestedOneWithoutProductsInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutProductInput
+  order_items?: Prisma.order_itemsCreateNestedManyWithoutProductInput
+  consignor?: Prisma.usersCreateNestedOneWithoutConsigned_productsInput
+  consignment_submissions?: Prisma.consignment_submissionsCreateNestedManyWithoutProductInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutProductInput
+}
+
+export type productsUncheckedCreateWithoutConsignment_documentsInput = {
+  id?: string
+  category_id?: number | null
+  barcode?: string | null
+  name: string
+  description?: string | null
+  cost_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: number
+  reserved_qty?: number
+  offline_safety_qty?: number
+  image_url?: string | null
+  is_active?: boolean
+  consignor_user_id?: string | null
+  consignor_share_percent?: number | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutProductInput
+  order_items?: Prisma.order_itemsUncheckedCreateNestedManyWithoutProductInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutProductInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutProductInput
+}
+
+export type productsCreateOrConnectWithoutConsignment_documentsInput = {
+  where: Prisma.productsWhereUniqueInput
+  create: Prisma.XOR<Prisma.productsCreateWithoutConsignment_documentsInput, Prisma.productsUncheckedCreateWithoutConsignment_documentsInput>
+}
+
+export type productsUpsertWithoutConsignment_documentsInput = {
+  update: Prisma.XOR<Prisma.productsUpdateWithoutConsignment_documentsInput, Prisma.productsUncheckedUpdateWithoutConsignment_documentsInput>
+  create: Prisma.XOR<Prisma.productsCreateWithoutConsignment_documentsInput, Prisma.productsUncheckedCreateWithoutConsignment_documentsInput>
+  where?: Prisma.productsWhereInput
+}
+
+export type productsUpdateToOneWithWhereWithoutConsignment_documentsInput = {
+  where?: Prisma.productsWhereInput
+  data: Prisma.XOR<Prisma.productsUpdateWithoutConsignment_documentsInput, Prisma.productsUncheckedUpdateWithoutConsignment_documentsInput>
+}
+
+export type productsUpdateWithoutConsignment_documentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  barcode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cost_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  reserved_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  offline_safety_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  consignor_share_percent?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.categoriesUpdateOneWithoutProductsNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
+  order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
+  consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
+}
+
+export type productsUncheckedUpdateWithoutConsignment_documentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  category_id?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  barcode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  cost_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  sale_price?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  stock_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  reserved_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  offline_safety_qty?: Prisma.IntFieldUpdateOperationsInput | number
+  image_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  consignor_user_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  consignor_share_percent?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
+  order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
 }
 
 export type productsCreateManyConsignorInput = {
@@ -1294,6 +1588,8 @@ export type productsUpdateWithoutConsignorInput = {
   category?: Prisma.categoriesUpdateOneWithoutProductsNestedInput
   stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
 }
 
@@ -1315,6 +1611,8 @@ export type productsUncheckedUpdateWithoutConsignorInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1372,6 +1670,8 @@ export type productsUpdateWithoutCategoryInput = {
   stock_logs?: Prisma.stock_logsUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUpdateManyWithoutProductNestedInput
   consignor?: Prisma.usersUpdateOneWithoutConsigned_productsNestedInput
+  consignment_documents?: Prisma.consignment_documentsUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutProductNestedInput
 }
 
@@ -1393,6 +1693,8 @@ export type productsUncheckedUpdateWithoutCategoryInput = {
   updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutProductNestedInput
   order_items?: Prisma.order_itemsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_documents?: Prisma.consignment_documentsUncheckedUpdateManyWithoutProductNestedInput
+  consignment_submissions?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutProductNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutProductNestedInput
 }
 
@@ -1422,12 +1724,16 @@ export type productsUncheckedUpdateManyWithoutCategoryInput = {
 export type ProductsCountOutputType = {
   stock_logs: number
   order_items: number
+  consignment_documents: number
+  consignment_submissions: number
   consignor_payables: number
 }
 
 export type ProductsCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   stock_logs?: boolean | ProductsCountOutputTypeCountStock_logsArgs
   order_items?: boolean | ProductsCountOutputTypeCountOrder_itemsArgs
+  consignment_documents?: boolean | ProductsCountOutputTypeCountConsignment_documentsArgs
+  consignment_submissions?: boolean | ProductsCountOutputTypeCountConsignment_submissionsArgs
   consignor_payables?: boolean | ProductsCountOutputTypeCountConsignor_payablesArgs
 }
 
@@ -1453,6 +1759,20 @@ export type ProductsCountOutputTypeCountStock_logsArgs<ExtArgs extends runtime.T
  */
 export type ProductsCountOutputTypeCountOrder_itemsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.order_itemsWhereInput
+}
+
+/**
+ * ProductsCountOutputType without action
+ */
+export type ProductsCountOutputTypeCountConsignment_documentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.consignment_documentsWhereInput
+}
+
+/**
+ * ProductsCountOutputType without action
+ */
+export type ProductsCountOutputTypeCountConsignment_submissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.consignment_submissionsWhereInput
 }
 
 /**
@@ -1484,6 +1804,8 @@ export type productsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   stock_logs?: boolean | Prisma.products$stock_logsArgs<ExtArgs>
   order_items?: boolean | Prisma.products$order_itemsArgs<ExtArgs>
   consignor?: boolean | Prisma.products$consignorArgs<ExtArgs>
+  consignment_documents?: boolean | Prisma.products$consignment_documentsArgs<ExtArgs>
+  consignment_submissions?: boolean | Prisma.products$consignment_submissionsArgs<ExtArgs>
   consignor_payables?: boolean | Prisma.products$consignor_payablesArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["products"]>
@@ -1555,6 +1877,8 @@ export type productsInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   stock_logs?: boolean | Prisma.products$stock_logsArgs<ExtArgs>
   order_items?: boolean | Prisma.products$order_itemsArgs<ExtArgs>
   consignor?: boolean | Prisma.products$consignorArgs<ExtArgs>
+  consignment_documents?: boolean | Prisma.products$consignment_documentsArgs<ExtArgs>
+  consignment_submissions?: boolean | Prisma.products$consignment_submissionsArgs<ExtArgs>
   consignor_payables?: boolean | Prisma.products$consignor_payablesArgs<ExtArgs>
   _count?: boolean | Prisma.ProductsCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -1574,6 +1898,8 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     stock_logs: Prisma.$stock_logsPayload<ExtArgs>[]
     order_items: Prisma.$order_itemsPayload<ExtArgs>[]
     consignor: Prisma.$usersPayload<ExtArgs> | null
+    consignment_documents: Prisma.$consignment_documentsPayload<ExtArgs>[]
+    consignment_submissions: Prisma.$consignment_submissionsPayload<ExtArgs>[]
     consignor_payables: Prisma.$consignor_payablesPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -2005,6 +2331,8 @@ export interface Prisma__productsClient<T, Null = never, ExtArgs extends runtime
   stock_logs<T extends Prisma.products$stock_logsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$stock_logsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$stock_logsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   order_items<T extends Prisma.products$order_itemsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$order_itemsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$order_itemsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignor<T extends Prisma.products$consignorArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$consignorArgs<ExtArgs>>): Prisma.Prisma__usersClient<runtime.Types.Result.GetResult<Prisma.$usersPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  consignment_documents<T extends Prisma.products$consignment_documentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$consignment_documentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignment_documentsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  consignment_submissions<T extends Prisma.products$consignment_submissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$consignment_submissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignment_submissionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignor_payables<T extends Prisma.products$consignor_payablesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.products$consignor_payablesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payablesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -2535,6 +2863,54 @@ export type products$consignorArgs<ExtArgs extends runtime.Types.Extensions.Inte
    */
   include?: Prisma.usersInclude<ExtArgs> | null
   where?: Prisma.usersWhereInput
+}
+
+/**
+ * products.consignment_documents
+ */
+export type products$consignment_documentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignment_documents
+   */
+  select?: Prisma.consignment_documentsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignment_documents
+   */
+  omit?: Prisma.consignment_documentsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignment_documentsInclude<ExtArgs> | null
+  where?: Prisma.consignment_documentsWhereInput
+  orderBy?: Prisma.consignment_documentsOrderByWithRelationInput | Prisma.consignment_documentsOrderByWithRelationInput[]
+  cursor?: Prisma.consignment_documentsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Consignment_documentsScalarFieldEnum | Prisma.Consignment_documentsScalarFieldEnum[]
+}
+
+/**
+ * products.consignment_submissions
+ */
+export type products$consignment_submissionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignment_submissions
+   */
+  select?: Prisma.consignment_submissionsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignment_submissions
+   */
+  omit?: Prisma.consignment_submissionsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignment_submissionsInclude<ExtArgs> | null
+  where?: Prisma.consignment_submissionsWhereInput
+  orderBy?: Prisma.consignment_submissionsOrderByWithRelationInput | Prisma.consignment_submissionsOrderByWithRelationInput[]
+  cursor?: Prisma.consignment_submissionsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Consignment_submissionsScalarFieldEnum | Prisma.Consignment_submissionsScalarFieldEnum[]
 }
 
 /**

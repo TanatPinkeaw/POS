@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   Button,
@@ -12,11 +12,14 @@ import {
   Spinner,
   Stack,
   Tabs,
+  TextAreaField,
   TextField,
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import type { ReceiptData } from '@/components/pos/Receipt';
 import { ApiError, apiFetch, apiPatch, apiPost } from '@/lib/client-api';
+import { MAX_OFFER_DOCUMENTS, MAX_OFFER_PHOTOS } from '@/lib/consignment-rules';
+import { formatThb } from '@/lib/money';
 import { receiptImageDataUrl } from '@/lib/receipt-image';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import type { ShopView } from '@/lib/shop-view';
@@ -77,12 +80,13 @@ interface ConsignmentPage {
 }
 
 /**
- * The customer's own account — points, receipts and their number (ADR 0020, ADR 0021).
+ * The customer's own account — points, receipts, consignment and their number
+ * (ADR 0020, ADR 0021, ADR 0025).
  *
- * Three panels behind one tab list, because they are three questions about one
- * account and a member on a phone should not walk through three screens to answer
- * them. Every call is to a route that scopes by the session, so "another customer's
- * data" is unreachable by construction rather than by this component checking.
+ * Panels behind one tab list, because they are questions about one account and a
+ * member on a phone should not walk through several screens to answer them. Every call
+ * is to a route that scopes by the session, so "another customer's data" is unreachable
+ * by construction rather than by this component checking.
  *
  * The phone panel is the one that *acts*: the number is the identity, so changing it
  * sends a code to the **new** number and the change only lands once that code comes
@@ -113,7 +117,16 @@ export function AccountPortal({
 
       {tab === 'points' ? <PointsPanel /> : null}
       {tab === 'receipts' ? <ReceiptsPanel /> : null}
-      {tab === 'consignment' ? <ConsignmentPanel /> : null}
+      {tab === 'consignment' ? (
+        // The offer form and the queue in front of the money, in the same tab rather
+        // than new ones: the member came here to see where their consignment stands,
+        // and the way to send more of the same goods is on the same screen (ADR 0025).
+        <Stack gap="lg">
+          <ConsignmentOfferForm />
+          <ConsignmentOfferPanel />
+          <ConsignmentPanel />
+        </Stack>
+      ) : null}
       {tab === 'phone' ? <PhonePanel phone={phone} /> : null}
     </Stack>
   );
@@ -555,3 +568,431 @@ function PhonePanel({ phone }: { phone: string }) {
     </Stack>
   );
 }
+
+/**
+ * The "re-read my offers" callback, owned by the module rather than passed down.
+ *
+ * The form and the list are two sibling panels in one tab, so lifting this into React
+ * context or hoisting them into a parent would both be ceremony for exactly one call.
+ * A module-level binding with a no-op default is what lets the form call it before the
+ * list has ever mounted, and what makes an unmounted list impossible to write to. There
+ * is one consignment tab on one page, so there is exactly one of these.
+ */
+let offerReload: () => void = noop;
+
+function noop(): void {}
+
+/**
+ * A member offering their own goods for consignment (ADR 0025).
+ *
+ * The whole intake, on the member's own account page: four fields, a list of links,
+ * and a send button. There is no shop to configure, no form to publish and no third
+ * party in the middle — a member who wants to leave a tray of things with the shop
+ * fills this in, and the row lands in the owner's inbox on `/admin/consignors`.
+ *
+ * Three things about the shape are deliberate:
+ *
+ *   * **The photo fields take links, not files.** The shop keeps its pictures in a
+ *     Nextcloud folder and pastes links (ADR 0014); a member's photos live wherever
+ *     they live, and this deployment holds no files it could back up. So the form asks
+ *     for a URL the same way an operator pastes one, and says so under the field rather
+ *     than failing a member who tried to attach a 4 MB phone picture.
+ *   * **The member's phone is never asked for.** They are signed in, and the session
+ *     names them. The old Google Form asked for a number and had to cope with it not
+ *     matching anybody; here that whole failure mode does not exist.
+ *   * **The send button mints its own idempotency key.** `clientRef` is generated once
+ *     per filled form (the same idea as the offline till's `clientRef`, ADR 0019), so a
+ *     double tap or a retried request is one offer rather than two — see the unique
+ *     index in the migration.
+ */
+function ConsignmentOfferForm() {
+  const [name, setName] = useState('');
+  const [price, setPrice] = useState('');
+  const [quantity, setQuantity] = useState('1');
+  const [notes, setNotes] = useState('');
+  const [photoLinks, setPhotoLinks] = useState<AttachmentDraft[]>([]);
+  const [docLinks, setDocLinks] = useState<AttachmentDraft[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  /*
+   * One key per form, minted when the panel first draws and again after every
+   * successful send. It is deliberately *not* minted inside `send`: a member who taps
+   * twice has to produce one offer, and a key generated per tap would make two.
+   */
+  const clientRef = useRef<string>(newOfferKey());
+
+  const priceNumber = Number(price);
+  const qtyNumber = Number(quantity);
+  const canSend =
+    name.trim() !== '' &&
+    price !== '' &&
+    Number.isFinite(priceNumber) &&
+    priceNumber >= 0 &&
+    quantity !== '' &&
+    Number.isInteger(qtyNumber) &&
+    qtyNumber > 0 &&
+    !saving;
+
+  function reset(): void {
+    setName('');
+    setPrice('');
+    setQuantity('1');
+    setNotes('');
+    setPhotoLinks([]);
+    setDocLinks([]);
+    setError(null);
+    setDone(false);
+    // A fresh form is a fresh offer, so it gets a fresh key.
+    clientRef.current = newOfferKey();
+  }
+
+  async function send(): Promise<void> {
+    if (!canSend) {
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await apiPost('/api/v1/consignment/submissions', {
+        clientRef: clientRef.current,
+        productName: name.trim(),
+        offeredPriceThb: priceNumber,
+        quantity: qtyNumber,
+        notes: notes.trim() ? notes.trim() : null,
+        photos: photoLinks.map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
+        documents: docLinks.map((link) => ({ label: link.label.trim(), url: link.url.trim() })),
+      });
+      // The queue beside this form should show the new row without a manual refresh.
+      offerReload();
+      reset();
+      setDone(true);
+    } catch (caught) {
+      // The server's own message, so "a URL that cannot open" reads as that.
+      setError(caught instanceof ApiError ? caught.message : 'ส่งคำขอไม่สำเร็จ');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card
+      title="ฝากขายสินค้ากับร้าน"
+      subtitle="กรอกรายการที่ต้องการฝากขาย ร้านจะตรวจสอบและแจ้งผลในหน้านี้"
+    >
+      <Stack gap="md">
+        {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+        {done && !error ? (
+          <InlineNotice tone="success" title="ส่งคำขอแล้ว">
+            ร้านจะตรวจสอบและแจ้งผลในหน้านี้ ถ้าต้องการฝากขายเพิ่ม กรอกรายการใหม่ได้เลย
+          </InlineNotice>
+        ) : null}
+
+        <TextField
+          id="offer-name"
+          label="ชื่อสินค้า"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="เช่น ขนมปังถังโบราณ"
+        />
+
+        <div className={styles.offerRow}>
+          <TextField
+            id="offer-price"
+            label="ราคาที่ต้องการขาย (บาท)"
+            inputMode="decimal"
+            value={price}
+            onChange={(event) => setPrice(event.target.value)}
+          />
+          <TextField
+            id="offer-quantity"
+            label="จำนวน (ชิ้น)"
+            inputMode="numeric"
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+          />
+        </div>
+
+        <TextAreaField
+          id="offer-notes"
+          label="รายละเอียดเพิ่มเติม"
+          help="เช่น สภาพสินค้า วันที่สะดวกมาส่ง หรือเงื่อนไขอื่นที่ร้านควรทราบ"
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
+        />
+
+        <AttachmentList
+          id="offer-photos"
+          kind="photo"
+          legend="รูปสินค้า (ลิงก์)"
+          help="วางลิงก์รูปที่เปิดดูได้จากที่ไหนก็ได้ (เช่น Google Drive, Google Photos) — ร้านจะดูรูปนี้ตอนตรวจสอบ"
+          value={photoLinks}
+          onChange={setPhotoLinks}
+        />
+
+        <AttachmentList
+          id="offer-docs"
+          kind="document"
+          legend="เอกสาร (ลิงก์)"
+          help="เช่น ใบสำรองราคา ใบรับประกัน หรือรูปใบเสร็จ — ถ้าไม่มีก็ข้ามไว้ได้"
+          value={docLinks}
+          onChange={setDocLinks}
+        />
+
+        <Button icon="upload" loading={saving} disabled={!canSend} onClick={() => void send()}>
+          ส่งคำขอฝากขาย
+        </Button>
+      </Stack>
+    </Card>
+  );
+}
+
+/**
+ * One link the member is adding, still being typed.
+ *
+ * Draft state rather than a submitted array, because a half-typed URL is not an
+ * attachment and sending one as an attachment would put an error on the member's own
+ * screen instead of in the field they are looking at. Blank rows are dropped on send.
+ */
+interface AttachmentDraft {
+  label: string;
+  url: string;
+}
+
+/**
+ * The key one offer is sent under.
+ *
+ * A UUID from the browser, which is what makes the double-tap argument in the
+ * component above work: the same key twice is the same offer to the server, and a new
+ * key is minted only when the member starts a genuinely new one. `crypto.randomUUID`
+ * is available in every browser this app supports, and the offline till uses the same
+ * call for the same reason (ADR 0019).
+ */
+function newOfferKey(): string {
+  return crypto.randomUUID();
+}
+
+/**
+ * A repeatable list of link fields.
+ *
+ * "Add another" rather than a fixed set of empty inputs, because a member offering
+ * handmade goods may have one photograph or nine, and a form that always shows eight
+ * empty URL boxes is a form most people fill in wrongly. The cap matches the schema's
+ * (`MAX_OFFER_PHOTOS` / `MAX_OFFER_DOCUMENTS`) so the button disappears rather than
+ * letting the server refuse a ninth row.
+ */
+function AttachmentList({
+  id,
+  kind,
+  legend,
+  help,
+  value,
+  onChange,
+}: {
+  id: string;
+  kind: 'photo' | 'document';
+  legend: string;
+  help: string;
+  value: AttachmentDraft[];
+  onChange: (next: AttachmentDraft[]) => void;
+}) {
+  const cap = kind === 'photo' ? MAX_OFFER_PHOTOS : MAX_OFFER_DOCUMENTS;
+
+  function update(index: number, field: 'label' | 'url', next: string): void {
+    onChange(value.map((row, i) => (i === index ? { ...row, [field]: next } : row)));
+  }
+
+  function add(): void {
+    onChange([...value, { label: '', url: '' }]);
+  }
+
+  function remove(index: number): void {
+    onChange(value.filter((_, i) => i !== index));
+  }
+
+  /*
+   * Rows the member has not filled in are dropped rather than sent empty, so "I added a
+   * row and changed my mind" cannot become a validation error on their own screen.
+   */
+  const filled = value.filter((row) => row.url.trim() !== '');
+
+  return (
+    <fieldset className={styles.attachments}>
+      <legend className={styles.attachmentsLegend}>{legend}</legend>
+      <p className="ln-muted ln-text-sm">{help}</p>
+
+      {value.map((row, index) => (
+        <div key={index} className={styles.attachmentRow}>
+          <TextField
+            id={`${id}-${index}-url`}
+            label={kind === 'photo' ? `ลิงก์รูปที่ ${index + 1}` : `ลิงก์เอกสารที่ ${index + 1}`}
+            inputMode="url"
+            value={row.url}
+            onChange={(event) => update(index, 'url', event.target.value)}
+            placeholder="https://..."
+          />
+          <TextField
+            id={`${id}-${index}-label`}
+            label="คำอธิบาย (ถ้ามี)"
+            value={row.label}
+            onChange={(event) => update(index, 'label', event.target.value)}
+          />
+          <Button variant="ghost" onClick={() => remove(index)}>
+            ลบ
+          </Button>
+        </div>
+      ))}
+
+      {filled.length === 0 && value.length === 0 ? (
+        <Button variant="secondary" onClick={add}>
+          เพิ่มลิงก์
+        </Button>
+      ) : null}
+      {value.length > 0 && value.length < cap ? (
+        <Button variant="secondary" onClick={add}>
+          เพิ่มลิงก์อีก
+        </Button>
+      ) : null}
+    </fieldset>
+  );
+}
+
+/**
+ * The member's own offers: what they sent and what the shop said (ADR 0025).
+ *
+ * Kept as its own panel above the balance rather than folded into it, because the two
+ * answer different questions: "what have you earned" is settled money, while this is
+ * the queue in front of it. A member whose offer was refused can read exactly what the
+ * shop said here, and that has nothing to do with what the shop owes them.
+ *
+ * Photographs are shown as links to open rather than drawn. They live on whatever file
+ * host the member kept them on, and a member's account page is not the place to quietly
+ * pull a gallery of thumbnails from somebody else's server; the label is what matters,
+ * and the link is there for when it does.
+ */
+function ConsignmentOfferPanel() {
+  const [rows, setRows] = useState<MemberSubmission[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setRows(await apiFetch<MemberSubmission[]>('/api/v1/consignment/submissions'));
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'โหลดคำขอฝากขายไม่สำเร็จ');
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  /*
+   * Lets the form above ask this panel to re-read after a successful send, so a member
+   * sees their new row appear rather than having to reload the page to discover whether
+   * the send worked. Registered in an effect, never during render, so the callback is
+   * always the current `load` rather than the one captured on the first draw.
+   */
+  useEffect(() => {
+    offerReload = load;
+    return () => {
+      offerReload = noop;
+    };
+  }, [load]);
+
+  if (rows !== null && rows.length === 0) {
+    return (
+      <Stack gap="md">
+        {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+        <EmptyState
+          title="ยังไม่มีคำขอฝากขาย"
+          description="กรอกแบบฟอร์มด้านบนเพื่อส่งรายการที่ต้องการฝากขาย ร้านจะแจ้งผลในหน้านี้"
+        />
+      </Stack>
+    );
+  }
+
+  return (
+    <Stack gap="md">
+      {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+      {rows === null && error === null ? <Spinner /> : null}
+
+      {rows?.map((row) => (
+        <Card
+          key={row.id}
+          title={row.productName}
+          subtitle={`ส่งเมื่อ ${new Date(row.submittedAt).toLocaleString('th-TH')} · ${row.quantity} ชิ้น · ${formatThb(row.offeredPriceThb)}`}
+          actions={<Pill tone={SUBMISSION_TONE[row.status]}>{SUBMISSION_STATUS_LABEL[row.status]}</Pill>}
+        >
+          <Stack gap="sm">
+            {row.status === 'rejected' && row.decisionNote ? (
+              <InlineNotice tone="warning" title="ร้านตอบว่า">
+                {row.decisionNote}
+              </InlineNotice>
+            ) : null}
+
+            {row.status === 'approved' && row.decidedSharePercent !== null ? (
+              <p className="ln-muted">
+                ตกลงส่วนแบ่ง {row.decidedSharePercent}% ของยอดสุทธิต่อชิ้นที่ขายได้
+                {row.decisionNote ? ` · หมายเหตุ: ${row.decisionNote}` : ''}
+              </p>
+            ) : null}
+
+            {row.documents.length > 0 ? (
+              <ul className={styles.ledger}>
+                {row.documents.map((document) => (
+                  <li key={document.id}>
+                    <a href={document.url} target="_blank" rel="noreferrer">
+                      {document.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </Stack>
+        </Card>
+      ))}
+    </Stack>
+  );
+}
+
+/** One offer as the member's own account reads it. */
+interface MemberSubmission {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  productName: string;
+  offeredPriceThb: number;
+  quantity: number;
+  decidedSharePercent: number | null;
+  decisionNote: string | null;
+  submittedAt: string;
+  documents: { id: string; label: string; url: string }[];
+}
+
+/**
+ * The three states a member can be in, in the shop's words.
+ *
+ * "รอตรวจสอบ" rather than anything about the share, because the share has not been
+ * discussed yet — the member has offered goods and the shop has not answered. Saying
+ * "pending terms" would name a conversation that has not happened.
+ */
+const SUBMISSION_STATUS_LABEL: Record<MemberSubmission['status'], string> = {
+  pending: 'รอร้านตรวจสอบ',
+  approved: 'รับไว้แล้ว',
+  rejected: 'ไม่ได้รับ',
+};
+
+/**
+ * The pill tone per state, spelled out because the design system's `Tone` is internal
+ * to its own module: a screen states the three colours it needs rather than importing
+ * a vocabulary that exists to serve fifteen components.
+ */
+const SUBMISSION_TONE: Record<
+  MemberSubmission['status'],
+  'neutral' | 'success' | 'warning' | 'danger'
+> = {
+  pending: 'warning',
+  approved: 'success',
+  rejected: 'danger',
+};

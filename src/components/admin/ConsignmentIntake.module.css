@@ -1,0 +1,86 @@
+/*
+ * The consignment inbox (ADR 0025).
+ *
+ * A list of offers waiting on a decision, so the layout is a row of two things: what
+ * the member asked for, and the two buttons that act on it. The photographs sit under
+ * both at a fixed small size — they are evidence for the decision, not the screen's
+ * subject, and a gallery-sized photo would push the button off the row.
+ */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  padding: var(--ln-space-3);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  flex-wrap: wrap;
+}
+
+.name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.meta {
+  margin: var(--ln-space-1) 0 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-font-size-sm);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ln-space-2);
+  flex-shrink: 0;
+}
+
+.notes {
+  margin: 0;
+  color: var(--ln-text-muted);
+}
+
+.documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ln-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.document {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-2);
+  /* A tap target a thumb can hit, not a 40px thumbnail — the label is the target. */
+  min-height: var(--ln-tap);
+  padding: var(--ln-space-1) var(--ln-space-2);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-sm);
+  color: var(--ln-text);
+  text-decoration: none;
+}
+
+.photo {
+  width: 3rem;
+  height: 3rem;
+  object-fit: cover;
+  border-radius: var(--ln-radius-sm);
+}

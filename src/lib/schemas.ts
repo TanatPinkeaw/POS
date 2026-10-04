@@ -9,8 +9,14 @@ import { z } from 'zod';
 
 import { AUDIT_ACTIONS, AUDIT_PAGE_SIZE_MAX } from './audit-view';
 import { isClock, isLocalDateTime, isValidCalendarDay } from './bangkok-time';
-import { MAX_SHARE_PERCENT, MIN_SHARE_PERCENT } from './consignment-rules';
+import {
+  MAX_OFFER_DOCUMENTS,
+  MAX_OFFER_PHOTOS,
+  MAX_SHARE_PERCENT,
+  MIN_SHARE_PERCENT,
+} from './consignment-rules';
 import { MAX_BLOCK_SIZE } from './number-block';
+import { renderableImageUrl } from './image-url';
 import { REPORT_TYPES } from './report-spec';
 import { PROMPTPAY_ID_TYPES, normalisePromptPayId } from './promptpay';
 import { PIN_LENGTH, SUPERVISOR_ACTIONS } from './supervisor-view';
@@ -270,11 +276,24 @@ export const setupSchema = z.object({
   }),
 });
 
+/**
+ * Creating a product.
+ *
+ * The text limits are the ones the screens and the spreadsheet importer promise a shop:
+ * `name` 150 and `barcode` 64 are enforced row by row in `parseImportGrid`, and
+ * `description` 1000 is the counter on the textarea in the product editor. Like every
+ * other length in this file they are written out rather than shared as a constant — the
+ * number a shop reads on the screen is the thing that has to agree, and a limit that is
+ * only ever read from one module is one nobody notices going stale in a screenshot.
+ *
+ * `description` is the field that had no limit at all, which left the counter in the form
+ * as advice: a caller that did not use the form could store a description of any length.
+ */
 export const productCreateSchema = z.object({
   name: z.string().trim().min(1).max(150),
   categoryId: z.number().int().positive().nullable().optional(),
   barcode: z.string().trim().max(64).nullable().optional(),
-  description: z.string().trim().nullable().optional(),
+  description: z.string().trim().max(1000).nullable().optional(),
   costPrice: z.number().min(0),
   salePrice: z.number().min(0),
   stockQty: z.number().int().min(0).default(0),
@@ -329,6 +348,87 @@ export const consignmentPayoutSchema = z.object({
   method: z.enum(['cash', 'promptpay']),
   shiftId: z.number().int().positive().nullable().optional(),
   note: z.string().trim().max(255).nullable().optional(),
+});
+
+/**
+ * One consignment offer, as a member's own account page posts it (ADR 0025).
+ *
+ * There is no phone number and no member id here, and their absence is the design:
+ * the route takes the member from the session, so the only thing this schema decides
+ * is what the member is offering and what they are attaching to it.
+ *
+ * `clientRef` is a UUID the browser minted once for the form — the same idea as
+ * `clientRef` in ADR 0019 — and the database's unique index on it is what makes a
+ * double tap or a retried request one offer rather than two.
+ *
+ * The links are validated here rather than at render time, and `renderableImageUrl`
+ * is the same allowlist a shop operator's pasted photo link goes through (ADR 0014) —
+ * being signed in says nothing about whether a URL a member pasted is a picture.
+ */
+export const consignmentOfferSchema = z.object({
+  clientRef: z.string().uuid(),
+  productName: z.string().trim().min(1, 'กรอกชื่อสินค้าที่ต้องการฝากขาย').max(150),
+  // A price the member asked for. Zero is allowed (it is a question, not a quotation)
+  // and the ceiling is the same one a sale price is held to.
+  offeredPriceThb: z.number().min(0).max(9_999_999.99),
+  quantity: z.number().int().positive('จำนวนต้องเป็นตัวเลขมากกว่า 0').max(100_000),
+  notes: z.string().trim().max(2000).nullable().optional(),
+  photos: z
+    .array(
+      z
+        .object({
+          label: z.string().trim().max(150).optional(),
+          url: z.string().trim().min(1, 'ใส่ลิงก์รูป').max(500).refine(renderableImageUrl, {
+            message: 'ลิงก์รูปต้องเป็นที่อยู่เว็บที่เปิดได้',
+          }),
+        })
+        .strict(),
+    )
+    .max(MAX_OFFER_PHOTOS)
+    .default([]),
+  documents: z
+    .array(
+      z
+        .object({
+          label: z.string().trim().max(150).optional(),
+          url: z.string().trim().min(1, 'ใส่ลิงก์เอกสาร').max(500).refine(renderableImageUrl, {
+            message: 'ลิงก์เอกสารต้องเป็นที่อยู่เว็บที่เปิดได้',
+          }),
+        })
+        .strict(),
+    )
+    .max(MAX_OFFER_DOCUMENTS)
+    .default([]),
+});
+
+/**
+ * The owner agreeing a share for something a member had offered (ADR 0025).
+ *
+ * `sharePercent` is required and is the reason this door is admin-only: it is the
+ * fraction of every future sale that belongs to somebody outside the shop. Everything
+ * else here has a sensible default, because the numbers an owner types at a counter
+ * under time pressure are exactly the ones a system should be able to fill in.
+ */
+export const consignmentApprovalSchema = z.object({
+  sharePercent: z
+    .number()
+    .int()
+    .min(MIN_SHARE_PERCENT)
+    .max(MAX_SHARE_PERCENT),
+  salePriceThb: z.number().min(0).max(9_999_999.99).nullable().optional(),
+  receivedQty: z.number().int().positive().max(100_000).nullable().optional(),
+  categoryId: z.number().int().positive().nullable().optional(),
+  consignorUserId: z.string().uuid().nullable().optional(),
+  note: z.string().trim().max(500).nullable().optional(),
+});
+
+/**
+ * Turning an offer down. The note is required: the member reads it on their own
+ * account, and a refusal with no stated reason is one they answer by filling the form
+ * in again.
+ */
+export const consignmentRejectionSchema = z.object({
+  note: z.string().trim().min(1, 'ระบุเหตุผลที่ปฏิเสธ เพื่อให้สมาชิกทราบ').max(500),
 });
 
 /**

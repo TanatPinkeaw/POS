@@ -143,6 +143,7 @@ describe('the policy table', () => {
       'member_create',
       'otp_send_number',
       'otp_send_address',
+      'consignment_offer',
     ]);
 
     for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {

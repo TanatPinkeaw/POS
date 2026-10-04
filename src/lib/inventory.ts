@@ -26,22 +26,34 @@ import { ConflictError, InsufficientStockError, NotFoundError, ValidationError }
  */
 export type Db = Prisma.TransactionClient;
 
-/** SRS §4.3 adjustment reasons, plus the import addition (ADR 0002). */
+/**
+ * SRS §4.3 adjustment reasons, plus the import addition (ADR 0002) and the consignment
+ * receipt (ADR 0025).
+ *
+ * `REASON_CONSIGNMENT` is here but **not** in `stockAdjustmentSchema`, on purpose. A
+ * manual adjustment is a correction to the shelf, and a consignment receipt is goods
+ * arriving with an owner and an agreed share behind them — the second may only be
+ * written by approving a submission, which is what sets that share. Leaving it out of
+ * the route a cashier can call keeps "a member left goods here" from being something a
+ * cashier can assert with a number.
+ */
 export type StockAdjustmentReason =
   | 'REASON_RESTOCK'
   | 'REASON_DAMAGED'
   | 'REASON_EXPIRED'
   | 'REASON_CORRECTION'
-  | 'REASON_IMPORT';
+  | 'REASON_IMPORT'
+  | 'REASON_CONSIGNMENT';
 
-/** SRS §7 `stock_movement_type`, plus the refund that reverses a sale. */
+/** SRS §7 `stock_movement_type`, plus the refund that reverses a sale (ADR 0025). */
 export type StockMovementType =
   | 'manual_adjust'
   | 'pos_sale'
   | 'pos_refund'
   | 'preorder_reserve'
   | 'preorder_cancel'
-  | 'restock';
+  | 'restock'
+  | 'consignment_received';
 
 export interface StockBalance {
   stock_qty: number;
@@ -60,7 +72,13 @@ export function availableQty(balance: { stock_qty: number; reserved_qty: number 
  * `reason` distinguishes them.
  */
 export function movementTypeForReason(reason: StockAdjustmentReason): StockMovementType {
-  return reason === 'REASON_RESTOCK' || reason === 'REASON_IMPORT' ? 'restock' : 'manual_adjust';
+  if (reason === 'REASON_RESTOCK' || reason === 'REASON_IMPORT') {
+    return 'restock';
+  }
+  // Its own movement type rather than `restock`: this stock belongs to a member, and a
+  // report that cannot tell a delivery from a consignment cannot answer "which units on
+  // this shelf are ours".
+  return reason === 'REASON_CONSIGNMENT' ? 'consignment_received' : 'manual_adjust';
 }
 
 function assertPositiveQty(qty: number, label = 'quantity'): void {

@@ -71,7 +71,8 @@ export const stock_movement_type = {
   preorder_reserve: 'preorder_reserve',
   preorder_cancel: 'preorder_cancel',
   restock: 'restock',
-  pos_refund: 'pos_refund'
+  pos_refund: 'pos_refund',
+  consignment_received: 'consignment_received'
 } as const
 
 export type stock_movement_type = (typeof stock_movement_type)[keyof typeof stock_movement_type]
@@ -90,7 +91,8 @@ export const stock_adjustment_reason = {
   REASON_DAMAGED: 'REASON_DAMAGED',
   REASON_EXPIRED: 'REASON_EXPIRED',
   REASON_CORRECTION: 'REASON_CORRECTION',
-  REASON_IMPORT: 'REASON_IMPORT'
+  REASON_IMPORT: 'REASON_IMPORT',
+  REASON_CONSIGNMENT: 'REASON_CONSIGNMENT'
 } as const
 
 export type stock_adjustment_reason = (typeof stock_adjustment_reason)[keyof typeof stock_adjustment_reason]
@@ -162,7 +164,10 @@ export const audit_action = {
   offline_sale_synced: 'offline_sale_synced',
   consignment_set: 'consignment_set',
   consignment_withdrawn: 'consignment_withdrawn',
-  consignment_paid: 'consignment_paid'
+  consignment_paid: 'consignment_paid',
+  consignment_offer_submitted: 'consignment_offer_submitted',
+  consignment_submission_approved: 'consignment_submission_approved',
+  consignment_submission_rejected: 'consignment_submission_rejected'
 } as const
 
 export type audit_action = (typeof audit_action)[keyof typeof audit_action]
@@ -192,3 +197,20 @@ export const consignor_payable_kind = {
 } as const
 
 export type consignor_payable_kind = (typeof consignor_payable_kind)[keyof typeof consignor_payable_kind]
+
+
+export const consignment_submission_status = {
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected'
+} as const
+
+export type consignment_submission_status = (typeof consignment_submission_status)[keyof typeof consignment_submission_status]
+
+
+export const consignment_document_kind = {
+  photo: 'photo',
+  document: 'document'
+} as const
+
+export type consignment_document_kind = (typeof consignment_document_kind)[keyof typeof consignment_document_kind]

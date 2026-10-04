@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 
+import { ConsignmentIntake, type IntakeRow } from '@/components/admin/ConsignmentIntake';
+
 import {
   ConsignorPayouts,
   type ConsignorRow,
@@ -16,6 +18,7 @@ import {
   type Column,
 } from '@/components/ds';
 import { bangkokDateString, bangkokDateTimeString } from '@/lib/bangkok-time';
+import { listPendingSubmissions } from '@/lib/consignment-intake';
 import {
   getConsignorPosition,
   listConsignorLedger,
@@ -67,13 +70,21 @@ export default async function AdminConsignorsPage({ searchParams }: PageProps) {
     return <ConsignorAccount consignorUserId={params.consignor} />;
   }
 
-  const [positions, shifts] = await Promise.all([
+  /*
+   * The intake inbox is read here rather than fetched by the browser, so the screen
+   * arrives with the offers already in it — and so the route audit, which fetches this
+   * page exactly once as an admin, walks the new section too. That is why it is part of
+   * the list view rather than behind a query parameter: a screen behind a parameter is
+   * a screen nothing ever checks.
+   */
+  const [positions, shifts, pending] = await Promise.all([
     listConsignorPositions(),
     prisma.cash_shifts.findMany({
       where: { status: 'open' },
       orderBy: { id: 'asc' },
       include: { opener: { select: { full_name: true } } },
     }),
+    listPendingSubmissions(prisma),
   ]);
 
   const rows: ConsignorRow[] = positions.map((position) => ({
@@ -90,12 +101,17 @@ export default async function AdminConsignorsPage({ searchParams }: PageProps) {
     label: `ลิ้นชัก #${shift.id} · ${shift.opener.full_name}`,
   }));
 
+  // The view is already a plain, JSON-safe object; the component re-declares the shape
+  // so the server and the browser cannot drift on it without the typechecker noticing.
+  const intakeRows: IntakeRow[] = pending;
+
   return (
     <Stack gap="lg">
       <PageHeader
         title="ฝากขาย — จ่ายเงินผู้ฝากขาย"
         subtitle="ยอดค้างจ่ายคือผลรวมบัญชีเจ้าหนี้ฝากขาย — จ่ายออกจากลิ้นชักที่เปิดอยู่ หรือโอนผ่านแอปธนาคาร พร้อมใบสำคัญและร่องรอยในประวัติ"
       />
+      <ConsignmentIntake rows={intakeRows} />
       <ConsignorPayouts rows={rows} openDrawers={openDrawers} />
     </Stack>
   );

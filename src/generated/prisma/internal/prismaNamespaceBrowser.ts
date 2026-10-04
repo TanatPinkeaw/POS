@@ -75,6 +75,8 @@ export const ModelName = {
   display_devices: 'display_devices',
   consignor_payables: 'consignor_payables',
   consignor_payouts: 'consignor_payouts',
+  consignment_submissions: 'consignment_submissions',
+  consignment_documents: 'consignment_documents',
   point_transactions: 'point_transactions'
 } as const
 
@@ -495,6 +497,40 @@ export const Consignor_payoutsScalarFieldEnum = {
 } as const
 
 export type Consignor_payoutsScalarFieldEnum = (typeof Consignor_payoutsScalarFieldEnum)[keyof typeof Consignor_payoutsScalarFieldEnum]
+
+
+export const Consignment_submissionsScalarFieldEnum = {
+  id: 'id',
+  consignor_user_id: 'consignor_user_id',
+  client_ref: 'client_ref',
+  product_name: 'product_name',
+  offered_price_thb: 'offered_price_thb',
+  quantity: 'quantity',
+  notes: 'notes',
+  status: 'status',
+  product_id: 'product_id',
+  decided_by_user_id: 'decided_by_user_id',
+  decided_at: 'decided_at',
+  decided_share_percent: 'decided_share_percent',
+  decision_note: 'decision_note',
+  submitted_at: 'submitted_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Consignment_submissionsScalarFieldEnum = (typeof Consignment_submissionsScalarFieldEnum)[keyof typeof Consignment_submissionsScalarFieldEnum]
+
+
+export const Consignment_documentsScalarFieldEnum = {
+  id: 'id',
+  submission_id: 'submission_id',
+  product_id: 'product_id',
+  kind: 'kind',
+  label: 'label',
+  url: 'url',
+  created_at: 'created_at'
+} as const
+
+export type Consignment_documentsScalarFieldEnum = (typeof Consignment_documentsScalarFieldEnum)[keyof typeof Consignment_documentsScalarFieldEnum]
 
 
 export const Point_transactionsScalarFieldEnum = {

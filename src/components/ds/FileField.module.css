@@ -1,0 +1,40 @@
+/*
+ * The file picker.
+ *
+ * The row is a button, a sentence and a clear button. It keeps the control height
+ * of the screen it sits on (`--ln-control-h`, so it is 34px in the back office and
+ * 48px on the till) and wraps rather than pushing its neighbours off the card: a
+ * supplier's file name is long, and file names have no spaces to break on.
+ */
+
+.fileRow {
+  display: flex;
+  align-items: center;
+  gap: var(--ln-space-3);
+  min-height: var(--ln-control-h);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.fileName {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.fileHint {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+/*
+ * The input is visually hidden, so its focus ring has to be painted on the button
+ * standing in for it — otherwise a keyboard user tabs into a picker whose focus is
+ * nowhere on the screen. Keyed on `:focus-visible` rather than `:focus` so a mouse
+ * click does not leave a ring behind.
+ */
+.fileRow input:focus-visible ~ button {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+}

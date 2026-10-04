@@ -27,7 +27,23 @@
 import type { Db } from './inventory';
 
 /** The day this version of the customer notice took effect, as stored. */
-export const CUSTOMER_NOTICE_EFFECTIVE_FROM = '2026-10-03';
+/**
+ * Bumped to 2026-10-04 when the notice began naming the consignment offer form
+ * (ADR 0025): the shop now collects a product name, an asked-for price, a count and
+ * photo links from a member on its own account page, which is a new collection point
+ * and so something the Act asks a controller to state.
+ *
+ * It is worth noting what this date does *not* now claim. An earlier draft of ADR 0025
+ * sent those answers through a Google Form, which would have added Google as a third
+ * party and made the cross-border question under PDPA §28 live. The form is gone, so the
+ * notice no longer names Google for this purpose, and the only remaining Google
+ * disclosure is the sign-in door in ADR 0020 — which was always there.
+ *
+ * Changing the text without moving this date would leave every earlier acknowledgement
+ * pointing at words the member never read, which is the one thing an acknowledgement
+ * exists to prevent.
+ */
+export const CUSTOMER_NOTICE_EFFECTIVE_FROM = '2026-10-04';
 
 /**
  * The version a signup must acknowledge.

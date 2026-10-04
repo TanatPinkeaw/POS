@@ -22,10 +22,10 @@ import {
   Button,
   Card,
   DataTable,
+  FileField,
   InlineNotice,
   Pill,
   Stack,
-  TextField,
   Toolbar,
   type Column,
 } from '@/components/ds';
@@ -55,6 +55,13 @@ const PREVIEW_LIMIT = 100;
 export function ProductImportPanel() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  /*
+   * Bumped after a successful import so the picker starts empty. `setFile(null)`
+   * alone is not enough: the real `<input>` still holds the imported file, and a
+   * browser fires no `change` for a file it already has — so choosing the same
+   * spreadsheet a second time would silently do nothing at all.
+   */
+  const [formKey, setFormKey] = useState(0);
   const [preview, setPreview] = useState<PreviewPayload | null>(null);
   const [summary, setSummary] = useState<CommitPayload | null>(null);
   const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
@@ -89,6 +96,7 @@ export function ProductImportPanel() {
         setSummary(result.summary);
         setPreview(null);
         setFile(null);
+        setFormKey((current) => current + 1);
         setNotice({
           tone: 'success',
           text: `นำเข้าแล้ว: เพิ่มใหม่ ${result.summary.created} · อัปเดต ${result.summary.updated} · สต็อกที่บวกเข้า ${result.summary.stockAddedTotal}`,
@@ -218,13 +226,19 @@ export function ProductImportPanel() {
             </>
           }
         >
-          <TextField
+          <FileField
+            key={formKey}
             id="import-file"
             label="ไฟล์สินค้า"
             hideLabel
-            type="file"
             accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={(event) => pick(event.target.files?.[0] ?? null)}
+            file={file}
+            onSelect={pick}
+            placeholder="ยังไม่ได้เลือกไฟล์"
+            buttonLabel="เลือกไฟล์"
+            changeLabel="เปลี่ยนไฟล์"
+            clearLabel="ล้างไฟล์"
+            disabled={busy !== null}
           />
         </Toolbar>
       }

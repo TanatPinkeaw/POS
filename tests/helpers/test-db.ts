@@ -75,6 +75,11 @@ const TABLES_IN_DELETE_ORDER = [
   // next test's series, so a sale there would fail for a reason that has nothing to do
   // with what it was testing.
   'number_blocks',
+  // Before 'products' (ADR 0025): an approved submission holds a RESTRICT foreign key
+  // on the product it became, so the sweep has to take the submission first. Documents
+  // cascade from their submission, and are listed for the same reason as above.
+  'consignment_documents',
+  'consignment_submissions',
   'products',
   'categories',
   // Before `users`, and the only row here whose foreign key is RESTRICT rather than
@@ -153,6 +158,14 @@ export interface TestPeople {
   adminId: string;
   employeeId: string;
   memberId: string;
+  /*
+   * The member's own name and number, carried here because the consignment inbox reads
+   * both off the *account* rather than off the offer (ADR 0025) — a screen that shows
+   * an owner a number has to have gotten it from somewhere, and "somewhere" is asserted
+   * by name here rather than by a literal repeated in each test.
+   */
+  memberName: string;
+  memberPhone: string;
 }
 
 /** Creates one user per role plus the system actor. */
@@ -188,7 +201,13 @@ export async function seedPeople(): Promise<TestPeople> {
     }),
   ]);
 
-  return { adminId: admin.id, employeeId: employee.id, memberId: member.id };
+  return {
+    adminId: admin.id,
+    employeeId: employee.id,
+    memberId: member.id,
+    memberName: member.full_name,
+    memberPhone: member.phone,
+  };
 }
 
 /** Creates a product with a known starting stock. */

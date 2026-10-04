@@ -316,6 +316,8 @@ export type usersWhereInput = {
   consignor_payables?: Prisma.Consignor_payablesListRelationFilter
   consignor_payouts?: Prisma.Consignor_payoutsListRelationFilter
   consignor_payouts_created?: Prisma.Consignor_payoutsListRelationFilter
+  consignment_submissions_as_consignor?: Prisma.Consignment_submissionsListRelationFilter
+  consignment_submissions_decided?: Prisma.Consignment_submissionsListRelationFilter
 }
 
 export type usersOrderByWithRelationInput = {
@@ -357,6 +359,8 @@ export type usersOrderByWithRelationInput = {
   consignor_payables?: Prisma.consignor_payablesOrderByRelationAggregateInput
   consignor_payouts?: Prisma.consignor_payoutsOrderByRelationAggregateInput
   consignor_payouts_created?: Prisma.consignor_payoutsOrderByRelationAggregateInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsOrderByRelationAggregateInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsOrderByRelationAggregateInput
 }
 
 export type usersWhereUniqueInput = Prisma.AtLeast<{
@@ -401,6 +405,8 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   consignor_payables?: Prisma.Consignor_payablesListRelationFilter
   consignor_payouts?: Prisma.Consignor_payoutsListRelationFilter
   consignor_payouts_created?: Prisma.Consignor_payoutsListRelationFilter
+  consignment_submissions_as_consignor?: Prisma.Consignment_submissionsListRelationFilter
+  consignment_submissions_decided?: Prisma.Consignment_submissionsListRelationFilter
 }, "id" | "email" | "google_subject" | "phone">
 
 export type usersOrderByWithAggregationInput = {
@@ -484,6 +490,8 @@ export type usersCreateInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateInput = {
@@ -525,6 +533,8 @@ export type usersUncheckedCreateInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUpdateInput = {
@@ -566,6 +576,8 @@ export type usersUpdateInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateInput = {
@@ -607,6 +619,8 @@ export type usersUncheckedUpdateInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateManyInput = {
@@ -1079,6 +1093,36 @@ export type usersUpdateOneRequiredWithoutConsignor_payouts_createdNestedInput = 
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutConsignor_payouts_createdInput, Prisma.usersUpdateWithoutConsignor_payouts_createdInput>, Prisma.usersUncheckedUpdateWithoutConsignor_payouts_createdInput>
 }
 
+export type usersCreateNestedOneWithoutConsignment_submissions_as_consignorInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_as_consignorInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutConsignment_submissions_as_consignorInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersCreateNestedOneWithoutConsignment_submissions_decidedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_decidedInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_decidedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutConsignment_submissions_decidedInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneRequiredWithoutConsignment_submissions_as_consignorNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_as_consignorInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutConsignment_submissions_as_consignorInput
+  upsert?: Prisma.usersUpsertWithoutConsignment_submissions_as_consignorInput
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutConsignment_submissions_as_consignorInput, Prisma.usersUpdateWithoutConsignment_submissions_as_consignorInput>, Prisma.usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput>
+}
+
+export type usersUpdateOneWithoutConsignment_submissions_decidedNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_decidedInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_decidedInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutConsignment_submissions_decidedInput
+  upsert?: Prisma.usersUpsertWithoutConsignment_submissions_decidedInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutConsignment_submissions_decidedInput, Prisma.usersUpdateWithoutConsignment_submissions_decidedInput>, Prisma.usersUncheckedUpdateWithoutConsignment_submissions_decidedInput>
+}
+
 export type usersCreateNestedOneWithoutPoint_transactionsInput = {
   create?: Prisma.XOR<Prisma.usersCreateWithoutPoint_transactionsInput, Prisma.usersUncheckedCreateWithoutPoint_transactionsInput>
   connectOrCreate?: Prisma.usersCreateOrConnectWithoutPoint_transactionsInput
@@ -1131,6 +1175,8 @@ export type usersCreateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutNumber_blocksInput = {
@@ -1171,6 +1217,8 @@ export type usersUncheckedCreateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutNumber_blocksInput = {
@@ -1216,6 +1264,8 @@ export type usersCreateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutBlocks_closedInput = {
@@ -1256,6 +1306,8 @@ export type usersUncheckedCreateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutBlocks_closedInput = {
@@ -1312,6 +1364,8 @@ export type usersUpdateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutNumber_blocksInput = {
@@ -1352,6 +1406,8 @@ export type usersUncheckedUpdateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutBlocks_closedInput = {
@@ -1403,6 +1459,8 @@ export type usersUpdateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutBlocks_closedInput = {
@@ -1443,6 +1501,8 @@ export type usersUncheckedUpdateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutConsigned_productsInput = {
@@ -1483,6 +1543,8 @@ export type usersCreateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutConsigned_productsInput = {
@@ -1523,6 +1585,8 @@ export type usersUncheckedCreateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutConsigned_productsInput = {
@@ -1579,6 +1643,8 @@ export type usersUpdateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutConsigned_productsInput = {
@@ -1619,6 +1685,8 @@ export type usersUncheckedUpdateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutStock_logsInput = {
@@ -1659,6 +1727,8 @@ export type usersCreateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutStock_logsInput = {
@@ -1699,6 +1769,8 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutStock_logsInput = {
@@ -1755,6 +1827,8 @@ export type usersUpdateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutStock_logsInput = {
@@ -1795,6 +1869,8 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutSchedule_shiftsInput = {
@@ -1835,6 +1911,8 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
@@ -1875,6 +1953,8 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutSchedule_shiftsInput = {
@@ -1920,6 +2000,8 @@ export type usersCreateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutSchedules_authoredInput = {
@@ -1960,6 +2042,8 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutSchedules_authoredInput = {
@@ -2016,6 +2100,8 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
@@ -2056,6 +2142,8 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutSchedules_authoredInput = {
@@ -2107,6 +2195,8 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
@@ -2147,6 +2237,8 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutTime_logsInput = {
@@ -2187,6 +2279,8 @@ export type usersCreateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutTime_logsInput = {
@@ -2227,6 +2321,8 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutTime_logsInput = {
@@ -2283,6 +2379,8 @@ export type usersUpdateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutTime_logsInput = {
@@ -2323,6 +2421,8 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutShifts_openedInput = {
@@ -2363,6 +2463,8 @@ export type usersCreateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutShifts_openedInput = {
@@ -2403,6 +2505,8 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutShifts_openedInput = {
@@ -2448,6 +2552,8 @@ export type usersCreateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutShifts_closedInput = {
@@ -2488,6 +2594,8 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutShifts_closedInput = {
@@ -2544,6 +2652,8 @@ export type usersUpdateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShifts_openedInput = {
@@ -2584,6 +2694,8 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutShifts_closedInput = {
@@ -2635,6 +2747,8 @@ export type usersUpdateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutShifts_closedInput = {
@@ -2675,6 +2789,8 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutAudit_logs_actedInput = {
@@ -2715,6 +2831,8 @@ export type usersCreateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
@@ -2755,6 +2873,8 @@ export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutAudit_logs_actedInput = {
@@ -2800,6 +2920,8 @@ export type usersCreateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
@@ -2840,6 +2962,8 @@ export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutAudit_logs_approvedInput = {
@@ -2896,6 +3020,8 @@ export type usersUpdateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
@@ -2936,6 +3062,8 @@ export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutAudit_logs_approvedInput = {
@@ -2987,6 +3115,8 @@ export type usersUpdateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
@@ -3027,6 +3157,8 @@ export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutNotice_acknowledgementsInput = {
@@ -3067,6 +3199,8 @@ export type usersCreateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutNotice_acknowledgementsInput = {
@@ -3107,6 +3241,8 @@ export type usersUncheckedCreateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutNotice_acknowledgementsInput = {
@@ -3163,6 +3299,8 @@ export type usersUpdateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutNotice_acknowledgementsInput = {
@@ -3203,6 +3341,8 @@ export type usersUncheckedUpdateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutOrders_as_customerInput = {
@@ -3243,6 +3383,8 @@ export type usersCreateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutOrders_as_customerInput = {
@@ -3283,6 +3425,8 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutOrders_as_customerInput = {
@@ -3328,6 +3472,8 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
@@ -3368,6 +3514,8 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutOrders_as_cashierInput = {
@@ -3424,6 +3572,8 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
@@ -3464,6 +3614,8 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutOrders_as_cashierInput = {
@@ -3515,6 +3667,8 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
@@ -3555,6 +3709,8 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutCredit_notes_issuedInput = {
@@ -3595,6 +3751,8 @@ export type usersCreateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
@@ -3635,6 +3793,8 @@ export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutCredit_notes_issuedInput = {
@@ -3680,6 +3840,8 @@ export type usersCreateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
@@ -3720,6 +3882,8 @@ export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutCredit_notes_approvedInput = {
@@ -3776,6 +3940,8 @@ export type usersUpdateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
@@ -3816,6 +3982,8 @@ export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutCredit_notes_approvedInput = {
@@ -3867,6 +4035,8 @@ export type usersUpdateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
@@ -3907,6 +4077,8 @@ export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutPayment_intentsInput = {
@@ -3947,6 +4119,8 @@ export type usersCreateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutPayment_intentsInput = {
@@ -3987,6 +4161,8 @@ export type usersUncheckedCreateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutPayment_intentsInput = {
@@ -4032,6 +4208,8 @@ export type usersCreateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutIntents_confirmedInput = {
@@ -4072,6 +4250,8 @@ export type usersUncheckedCreateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutIntents_confirmedInput = {
@@ -4128,6 +4308,8 @@ export type usersUpdateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPayment_intentsInput = {
@@ -4168,6 +4350,8 @@ export type usersUncheckedUpdateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutIntents_confirmedInput = {
@@ -4219,6 +4403,8 @@ export type usersUpdateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
@@ -4259,6 +4445,8 @@ export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutInbound_dismissalsInput = {
@@ -4299,6 +4487,8 @@ export type usersCreateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutInbound_dismissalsInput = {
@@ -4339,6 +4529,8 @@ export type usersUncheckedCreateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutInbound_dismissalsInput = {
@@ -4395,6 +4587,8 @@ export type usersUpdateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutInbound_dismissalsInput = {
@@ -4435,6 +4629,8 @@ export type usersUncheckedUpdateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutDisplay_devicesInput = {
@@ -4475,6 +4671,8 @@ export type usersCreateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutDisplay_devicesInput = {
@@ -4515,6 +4713,8 @@ export type usersUncheckedCreateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutDisplay_devicesInput = {
@@ -4571,6 +4771,8 @@ export type usersUpdateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
@@ -4611,6 +4813,8 @@ export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutConsignor_payablesInput = {
@@ -4651,6 +4855,8 @@ export type usersCreateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutConsignor_payablesInput = {
@@ -4691,6 +4897,8 @@ export type usersUncheckedCreateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutConsignor_payablesInput = {
@@ -4747,6 +4955,8 @@ export type usersUpdateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutConsignor_payablesInput = {
@@ -4787,6 +4997,8 @@ export type usersUncheckedUpdateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersCreateWithoutConsignor_payoutsInput = {
@@ -4827,6 +5039,8 @@ export type usersCreateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutConsignor_payoutsInput = {
@@ -4867,6 +5081,8 @@ export type usersUncheckedCreateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutConsignor_payoutsInput = {
@@ -4912,6 +5128,8 @@ export type usersCreateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutConsignor_payouts_createdInput = {
@@ -4952,6 +5170,8 @@ export type usersUncheckedCreateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutConsignor_payouts_createdInput = {
@@ -5008,6 +5228,8 @@ export type usersUpdateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutConsignor_payoutsInput = {
@@ -5048,6 +5270,8 @@ export type usersUncheckedUpdateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUpsertWithoutConsignor_payouts_createdInput = {
@@ -5099,6 +5323,8 @@ export type usersUpdateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutConsignor_payouts_createdInput = {
@@ -5139,6 +5365,376 @@ export type usersUncheckedUpdateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersCreateWithoutConsignment_submissions_as_consignorInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
+}
+
+export type usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksUncheckedCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksUncheckedCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
+}
+
+export type usersCreateOrConnectWithoutConsignment_submissions_as_consignorInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_as_consignorInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput>
+}
+
+export type usersCreateWithoutConsignment_submissions_decidedInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+}
+
+export type usersUncheckedCreateWithoutConsignment_submissions_decidedInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksUncheckedCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksUncheckedCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+}
+
+export type usersCreateOrConnectWithoutConsignment_submissions_decidedInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_decidedInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_decidedInput>
+}
+
+export type usersUpsertWithoutConsignment_submissions_as_consignorInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutConsignment_submissions_as_consignorInput, Prisma.usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_as_consignorInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutConsignment_submissions_as_consignorInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutConsignment_submissions_as_consignorInput, Prisma.usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput>
+}
+
+export type usersUpdateWithoutConsignment_submissions_as_consignorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUncheckedUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUncheckedUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersUpsertWithoutConsignment_submissions_decidedInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutConsignment_submissions_decidedInput, Prisma.usersUncheckedUpdateWithoutConsignment_submissions_decidedInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutConsignment_submissions_decidedInput, Prisma.usersUncheckedCreateWithoutConsignment_submissions_decidedInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutConsignment_submissions_decidedInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutConsignment_submissions_decidedInput, Prisma.usersUncheckedUpdateWithoutConsignment_submissions_decidedInput>
+}
+
+export type usersUpdateWithoutConsignment_submissions_decidedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+}
+
+export type usersUncheckedUpdateWithoutConsignment_submissions_decidedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUncheckedUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUncheckedUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
 }
 
 export type usersCreateWithoutPoint_transactionsInput = {
@@ -5179,6 +5775,8 @@ export type usersCreateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
 export type usersUncheckedCreateWithoutPoint_transactionsInput = {
@@ -5219,6 +5817,8 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
 export type usersCreateOrConnectWithoutPoint_transactionsInput = {
@@ -5275,6 +5875,8 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
 export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
@@ -5315,6 +5917,8 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
 
@@ -5347,6 +5951,8 @@ export type UsersCountOutputType = {
   consignor_payables: number
   consignor_payouts: number
   consignor_payouts_created: number
+  consignment_submissions_as_consignor: number
+  consignment_submissions_decided: number
 }
 
 export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -5374,6 +5980,8 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   consignor_payables?: boolean | UsersCountOutputTypeCountConsignor_payablesArgs
   consignor_payouts?: boolean | UsersCountOutputTypeCountConsignor_payoutsArgs
   consignor_payouts_created?: boolean | UsersCountOutputTypeCountConsignor_payouts_createdArgs
+  consignment_submissions_as_consignor?: boolean | UsersCountOutputTypeCountConsignment_submissions_as_consignorArgs
+  consignment_submissions_decided?: boolean | UsersCountOutputTypeCountConsignment_submissions_decidedArgs
 }
 
 /**
@@ -5554,6 +6162,20 @@ export type UsersCountOutputTypeCountConsignor_payouts_createdArgs<ExtArgs exten
   where?: Prisma.consignor_payoutsWhereInput
 }
 
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountConsignment_submissions_as_consignorArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.consignment_submissionsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountConsignment_submissions_decidedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.consignment_submissionsWhereInput
+}
+
 
 export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -5594,6 +6216,8 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   consignor_payables?: boolean | Prisma.users$consignor_payablesArgs<ExtArgs>
   consignor_payouts?: boolean | Prisma.users$consignor_payoutsArgs<ExtArgs>
   consignor_payouts_created?: boolean | Prisma.users$consignor_payouts_createdArgs<ExtArgs>
+  consignment_submissions_as_consignor?: boolean | Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs>
+  consignment_submissions_decided?: boolean | Prisma.users$consignment_submissions_decidedArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["users"]>
 
@@ -5674,6 +6298,8 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   consignor_payables?: boolean | Prisma.users$consignor_payablesArgs<ExtArgs>
   consignor_payouts?: boolean | Prisma.users$consignor_payoutsArgs<ExtArgs>
   consignor_payouts_created?: boolean | Prisma.users$consignor_payouts_createdArgs<ExtArgs>
+  consignment_submissions_as_consignor?: boolean | Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs>
+  consignment_submissions_decided?: boolean | Prisma.users$consignment_submissions_decidedArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type usersIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -5706,6 +6332,8 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     consignor_payables: Prisma.$consignor_payablesPayload<ExtArgs>[]
     consignor_payouts: Prisma.$consignor_payoutsPayload<ExtArgs>[]
     consignor_payouts_created: Prisma.$consignor_payoutsPayload<ExtArgs>[]
+    consignment_submissions_as_consignor: Prisma.$consignment_submissionsPayload<ExtArgs>[]
+    consignment_submissions_decided: Prisma.$consignment_submissionsPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -6140,6 +6768,8 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   consignor_payables<T extends Prisma.users$consignor_payablesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignor_payablesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payablesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignor_payouts<T extends Prisma.users$consignor_payoutsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignor_payoutsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payoutsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignor_payouts_created<T extends Prisma.users$consignor_payouts_createdArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignor_payouts_createdArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payoutsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  consignment_submissions_as_consignor<T extends Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignment_submissionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  consignment_submissions_decided<T extends Prisma.users$consignment_submissions_decidedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignment_submissions_decidedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignment_submissionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -7149,6 +7779,54 @@ export type users$consignor_payouts_createdArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.Consignor_payoutsScalarFieldEnum | Prisma.Consignor_payoutsScalarFieldEnum[]
+}
+
+/**
+ * users.consignment_submissions_as_consignor
+ */
+export type users$consignment_submissions_as_consignorArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignment_submissions
+   */
+  select?: Prisma.consignment_submissionsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignment_submissions
+   */
+  omit?: Prisma.consignment_submissionsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignment_submissionsInclude<ExtArgs> | null
+  where?: Prisma.consignment_submissionsWhereInput
+  orderBy?: Prisma.consignment_submissionsOrderByWithRelationInput | Prisma.consignment_submissionsOrderByWithRelationInput[]
+  cursor?: Prisma.consignment_submissionsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Consignment_submissionsScalarFieldEnum | Prisma.Consignment_submissionsScalarFieldEnum[]
+}
+
+/**
+ * users.consignment_submissions_decided
+ */
+export type users$consignment_submissions_decidedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the consignment_submissions
+   */
+  select?: Prisma.consignment_submissionsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the consignment_submissions
+   */
+  omit?: Prisma.consignment_submissionsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.consignment_submissionsInclude<ExtArgs> | null
+  where?: Prisma.consignment_submissionsWhereInput
+  orderBy?: Prisma.consignment_submissionsOrderByWithRelationInput | Prisma.consignment_submissionsOrderByWithRelationInput[]
+  cursor?: Prisma.consignment_submissionsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Consignment_submissionsScalarFieldEnum | Prisma.Consignment_submissionsScalarFieldEnum[]
 }
 
 /**

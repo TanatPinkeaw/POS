@@ -748,6 +748,40 @@ export type BigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedBigIntNullableFilter<$PrismaModel>
 }
 
+export type Enumconsignment_submission_statusFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_submission_status | Prisma.Enumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_submission_statusFilter<$PrismaModel> | $Enums.consignment_submission_status
+}
+
+export type Enumconsignment_submission_statusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_submission_status | Prisma.Enumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_submission_statusWithAggregatesFilter<$PrismaModel> | $Enums.consignment_submission_status
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumconsignment_submission_statusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumconsignment_submission_statusFilter<$PrismaModel>
+}
+
+export type Enumconsignment_document_kindFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_document_kind | Prisma.Enumconsignment_document_kindFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_document_kindFilter<$PrismaModel> | $Enums.consignment_document_kind
+}
+
+export type Enumconsignment_document_kindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_document_kind | Prisma.Enumconsignment_document_kindFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_document_kindWithAggregatesFilter<$PrismaModel> | $Enums.consignment_document_kind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumconsignment_document_kindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumconsignment_document_kindFilter<$PrismaModel>
+}
+
 export type NestedIntFilter<$PrismaModel = never> = {
   equals?: number | Prisma.IntFieldRefInput<$PrismaModel>
   in?: number[] | Prisma.ListIntFieldRefInput<$PrismaModel>
@@ -1451,6 +1485,40 @@ export type NestedBigIntNullableWithAggregatesFilter<$PrismaModel = never> = {
   _sum?: Prisma.NestedBigIntNullableFilter<$PrismaModel>
   _min?: Prisma.NestedBigIntNullableFilter<$PrismaModel>
   _max?: Prisma.NestedBigIntNullableFilter<$PrismaModel>
+}
+
+export type NestedEnumconsignment_submission_statusFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_submission_status | Prisma.Enumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_submission_statusFilter<$PrismaModel> | $Enums.consignment_submission_status
+}
+
+export type NestedEnumconsignment_submission_statusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_submission_status | Prisma.Enumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_submission_status[] | Prisma.ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_submission_statusWithAggregatesFilter<$PrismaModel> | $Enums.consignment_submission_status
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumconsignment_submission_statusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumconsignment_submission_statusFilter<$PrismaModel>
+}
+
+export type NestedEnumconsignment_document_kindFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_document_kind | Prisma.Enumconsignment_document_kindFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_document_kindFilter<$PrismaModel> | $Enums.consignment_document_kind
+}
+
+export type NestedEnumconsignment_document_kindWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.consignment_document_kind | Prisma.Enumconsignment_document_kindFieldRefInput<$PrismaModel>
+  in?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  notIn?: $Enums.consignment_document_kind[] | Prisma.ListEnumconsignment_document_kindFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumconsignment_document_kindWithAggregatesFilter<$PrismaModel> | $Enums.consignment_document_kind
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumconsignment_document_kindFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumconsignment_document_kindFilter<$PrismaModel>
 }
 
 

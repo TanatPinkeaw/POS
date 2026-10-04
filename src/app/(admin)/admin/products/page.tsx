@@ -48,6 +48,7 @@ export default async function AdminProductsPage() {
     barcode: product.barcode,
     categoryId: product.category_id,
     categoryName: product.category?.name ?? null,
+    description: product.description,
     costPrice: fromDecimal(product.cost_price),
     salePrice: fromDecimal(product.sale_price),
     stockQty: product.stock_qty,

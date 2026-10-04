@@ -29,6 +29,19 @@ export const MIN_SHARE_PERCENT = 0;
 export const MAX_SHARE_PERCENT = 100;
 
 /**
+ * How many links one consignment offer may carry (ADR 0025 §4).
+ *
+ * Bounded because every one of them is a fetch somebody pays for — and because a
+ * member's form has to be told the same number the schema enforces, so the "add
+ * another" button disappears rather than letting the server refuse a row the member
+ * was still allowed to add. They live in this pure module rather than beside the
+ * intake library because the form that counts them is a client component and the
+ * library they came from imports the database.
+ */
+export const MAX_OFFER_PHOTOS = 8;
+export const MAX_OFFER_DOCUMENTS = 5;
+
+/**
  * The consignor's share of one sale, to the satang.
  *
  * `netExclVatThb` is the net (excluding VAT) that the consigned line sold for, and

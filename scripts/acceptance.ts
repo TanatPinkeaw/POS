@@ -479,6 +479,37 @@ async function acknowledgedNoticeVersion(url: string, userId: string): Promise<s
   }
 }
 
+/**
+ * The share written onto the product a form answer became (ADR 0025).
+ *
+ * Read from the database rather than from the API on purpose: `ProductView` is the
+ * client-safe shape and carries `isConsigned` rather than the percentage on purpose —
+ * a cashier's browser has no business knowing what the shop owes somebody. This check
+ * wants the number, so it asks the one place that holds it.
+ */
+async function productConsignment(url: string, productId: string): Promise<{
+  share: string;
+  owned: boolean;
+}> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    const rows = await client.query<{
+      consignor_share_percent: number | null;
+      consignor_user_id: string | null;
+    }>(
+      'SELECT "consignor_share_percent", "consignor_user_id" FROM "products" WHERE "id" = $1',
+      [productId],
+    );
+    return {
+      share: String(rows.rows[0]?.consignor_share_percent ?? 'none'),
+      owned: rows.rows[0]?.consignor_user_id !== null,
+    };
+  } finally {
+    await client.end();
+  }
+}
+
 async function runChecks(seedGuardUrl: string | null): Promise<number> {
   let passed = 0;
   let failed = 0;
@@ -2547,6 +2578,142 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
+  /* ------------------ 19. a member offering goods from their own account */
+  section('19. A member offers their own goods, and the owner decides it');
+  {
+    /*
+     * ADR 0025, end to end over real HTTP. The seam here is the member's *own* door:
+     * a signed-in member posts the offer form on `/shop/account` and the row lands in
+     * the owner's inbox. There is no shared secret and no header any more — the session
+     * is the whole of it — so what this section proves is that the browser really is
+     * the only caller, and that nobody else is.
+     *
+     * The consignor is the counter-enrolled customer again (section 11), so the member
+     * who watches the outcome is the same person who handed the goods over.
+     */
+    const clientRef = '33333333-3333-4333-8333-333333333333';
+    const offer = {
+      clientRef,
+      productName: 'งานฝีมือจากสมาชิก',
+      offeredPriceThb: 200,
+      quantity: 4,
+      notes: 'ส่งพร้อมใบส่งของ',
+      photos: [{ url: 'https://drive.google.com/thumbnail?id=accept&sz=w1024' }],
+      documents: [{ url: 'https://drive.google.com/file/d/accept/view' }],
+    };
+
+    // An offer with no session is refused. This was the property the shared secret
+    // existed to guarantee, and it is still the one that matters.
+    const anonymousOffer = await fetch(`${base}/api/v1/consignment/submissions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(offer),
+    });
+    check('an offer with no session is refused', anonymousOffer.status === 401, {
+      status: anonymousOffer.status,
+    });
+
+    // A member cannot offer goods on somebody else's behalf, because the schema has no
+    // field in which to say whose: the route takes it from the session.
+    const firstPost = await counterCustomer.call<{ submissionId: string; duplicate: boolean }>(
+      '/api/v1/consignment/submissions',
+      { method: 'POST', body: offer },
+    );
+    check(
+      'the member offers goods from their own account and it waits for the shop',
+      firstPost.duplicate === false,
+      firstPost,
+    );
+
+    // The double tap, which is the reason client_ref is UNIQUE.
+    const replayPost = await counterCustomer.call<{ submissionId: string; duplicate: boolean }>(
+      '/api/v1/consignment/submissions',
+      { method: 'POST', body: offer },
+    );
+    check(
+      'and a double tap is the same offer, not a second one',
+      replayPost.duplicate === true && replayPost.submissionId === firstPost.submissionId,
+      replayPost,
+    );
+
+    const refusedByCashier = await fetch(
+      `${base}/api/v1/consignment-submissions/${firstPost.submissionId}/approve`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie: cashier.cookieHeader() },
+        body: JSON.stringify({ sharePercent: 50 }),
+      },
+    );
+    check('and a cashier cannot agree the share', refusedByCashier.status === 403, {
+      status: refusedByCashier.status,
+    });
+
+    const approved = await admin.call<{ productId: string; attachedDocuments: number }>(
+      `/api/v1/consignment-submissions/${firstPost.submissionId}/approve`,
+      { method: 'POST', body: { sharePercent: 50, receivedQty: 3, salePriceThb: 250 } },
+    );
+    check(
+      'the owner approves it and the paperwork rides along with the product',
+      approved.attachedDocuments === 2,
+      approved,
+    );
+
+    const consignedProduct = await admin.call<{
+      id: string;
+      name: string;
+      stockQty: number;
+    }>(`/api/v1/products/${approved.productId}`);
+    const terms =
+      seedGuardUrl === null
+        ? { share: 'none', owned: false }
+        : await productConsignment(seedGuardUrl, approved.productId);
+    check(
+      'and what the shop now sells is the goods, at the agreed share',
+      consignedProduct.name === 'งานฝีมือจากสมาชิก' &&
+        consignedProduct.stockQty === 3 &&
+        terms.owned &&
+        terms.share === '50',
+      { product: consignedProduct, terms },
+    );
+
+    const memberView = await counterCustomer.call<
+      { status: string; decidedSharePercent: number | null }[]
+    >('/api/v1/consignment/submissions');
+    check(
+      'and the member reads the outcome on their own account',
+      memberView.some((row) => row.status === 'approved' && row.decidedSharePercent === 50),
+      memberView,
+    );
+
+    // A second, genuinely different offer — a new client_ref, as the form mints after a
+    // successful send — so the refusal below is about different goods.
+    const secondPost = await counterCustomer.call<{ submissionId: string }>(
+      '/api/v1/consignment/submissions',
+      {
+        method: 'POST',
+        body: {
+          ...offer,
+          clientRef: '44444444-4444-4444-8444-444444444444',
+          productName: 'สินค้าที่ร้านยังรับไม่ได้',
+        },
+      },
+    );
+    const refused = await admin.call<{ status: string }>(
+      `/api/v1/consignment-submissions/${secondPost.submissionId}/reject`,
+      { method: 'POST', body: { note: 'ตอนนี้ยังไม่รับสินค้าชนิดนี้ครับ' } },
+    );
+    check('an offer can be turned down', refused.status === 'rejected', refused);
+
+    const memberAfterRefusal = await counterCustomer.call<{ status: string; decisionNote: string | null }[]>(
+      '/api/v1/consignment/submissions',
+    );
+    check(
+      'and the refusal reaches the member rather than disappearing',
+      memberAfterRefusal.some((row) => row.status === 'rejected' && row.decisionNote !== null),
+      memberAfterRefusal,
+    );
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -2579,6 +2746,7 @@ async function main(): Promise<void> {
     process.env.PAYMENT_WEBHOOK_SECRET = ACCEPT_BRIDGE_SECRET;
   }
 
+  /*
   /*
    * And this run configures its own notification channel, for the same reason: a
    * journey that depended on the renter's gateway would either fail or — worse —

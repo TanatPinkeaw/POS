@@ -205,9 +205,9 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1110 tests across 82 files: unit + integration
+npm test                # 1164 tests across 86 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 191 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
 npm run route:audit     # all 27 screens render, and render styled
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
@@ -527,6 +527,7 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | `/admin/settings` | Shop name, branch, tax id, VAT registration and rate, inclusive vs exclusive pricing, receipt prefix and footer, plus the **next receipt number**. |
 | `/admin/staff` | Staff accounts, created from the app rather than from SQL. The last administrator cannot be deactivated. |
 | `POST /api/v1/members` + `/admin/members` | Enrolling a customer, with a temporary password they change themselves later, plus a searchable list, their points and deactivation. Reachable from the till (`/pos`) as a dialog over the bill and from the back office as a screen; editing an account stays admin-only. |
+| `/admin/products` | The catalogue: create a product, or **edit** one — name, category, barcode, cost and sale price, description — without opening the spreadsheet again. Stock moves only through the signed adjustment, so every change of goods keeps a reason and a `stock_logs` row; the photo, the offline reserve and the consignment terms each keep the dialog they need, because they answer different questions. |
 | `/admin/products` → categories | Categories are createable at last, and deleting one that still has products is refused by the database. |
 | `/admin/products` → import | CSV or `.xlsx` catalogue import: a preview that writes nothing, a downloadable template, and its own `REASON_IMPORT` audit entries. |
 | `GET /api/v1/orders/{id}/receipt` | Reprint data, read from the order's own snapshot columns, so a 2026 receipt still shows 7% in 2027. |
@@ -753,6 +754,31 @@ owes, the goods they have left with the shop and how much of each has sold, and 
 a payout reading as a settled statement, a refund as a reversal. The view is scoped to the
 signed-in member's session, so one phone number can never read another's balance.
 
+### A member offers their own goods (ADR 0025)
+
+A member who makes things at home should not have to stand at the counter while an owner types one
+screen per item. So the **offer form is a panel in the member's own ฝากขาย tab** on
+`/shop/account` — no Google Form, no Apps Script, no shop setting, and no new tab — and the
+owner's inbox at the top of `/admin/consignors` decides what arrives. Decided in
+`docs/adr/0025-a-member-offers-goods-on-their-own-account.md`.
+
+**An offer is not an arrangement.** The form creates a *pending submission*: no product, no
+percentage, nothing owed. Approving one is what creates the product, calls the same
+`setConsignment` every other consignment goes through, and moves the shelf with a
+`consignment_received` movement a stock report can tell from a delivery. The approval dialog
+asks for the two things only a person can supply — the percentage, and how many units actually
+arrived, because counting at home and counting at the counter disagree.
+
+**The photographs and the paperwork follow the product.** They are stored as links (ADR 0014
+extended from images to documents), and `product_id` is filled in at approval, so one row serves
+the inbox and the record afterwards. A Drive *file* link is not an image URL, so each attachment is
+also drawn as a link that opens it when it cannot be rendered.
+
+**Nothing decides anything quietly.** The owner is the session, so `consignor_user_id` is NOT
+NULL and there is no "phone that matched no account" case to guard. A double tap on a phone is one
+offer, not two (`client_ref` is unique, looked up before the insert). And a refusal needs a
+reason — which the member then reads on their own account, in the same tab they sent it from.
+
 ## Deliberate deviations and additions
 
 See `docs/adr/0001-schema-deviations-from-srs.md` (the schema) and
@@ -809,6 +835,7 @@ goes through them.
 | `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. |
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
+| `docs/adr/0025-a-member-offers-goods-on-their-own-account.md` | ฝากขายผ่านหน้าบัญชีของสมาชิก: the offer form is a panel in the member's own ฝากขาย tab, the session names the owner so there is no unmatched phone, a double tap is one offer, and only an owner turns an offer into a product with a share — the documents ride along as links. |
 | `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
 | `docs/adr/0024-a-prepared-till-launches-without-the-network.md` | The cold launch: a prepared till keeps its own shell so it opens with no connection, what the worker may and may not cache (never the API), the drawer as the one thing a device may answer from memory, and offline navigation as a document load rather than a router change. |
 | `docs/offline-till-spec.md` | Shipped prepared cash offline flow: durable storage, exclusive writer, borrowed numbers, ordered idempotent replay, original cashier/shift, local tickets, close/release and admin recovery; actual Chromium proof and explicit limits. |
@@ -850,7 +877,10 @@ for the customer to scan, print or read down the phone.
 - **Storing a product image.** A photo is a link the shop pastes (ADR 0014) and it
   draws on the till tile, the storefront and the back office — but nothing here keeps
   the bytes: no upload, no file this deployment holds, no resizing of what the link
-  returns, and a photo host that goes down shows placeholders.
+  returns, and a photo host that goes down shows placeholders. **The consignment offer form
+  (ADR 0025) is the same trade one level up**: the photographs and paperwork a member
+  attaches are links to whatever host they already keep them on, so `npm run backup` does
+  not cover them either.
 - **Production hardening:** RTL, and object storage. (Rate limiting and the
   audit-log viewer are in — see below.)
 - **The offline till beyond the cold launch.** A prepared till now opens with no

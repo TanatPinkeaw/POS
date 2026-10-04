@@ -215,6 +215,14 @@ enum stock_movement_type {
    * generous one.
    */
   pos_refund
+  /**
+   * Goods coming onto the shelf because a member consigned them (ADR 0025). Distinct
+   * from `restock`, which is stock arriving from a supplier, because this stock does
+   * not belong to the shop: a report that cannot tell a delivery from a consignment
+   * cannot tell which units are held on somebody else's behalf, and that is a number
+   * the owner is asked for.
+   */
+  consignment_received
 }
 
 /**
@@ -238,6 +246,13 @@ enum stock_adjustment_reason {
   REASON_EXPIRED
   REASON_CORRECTION
   REASON_IMPORT
+  /**
+   * Goods received against a member's consignment (ADR 0025). Its own reason rather
+   * than `REASON_RESTOCK` for the reason above: the shelf moved by the same
+   * arithmetic and the liability moved too, and an unexplained restock cannot say
+   * which of the two happened.
+   */
+  REASON_CONSIGNMENT
 }
 
 enum shift_status {
@@ -390,6 +405,30 @@ enum audit_action {
    * the settlement moved from and to.
    */
   consignment_paid
+  /**
+   * A member offered their own goods for consignment (ADR 0025). Its own action
+   * because the question an owner asks is "who put this on my shelf", and the row
+   * that answers it is the one written when the offer arrived, not when it was
+   * approved. Unlike most rows in this trail the actor is the member themselves: they
+   * signed in and pressed the button, so naming them is not an inference.
+   */
+  consignment_offer_submitted
+  /**
+   * The owner agreed a share for something a member had offered (ADR 0025). Paired with
+   * a `consignment_set` written by the same click in the same transaction: this row
+   * is the decision about a *request*, and that one is the terms landing on a
+   * product. An owner reading the trail wants both and should not infer one from the
+   * other.
+   */
+  consignment_submission_approved
+  /**
+   * The owner turned a request down (ADR 0025). Audited because a refusal with no
+   * recorded reason is the thing a member disputes at the counter, and because "how
+   * many offers does this shop decline, and why" is a question the trail exists to
+   * answer. The row is kept rather than deleted — the member reads the reason on their
+   * own account, which is the point of not deleting it.
+   */
+  consignment_submission_rejected
 }
 
 // ---------------------------------------------------------------- users
@@ -449,6 +488,12 @@ model users {
   consignor_payables  consignor_payables[] @relation("payable_consignor")
   consignor_payouts         consignor_payouts[] @relation("payout_consignor")
   consignor_payouts_created consignor_payouts[] @relation("payout_creator")
+  // ---------------------------------------- consignment intake (ADR 0025)
+  // Two relations, and the names are load-bearing: a submission names the member who
+  // offered the goods and the owner who agreed the terms. Those are almost never the
+  // same person, and Prisma confuses the two without a name on each.
+  consignment_submissions_as_consignor consignment_submissions[] @relation("submission_consignor")
+  consignment_submissions_decided      consignment_submissions[] @relation("submission_decider")
 }
 
 // ---------------------------------------------------------------- catalog
@@ -507,6 +552,11 @@ model products {
   // Restrict for the same reason as the category: deleting the member who consigned
   // goods would orphan the shop's liability to them, which is money, not a label.
   consignor          users?                @relation("consigned_products", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  // A product's own paperwork from the consignment form (ADR 0025). Cascade with the
+  // product, because a product with no row cannot be looked up: deleting the product is
+  // deleting the thing these documents describe.
+  consignment_documents   consignment_documents[]
+  consignment_submissions consignment_submissions[]
   consignor_payables consignor_payables[]
 
   @@index([category_id])
@@ -1319,6 +1369,101 @@ model consignor_payouts {
 
   @@index([consignor_user_id, created_at])
   @@index([shift_id])
+}
+
+// ------------------------------------------------ a member offers their own goods
+//
+// ADR 0025. The member fills in the form on their own account page; this is what that
+// offer becomes. A submission is an *offer*, not an arrangement: no product exists,
+// nothing is owed and the share has not been agreed until an owner says so — which is
+// why the status carries the decision columns rather than a second approved table
+// beside it.
+
+/** `pending` until an owner decides; the two end states carry what was decided. */
+enum consignment_submission_status {
+  pending
+  approved
+  rejected
+}
+
+/**
+ * What a link points at. Only a `photo` is ever drawn as an image; a `document` is
+ * opened. The distinction is not cosmetic: a Drive file link (`/file/d/<id>/view`) is
+ * not an image URL and an `<img>` pointed at one draws nothing — so this column is what
+ * records which of the two a row is meant to be, and a link that is not drawable falls
+ * back to being a link that opens.
+ */
+enum consignment_document_kind {
+  photo
+  document
+}
+
+model consignment_submissions {
+  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  // Never null, and never a claim somebody typed: the member is signed in, so the
+  // session named the person. A nullable owner here would only ever mean "the caller
+  // was nobody", which the route refuses before it gets here.
+  consignor_user_id String  @db.Uuid
+  // The key the member's browser minted once for this form, UNIQUE — the same idea as
+  // `orders.client_ref` (ADR 0019). A member on a phone double-taps, and goods counted
+  // twice in an owner's inbox is worse than goods counted once late.
+  client_ref        String  @unique @db.Uuid
+  product_name      String  @db.VarChar(150)
+  // The price the member asked. A starting point for a conversation, not a price the
+  // shop has agreed to sell at.
+  offered_price_thb Decimal @db.Decimal(10, 2)
+  quantity          Int
+  notes             String?
+  status            consignment_submission_status @default(pending)
+  // Set only by approval. SetNull on the way out, because an arrangement outliving a
+  // deleted product is a settlement question rather than an ownership one.
+  product_id            String?   @db.Uuid
+  decided_by_user_id    String?   @db.Uuid
+  decided_at            DateTime? @db.Timestamptz(6)
+  decided_share_percent Int?
+  // Required when rejected, and a CHECK refuses it otherwise: a refusal the member
+  // cannot read the reason for is a refusal they simply send again.
+  decision_note         String?
+  submitted_at          DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  consignor users     @relation("submission_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  decider   users?    @relation("submission_decider", fields: [decided_by_user_id], references: [id], onDelete: SetNull)
+  product   products? @relation(fields: [product_id], references: [id], onDelete: Restrict)
+
+  documents consignment_documents[]
+
+  @@index([status, submitted_at])
+  @@index([consignor_user_id])
+  @@index([product_id])
+}
+
+/**
+ * A photo or a document the member attached, kept as a link (ADR 0014 extended).
+ *
+ * The bytes stay where the member put them — a Drive folder, their phone's share
+ * sheet — because this deployment holds no files and could not back up or vouch for
+ * one. Holding the link and saying so is the same trade a product photo makes.
+ *
+ * `product_id` is null while the submission waits and is filled in on approval, so one
+ * row serves both the inbox an owner reads and the record the member reads afterwards.
+ * Two tables would mean copying the links at approval and then keeping the copies
+ * honest; this way there is one row per attachment for its whole life.
+ */
+model consignment_documents {
+  id            String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  submission_id String                    @db.Uuid
+  product_id    String?                   @db.Uuid
+  kind          consignment_document_kind
+  label         String                    @db.VarChar(150)
+  url           String                    @db.VarChar(500)
+  created_at    DateTime                  @default(now()) @db.Timestamptz(6)
+
+  submission consignment_submissions @relation(fields: [submission_id], references: [id], onDelete: Cascade)
+  product    products?               @relation(fields: [product_id], references: [id], onDelete: Cascade)
+
+  @@index([submission_id])
+  @@index([product_id])
 }
 
 model point_transactions {

@@ -421,6 +421,8 @@ export const ModelName = {
   display_devices: 'display_devices',
   consignor_payables: 'consignor_payables',
   consignor_payouts: 'consignor_payouts',
+  consignment_submissions: 'consignment_submissions',
+  consignment_documents: 'consignment_documents',
   point_transactions: 'point_transactions'
 } as const
 
@@ -437,7 +439,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "consignment_submissions" | "consignment_documents" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2217,6 +2219,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    consignment_submissions: {
+      payload: Prisma.$consignment_submissionsPayload<ExtArgs>
+      fields: Prisma.consignment_submissionsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.consignment_submissionsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.consignment_submissionsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>
+        }
+        findFirst: {
+          args: Prisma.consignment_submissionsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.consignment_submissionsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>
+        }
+        findMany: {
+          args: Prisma.consignment_submissionsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>[]
+        }
+        create: {
+          args: Prisma.consignment_submissionsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>
+        }
+        createMany: {
+          args: Prisma.consignment_submissionsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.consignment_submissionsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>[]
+        }
+        delete: {
+          args: Prisma.consignment_submissionsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>
+        }
+        update: {
+          args: Prisma.consignment_submissionsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>
+        }
+        deleteMany: {
+          args: Prisma.consignment_submissionsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.consignment_submissionsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.consignment_submissionsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>[]
+        }
+        upsert: {
+          args: Prisma.consignment_submissionsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_submissionsPayload>
+        }
+        aggregate: {
+          args: Prisma.Consignment_submissionsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateConsignment_submissions>
+        }
+        groupBy: {
+          args: Prisma.consignment_submissionsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Consignment_submissionsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.consignment_submissionsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Consignment_submissionsCountAggregateOutputType> | number
+        }
+      }
+    }
+    consignment_documents: {
+      payload: Prisma.$consignment_documentsPayload<ExtArgs>
+      fields: Prisma.consignment_documentsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.consignment_documentsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.consignment_documentsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>
+        }
+        findFirst: {
+          args: Prisma.consignment_documentsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.consignment_documentsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>
+        }
+        findMany: {
+          args: Prisma.consignment_documentsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>[]
+        }
+        create: {
+          args: Prisma.consignment_documentsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>
+        }
+        createMany: {
+          args: Prisma.consignment_documentsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.consignment_documentsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>[]
+        }
+        delete: {
+          args: Prisma.consignment_documentsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>
+        }
+        update: {
+          args: Prisma.consignment_documentsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>
+        }
+        deleteMany: {
+          args: Prisma.consignment_documentsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.consignment_documentsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.consignment_documentsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>[]
+        }
+        upsert: {
+          args: Prisma.consignment_documentsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$consignment_documentsPayload>
+        }
+        aggregate: {
+          args: Prisma.Consignment_documentsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateConsignment_documents>
+        }
+        groupBy: {
+          args: Prisma.consignment_documentsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Consignment_documentsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.consignment_documentsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Consignment_documentsCountAggregateOutputType> | number
+        }
+      }
+    }
     point_transactions: {
       payload: Prisma.$point_transactionsPayload<ExtArgs>
       fields: Prisma.point_transactionsFieldRefs
@@ -2733,6 +2883,40 @@ export const Consignor_payoutsScalarFieldEnum = {
 export type Consignor_payoutsScalarFieldEnum = (typeof Consignor_payoutsScalarFieldEnum)[keyof typeof Consignor_payoutsScalarFieldEnum]
 
 
+export const Consignment_submissionsScalarFieldEnum = {
+  id: 'id',
+  consignor_user_id: 'consignor_user_id',
+  client_ref: 'client_ref',
+  product_name: 'product_name',
+  offered_price_thb: 'offered_price_thb',
+  quantity: 'quantity',
+  notes: 'notes',
+  status: 'status',
+  product_id: 'product_id',
+  decided_by_user_id: 'decided_by_user_id',
+  decided_at: 'decided_at',
+  decided_share_percent: 'decided_share_percent',
+  decision_note: 'decision_note',
+  submitted_at: 'submitted_at',
+  updated_at: 'updated_at'
+} as const
+
+export type Consignment_submissionsScalarFieldEnum = (typeof Consignment_submissionsScalarFieldEnum)[keyof typeof Consignment_submissionsScalarFieldEnum]
+
+
+export const Consignment_documentsScalarFieldEnum = {
+  id: 'id',
+  submission_id: 'submission_id',
+  product_id: 'product_id',
+  kind: 'kind',
+  label: 'label',
+  url: 'url',
+  created_at: 'created_at'
+} as const
+
+export type Consignment_documentsScalarFieldEnum = (typeof Consignment_documentsScalarFieldEnum)[keyof typeof Consignment_documentsScalarFieldEnum]
+
+
 export const Point_transactionsScalarFieldEnum = {
   id: 'id',
   user_id: 'user_id',
@@ -3149,6 +3333,34 @@ export type Enumconsignor_payable_kindFieldRefInput<$PrismaModel> = FieldRefInpu
 export type ListEnumconsignor_payable_kindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'consignor_payable_kind[]'>
     
 
+
+/**
+ * Reference to a field of type 'consignment_submission_status'
+ */
+export type Enumconsignment_submission_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'consignment_submission_status'>
+    
+
+
+/**
+ * Reference to a field of type 'consignment_submission_status[]'
+ */
+export type ListEnumconsignment_submission_statusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'consignment_submission_status[]'>
+    
+
+
+/**
+ * Reference to a field of type 'consignment_document_kind'
+ */
+export type Enumconsignment_document_kindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'consignment_document_kind'>
+    
+
+
+/**
+ * Reference to a field of type 'consignment_document_kind[]'
+ */
+export type ListEnumconsignment_document_kindFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'consignment_document_kind[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -3324,6 +3536,8 @@ export type GlobalOmitConfig = {
   display_devices?: Prisma.display_devicesOmit
   consignor_payables?: Prisma.consignor_payablesOmit
   consignor_payouts?: Prisma.consignor_payoutsOmit
+  consignment_submissions?: Prisma.consignment_submissionsOmit
+  consignment_documents?: Prisma.consignment_documentsOmit
   point_transactions?: Prisma.point_transactionsOmit
 }
 
