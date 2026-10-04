@@ -153,6 +153,26 @@ describe('a file with problems', () => {
     expect(await prisma.products.count()).toBe(2);
   });
 
+  it('skips a row whose description is longer than the form would have allowed', async () => {
+    const grid = [
+      [...HEADER, 'รายละเอียด'],
+      ['1', 'กาแฟ', '', '95', '140', '10', 'คั่วกลาง'],
+      ['2', 'ชาเขียว', '', '16', '25', '5', 'ก'.repeat(1001)],
+    ];
+
+    const preview = await previewProductImport(grid);
+    expect(preview.rows[1]?.issues.map((issue) => issue.message)).toContain(
+      'รายละเอียดยาวเกิน 1000 ตัวอักษร',
+    );
+
+    const summary = await commitProductImport(grid, people.adminId);
+    expect(summary).toMatchObject({ created: 1, skipped: 1 });
+
+    const stored = await prisma.products.findFirstOrThrow({ where: { barcode: '1' } });
+    expect(stored.description).toBe('คั่วกลาง');
+    expect(await prisma.products.count({ where: { barcode: '2' } })).toBe(0);
+  });
+
   it('refuses outright when nothing in the file is usable', async () => {
     await expect(
       commitProductImport([HEADER, ['1', '', '', '', '50', '5']], people.adminId),

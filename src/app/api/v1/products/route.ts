@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { ValidationError } from '@/lib/errors';
 import { listProducts, PRODUCT_PAGE_SIZE, type ProductDto } from '@/lib/product-query';
+import { writeProductWithBarcode } from '@/lib/product-writes';
 import { productCreateSchema } from '@/lib/schemas';
 
 export type { ProductDto };
@@ -65,27 +65,28 @@ export async function POST(request: Request): Promise<Response> {
     await requireRole(['admin']);
     const body = await readJson(request, productCreateSchema);
 
-    if (body.barcode) {
-      const clash = await prisma.products.findUnique({ where: { barcode: body.barcode } });
-      if (clash) {
-        throw new ValidationError(`Barcode ${body.barcode} is already used by "${clash.name}"`);
-      }
-    }
-
-    const created = await prisma.products.create({
-      data: {
-        name: body.name,
-        category_id: body.categoryId ?? null,
-        barcode: body.barcode ?? null,
-        description: body.description ?? null,
-        cost_price: body.costPrice,
-        sale_price: body.salePrice,
-        stock_qty: body.stockQty,
-        offline_safety_qty: body.offlineSafetyQty,
-        image_url: body.imageUrl ?? null,
-        is_active: body.isActive,
-      },
-    });
+    /*
+     * The row is created through the barcode rule rather than after a check of our
+     * own: the unique index is what actually refuses a duplicate under load, and
+     * the wrapper is what turns that refusal into a sentence naming the product
+     * the code already belongs to.
+     */
+    const created = await writeProductWithBarcode(body.barcode ?? null, () =>
+      prisma.products.create({
+        data: {
+          name: body.name,
+          category_id: body.categoryId ?? null,
+          barcode: body.barcode ?? null,
+          description: body.description ?? null,
+          cost_price: body.costPrice,
+          sale_price: body.salePrice,
+          stock_qty: body.stockQty,
+          offline_safety_qty: body.offlineSafetyQty,
+          image_url: body.imageUrl ?? null,
+          is_active: body.isActive,
+        },
+      }),
+    );
 
     return { id: created.id, name: created.name };
   });

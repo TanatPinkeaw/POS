@@ -217,6 +217,22 @@ export function parseImportGrid(grid: string[][]): ParsedImport {
     }
 
     /*
+     * The two free-text columns are capped at the same numbers the API enforces, so a
+     * sheet cannot store what the form would have refused. Too long is a row issue
+     * rather than a truncation: quietly cutting a shop's own words is a worse outcome
+     * than telling them the cell in the spreadsheet is too long.
+     */
+    const description = value('description');
+    if (description.length > 1000) {
+      rowIssues.push({ field: 'description', message: 'รายละเอียดยาวเกิน 1000 ตัวอักษร' });
+    }
+
+    const imageUrl = value('imageUrl');
+    if (imageUrl.length > 2048) {
+      rowIssues.push({ field: 'imageUrl', message: 'ลิงก์รูปยาวเกิน 2048 ตัวอักษร' });
+    }
+
+    /*
      * A blank cell is an issue here, where a blank `ราคาทุน` is not.
      *
      * `parseAmount('')` is 0 so that an absent cost, stock count or description
@@ -266,8 +282,8 @@ export function parseImportGrid(grid: string[][]): ParsedImport {
       costPrice: costPrice ?? 0,
       salePrice: salePrice ?? 0,
       stockQty: stockQty ?? 0,
-      description: value('description') === '' ? null : value('description'),
-      imageUrl: value('imageUrl') === '' ? null : value('imageUrl'),
+      description: description === '' ? null : description,
+      imageUrl: imageUrl === '' ? null : imageUrl,
       issues: rowIssues,
     });
   }

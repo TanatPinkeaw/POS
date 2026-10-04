@@ -1,10 +1,11 @@
 import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { NotFoundError, ValidationError } from '@/lib/errors';
+import { NotFoundError } from '@/lib/errors';
 import { availableQty } from '@/lib/inventory';
 import { fromDecimal } from '@/lib/money';
 import { notifyStockChanged } from '@/lib/notify';
+import { writeProductWithBarcode } from '@/lib/product-writes';
 import { productUpdateSchema } from '@/lib/schemas';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -55,31 +56,34 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Re
       throw new NotFoundError(`Product ${id}`);
     }
 
-    if (body.barcode && body.barcode !== existing.barcode) {
-      const clash = await prisma.products.findUnique({ where: { barcode: body.barcode } });
-      if (clash) {
-        throw new ValidationError(`Barcode ${body.barcode} is already used by "${clash.name}"`);
-      }
-    }
-
     // A price change must not quietly rewrite what an open pre-order owes, so
     // the order freezes prices at placement (see orders.priceCart).
-    const updated = await prisma.products.update({
-      where: { id },
-      data: {
-        ...(body.name !== undefined ? { name: body.name } : {}),
-        ...(body.categoryId !== undefined ? { category_id: body.categoryId } : {}),
-        ...(body.barcode !== undefined ? { barcode: body.barcode } : {}),
-        ...(body.description !== undefined ? { description: body.description } : {}),
-        ...(body.costPrice !== undefined ? { cost_price: body.costPrice } : {}),
-        ...(body.salePrice !== undefined ? { sale_price: body.salePrice } : {}),
-        ...(body.offlineSafetyQty !== undefined
-          ? { offline_safety_qty: body.offlineSafetyQty }
-          : {}),
-        ...(body.imageUrl !== undefined ? { image_url: body.imageUrl } : {}),
-        ...(body.isActive !== undefined ? { is_active: body.isActive } : {}),
-      },
-    });
+    //
+    // The write goes through the barcode rule, and names *this* product as the one
+    // the rule should ignore — a form that saves an unchanged row must not report
+    // that row as a clash with itself. The id comes from the row we just read rather
+    // than from the URL, so it is the canonical one however the caller spelled it.
+    const updated = await writeProductWithBarcode(
+      body.barcode,
+      () =>
+        prisma.products.update({
+          where: { id },
+          data: {
+            ...(body.name !== undefined ? { name: body.name } : {}),
+            ...(body.categoryId !== undefined ? { category_id: body.categoryId } : {}),
+            ...(body.barcode !== undefined ? { barcode: body.barcode } : {}),
+            ...(body.description !== undefined ? { description: body.description } : {}),
+            ...(body.costPrice !== undefined ? { cost_price: body.costPrice } : {}),
+            ...(body.salePrice !== undefined ? { sale_price: body.salePrice } : {}),
+            ...(body.offlineSafetyQty !== undefined
+              ? { offline_safety_qty: body.offlineSafetyQty }
+              : {}),
+            ...(body.imageUrl !== undefined ? { image_url: body.imageUrl } : {}),
+            ...(body.isActive !== undefined ? { is_active: body.isActive } : {}),
+          },
+        }),
+      { exceptProductId: existing.id },
+    );
 
     return {
       id: updated.id,
