@@ -23,10 +23,13 @@
 .viewport {
   display: flex;
   /*
-   * The slide box takes the slack in whatever box the carousel is given, so a
-   * column sized to one card does not leave the spare height underneath its own
-   * controls — the card stretches to meet them instead. `min-height: 0` is what
-   * lets it actually shrink when the caller caps the carousel, rather than
+   * Shrinkable rather than auto-height.
+   *
+   * `flex: 1 1 auto` only has slack to take when the caller stretches this
+   * component's root, and the pre-order board does not: its columns are as tall as
+   * the queue in them, so the carousel is content-sized here. What the pair of
+   * properties buy is the other direction — when a caller *does* cap the carousel,
+   * `min-height: 0` is what lets the slide box give the height back instead of
    * pushing the controls past the bottom of the lane.
    */
   flex: 1 1 auto;

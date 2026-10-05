@@ -4,37 +4,63 @@
  * `auto-fit` rather than a fixed three-up grid: a shop with one order on the board
  * still gets readable columns instead of three empty thirds, and the completed
  * strip below spans whatever width is left.
+ *
+ * `align-items: start` rather than the grid default, and that one line is the whole
+ * of this file's second half. A grid stretches every cell in a row to the tallest
+ * one, which left the board level at the cost of making a phase with nothing in it
+ * a tall empty box: measured at 1600x900, a column holding one 167px card sat in a
+ * 232px lane with 65px of nothing under its own pager, and the empty phase had
+ * 210px under the word ว่าง. On a screen read from standing up, across a counter,
+ * that does not read as a short queue — it reads as a broken panel, which is
+ * exactly what a shop reported it as.
+ *
+ * So each column is as tall as the queue in it and a queue that is short looks
+ * short. The honest cost is that the three columns are no longer level, which is
+ * the trade worth taking: one short column beside one tall one is obvious at a
+ * glance, where three equal boxes with two of them empty are not.
  */
 
 .board {
   display: grid;
   gap: var(--ln-space-4);
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  align-items: start;
 }
 
 /*
- * The column card fills the height the grid row hands it.
+ * The bound on one column card.
  *
- * The grid stretches all three cards to the tallest one — which is what keeps the
- * board level, and worth keeping: a queue that grows in column 2 should not make
- * columns 1 and 3 look like they changed. But `Card` is a flex column whose body
- * takes its natural height, so a stretched card used to leave its spare height
- * *below* the last row of content, as a band of nothing between the pager and the
- * bottom edge. On a board read from standing up that band is most of the column's
- * height and reads as a broken layout rather than as space.
+ * It used to sit on the lane as a fixed `height: min(60vh, 26rem)` — a floor in
+ * disguise, which is what gave a shop with one order in each phase three 416px
+ * columns holding 200px of cards. It is here instead, as a ceiling, and on the card
+ * rather than on the lane so that the 48px header is inside the budget: the whole
+ * column is at most 416px however much is in it.
+ *
+ * A bound and not a scroll. A card taller than this spills out of its column
+ * instead of scrolling inside it, because nothing in the chain gives the slide a
+ * definite height to scroll in. That is unreachable from this board — an order card
+ * is a number, a customer, a countdown and two buttons, 136–202px measured — and
+ * making it scroll belongs to the carousel, not to a page that never gets there.
+ */
+.column {
+  max-height: min(60vh, 26rem);
+}
+
+/*
+ * The column card's body, so a capped column spends what is left on its lane.
  *
  * `> div` rather than a class: `Card` renders `header` + one `div` body, and the
- * hashed body class belongs to the design system, not to this board. If `Card`
- * ever wraps its body in something else this stops applying and the column goes
- * back to leaving a gap — visible, and easy to find, which is why it is written
- * this way instead of reaching into another module's class names.
+ * hashed body class belongs to the design system, not to this board. If `Card` ever
+ * wraps its body in something else this stops applying and the space the cap saved
+ * lands under the controls again — which is why it is written this way rather than
+ * reaching into another module's class names.
  */
 .column > div {
   display: flex;
   flex-direction: column;
   flex: 1;
   /* Without this a flex item refuses to shrink below its content, and the cap
-     below would be ignored by a card taller than the cap. */
+     above would be ignored by a card taller than the cap. */
   min-height: 0;
 }
 
@@ -42,25 +68,16 @@
  * The lane a phase's carousel runs in: one card tall, and no taller than it needs
  * to be.
  *
- * This used to be a fixed `height: min(60vh, 26rem)`, which is what stopped the
- * board growing with the queue — but a fixed height is also a floor in disguise.
- * A shop with one order in each column got three 416px columns holding 200px of
- * cards, and the empty middle column looked like a broken panel rather than an
- * empty queue.
- *
- * So there is no height here at all: the lane is as tall as the tallest card and
- * its pager need, the grid makes the three columns level, and `flex: 1` lets each
- * one fill that shared height instead of stopping short of it. The cap stays, as
- * a ceiling rather than a floor, because the original reason for it still holds —
- * a pathologically tall card must not be able to push the whole board down the
- * page.
+ * No height of its own. It is as tall as the card the carousel gives it, and
+ * `flex: 1` spends what the capped card has left after its header, so the slide box
+ * is given a real box to sit in rather than the column's spare height collecting
+ * below its own controls. The cap is one level up, where the header is inside it.
  */
 .lane {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  max-height: min(60vh, 26rem);
 }
 
 .order {
