@@ -369,7 +369,7 @@ export function PreOrderBoard() {
         <SearchField
           id="preorder-lookup"
           label="สแกนคิวอาร์ หรือค้นหาด้วย PIN 4 หลัก / เบอร์โทรลูกค้า"
-          placeholder="สแกนคิวอาร์, PIN 4 หลัก, หรือเบอร์โทร"
+          placeholder="สแกน QR, PIN, เบอร์โทร"
           value={lookup}
           onChange={setLookup}
           onSubmit={() => void lookupOrder()}
