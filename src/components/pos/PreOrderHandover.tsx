@@ -177,6 +177,16 @@ export function PreOrderHandover({
     }
   }, [intent]);
 
+  /*
+   * Leaving the sheet with a QR live, by any door (backdrop, X, or the close
+   * button): a code nobody is collecting is cancelled on the way out so the
+   * customer screen returns to whatever it showed before.
+   */
+  const closeSheet = (): void => {
+    void dropIntent();
+    onClose();
+  };
+
   const startIntent = useCallback(
     async (amountThb: number): Promise<void> => {
       if (shift === null) {
@@ -422,7 +432,7 @@ export function PreOrderHandover({
     <>
       <Overlay
         open={open && order !== null}
-        onClose={onClose}
+        onClose={closeSheet}
         size="lg"
         title={order ? `รับสินค้า ${order.orderNumber}` : ''}
         description={
@@ -465,7 +475,7 @@ export function PreOrderHandover({
             </>
           ) : (
             <>
-              <Button variant="secondary" onClick={onClose} disabled={busy}>
+              <Button variant="secondary" onClick={closeSheet} disabled={busy}>
                 ปิด
               </Button>
               <Button

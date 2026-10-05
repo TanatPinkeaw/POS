@@ -402,7 +402,25 @@ export function Till({
         </SplitPane>
       </div>
 
-      <PaySheet till={till} shop={shop} open={payOpen} onClose={() => setPayOpen(false)} />
+      <PaySheet
+        till={till}
+        shop={shop}
+        open={payOpen}
+        onClose={() => {
+          /*
+           * Closing the sheet abandons the payment in flight, so a pending QR
+           * goes with it: the cashier is back on the product list, and a code
+           * nobody is collecting is a code the next customer can pay — the same
+           * reason switching tender modes already cancels it. The cancel reaches
+           * the customer screen as `payment:closed`, which returns it to the
+           * bill. Safe on a settled intent: `dropIntent` only cancels while
+           * still pending, and a paid-then-settled sale has already closed its
+           * own QR through the order routes.
+           */
+          void till.dropIntent();
+          setPayOpen(false);
+        }}
+      />
 
       <PreOrderHandover
         order={handoverOrder}

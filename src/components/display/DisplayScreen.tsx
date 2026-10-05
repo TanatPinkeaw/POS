@@ -183,20 +183,13 @@ export function DisplayScreen() {
 
   const lines = state.cart?.lines ?? [];
   const paying = state.intent !== null;
-  /* A cart snapshot is a bill, never a payment: the till re-pushes the basket
-   * the moment the QR appears (received/change go null while a QR is live), so
-   * a `selling` bill under a live QR is the old basket, not a second mode. Only
-   * when the QR is gone — paid, cancelled, expired — does the bill own the
-   * screen again. */
-  const selling = lines.length > 0;
   /*
-   * What the customer handed over, shown only while the till is still counting
-   * it on screen. After a QR is dropped the till cancels the intent but the
-   * next basket push can lag a beat behind, and a stale received/change is a
-   * promise about a payment that no longer exists — it rejoins only with a
-   * fresh snapshot taken while no intent is live.
+   * The bill owns the screen only while no QR does: the till re-pushes the
+   * basket the moment a QR appears (received/change go null while one is
+   * live), so the paying section draws the bill itself from the same snapshot
+   * and this section stays off — rendering both is the same bill twice.
    */
-  const showTendered = !paying;
+  const selling = !paying && lines.length > 0;
   /* The Steps show only at checkout: a null step is the idle and collection
    * board, where no sale is on any circle. */
   const step = checkoutStepIndex({ selling, paying, thanks });
@@ -310,13 +303,13 @@ export function DisplayScreen() {
               <span>รวมทั้งสิ้น</span>
               <span>{formatThb(state.cart?.totalThb ?? 0)}</span>
             </div>
-            {showTendered && state.cart && state.cart.receivedThb !== null && state.cart.receivedThb > 0 ? (
+            {state.cart && state.cart.receivedThb !== null && state.cart.receivedThb > 0 ? (
               <div className={styles.totalRow}>
                 <span>ลูกค้ายื่นมา</span>
                 <span>{formatThb(state.cart.receivedThb)}</span>
               </div>
             ) : null}
-            {showTendered && state.cart && state.cart.changeThb !== null && state.cart.changeThb > 0 ? (
+            {state.cart && state.cart.changeThb !== null && state.cart.changeThb > 0 ? (
               <div className={`${styles.totalRow} ${styles.change}`}>
                 <span>เงินทอน</span>
                 <span>{formatThb(state.cart.changeThb)}</span>
