@@ -175,16 +175,6 @@
   text-transform: uppercase;
 }
 
-.popularList {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--ln-space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
 .popularItem {
   padding: var(--ln-space-1) var(--ln-space-3);
   border: 1px solid var(--ln-border-subtle);
@@ -193,12 +183,84 @@
   font-size: clamp(0.9rem, 1.1vw, 1.15rem);
 }
 
+/*
+ * The best-sellers as an auto-scrolling strip.
+ *
+ * A CSS loop, never a <marquee> tag: the track holds two exact copies of the
+ * list and slides 0 to -50%, so the seam lands where the duplicate begins and
+ * the eye never catches the join. Each group carries its own trailing padding
+ * rather than the track carrying a gap, because the -50% point is only exact
+ * when both halves are the same width. The duration is fixed rather than
+ * content-derived: the list is short (best sellers), and a fixed loop reads at
+ * one speed every day. Edge fades rather than a hard cut, and a hovered strip
+ * holds still; with reduced motion the whole thing becomes the static wrapped
+ * list it was before, minus the duplicate.
+ */
+.marquee {
+  width: min(100%, 46rem);
+  overflow: hidden;
+  mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  animation: display-marquee 24s linear infinite;
+}
+
+.marquee:hover .marqueeTrack {
+  animation-play-state: paused;
+}
+
+.marqueeGroup {
+  display: flex;
+  gap: var(--ln-space-2);
+  margin: 0;
+  padding: 0 var(--ln-space-2) 0 0;
+  list-style: none;
+}
+
+@keyframes display-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee {
+    overflow: visible;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .marqueeTrack {
+    flex-wrap: wrap;
+    width: auto;
+    animation: none;
+  }
+  .marqueeGroup {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .marqueeGroup[aria-hidden='true'] {
+    display: none;
+  }
+}
+
 /* -------------------------------------------------------------------- ready */
 
+/*
+ * Pushed down from the called numbers above: the calls are what is happening
+ * now, these are parcels already waited for, and the gap between the two blocks
+ * is what keeps a customer from reading a pickup as a call.
+ */
 .readyList {
   display: grid;
   gap: var(--ln-space-3);
-  margin: 0;
+  margin: var(--ln-space-6) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -240,14 +302,14 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--ln-space-4);
-  margin: 0;
+  gap: var(--ln-space-6);
+  margin: var(--ln-space-2) 0 0;
   padding: 0;
   list-style: none;
 }
 
 .callNumber {
-  font-size: clamp(2.5rem, 7vw, 6rem);
+  font-size: clamp(3rem, 8vw, 7rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;

@@ -15,6 +15,8 @@ import {
   storeToken,
   useDisplaySocket,
 } from './useDisplaySocket';
+import { checkoutStepIndex } from './checkout-step';
+import { CheckoutSteps } from './CheckoutSteps';
 
 /**
  * The customer's screen: what the till is doing, from where the customer stands.
@@ -182,6 +184,9 @@ export function DisplayScreen() {
   const lines = state.cart?.lines ?? [];
   const paying = state.intent !== null;
   const selling = !paying && lines.length > 0;
+  /* The Steps show only at checkout: a null step is the idle and collection
+   * board, where no sale is on any circle. */
+  const step = checkoutStepIndex({ selling, paying, thanks });
 
   return (
     <main className={styles.screen}>
@@ -199,6 +204,8 @@ export function DisplayScreen() {
           {state.connected ? null : 'การเชื่อมต่อขาด — กำลังเชื่อมใหม่'}
         </span>
       </header>
+
+      {step !== null ? <CheckoutSteps current={step} /> : null}
 
       {paying && state.intent ? (
         <section className={styles.stage}>
@@ -352,13 +359,29 @@ export function DisplayScreen() {
           {!thanks && (state.idle?.popular.length ?? 0) > 0 ? (
             <div className={styles.popular}>
               <p className={styles.popularKicker}>ขายดีที่ร้านนี้</p>
-              <ul className={styles.popularList}>
-                {state.idle?.popular.map((name) => (
-                  <li key={name} className={styles.popularItem}>
-                    {name}
-                  </li>
-                ))}
-              </ul>
+              <div className={styles.marquee}>
+                <div className={styles.marqueeTrack}>
+                  <ul className={styles.marqueeGroup}>
+                    {state.idle?.popular.map((name, index) => (
+                      <li key={`first-${index}`} className={styles.popularItem}>
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                  {/*
+                   * The loop's second half: an exact duplicate the track scrolls
+                   * into, hidden from assistive technology so the list is
+                   * announced once rather than twice.
+                   */}
+                  <ul className={styles.marqueeGroup} aria-hidden="true">
+                    {state.idle?.popular.map((name, index) => (
+                      <li key={`second-${index}`} className={styles.popularItem}>
+                        {name}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
             </div>
           ) : null}
         </section>

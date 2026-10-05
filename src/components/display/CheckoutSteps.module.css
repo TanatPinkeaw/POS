@@ -1,0 +1,85 @@
+/*
+ * The three circles above the bill at checkout.
+ *
+ * Sized like the rest of this screen — `clamp` against the viewport, because a
+ * display is whatever screen the shop plugged in, not the counter tablet whose
+ * density token the shell sets. Every colour pair here is one the contrast test
+ * already asserts: muted/subtle text on the canvas, white on the brand fill,
+ * success green as text on a surface.
+ */
+
+.steps {
+  --step-circle: clamp(2.75rem, 6vw, 4.5rem);
+  display: flex;
+  margin: 0;
+  padding: var(--ln-space-4) var(--ln-space-6) 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  flex: 1 1 0;
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-2);
+  text-align: center;
+}
+
+/*
+ * The connector is drawn by the step it leads *into*, so its colour can follow
+ * that step's state: the path already walked is green, the path ahead is a
+ * border. A step that is done or current means the walk reached it.
+ */
+.step:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--step-circle) / 2);
+  left: calc(-50% + (var(--step-circle) / 2) + var(--ln-space-2));
+  right: calc(50% - (var(--step-circle) / 2) - var(--ln-space-2));
+  height: 3px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--ln-border-strong);
+}
+
+.step.done:not(:first-child)::before,
+.step.current:not(:first-child)::before {
+  background: var(--ln-success);
+}
+
+.circle {
+  position: relative;
+  z-index: 1;
+  width: var(--step-circle);
+  height: var(--step-circle);
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--ln-border-strong);
+  border-radius: 50%;
+  background: var(--ln-surface);
+  color: var(--ln-text-subtle);
+  font-size: calc(var(--step-circle) * 0.42);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.step.current .circle {
+  border-color: var(--ln-brand);
+  background: var(--ln-brand);
+  color: var(--ln-on-brand);
+}
+
+.step.done .circle {
+  border-color: var(--ln-success);
+  color: var(--ln-success);
+}
+
+.label {
+  color: var(--ln-text-muted);
+  font-size: clamp(0.95rem, 1.2vw, 1.25rem);
+}
+
+.step.current .label {
+  color: var(--ln-text);
+  font-weight: 700;
+}
