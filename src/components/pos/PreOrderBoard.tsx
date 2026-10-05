@@ -387,6 +387,7 @@ export function PreOrderBoard() {
             <Card
               key={column.status}
               title={column.title}
+              className={styles.column}
               actions={<StatusPill status={column.status} label={String(rows.length)} />}
             >
               {/*

@@ -22,6 +22,15 @@
 
 .viewport {
   display: flex;
+  /*
+   * The slide box takes the slack in whatever box the carousel is given, so a
+   * column sized to one card does not leave the spare height underneath its own
+   * controls — the card stretches to meet them instead. `min-height: 0` is what
+   * lets it actually shrink when the caller caps the carousel, rather than
+   * pushing the controls past the bottom of the lane.
+   */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;

@@ -16,6 +16,22 @@ export interface DisplayLine {
   name: string;
   quantity: number;
   totalPrice: number;
+  /**
+   * The price of one, so the customer can check the multiplication.
+   *
+   * Rendered only when there is more than one: on a single item the unit price is
+   * a second copy of the number already on screen, and a customer three metres away
+   * reads columns of numbers as noise.
+   */
+  unitPrice: number;
+  /**
+   * The product's photo, or null when the shop has not set one.
+   *
+   * Not identifying — it is the same picture on the shelf and on the till — and it
+   * is what turns "กาแฟ 2 ชิ้น 80 บาท" into something the customer can check
+   * against what is being bagged (ADR 0014).
+   */
+  imageUrl: string | null;
 }
 
 /**

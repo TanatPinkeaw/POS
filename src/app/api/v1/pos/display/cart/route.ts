@@ -23,7 +23,13 @@ export async function POST(request: Request): Promise<Response> {
     const body = await readJson(request, displayCartSchema);
 
     broadcastCart({
-      lines: body.lines,
+      lines: body.lines.map((line) => ({
+        name: line.name,
+        quantity: line.quantity,
+        totalPrice: line.totalPrice,
+        unitPrice: line.unitPrice,
+        imageUrl: line.imageUrl ?? null,
+      })),
       subtotalThb: body.subtotalThb,
       discountThb: body.discountThb,
       totalThb: body.totalThb,

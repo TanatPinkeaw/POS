@@ -56,6 +56,12 @@ export interface CartLine {
   quantity: number;
   availableQty: number;
   categoryKey: string;
+  /**
+   * Carried so the customer display can show the same picture the cashier is
+   * bagging (ADR 0014). Null when the shop has not set one; nothing downstream
+   * requires it, which is why it is not part of what is sent to the server.
+   */
+  imageUrl: string | null;
 }
 
 export interface TillMember {
@@ -566,6 +572,7 @@ export function useTill({
           quantity: 1,
           availableQty: product.availableQty,
           categoryKey: product.categoryKey,
+          imageUrl: product.imageUrl ?? null,
         },
       ];
     });
@@ -830,8 +837,14 @@ export function useTill({
     setIntentBusy(true);
     setIntentError(null);
     try {
+      /*
+       * `/confirm`, and the suffix is load-bearing. `intents/{ref}` is the read the
+       * poll below uses; it exports no POST, so a confirmation posted there is a 405
+       * raised by Next before this code runs — a button that looks alive, charges a
+       * supervisor's PIN, and does nothing. A shop found that the only way.
+       */
       const confirmed = await apiFetch<PaymentIntentView>(
-        `/api/v1/payments/intents/${current.ref}`,
+        `/api/v1/payments/intents/${current.ref}/confirm`,
         { method: 'POST', headers: { [APPROVAL_HEADER]: token } },
       );
       if (confirmed.status !== 'paid' && confirmed.status !== 'consumed') {
@@ -907,8 +920,14 @@ export function useTill({
           name: line.name,
           quantity: line.quantity,
           // The line total, not the unit price: the customer reads what the line
-          // costs, and the subtotal below is the sum of these.
+          // costs, and the subtotal below is the sum of these. The unit price
+          // rides along as well, so the customer can check the multiplication
+          // when there is more than one of something.
           totalPrice: round2(line.unitPrice * line.quantity),
+          unitPrice: round2(line.unitPrice),
+          // The picture on the shelf: what the customer is being charged for has
+          // to be the thing the cashier is bagging (ADR 0014).
+          imageUrl: line.imageUrl,
         })),
         subtotalThb: subtotal,
         discountThb: round2(discountValue + pointsValue),

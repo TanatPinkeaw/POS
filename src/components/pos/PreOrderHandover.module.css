@@ -34,10 +34,56 @@
   cursor: pointer;
 }
 
-.cashRow {
+/*
+ * The cash money, in the till's three rows: what to keep, what was handed over, and
+ * the change. One column, because the figures are short and a dialog already asks for
+ * a lot of vertical room — two fields side by side left both of them too narrow to
+ * read a note into.
+ */
+.cash {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   gap: var(--ln-space-3);
+}
+
+.cashRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+.cashLabel {
+  color: var(--ln-text-subtle);
+}
+
+/*
+ * The change row, wearing the till's colours rather than new ones: green when there
+ * is change to give back, flat when there is none, red when the note is short — which
+ * is also the one state the confirm button is disabled in, so the row is where the
+ * reason is read. `role="status"` is on the element in the component, so a screen
+ * reader hears the change move as the cashier keys a note in.
+ */
+.change {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-2) var(--ln-space-3);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-success-soft);
+  color: var(--ln-success);
+  font-size: var(--ln-size-lg);
+  font-weight: 700;
+}
+
+.changeZero {
+  background: var(--ln-surface-2);
+  color: var(--ln-text-muted);
+}
+
+.changeShort {
+  background: var(--ln-danger-soft);
+  color: var(--ln-danger);
 }
 
 .qr {

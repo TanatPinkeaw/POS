@@ -878,6 +878,8 @@ export const displayCartSchema = z.object({
         name: z.string().trim().max(200),
         quantity: z.number().int().positive(),
         totalPrice: z.number(),
+        unitPrice: z.number(),
+        imageUrl: z.string().trim().max(2000).nullable().optional(),
       }),
     )
     .max(200),

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { PinPad, QrPanel, Spinner } from '@/components/ds';
+import { PinPad, QrPanel, Spinner, Thumb } from '@/components/ds';
 import { apiFetch } from '@/lib/client-api';
 import { bangkokTimeString } from '@/lib/bangkok-time';
 import { DISPLAY_THANKS_MS } from '@/lib/display-view';
@@ -214,9 +214,21 @@ export function DisplayScreen() {
           <ul className={styles.lines}>
             {lines.map((line, index) => (
               <li key={`${line.name}-${index}`} className={styles.line}>
+                {/*
+                 * The same photograph the cashier is bagging (ADR 0014). It is the
+                 * one thing on this screen that answers "is that what I asked for"
+                 * without either of them having to read: the customer matches the
+                 * picture on the shelf, the name confirms it.
+                 */}
+                <Thumb url={line.imageUrl} size="lg" />
                 <span className={styles.lineName}>
                   {line.name}
-                  {line.quantity > 1 ? <span className={styles.qty}> × {line.quantity}</span> : null}
+                  {line.quantity > 1 ? (
+                    <span className={styles.qty}>
+                      {' '}
+                      × {line.quantity} · {formatThb(line.unitPrice)} ต่อชิ้น
+                    </span>
+                  ) : null}
                 </span>
                 <span className={styles.linePrice}>{formatThb(line.totalPrice)}</span>
               </li>
@@ -224,6 +236,19 @@ export function DisplayScreen() {
           </ul>
 
           <div className={styles.totals}>
+            {/*
+             * The same four rows the till's pay sheet shows, in the same order and
+             * the same words, because the customer is reading both screens at once
+             * and a difference between them is a question at the counter. Two of
+             * these — the subtotal and what they handed over — the payload has been
+             * carrying since the start and this stage never drew them.
+             */}
+            {state.cart && state.cart.subtotalThb > 0 ? (
+              <div className={styles.totalRow}>
+                <span>ยอดก่อนส่วนลด</span>
+                <span>{formatThb(state.cart.subtotalThb)}</span>
+              </div>
+            ) : null}
             {state.cart && state.cart.discountThb > 0 ? (
               <div className={styles.totalRow}>
                 <span>ส่วนลด</span>
@@ -234,6 +259,12 @@ export function DisplayScreen() {
               <span>รวมทั้งสิ้น</span>
               <span>{formatThb(state.cart?.totalThb ?? 0)}</span>
             </div>
+            {state.cart && state.cart.receivedThb !== null && state.cart.receivedThb > 0 ? (
+              <div className={styles.totalRow}>
+                <span>ลูกค้ายื่นมา</span>
+                <span>{formatThb(state.cart.receivedThb)}</span>
+              </div>
+            ) : null}
             {state.cart && state.cart.changeThb !== null && state.cart.changeThb > 0 ? (
               <div className={`${styles.totalRow} ${styles.change}`}>
                 <span>เงินทอน</span>

@@ -16,14 +16,18 @@ import {
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
+import { formatThb } from '@/lib/money';
 import { handoverLookupBody } from '@/lib/pickup-scan';
 import {
   PAYMENT_INTENT_STATUS_LABELS,
   type PaymentIntentView,
 } from '@/lib/payment-intents-view';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
+import { APPROVAL_HEADER } from '@/lib/supervisor-view';
 
 import { useOpenShift } from './useOpenShift';
+import { SupervisorApprovalDialog } from './SupervisorApprovalDialog';
+import { useSupervisorApproval } from './useSupervisorApproval';
 import styles from './PreOrderHandover.module.css';
 
 /** The order as the handover needs it — a subset of what `/api/v1/orders/[id]` returns. */
@@ -90,8 +94,14 @@ export function PreOrderHandover({
   onCompleted: (result: HandoverResult) => void;
 }) {
   const { shift } = useOpenShift();
+  /*
+   * The handover asks for a supervisor's PIN itself, rather than being handed a
+   * callback the way the till is: it has two callers on two pages and neither of
+   * them owns an approval for anything else, and `RefundDialog` already set the
+   * precedent of a dialog carrying its own.
+   */
+  const approval = useSupervisorApproval();
   const [mode, setMode] = useState<TenderMode>('cash');
-  const [cash, setCash] = useState('');
   const [receivedCash, setReceivedCash] = useState('');
   const [splitTransfer, setSplitTransfer] = useState('');
   const [usePoints, setUsePoints] = useState(false);
@@ -114,7 +124,18 @@ export function PreOrderHandover({
     usePoints && order?.customer ? Math.floor(order.customer.pointsBalance / 100) * 100 : 0;
   const afterPoints = Math.max(0, Math.round((due - pointsThb) * 100) / 100);
   const transferThb = Math.max(0, Number(splitTransfer || 0));
-  const cashDue = mode === 'promptpay' ? afterPoints : Math.max(0, afterPoints - transferThb);
+  /**
+   * The cash leg of this payment, which is the whole amount unless the cashier is
+   * splitting it. Kept apart from `cashDue` so the handlers that refill the received
+   * field do not depend on the tab the cashier is *leaving* — `chooseMode` reads these
+   * values before `setMode` has taken effect.
+   */
+  const cashPortionThb = Math.max(0, Math.round((afterPoints - transferThb) * 100) / 100);
+  const cashDue = mode === 'promptpay' ? afterPoints : cashPortionThb;
+  const received = Number(receivedCash || 0);
+  const changeThb = Math.round((received - cashDue) * 100) / 100;
+  /** A note smaller than the bill. The server refuses the sale for this; showing it here is the same rule, earlier. */
+  const short = mode !== 'promptpay' && receivedCash.trim() !== '' && changeThb < 0;
   const waitingForTransfer = intent !== null && intent.status === 'pending';
 
   // Reset per order, so reopening on a different order never shows the last one's draft.
@@ -123,8 +144,16 @@ export function PreOrderHandover({
       return;
     }
     setMode('cash');
-    setCash('');
-    setReceivedCash('');
+    /*
+     * The amount is in the field before the cashier has touched anything.
+     *
+     * A handover is scanned, the dialog opens, and the common case is the exact note —
+     * `PaySheet` says the same of a walk-in sale, and prefilling is what removed the
+     * taps. It also answers the complaint that the money "did not come up": an empty
+     * field next to a total is a field the cashier has to read the total off the screen
+     * and type back before they can press anything.
+     */
+    setReceivedCash(String(Math.round((order.finalAmountThb ?? 0) * 100) / 100));
     setSplitTransfer('');
     setUsePoints(false);
     setIntent(null);
@@ -187,7 +216,7 @@ export function PreOrderHandover({
       void startIntent(afterPoints);
     }
     if (next === 'cash') {
-      setCash(String(cashDue));
+      setReceivedCash(String(cashPortionThb));
       void dropIntent();
     }
     if (next === 'split') {
@@ -275,6 +304,97 @@ export function PreOrderHandover({
     return () => window.clearInterval(timer);
   }, [intent, finish]);
 
+  /**
+   * A fresh QR for the same amount, replacing the one on screen.
+   *
+   * The same reasoning as the till's `refreshIntent`, and for the same reason: the
+   * three ways a PromptPay code dies are all about time — it expires, the customer's
+   * banking app refuses an old code, and a customer who closed their app and came
+   * back finds a dead code and a cashier with no way to move them on. Redrawing the
+   * same payload would fix the look of none of it, because the countdown is derived
+   * from the intent's own expiry.
+   */
+  const refreshIntent = useCallback(async (): Promise<void> => {
+    setIntentBusy(true);
+    setError(null);
+    try {
+      const current = intent;
+      if (current !== null && current.status === 'pending') {
+        try {
+          await apiPost(`/api/v1/payments/intents/${current.ref}/cancel`, {});
+        } catch {
+          // An old code that refuses to cancel expires on its own, and holding the
+          // cashier up to make sure of it is the worse trade.
+        }
+      }
+      setIntent(null);
+      consumedRef.current = null;
+      const created = await apiPost<PaymentIntentView>('/api/v1/payments/intents', {
+        shiftId: shift?.id ?? 0,
+        amountThb: Math.round(afterPoints * 100) / 100,
+      });
+      setIntent(created);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'ออก QR ใหม่ไม่สำเร็จ');
+    } finally {
+      setIntentBusy(false);
+    }
+  }, [afterPoints, intent, shift]);
+
+  /**
+   * The cashier says the money arrived, and a supervisor agrees.
+   *
+   * This is the whole point of the till having the same two buttons: a shop with no
+   * bank notification bridge never receives the event that closes the bill, so the
+   * dialog used to sit on "รอเงินเข้า…" with nothing to press — the only thing the
+   * counter could do was walk the customer away and leave the parcel unclaimed. The
+   * server already had the endpoint and the audit action; this only gives the
+   * handover the button that reaches them.
+   *
+   * **`/confirm`, not the bare reference.** The two routes are neighbours and only
+   * one of them takes a POST: `intents/[ref]` is the read the poll uses, and posting
+   * to it is a 405 from Next before any of this code runs. The console showed a shop
+   * pressing this button and being told nothing had happened.
+   *
+   * The approval is bound to the intent's reference, so a supervisor who approved one
+   * transfer cannot have that approval spent on a different bill, and `finish`'s
+   * `consumedRef` guard keeps the socket and the button from closing it twice.
+   */
+  const confirmTransferManually = useCallback(async (): Promise<void> => {
+    const current = intent;
+    if (current === null || current.status !== 'pending') {
+      return;
+    }
+    const token = await approval.request({
+      action: 'manual_payment_confirm',
+      targetId: current.ref,
+      summary: `ยืนยันว่าโอนแล้ว ${formatThb(current.amountThb)} · รหัสอ้างอิง ${current.ref}`,
+    });
+    if (token === null) {
+      // The supervisor walked away, which is a refusal rather than a failure.
+      return;
+    }
+
+    setIntentBusy(true);
+    setError(null);
+    try {
+      const confirmed = await apiFetch<PaymentIntentView>(
+        `/api/v1/payments/intents/${current.ref}/confirm`,
+        { method: 'POST', headers: { [APPROVAL_HEADER]: token } },
+      );
+      if (confirmed.status !== 'paid' && confirmed.status !== 'consumed') {
+        setError('ยังยืนยันไม่ได้ — รหัสอ้างอิงนี้อาจหมดอายุแล้ว ลองออก QR ใหม่');
+        return;
+      }
+      setIntent(null);
+      void finish(confirmed.ref);
+    } catch (caught) {
+      setError(caught instanceof ApiError ? caught.message : 'ยืนยันการโอนไม่สำเร็จ');
+    } finally {
+      setIntentBusy(false);
+    }
+  }, [approval, intent, finish]);
+
   const lineColumns: Column<HandoverOrder['items'][number]>[] = [
     {
       key: 'item',
@@ -299,155 +419,225 @@ export function PreOrderHandover({
   ];
 
   return (
-    <Overlay
-      open={open && order !== null}
-      onClose={onClose}
-      size="lg"
-      title={order ? `รับสินค้า ${order.orderNumber}` : ''}
-      description={
-        order
-          ? `${order.customer ? `สมาชิก ${order.customer.fullName}` : 'ลูกค้าทั่วไป'}${
-              order.pickupPin ? ` · PIN ${order.pickupPin}` : ''
-            }`
-          : ''
-      }
-      footer={
-        waitingForTransfer ? (
-          <>
-            <Button variant="secondary" disabled={busy} onClick={() => void dropIntent()}>
-              ยกเลิก QR
-            </Button>
-            <Button size="lg" icon="qr" loading disabled>
-              รอเงินเข้า…
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="secondary" onClick={onClose} disabled={busy}>
-              ปิด
-            </Button>
-            <Button
-              variant="success"
-              icon="check"
-              loading={busy}
-              disabled={shift === null}
-              onClick={() => void finish()}
-            >
-              ยืนยันการชำระเงิน
-            </Button>
-          </>
-        )
-      }
-    >
-      {order === null ? null : (
-        <div className={styles.body}>
-          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
-          {shift === null ? (
-            <InlineNotice tone="warning">ต้องเปิดลิ้นชักก่อน จึงจะรับชำระเงินได้</InlineNotice>
-          ) : null}
+    <>
+      <Overlay
+        open={open && order !== null}
+        onClose={onClose}
+        size="lg"
+        title={order ? `รับสินค้า ${order.orderNumber}` : ''}
+        description={
+          order
+            ? `${order.customer ? `สมาชิก ${order.customer.fullName}` : 'ลูกค้าทั่วไป'}${
+                order.pickupPin ? ` · PIN ${order.pickupPin}` : ''
+              }`
+            : ''
+        }
+        footer={
+          waitingForTransfer ? (
+            /*
+             * The same three buttons the till offers, because a counter that takes
+             * walk-in money and a counter that hands over a parcel are the same pair of
+             * hands: confirm by hand once the money is in the banking app, replace a
+             * code that died, or abandon the transfer.
+             */
+            <>
+              <Button variant="secondary" disabled={busy} onClick={() => void dropIntent()}>
+                ยกเลิก QR
+              </Button>
+              <Button
+                variant="secondary"
+                icon="refresh"
+                loading={intentBusy}
+                disabled={busy}
+                onClick={() => void refreshIntent()}
+              >
+                ออก QR ใหม่
+              </Button>
+              <Button
+                variant="primary"
+                icon="check"
+                loading={intentBusy}
+                disabled={busy}
+                onClick={() => void confirmTransferManually()}
+              >
+                ยืนยันว่าโอนแล้ว
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={onClose} disabled={busy}>
+                ปิด
+              </Button>
+              <Button
+                variant="success"
+                icon="check"
+                loading={busy}
+                disabled={shift === null || short}
+                onClick={() => void finish()}
+              >
+                ยืนยันการชำระเงิน
+              </Button>
+            </>
+          )
+        }
+      >
+        {order === null ? null : (
+          <div className={styles.body}>
+            {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+            {shift === null ? (
+              <InlineNotice tone="warning">ต้องเปิดลิ้นชักก่อน จึงจะรับชำระเงินได้</InlineNotice>
+            ) : null}
 
-          <DataTable
-            columns={lineColumns}
-            rows={order.items}
-            getRowKey={(item) => item.id}
-            caption="รายการสินค้าในพรีออเดอร์นี้"
-            dense
-          />
-
-          <div className={styles.total}>
-            <span>ยอดที่ต้องชำระ</span>
-            <Money amount={due} size="lg" />
-          </div>
-
-          {order.customer && order.customer.pointsBalance >= 100 ? (
-            <label className={styles.pick}>
-              <input
-                type="checkbox"
-                checked={usePoints}
-                onChange={(event) => {
-                  setUsePoints(event.target.checked);
-                  setCash('');
-                  setSplitTransfer('');
-                }}
-              />
-              <span>
-                ใช้คะแนน {order.customer.pointsBalance} คะแนน ของ {order.customer.fullName} (ลดได้{' '}
-                {Math.floor(order.customer.pointsBalance / 100) * 100} บาท)
-              </span>
-            </label>
-          ) : null}
-
-          <Tabs
-            label="วิธีชำระเงิน"
-            variant="segmented"
-            value={mode}
-            items={[
-              { key: 'cash', label: 'เงินสด' },
-              { key: 'promptpay', label: 'พร้อมเพย์' },
-              { key: 'split', label: 'แบ่งจ่าย' },
-            ]}
-            onChange={(key) => chooseMode(key as TenderMode)}
-          />
-
-          {mode === 'promptpay' ? (
-            <div className={styles.qr}>
-              {intent ? (
-                <>
-                  <QrPanel intent={intent} size={200} />
-                  <p className={styles.hint}>
-                    {intent.status === 'pending'
-                      ? 'ให้ลูกค้าสแกนที่จอนี้ — เมื่อเงินเข้าบิลจะปิดเอง'
-                      : PAYMENT_INTENT_STATUS_LABELS[intent.status]}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <Button icon="qr" loading={intentBusy} onClick={() => void startIntent(afterPoints)}>
-                    ออก QR พร้อมเพย์
-                  </Button>
-                  <p className={styles.hint}>
-                    ถ้ายังไม่ได้ตั้งพร้อมเพย์ของร้าน จะออก QR ไม่ได้ — ยืนยันรับเงินสดแทนได้เลย
-                  </p>
-                </>
-              )}
-            </div>
-          ) : null}
-
-          {mode === 'split' ? (
-            <TextField
-              id="handover-split"
-              label="ยอดที่โอน (บาท)"
-              inputMode="decimal"
-              className="ln-num"
-              value={splitTransfer}
-              onChange={(event) => setSplitTransfer(event.target.value)}
-              help="เงินสดเป็นขาสุดท้ายเสมอ เพื่อให้เงินทอนคำนวณจากส่วนที่จ่ายเป็นเงินสด"
+            <DataTable
+              columns={lineColumns}
+              rows={order.items}
+              getRowKey={(item) => item.id}
+              caption="รายการสินค้าในพรีออเดอร์นี้"
+              dense
             />
-          ) : null}
 
-          {mode === 'cash' ? (
-            <div className={styles.cashRow}>
-              <TextField
-                id="handover-cash"
-                label="เงินสดที่รับ (บาท)"
-                inputMode="decimal"
-                className="ln-num"
-                value={cash}
-                onChange={(event) => setCash(event.target.value)}
-              />
-              <TextField
-                id="handover-received"
-                label="ลูกค้ายื่นมา (บาท)"
-                inputMode="decimal"
-                className="ln-num"
-                value={receivedCash}
-                onChange={(event) => setReceivedCash(event.target.value)}
-              />
+            <div className={styles.total}>
+              <span>ยอดที่ต้องชำระ</span>
+              <Money amount={due} size="lg" />
             </div>
-          ) : null}
-        </div>
-      )}
-    </Overlay>
+
+            {order.customer && order.customer.pointsBalance >= 100 ? (
+              <label className={styles.pick}>
+                <input
+                  type="checkbox"
+                  checked={usePoints}
+                  onChange={(event) => {
+                    // The cash figure moved, so the note moves with it — the same refill
+                    // the till does when the split amount is typed.
+                    const redeemable = Math.floor((order.customer?.pointsBalance ?? 0) / 100) * 100;
+                    const spent = event.target.checked ? redeemable : 0;
+                    setUsePoints(spent > 0);
+                    setSplitTransfer('');
+                    setReceivedCash(String(Math.max(0, Math.round((due - spent) * 100) / 100)));
+                  }}
+                />
+                <span>
+                  ใช้คะแนน {order.customer.pointsBalance} คะแนน ของ {order.customer.fullName} (ลดได้{' '}
+                  {Math.floor(order.customer.pointsBalance / 100) * 100} บาท)
+                </span>
+              </label>
+            ) : null}
+
+            <Tabs
+              label="วิธีชำระเงิน"
+              variant="segmented"
+              value={mode}
+              items={[
+                { key: 'cash', label: 'เงินสด' },
+                { key: 'promptpay', label: 'พร้อมเพย์' },
+                { key: 'split', label: 'แบ่งจ่าย' },
+              ]}
+              onChange={(key) => chooseMode(key as TenderMode)}
+            />
+
+            {mode === 'promptpay' ? (
+              <div className={styles.qr}>
+                {intent ? (
+                  <>
+                    <QrPanel intent={intent} size={200} />
+                    <p className={styles.hint}>
+                      {intent.status === 'pending'
+                        ? 'ให้ลูกค้าสแกนที่จอนี้ — เงินเข้าบิลจะปิดเอง ถ้าเงินเข้าแล้วแต่ระบบยังไม่แจ้ง กดยืนยันว่าโอนแล้วได้เลย'
+                        : PAYMENT_INTENT_STATUS_LABELS[intent.status]}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* The amount the customer is about to be asked for, said before the code. */}
+                    <div className={styles.cashRow}>
+                      <span className={styles.cashLabel}>โอนเข้าพร้อมเพย์ร้าน</span>
+                      <Money amount={afterPoints} />
+                    </div>
+                    <Button icon="qr" loading={intentBusy} onClick={() => void startIntent(afterPoints)}>
+                      ออก QR พร้อมเพย์
+                    </Button>
+                    <p className={styles.hint}>
+                      ถ้ายังไม่ได้ตั้งพร้อมเพย์ของร้าน จะออก QR ไม่ได้ — ยืนยันรับเงินสดแทนได้เลย
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            {mode === 'split' ? (
+              <TextField
+                id="handover-split"
+                label="ยอดที่โอน (บาท)"
+                inputMode="decimal"
+                className="ln-num"
+                value={splitTransfer}
+                onChange={(event) => {
+                  setSplitTransfer(event.target.value);
+                  const transfer = Math.max(0, Number(event.target.value || 0));
+                  setReceivedCash(String(Math.max(0, Math.round((afterPoints - transfer) * 100) / 100)));
+                }}
+                help="เงินสดเป็นขาสุดท้ายเสมอ เพื่อให้เงินทอนคำนวณจากส่วนที่จ่ายเป็นเงินสด"
+              />
+            ) : null}
+
+            {mode === 'cash' ? (
+              /*
+               * The till's three money rows, in the till's words: what to keep, what was
+               * handed over, and the change that follows. This dialog used to show two
+               * fields side by side — "cash received" and "handed by the customer" — and
+               * the first one was wired to nothing at all: it was sent nowhere, so typing
+               * in it changed the sale by exactly zero. A figure and a field is what a
+               * cashier can read at a glance, and it is the same shape as `PaySheet`.
+               */
+              <div className={styles.cash}>
+                <div className={styles.cashRow}>
+                  <span className={styles.cashLabel}>เงินสดที่ต้องเก็บ</span>
+                  <Money amount={cashDue} />
+                </div>
+                <TextField
+                  id="handover-received"
+                  label="รับเงินมา (บาท)"
+                  inputMode="decimal"
+                  className="ln-num"
+                  value={receivedCash}
+                  onChange={(event) => setReceivedCash(event.target.value)}
+                />
+                <div
+                  className={`${styles.change} ${
+                    short ? styles.changeShort : changeThb > 0 ? '' : styles.changeZero
+                  }`}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <span>{short ? 'ยังไม่พอ' : 'เงินทอน'}</span>
+                  <Money amount={Math.abs(changeThb)} />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        )}
+      </Overlay>
+
+      {/*
+       * Rendered after the handover so it paints over it: the supervisor is asked
+       * about a transfer this dialog raised, and the PIN question has to be the
+       * thing seen next rather than a dialog hidden behind this one. A sibling and
+       * not a child of the overlay, because an overlay's scrim makes its fixed
+       * descendants position against itself rather than the viewport.
+       */}
+      {approval.pending ? (
+        <SupervisorApprovalDialog
+          open
+          action={approval.pending.action}
+          targetId={approval.pending.targetId}
+          {...(approval.pending.summary === undefined
+            ? {}
+            : { summary: approval.pending.summary })}
+          onCancel={() => approval.pending?.settle(null)}
+          onApproved={(grant) => approval.pending?.settle(grant)}
+        />
+      ) : null}
+    </>
   );
 }
 
