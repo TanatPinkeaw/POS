@@ -54,17 +54,20 @@ export function SetupWizard() {
   });
 
   /*
-   * Whether this shop calls its customers by number (ADR 0027), asked here rather
-   * than guessed from anything else. It is the one question this wizard asks whose
-   * answer is not about money but about how the counter works, and it is asked on
-   * the step that already owns the slip the customer walks away with. Default true,
-   * matching the column: a shop that hands everything over on the spot turns it off
-   * in two taps, and a shop that calls people does not have to know the feature
-   * exists to get it.
+   * The two questions about how this counter works, rather than about money
+   * (ADR 0027 and 0028), asked here rather than guessed from anything else. Both are
+   * asked on the step that already owns the slip the customer walks away with, and
+   * both default to true to match their columns: a shop that hands everything over
+   * on the spot turns them off in two taps, and a shop that calls people and takes
+   * orders ahead does not have to know either feature exists to get it.
+   *
+   * They live in `tax` even though neither is a tax question, because that is the
+   * step's state and splitting it would put two boxes of answers for one step.
    */
   const [tax, setTax] = useState({
     isVatRegistered: false,
     callsNumbers: true,
+    acceptsPreorders: true,
     vatRate: String(DEFAULT_VAT_RATE),
     taxId: '',
     receiptPrefix: DEFAULT_RECEIPT_PREFIX,
@@ -144,6 +147,7 @@ export function SetupWizard() {
           receiptPrefix: tax.receiptPrefix.trim(),
           receiptFooter: tax.receiptFooter.trim() || null,
           callsNumbers: tax.callsNumbers,
+          acceptsPreorders: tax.acceptsPreorders,
         },
         admin: {
           fullName: admin.fullName.trim(),
@@ -286,6 +290,14 @@ export function SetupWizard() {
               help="สำหรับร้านที่ลูกค้าต้องยืนรอของอยู่ — ปิดไว้ถ้าร้านส่งของให้จบในบิลเดียว บิลก็จะไม่มีเลขคิว และหน้าขายจะไม่มีบอร์ดคิว"
               checked={tax.callsNumbers}
               onChange={(next) => setTax({ ...tax, callsNumbers: next })}
+            />
+
+            <ToggleField
+              id="setup-accepts-preorders"
+              label="เปิดรับพรีออเดอร์"
+              help="สำหรับร้านที่เตรียมของไว้ล่วงหน้า — ปิดไว้ถ้าร้านขายสินค้าที่พร้อมขายได้เลย"
+              checked={tax.acceptsPreorders}
+              onChange={(next) => setTax({ ...tax, acceptsPreorders: next })}
             />
 
             {tax.isVatRegistered ? (

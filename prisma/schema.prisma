@@ -89,6 +89,23 @@ model shops {
    * wanted it.
    */
   calls_numbers                  Boolean            @default(true)
+  /**
+   * Whether this shop takes pre-orders at all (ADR 0028, built on ADR 0027's pattern).
+   *
+   * The second switch, and the first one earned by asking rather than by guessing: a
+   * shop that sells over the counter has no reason to let a customer order now and
+   * collect tomorrow, and the member-facing page would keep offering it.
+   *
+   * It is read inside `placePreOrder`'s own transaction, which is the whole design.
+   * Refusing in the route would leave a second way in; refusing in the customer page
+   * would refuse only the button and not the order. A pre-order is money a shop has
+   * promised to hold, so the refusal has to live where the promise is made.
+   *
+   * Existing pre-orders keep their whole life cycle: the switch governs new ones. An
+   * order already on the board has stock reserved against it and a customer waiting,
+   * and a shop that closes the door does not get to strand it.
+   */
+  accepts_preorders              Boolean            @default(true)
   receipt_footer                String?
   logo_url                      String?
   /**

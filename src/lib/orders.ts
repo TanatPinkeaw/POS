@@ -779,6 +779,9 @@ export async function createPosSale(input: {
  * Stock moves from available into `reserved_qty` atomically, so the item is
  * still physically on the shelf but can no longer be sold to anyone else — and
  * cannot be oversold if two customers reserve the last unit at the same time.
+ *
+ * A shop that has turned pre-orders off is refused here, first thing in the
+ * transaction, before the order number is spent.
  */
 export async function placePreOrder(input: {
   customerId: string;
@@ -791,6 +794,35 @@ export async function placePreOrder(input: {
   confirmDeadline: Date;
 }> {
   return prisma.$transaction(async (tx) => {
+    /*
+     * Whether the shop takes pre-orders at all is the shop's answer, and it is
+     * answered here rather than on the page that offers the button. A member's
+     * browser is the only way into this function, so a rule that lived in the route
+     * or in the products page would be one refactor away from a pre-order nobody
+     * asked for — the same reason `createPosSale` decides `fulfilment` here and
+     * not in the till's UI. Placed before `priceCart` so a closed shop spends
+     * neither the order sequence nor a product's reserved quantity on the way to
+     * the refusal, and so the member is told within a round trip.
+     *
+     * The read is deliberately not `lockShopRow`. This one value does not have to be
+     * current to the instant: an owner who closes pre-orders while an order is in
+     * flight gets that one order and refuses the next, which is what they meant.
+     * Taking the shop row here would instead put a lock in front of the product rows
+     * `priceCart` reads and risk inverting the order ADR 0019 settled.
+     *
+     * An unconfigured shop row answers `true`, the same default as the column
+     * itself and `UNCONFIGURED_SHOP` — otherwise a deployment that has not finished
+     * its setup wizard would silently stop taking pre-orders on the one screen a
+     * customer can reach.
+     */
+    const shop = await tx.shops.findUnique({
+      where: { id: SHOP_ROW_ID },
+      select: { accepts_preorders: true },
+    });
+    if (shop?.accepts_preorders === false) {
+      throw new ConflictError('ร้านนี้ยังไม่เปิดรับพรีออเดอร์', 'PREORDERS_CLOSED');
+    }
+
     const priced = await priceCart(tx, input.lines);
     const subtotal = sumThb(priced.map((line) => line.totalPrice));
     const orderNumber = await nextOrderNumber(tx);

@@ -145,6 +145,14 @@ export const shopSettingsSchema = z
      * answer.
      */
     callsNumbers: z.boolean().optional(),
+    /**
+     * Whether the shop takes pre-orders at all (ADR 0028).
+     *
+     * Optional for the same reason as the line above, and with the same
+     * consequence attached: a payload that predates the switch omits it, and the
+     * column keeps whatever the owner last chose.
+     */
+    acceptsPreorders: z.boolean().optional(),
     /** Where the shop receives PromptPay transfers; enables the till's QR. */
     promptpayId: z.string().trim().max(20).nullable().optional(),
     promptpayType: z.enum(PROMPTPAY_ID_TYPES).nullable().optional(),

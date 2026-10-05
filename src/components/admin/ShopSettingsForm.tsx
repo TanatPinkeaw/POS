@@ -123,6 +123,7 @@ export function ShopSettingsForm({
         // Always sent, never omitted: this form is the switch's home, and a save
         // that left it out would be a save that could not turn it off.
         callsNumbers: shop.callsNumbers,
+        acceptsPreorders: shop.acceptsPreorders,
         // Blank means "no PromptPay", which is a state rather than a gap: the
         // till then asks a cashier to confirm the transfer instead of issuing a
         // code. Both fields clear together, because half a setting cannot build
@@ -292,6 +293,24 @@ export function ShopSettingsForm({
               help="ปิดไปแล้วใบเสร็จจะไม่มีเลขคิว และบอร์ดคิวจะไม่ขึ้นในหน้าขาย — เหมาะกับร้านที่ส่งของให้จบในบิลเดียว"
               checked={shop.callsNumbers}
               onChange={(next) => setShop({ ...shop, callsNumbers: next })}
+            />
+
+            {/*
+             * Whether the shop takes orders before the customer has them, in the
+             * same card for the same reason: it is the other half of the question
+             * "does this shop hand things over, or does it keep them for a while?"
+             * (ADR 0028). Pre-orders exist for a shop that prepares ahead — a member
+             * orders on the way there and finds the drink waiting — and a shop that
+             * sells only what is on the shelf has nothing to prepare and a board
+             * nobody reads. Closing it refuses the order where it is placed, not just
+             * here, so a customer who already had the page open is turned away too.
+             */}
+            <ToggleField
+              id="shop-accepts-preorders"
+              label="เปิดรับพรีออเดอร์"
+              help="ปิดไปแล้ว ลูกค้าจะสั่งพรีออเดอร์ไม่ได้ และบอร์ดพรีออเดอร์จะไม่ขึ้นในหน้าขาย — เหมาะกับร้านที่ขายสินค้าที่พร้อมขายได้เลย"
+              checked={shop.acceptsPreorders}
+              onChange={(next) => setShop({ ...shop, acceptsPreorders: next })}
             />
 
             {/*

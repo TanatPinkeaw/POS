@@ -59,6 +59,14 @@ export interface ShopSettingsInput {
    */
   callsNumbers?: boolean;
   /**
+   * Whether this shop takes pre-orders at all (ADR 0028).
+   *
+   * Optional for the same reason `callsNumbers` is: a save that never asked the
+   * question must not answer it, or a shop that closed pre-orders last month would
+   * be reopened by whichever page happened to save last.
+   */
+  acceptsPreorders?: boolean;
+  /**
    * Both or neither: the till cannot build a payload from an id without knowing
    * which kind of account it is, so half a setting is refused at the schema.
    */
@@ -107,6 +115,7 @@ export function toShopView(row: shops): ShopView {
     promptpayType: (row.promptpay_type as PromptPayIdType | null) ?? null,
     supervisorDiscountLimitThb: fromDecimal(row.supervisor_discount_limit_thb),
     callsNumbers: row.calls_numbers,
+    acceptsPreorders: row.accepts_preorders,
   };
 }
 
@@ -458,6 +467,7 @@ export function shopColumns(input: ShopSettingsInput) {
     // Absent means "leave it alone" rather than "turn it off", for the reason the
     // input type gives: a form that never showed this setting must not answer it.
     ...(input.callsNumbers === undefined ? {} : { calls_numbers: input.callsNumbers }),
+    ...(input.acceptsPreorders === undefined ? {} : { accepts_preorders: input.acceptsPreorders }),
     /*
      * Normalised on the way in, so what is stored is exactly what the payload
      * builder will carry. A shop that typed 081-234-5678 gets 0066812345678.

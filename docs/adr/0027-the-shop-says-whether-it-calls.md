@@ -70,7 +70,9 @@ The temptation was to answer it with a shop type.
 - **One switch only.** Pre-orders, loyalty and consignment all have the same shape of argument
   and none of them has a shop that has asked to be rid of it, so no switch is added for them.
   When one is, it is one column and one branch in the sale — this ADR is the pattern, not a
-  licence to pre-build.
+  licence to pre-build. (Amended by ADR 0028: the shop that asked came back, and pre-orders
+  became a second switch on the same terms — its own column, refused where the order is
+  placed, independent of this one.)
 - **A shop that is wrong about itself is not diagnosed.** Nothing here notices a grocer that
   turns the switch on and never uses the board; the number simply appears on the slips.
 - **Measured:** `tests/shop-calls-numbers.test.ts` — off gives no number and no ticket, the day's

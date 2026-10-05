@@ -49,6 +49,15 @@ export interface ShopView {
    * settings, not from what kind of shop this is taken to be.
    */
   callsNumbers: boolean;
+  /**
+   * Whether this shop takes pre-orders at all (ADR 0028).
+   *
+   * False means a member's pre-order is refused where it is placed, and no screen
+   * offers to make one. It sits beside `callsNumbers` because the two are the same
+   * kind of answer — what this shop is willing to do for a walk-in — and because a
+   * shop that has not been set up has not had the chance to say no to either.
+   */
+  acceptsPreorders: boolean;
 }
 
 /** The current Thai standard rate, used as the wizard's default. */
@@ -99,6 +108,9 @@ export const UNCONFIGURED_SHOP: ShopView = {
   // True, to agree with the column this falls back from: a shop that has not been
   // set up has no policy yet, and the column it defaults to says true.
   callsNumbers: true,
+  // True, for the same reason as the line above: the column defaults to true, so
+  // an unconfigured shop must answer what its column would have answered.
+  acceptsPreorders: true,
 };
 
 /** What to print at the top of a receipt, and in the sidebar. */

@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { availableQty } from '@/lib/inventory';
 import { fromDecimal } from '@/lib/money';
 import { confirmTimeoutMinutes } from '@/lib/orders';
+import { loadShop } from '@/lib/shop';
 
 /**
  * The member storefront — SRS §3 Phase 1.
@@ -19,7 +20,15 @@ import { confirmTimeoutMinutes } from '@/lib/orders';
 export default async function ShopProductsPage() {
   const session = await getSessionUser();
 
-  const [products, user] = await Promise.all([
+  /*
+   * Whether this shop takes pre-orders at all (ADR 0028). Read here, with the
+   * products, so the page is built once with the answer it will show: a member
+   * who cannot pre-order gets a catalogue and a sentence saying so, rather than a
+   * basket that empties into a refusal. `loadShop` returns null before setup has
+   * run, and null means "on" — the column defaults to true, and a storefront that
+   * hid its own ordering before anybody had chosen would be the wrong default.
+   */
+  const [products, user, shop] = await Promise.all([
     prisma.products.findMany({
       where: { is_active: true },
       include: { category: { select: { name: true } } },
@@ -31,6 +40,7 @@ export default async function ShopProductsPage() {
           select: { id: true, points_balance: true },
         })
       : Promise.resolve(null),
+    loadShop(),
   ]);
 
   const initialProducts: ShopProduct[] = products.map((product) => ({
@@ -60,7 +70,11 @@ export default async function ShopProductsPage() {
           </Pill>
         }
       />
-      <ShopCatalog initialProducts={initialProducts} confirmMinutes={confirmTimeoutMinutes()} />
+      <ShopCatalog
+        initialProducts={initialProducts}
+        confirmMinutes={confirmTimeoutMinutes()}
+        acceptsPreorders={shop?.acceptsPreorders ?? true}
+      />
     </Stack>
   );
 }
