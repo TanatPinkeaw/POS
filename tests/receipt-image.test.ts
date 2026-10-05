@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { ReceiptData } from '@/components/pos/Receipt';
 import { DEFAULT_RECEIPT_CANVAS, receiptCanvasHeight, type ReceiptCanvasLine } from '@/lib/receipt-canvas';
-import { buildReceiptLines } from '@/lib/receipt-image';
+import { buildReceiptLines, systemThaiFont } from '@/lib/receipt-image';
 import type { ShopView } from '@/lib/shop-view';
 
 /** A complete shop, so the fields this module reads are explicit rather than defaulted. */
@@ -228,5 +228,13 @@ describe('the height a canvas must be', () => {
 
   it('sizes a 58mm roll, which is what a till prints', () => {
     expect(DEFAULT_RECEIPT_CANVAS.width).toBe(384);
+  });
+});
+
+describe('the receipt image font', () => {
+  it('falls back to the canvas default where there is no document', () => {
+    // Node (unit tests, server rendering): no computed style to read, so the
+    // drawing keeps the family it always had.
+    expect(systemThaiFont()).toBe(DEFAULT_RECEIPT_CANVAS.fontFamily);
   });
 });

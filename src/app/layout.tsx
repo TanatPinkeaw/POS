@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_Thai } from 'next/font/google';
+import { Inter, Mitr } from 'next/font/google';
 import { cookies } from 'next/headers';
 
 import { BRAND, THEME_COLOR } from '@/brand/brand';
@@ -28,9 +28,8 @@ import '@/design/base.css';
  * until the theme was deleted outright. "No font is fetched from another origin"
  * was verified against the built output then, not assumed.
  *
- * Inter covers Latin (digits, in Latin shops and on receipts) and Noto Sans Thai
- * covers Thai, including the tone marks that a Latin-only stack clips. Both are
- * OFL.
+ * Inter covers Latin (digits, in Latin shops and on receipts) and Mitr covers
+ * Thai, including the tone marks that a Latin-only stack clips. Both are OFL.
  */
 const inter = Inter({
   subsets: ['latin'],
@@ -39,7 +38,7 @@ const inter = Inter({
   display: 'swap',
 });
 
-const thai = Noto_Sans_Thai({
+const thai = Mitr({
   subsets: ['thai'],
   weight: ['400', '500', '600', '700'],
   variable: '--font-thai',

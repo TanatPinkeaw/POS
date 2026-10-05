@@ -144,11 +144,39 @@ export function drawReceiptToCanvas(
   return canvas;
 }
 
+/**
+ * The canvas receipt in the shop's own Thai font.
+ *
+ * `receipt-canvas.ts` is deliberately import-free — the browser journey
+ * transpiles that file alone — so it cannot read the `next/font` variable
+ * itself; everything it needs arrives as an argument. This module may use the
+ * shared vocabulary, so the family is resolved here from the computed
+ * `--font-thai`, which is whatever the root layout self-hosted at build time
+ * (Mitr today). Read at call time rather than module load, and fall back to the
+ * default where there is no document to read from (unit tests, server
+ * rendering): a PNG drawn off-document is a test artefact, never a slip a
+ * customer keeps.
+ */
+export function systemThaiFont(): string {
+  if (typeof document === 'undefined') {
+    return DEFAULT_RECEIPT_CANVAS.fontFamily;
+  }
+  const resolved = getComputedStyle(document.documentElement)
+    .getPropertyValue('--font-thai')
+    .trim();
+  return resolved.length > 0 ? resolved : DEFAULT_RECEIPT_CANVAS.fontFamily;
+}
+
 /** The same document as a PNG data URL, for a download link or an `<img>`. */
 export function receiptImageDataUrl(
   shop: ShopView,
   data: ReceiptData,
   when?: string,
 ): string {
-  return drawReceiptToCanvas(shop, data, DEFAULT_RECEIPT_CANVAS, when).toDataURL('image/png');
+  return drawReceiptToCanvas(
+    shop,
+    data,
+    { ...DEFAULT_RECEIPT_CANVAS, fontFamily: systemThaiFont() },
+    when,
+  ).toDataURL('image/png');
 }
