@@ -62,7 +62,7 @@ export async function writeProductWithBarcode<T>(
     throw new ValidationError(
       owner
         ? barcodeTakenMessage(barcode, owner.name)
-        : `Barcode ${barcode} is already used by another product`,
+        : `บาร์โค้ด ${barcode} ถูกใช้กับสินค้าอื่นอยู่แล้ว`,
     );
   }
 }
@@ -100,5 +100,5 @@ async function barcodeOwner(
  * after-the-fact refusal cannot drift apart.
  */
 function barcodeTakenMessage(barcode: string, ownerName: string): string {
-  return `Barcode ${barcode} is already used by "${ownerName}"`;
+  return `บาร์โค้ด ${barcode} ถูกใช้กับ "${ownerName}" อยู่แล้ว`;
 }

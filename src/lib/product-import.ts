@@ -146,7 +146,7 @@ export async function commitProductImport(
     throw new ValidationError(parsed.issues.map((issue) => issue.message).join(' · '));
   }
   if (parsed.validRows.length === 0) {
-    throw new ValidationError('There is nothing to import: no row in this file is valid');
+    throw new ValidationError('ไม่มีข้อมูลให้นำเข้าเลย — ไม่มีบรรทัดไหนในไฟล์นี้ที่ถูกต้อง');
   }
 
 

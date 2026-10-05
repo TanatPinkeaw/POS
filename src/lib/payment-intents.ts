@@ -107,7 +107,7 @@ export async function createIntent(input: {
   });
   if (!shift || shift.status !== 'open') {
     throw new ConflictError(
-      `Cash drawer #${input.shiftId} is not open, so a transfer could not be reconciled against it`,
+      `ไม่พบลิ้นชัก #${input.shiftId} ที่เปิดอยู่ จึงตัดยอดเงินโอนลงลิ้นชักไม่ได้`,
       'NO_OPEN_SHIFT',
     );
   }

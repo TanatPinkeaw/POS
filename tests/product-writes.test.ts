@@ -3,7 +3,7 @@
 // A barcode belongs to at most one product, and the two ways that promise is kept
 // fail very differently. The pre-check fails politely: it names the product that
 // already holds the code. The unique index fails impolitely: Prisma raises `P2002`,
-// and a route that lets it through answers 500 "Something went wrong on our side" —
+// and a route that lets it through answers 500 "เกิดข้อผิดพลาดบางอย่าง กรุณาลองใหม่อีกครั้ง" —
 // which is how a shop that mistyped a barcode ends up looking for a bug in the
 // software instead of at the label in their hand.
 //
@@ -47,7 +47,7 @@ describe('writing one product', () => {
     ).catch((error: unknown) => error);
 
     expect(failure).toBeInstanceOf(ValidationError);
-    expect((failure as Error).message).toBe('Barcode 885200 is already used by "น้ำเปล่า 600 มล."');
+    expect((failure as Error).message).toBe('บาร์โค้ด 885200 ถูกใช้กับ "น้ำเปล่า 600 มล." อยู่แล้ว');
     expect(await prisma.products.count({ where: { name: 'น้ำเปล่าอีกยี่ห้อ' } })).toBe(0);
   });
 
@@ -65,7 +65,7 @@ describe('writing one product', () => {
 
     expect(failure).toBeInstanceOf(ValidationError);
     expect((failure as Error).message).toBe(
-      'Barcode 885300 is already used by "ของคนอื่นที่บันทึกก่อน"',
+      'บาร์โค้ด 885300 ถูกใช้กับ "ของคนอื่นที่บันทึกก่อน" อยู่แล้ว',
     );
     expect(await prisma.products.count({ where: { name: 'ของเรา' } })).toBe(0);
   });
@@ -113,7 +113,7 @@ describe('writing one product', () => {
     ).catch((error: unknown) => error);
 
     expect(failure).toBeInstanceOf(ValidationError);
-    expect((failure as Error).message).toBe('Barcode 885500 is already used by "น้ำเปล่า"');
+    expect((failure as Error).message).toBe('บาร์โค้ด 885500 ถูกใช้กับ "น้ำเปล่า" อยู่แล้ว');
 
     const unchanged = await prisma.products.findUniqueOrThrow({ where: { id: mine.id } });
     expect(unchanged.barcode).toBe('885501');

@@ -81,9 +81,9 @@ export function movementTypeForReason(reason: StockAdjustmentReason): StockMovem
   return reason === 'REASON_CONSIGNMENT' ? 'consignment_received' : 'manual_adjust';
 }
 
-function assertPositiveQty(qty: number, label = 'quantity'): void {
+function assertPositiveQty(qty: number): void {
   if (!Number.isInteger(qty) || qty <= 0) {
-    throw new ValidationError(`${label} must be a positive whole number, received ${qty}`);
+    throw new ValidationError(`จำนวนสินค้าต้องเป็นจำนวนเต็มที่มากกว่า 0 (ได้รับ ${qty})`);
   }
 }
 
@@ -160,9 +160,9 @@ export async function releaseReservedStock(
   const balance = rows[0];
   if (!balance) {
     throw new ConflictError(
-      `Cannot release ${input.qty} reserved unit(s) of product ${input.productId}: ` +
-        'the reservation is already gone',
+      `ปลดการจองสินค้าไม่ได้ — ไม่พบการจองที่จองไว้แล้ว`,
       'RESERVATION_MISMATCH',
+      `Cannot release ${input.qty} reserved unit(s) of product ${input.productId}: the reservation is already gone`,
     );
   }
   return balance;
@@ -194,9 +194,9 @@ export async function commitReservedStock(
   const balance = rows[0];
   if (!balance) {
     throw new ConflictError(
-      `Cannot settle ${input.qty} unit(s) of product ${input.productId}: ` +
-        'the reservation or the physical stock is missing',
+      `ตัดสินค้าไม่ได้ — ไม่พบการจองสินค้าหรือสต็อกจริงของสินค้ารายการนี้`,
       'RESERVATION_MISMATCH',
+      `Cannot settle ${input.qty} unit(s) of product ${input.productId}: the reservation or the physical stock is missing`,
     );
   }
   return balance;
@@ -327,7 +327,7 @@ export async function adjustStock(
   },
 ): Promise<{ balance: StockBalance; logId: bigint }> {
   if (!Number.isInteger(input.delta) || input.delta === 0) {
-    throw new ValidationError('Stock adjustment must be a non-zero whole number');
+    throw new ValidationError('การปรับสต็อกต้องเป็นจำนวนเต็มที่ไม่ใช่ศูนย์');
   }
 
   const rows = await db.$queryRaw<StockBalance[]>`
@@ -347,8 +347,8 @@ export async function adjustStock(
       throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
     }
     throw new ConflictError(
-      `Adjusting by ${input.delta} would leave stock at ${current.stock_qty + input.delta}, ` +
-        `which is below zero or below the ${current.reserved_qty} unit(s) held by active pre-orders`,
+      `ปรับสต็อกไม่ได้ — หลังปรับแล้วจะเหลือ ${current.stock_qty + input.delta} ชิ้น ` +
+        `ซึ่งติดลบ หรือน้อยกว่าจำนวน ${current.reserved_qty} ชิ้นที่ออเดอร์ที่ยังใช้อยู่จองไว้`,
       'STOCK_ADJUSTMENT_INVALID',
     );
   }

@@ -203,7 +203,7 @@ describe('a request that cannot be honoured', () => {
   it('refuses an order item that is not on the sale', () => {
     expect(() =>
       planRefund({ ...base, requested: [{ orderItemId: 'nope', quantity: 1 }] }),
-    ).toThrow(/not on this sale/);
+    ).toThrow(/ไม่พบในบิลนี้/);
   });
 
   it('refuses a fractional or non-positive quantity', () => {
@@ -221,7 +221,7 @@ describe('a request that cannot be honoured', () => {
         lines: [{ ...THREE[0]!, returnedQuantity: 1 }, ...THREE.slice(1)],
         requested: [{ orderItemId: 'a', quantity: 1 }],
       }),
-    ).toThrow(/already been returned/);
+    ).toThrow(/ถูกคืนไปหมดแล้ว/);
   });
 
   it('refuses an empty request rather than issuing a zero-value note', () => {
@@ -246,8 +246,8 @@ describe('a request that cannot be honoured', () => {
       }
     })();
 
-    expect(failure?.message).toContain('not on this sale');
-    expect(failure?.message).toContain('only 1');
+    expect(failure?.message).toContain('ไม่พบในบิลนี้');
+    expect(failure?.message).toContain('เหลือคืนได้อีก 1 ชิ้น');
   });
 });
 

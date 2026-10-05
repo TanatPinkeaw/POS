@@ -92,13 +92,13 @@ export async function readTabularRows(input: {
 
   if (name.endsWith('.xlsx') || name.endsWith('.xlsm')) {
     throw new ValidationError(
-      'That file is named .xlsx but is not a valid workbook. Re-save it from Excel and try again.',
+      'ไฟล์นามสกุล .xlsx นี้เปิดไม่ได้ — กรุณาบันทึกใหม่จาก Excel แล้วลองอีกครั้ง',
     );
   }
 
   if (name.endsWith('.xls')) {
     throw new ValidationError(
-      'The old .xls format cannot be read. In Excel use Save As, then choose .xlsx or CSV.',
+      'อ่านไฟล์ .xls แบบเก่าไม่ได้ — ใน Excel ให้เลือก Save As แล้วเลือกเป็น .xlsx หรือ CSV',
     );
   }
 
@@ -113,7 +113,7 @@ async function readXlsxRows(buffer: Buffer): Promise<string[][]> {
     // as Node's but not assignable to it under TypeScript 5.9's generic Buffer.
     await workbook.xlsx.load(buffer as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   } catch {
-    throw new ValidationError('That workbook could not be opened. Is it a valid .xlsx file?');
+    throw new ValidationError('เปิดไฟล์นี้ไม่ได้ — ตรวจสอบว่าเป็นไฟล์ .xlsx ที่ถูกต้องหรือไม่');
   }
 
   const sheet = workbook.worksheets[0];

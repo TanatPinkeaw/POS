@@ -21,7 +21,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
 
     const shiftId = Number(id);
     if (!Number.isInteger(shiftId) || shiftId <= 0) {
-      throw new ValidationError('Cash drawer id must be a whole number');
+      throw new ValidationError('รหัสลิ้นชักต้องเป็นจำนวนเต็ม');
     }
 
     const shift = await closeShift({

@@ -77,12 +77,12 @@ const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 export function parseBangkokDay(value: string): Date {
   const match = DATE_PATTERN.exec(value);
   if (!match) {
-    throw new ValidationError(`Date "${value}" must be formatted as YYYY-MM-DD`);
+    throw new ValidationError(`วันที่ "${value}" ต้องอยู่ในรูปแบบ YYYY-MM-DD`);
   }
   const date = new Date(`${value}T00:00:00+07:00`);
   // Guards against 2026-02-31 silently rolling over to 3 March.
   if (Number.isNaN(date.getTime()) || bangkokDateString(date) !== value) {
-    throw new ValidationError(`Date "${value}" is not a real calendar day`);
+    throw new ValidationError(`วันที่ "${value}" ไม่ใช่วันที่ที่มีอยู่จริงในปฏิทิน`);
   }
   return date;
 }
@@ -148,7 +148,7 @@ export function isClock(value: string): boolean {
  */
 export function timeColumnFromClock(value: string): Date {
   if (!isClock(value)) {
-    throw new ValidationError(`Time "${value}" must be formatted as HH:MM`);
+    throw new ValidationError(`เวลา "${value}" ต้องอยู่ในรูปแบบ HH:MM`);
   }
   const [hour, minute] = value.split(':').map(Number) as [number, number];
   return new Date(Date.UTC(1970, 0, 1, hour, minute, 0, 0));
@@ -175,11 +175,11 @@ export function isLocalDateTime(value: string): boolean {
  */
 export function parseBangkokLocalDateTime(value: string): Date {
   if (!isLocalDateTime(value)) {
-    throw new ValidationError(`Date/time "${value}" must be formatted as YYYY-MM-DDTHH:MM`);
+    throw new ValidationError(`วันและเวลา "${value}" ต้องอยู่ในรูปแบบ YYYY-MM-DDTHH:MM`);
   }
   const date = new Date(`${value}:00+07:00`);
   if (Number.isNaN(date.getTime())) {
-    throw new ValidationError(`Date/time "${value}" is not a real moment`);
+    throw new ValidationError(`วันและเวลา "${value}" ไม่ใช่ช่วงเวลาที่มีอยู่จริง`);
   }
   return date;
 }
@@ -223,7 +223,7 @@ export function resolveBangkokRange(
   const toExclusive = new Date(parseBangkokDay(to).getTime() + MS_PER_DAY);
 
   if (toExclusive <= fromDate) {
-    throw new ValidationError('The end date must not be before the start date');
+    throw new ValidationError('วันที่สิ้นสุดต้องไม่อยู่ก่อนวันที่เริ่ม');
   }
 
   return { fromDate, toExclusive, from, to };

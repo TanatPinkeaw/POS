@@ -253,7 +253,7 @@ export async function requeueNotification(id: string, now: Date = new Date()): P
   });
   if (result.count !== 1) {
     throw new ConflictError(
-      `Notification ${id} is not abandoned, so there is nothing to requeue`,
+      'การแจ้งนี้ไม่ได้ค้างเสีย จึงไม่มีอะไรให้ส่งซ้ำ',
       'NOTIFICATION_NOT_ABANDONED',
     );
   }

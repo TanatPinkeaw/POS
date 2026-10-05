@@ -40,19 +40,19 @@ export async function POST(request: Request): Promise<Response> {
     try {
       form = await request.formData();
     } catch {
-      throw new ValidationError('Send the file as multipart form data with a "file" field');
+      throw new ValidationError('กรุณาส่งไฟล์แบบ multipart form data ในช่อง "file"');
     }
 
     const file = form.get('file');
     if (!(file instanceof File)) {
-      throw new ValidationError('Attach a CSV or .xlsx file in the "file" field');
+      throw new ValidationError('กรุณาแนบไฟล์ CSV หรือ .xlsx ในช่อง "file"');
     }
     if (file.size === 0) {
-      throw new ValidationError('That file is empty');
+      throw new ValidationError('ไฟล์ที่ส่งมาว่างเปล่า');
     }
     if (file.size > MAX_UPLOAD_BYTES) {
       throw new ValidationError(
-        `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB; the limit is 5 MB`,
+        `ไฟล์ที่ส่งมามีขนาด ${(file.size / 1024 / 1024).toFixed(1)} MB — ต้องไม่เกิน 5 MB`,
       );
     }
 
@@ -63,7 +63,7 @@ export async function POST(request: Request): Promise<Response> {
     });
 
     if (grid.length === 0) {
-      throw new ValidationError('That file contains no rows');
+      throw new ValidationError('ไฟล์ที่ส่งมาไม่มีข้อมูลสินค้าเลย');
     }
 
     if (mode === 'commit') {

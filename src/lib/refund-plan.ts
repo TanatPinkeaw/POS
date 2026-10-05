@@ -114,15 +114,15 @@ export function planRefund(input: {
 
     if (!Number.isInteger(requested) || requested <= 0) {
       problems.push(
-        `Quantity for "${line.name}" must be a whole number of units greater than zero`,
+        `จำนวนของ "${line.name}" ต้องเป็นจำนวนเต็มที่มากกว่า 0`,
       );
       continue;
     }
     if (requested > remaining) {
       problems.push(
         remaining === 0
-          ? `"${line.name}" has already been returned in full`
-          : `"${line.name}" has only ${remaining} unit(s) left to return`,
+          ? `"${line.name}" ถูกคืนไปหมดแล้ว`
+          : `"${line.name}" เหลือคืนได้อีก ${remaining} ชิ้น`,
       );
       continue;
     }
@@ -132,11 +132,11 @@ export function planRefund(input: {
   }
 
   for (const orderItemId of wanted.keys()) {
-    problems.push(`Order item ${orderItemId} is not on this sale`);
+    problems.push('มีรายการที่ขอคืนเงิน แต่ไม่พบในบิลนี้');
   }
 
   if (input.requested !== null && planned.length === 0 && problems.length === 0) {
-    problems.push('A refund must name at least one line to take back');
+    problems.push('การคืนเงินต้องเลือกอย่างน้อย 1 รายการ');
   }
 
   if (problems.length > 0) {
@@ -181,7 +181,7 @@ export function planRefund(input: {
 
   if (refundThb <= 0 || discountThb < 0) {
     throw new ValidationError(
-      'That refund comes to nothing — the sale has already been given back in full',
+      'ยอดคืนเงินเป็นศูนย์ — เพราะบิลนี้ถูกคืนไปหมดแล้ว',
     );
   }
 

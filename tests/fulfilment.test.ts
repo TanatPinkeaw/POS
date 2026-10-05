@@ -132,7 +132,9 @@ describe('the board a walk-in sale lands on', () => {
 
     // Two tablets at one bar: the second tap has to fail loudly rather than quietly
     // draw a board that no longer matches the shop.
-    await expect(markTicketReady(sale.orderId)).rejects.toThrow(/cannot be made ready/i);
+    await expect(markTicketReady(sale.orderId)).rejects.toThrow(
+      /ทำเครื่องหมายว่าพร้อมรับซ้ำไม่ได้/,
+    );
   });
 
   it('refuses to call a bill whose money went back', async () => {
@@ -149,7 +151,9 @@ describe('the board a walk-in sale lands on', () => {
      */
     await prisma.orders.update({ where: { id: sale.orderId }, data: { status: 'refunded' } });
 
-    await expect(markTicketReady(sale.orderId)).rejects.toThrow(/only a completed sale/i);
+    await expect(markTicketReady(sale.orderId)).rejects.toThrow(
+      /มีเฉพาะบิลที่ปิดแล้วเท่านั้น/,
+    );
   });
 
   it('has no ticket for a pre-order, even once it is collected', async () => {
@@ -173,7 +177,7 @@ describe('the board a walk-in sale lands on', () => {
     // Paid and completed, and still not a ticket: its handover was the moment it was
     // paid for, so a number to wait for would be one nobody calls (ADR 0017 decision 5).
     expect(await listQueueTickets()).toHaveLength(0);
-    await expect(markTicketReady(placed.orderId)).rejects.toThrow(/no call ticket/i);
+    await expect(markTicketReady(placed.orderId)).rejects.toThrow(/ไม่มีเลขคิว/);
   });
 
   it('drops yesterday from the board, however it was left', async () => {

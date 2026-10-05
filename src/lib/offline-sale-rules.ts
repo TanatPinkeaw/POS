@@ -201,12 +201,12 @@ function quantityByProduct(lines: readonly OfflineBasketLine[]): Map<string, num
 
 function assertSellableBasket(basket: OfflineBasket): void {
   if (basket.lines.length === 0) {
-    throw new ValidationError('An offline sale needs at least one line');
+    throw new ValidationError('บิลออฟไลน์ต้องมีอย่างน้อย 1 รายการ');
   }
   for (const line of basket.lines) {
     if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
       throw new ValidationError(
-        `An offline sale line must be a positive whole number of units; got ${line.quantity}`,
+        `จำนวนสินค้าในบิลออฟไลน์ต้องเป็นจำนวนเต็มที่มากกว่า 0 (ได้รับ ${line.quantity})`,
       );
     }
   }
@@ -410,7 +410,7 @@ export function priceOfflineSale(
   const lines: OfflineSaleLine[] = basket.lines.map((line) => {
     const entry = context.catalogue.find((candidate) => candidate.productId === line.productId);
     if (!entry) {
-      throw new ValidationError(`A priced offline sale names a product the device has no price for: ${line.productId}`);
+      throw new ValidationError('บิลออฟไลน์นี้มีสินค้าที่เครื่องไม่มีราคามาให้คิด');
     }
     return { productId: line.productId, quantity: line.quantity, unitPrice: entry.priceThb };
   });
@@ -429,7 +429,7 @@ export function priceOfflineSale(
   const received = roundThb(receivedThb);
   if (received < finalAmountThb) {
     throw new ValidationError(
-      `An offline sale was priced for less cash than it costs: ${received} < ${finalAmountThb}`,
+      `บิลออฟไลน์นี้คิดเงินได้น้อยกว่ายอดจริง (${received} < ${finalAmountThb})`,
     );
   }
 

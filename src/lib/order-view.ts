@@ -11,7 +11,7 @@ import type { ReceiptData } from '@/components/pos/Receipt';
 import { prisma } from './db';
 import { ConflictError, NotFoundError } from './errors';
 import { fromDecimal, sumThb } from './money';
-import type { OrderStatus } from './order-state';
+import { orderStatusLabel, type OrderStatus } from './order-state';
 import { createPickupToken } from './pickup-token';
 import { formatQueueNumber } from './queue-number';
 import { receiptWithinAccessWindow } from './receipt-access';
@@ -403,8 +403,9 @@ export async function loadReceiptPayload(orderId: string): Promise<ReceiptPayloa
    */
   if (order.status !== 'completed' && order.status !== 'refunded') {
     throw new ConflictError(
-      `Order ${order.order_number} is ${order.status}; only a completed sale has a receipt`,
+      `ออเดอร์ ${order.order_number} อยู่ในสถานะ "${orderStatusLabel(order.status)}" — มีเฉพาะบิลที่ปิดแล้วเท่านั้นที่จะมีใบเสร็จ`,
       'ORDER_NOT_COMPLETED',
+      `Order ${order.id} is ${order.status}; only a completed sale has a receipt`,
     );
   }
 

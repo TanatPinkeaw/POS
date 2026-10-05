@@ -79,20 +79,20 @@ function assertBorrowable(input: {
 }): void {
   if (!Number.isInteger(input.size) || input.size < 1 || input.size > MAX_BLOCK_SIZE) {
     throw new ValidationError(
-      `A number block holds between 1 and ${MAX_BLOCK_SIZE} numbers; got ${input.size}`,
+      `ชุดเลขต้องมีตั้งแต่ 1 ถึง ${MAX_BLOCK_SIZE} เลข (ส่งมา ${input.size})`,
     );
   }
   const label = input.deviceLabel.trim();
   if (label.length === 0 || label.length > 60) {
-    throw new ValidationError('A number block needs a device label of 1 to 60 characters');
+    throw new ValidationError('ชุดเลขต้องมีชื่อเครื่องยาว 1 ถึง 60 ตัวอักษร');
   }
   // The day is the call-number series' whole reason for existing; on the receipt series
   // it would be a field an admin reads and nobody can explain.
   if (input.series === 'queue' && (input.day === null || !isValidCalendarDay(input.day))) {
-    throw new ValidationError('A call-number block must name a calendar day');
+    throw new ValidationError('ชุดเลขคิวต้องระบุวันที่ของเลขคิว');
   }
   if (input.series === 'receipt' && input.day !== null) {
-    throw new ValidationError('The receipt series is numbered per year, not per day');
+    throw new ValidationError('ชุดใบกำกับภาษีเรียงเลขเป็นรายปี ไม่ใช่รายวัน');
   }
 }
 
@@ -266,7 +266,7 @@ export async function claimNumberFromBlock(
   const record = toRecord(row);
   if (record.kind === 'queue') {
     if (input.day === undefined) {
-      throw new ValidationError('Claiming a call number requires the day the sale belongs to');
+      throw new ValidationError('การขอเลขคิวต้องระบุวันที่ของบิลด้วย');
     }
     if (record.day !== input.day) {
       throw new ConflictError(
@@ -288,7 +288,7 @@ export async function claimNumberFromBlock(
     if (judged.reason === 'malformed') {
       // Unreachable through the CHECK constraints; a stored block that contradicts
       // itself is a database integrity failure rather than anything a device did.
-      throw new ValidationError('The borrowed block is malformed');
+      throw new ValidationError('ข้อมูลชุดเลขที่เครื่องส่งมาไม่ถูกต้อง');
     }
     if (judged.reason === 'out_of_range') {
       throw new ConflictError(
@@ -352,8 +352,8 @@ export async function reportNumberBlock(input: {
       input.lastUsed > row.to_number
     ) {
       throw new ValidationError(
-        `Reported number ${input.lastUsed} is outside the borrowed range ` +
-          `${row.from_number}..${row.to_number}`,
+        `เลขที่รายงานว่าใช้ถึง ${input.lastUsed} ไม่อยู่ในช่วง ` +
+          `${row.from_number}..${row.to_number} ที่ให้เครื่องนี้ไว้`,
       );
     }
     if (row.last_used_number !== null && input.lastUsed < row.last_used_number) {

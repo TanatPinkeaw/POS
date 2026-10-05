@@ -156,7 +156,7 @@ export async function requireOpenShift(db: Db, userId: string): Promise<ShiftSum
   const shift = await getOpenShift(db, userId);
   if (!shift) {
     throw new ConflictError(
-      'Open a cash drawer before taking payment',
+      'กรุณาเปิดลิ้นชักก่อนรับชำระเงิน',
       'NO_OPEN_SHIFT',
     );
   }
@@ -175,7 +175,7 @@ export async function openShift(input: {
     });
     if (existing) {
       throw new ConflictError(
-        `You already have cash drawer #${existing.id} open. Close it before opening another.`,
+        `คุณเปิดลิ้นชัก #${existing.id} ค้างอยู่ — กรุณาปิดลิ้นชักเดิมก่อนเปิดลิ้นชักใหม่`,
         'SHIFT_ALREADY_OPEN',
       );
     }
@@ -215,7 +215,7 @@ export async function closeShift(input: {
     }
     if (current.status === 'closed') {
       throw new ConflictError(
-        `Cash drawer #${input.shiftId} is already closed`,
+        `ลิ้นชัก #${input.shiftId} ปิดไปแล้ว`,
         'SHIFT_ALREADY_CLOSED',
       );
     }
@@ -279,7 +279,7 @@ export async function recordDrawerOpening(input: {
     }
     if (shift.status !== 'open') {
       throw new ConflictError(
-        `Cash drawer #${input.shiftId} is closed, so opening it would leave no record to check against`,
+        `ลิ้นชัก #${input.shiftId} ปิดไปแล้ว การเปิดซ้ำจะไม่มีบันทึกให้ตรวจสอบ`,
         'SHIFT_NOT_OPEN',
       );
     }

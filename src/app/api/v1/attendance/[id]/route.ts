@@ -21,7 +21,7 @@ export async function DELETE(_request: Request, context: RouteContext): Promise<
 
     const logId = Number(id);
     if (!Number.isInteger(logId) || logId <= 0) {
-      throw new ValidationError('Time log id must be a whole number');
+      throw new ValidationError('รหัสบันทึกเวลาต้องเป็นจำนวนเต็ม');
     }
 
     // Read first, for the notification's employee name and day.

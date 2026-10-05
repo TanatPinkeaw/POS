@@ -140,7 +140,7 @@ export function buildPromptPayPayload(input: PromptPayInput): string {
 
   if (!Number.isFinite(input.amountThb) || input.amountThb <= 0) {
     throw new ConflictError(
-      'A PromptPay QR must be for a positive amount, so that the code cannot be reused for another bill',
+      'QR พร้อมเพย์ต้องเป็นยอดเงินมากกว่า 0 — เพื่อไม่ให้โค้ดเดิมถูกใช้ซ้ำกับบิลอื่น',
       'INVALID_PROMPTPAY_AMOUNT',
     );
   }

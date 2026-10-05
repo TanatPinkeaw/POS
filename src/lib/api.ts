@@ -51,7 +51,7 @@ export function errorResponse(error: unknown): NextResponse {
   }
 
   if (error instanceof ZodError) {
-    return fail('Request body failed validation', 'VALIDATION_ERROR', 422, {
+    return fail('ข้อมูลที่ส่งมาไม่ถูกต้อง', 'VALIDATION_ERROR', 422, {
       issues: error.issues.map((issue) => ({
         path: issue.path.join('.'),
         message: issue.message,
@@ -60,7 +60,7 @@ export function errorResponse(error: unknown): NextResponse {
   }
 
   console.error('[api] unhandled error', error);
-  return fail('Something went wrong on our side', 'INTERNAL_ERROR', 500);
+  return fail('เกิดข้อผิดพลาดบางอย่าง กรุณาลองใหม่อีกครั้ง', 'INTERNAL_ERROR', 500);
 }
 
 /**
@@ -95,7 +95,7 @@ export async function readJson<T>(
   try {
     payload = await request.json();
   } catch {
-    throw new ValidationError('Request body must be valid JSON');
+    throw new ValidationError('ข้อมูลที่ส่งมาไม่ใช่ JSON ที่ถูกต้อง');
   }
   return schema.parse(payload);
 }

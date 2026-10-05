@@ -22,6 +22,7 @@ import { withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { ConflictError, NotFoundError } from '@/lib/errors';
+import { orderStatusLabel } from '@/lib/order-state';
 import { createReceiptLink, ReceiptWindowClosedError } from '@/lib/receipt-link';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -41,8 +42,9 @@ export async function POST(_request: Request, context: RouteContext): Promise<Re
     }
     if (order.status !== 'completed' && order.status !== 'refunded') {
       throw new ConflictError(
-        `Order ${order.order_number} is ${order.status}; only a completed sale has a receipt`,
+        `ออเดอร์ ${order.order_number} อยู่ในสถานะ "${orderStatusLabel(order.status)}" — มีเฉพาะบิลที่ปิดแล้วเท่านั้นที่จะมีใบเสร็จ`,
         'ORDER_NOT_COMPLETED',
+        `Order ${order.id} is ${order.status}; only a completed sale has a receipt`,
       );
     }
 

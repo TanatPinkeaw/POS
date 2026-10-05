@@ -81,6 +81,36 @@ export function isTerminal(status: OrderStatus): boolean {
 }
 
 /**
+ * The status as the shop says it out loud.
+ *
+ * Eight error messages across the order, refund, receipt and call-board paths used to
+ * answer "Order 8f2c is cancelled and can no longer be confirmed", which put two
+ * English enum values in front of whoever was standing at the till — `cancelled`,
+ * `ready_for_pickup` — neither of which means anything to the person who has to decide
+ * what to do next. The machine half was never lost: each of those errors carries a
+ * stable `code` (`INVALID_TRANSITION`, `ORDER_NOT_COMPLETED`), so this map is only
+ * ever the sentence, never the discriminator.
+ *
+ * Lives beside the transition table rather than in a component because a refusal is
+ * raised in the domain layer and read on every screen; the board's column titles are
+ * a separate thing and deliberately read in lifecycle order ("1 · รอยืนยัน") rather
+ * than repeating these.
+ */
+const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  pending: 'รอยืนยัน',
+  confirmed: 'ยืนยันแล้ว กำลังเตรียม',
+  ready_for_pickup: 'พร้อมรับแล้ว',
+  completed: 'ปิดบิลแล้ว',
+  cancelled: 'ยกเลิกแล้ว',
+  refunded: 'คืนเงินแล้ว',
+};
+
+/** What a person at the counter is told this order's status is. */
+export function orderStatusLabel(status: OrderStatus): string {
+  return ORDER_STATUS_LABELS[status];
+}
+
+/**
  * True when the order is still claiming stock in `products.reserved_qty`.
  *
  * Phases 1–3 hold a reservation; completion converts it into a real sale and

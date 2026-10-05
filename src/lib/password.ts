@@ -34,7 +34,7 @@ export const MIN_PASSWORD_LENGTH = 8;
  */
 export function passwordProblem(password: string): string | null {
   if (password.length < MIN_PASSWORD_LENGTH) {
-    return `A password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+    return `รหัสผ่านต้องมีอย่างน้อย ${MIN_PASSWORD_LENGTH} ตัวอักษร`;
   }
   return null;
 }

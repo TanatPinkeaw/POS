@@ -715,7 +715,7 @@ async function applyReport(input: {
     }
 
     if (report.lastUsed === undefined) {
-      throw new ValidationError('A report must name the last number the device printed');
+      throw new ValidationError('การรายงานต้องระบุเลขสุดท้ายที่เครื่องพิมพ์ไป');
     }
     const recorded = row.last_used_number ?? 0;
     if (report.lastUsed > recorded) {

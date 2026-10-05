@@ -133,7 +133,7 @@ export async function setSupervisorPin(input: {
   const target = await loadPinHolder(input.userId);
   if (target.role !== 'admin') {
     throw new ValidationError(
-      'Only an administrator can hold a supervisor PIN, because only an administrator may approve',
+      'เฉพาะผู้ดูแลระบบเท่านั้นที่ตั้ง PIN ผู้ดูแลได้ เพราะการอนุมัติทำได้เฉพาะผู้ดูแลระบบ',
     );
   }
 
@@ -237,7 +237,7 @@ export async function verifySupervisorPin(input: {
 
   if (holder.pin_hash === null) {
     throw new ConflictError(
-      `${holder.full_name} has not set a supervisor PIN yet`,
+      `${holder.full_name} ยังไม่ได้ตั้ง PIN ผู้ดูแล`,
       'NO_SUPERVISOR_PIN',
     );
   }
@@ -494,7 +494,7 @@ async function loadPinHolder(userId: string): Promise<PinHolderRow> {
     throw new NotFoundError('ไม่พบผู้ใช้ที่ระบุ', `User ${userId}`);
   }
   if (!user.is_active) {
-    throw new ConflictError('This account is no longer active', 'ACCOUNT_INACTIVE');
+    throw new ConflictError('บัญชีนี้ไม่ได้ใช้งานแล้ว', 'ACCOUNT_INACTIVE');
   }
 
   return user;

@@ -21,7 +21,7 @@ export async function DELETE(_request: Request, context: RouteContext): Promise<
 
     const scheduleId = Number(id);
     if (!Number.isInteger(scheduleId) || scheduleId <= 0) {
-      throw new ValidationError('Work schedule id must be a whole number');
+      throw new ValidationError('รหัสตารางงานต้องเป็นจำนวนเต็ม');
     }
 
     const schedule = await loadSchedule(scheduleId);

@@ -106,7 +106,7 @@ export async function updateStaff(input: UpdateStaffInput): Promise<StaffMember>
   }
   if (existing.role === 'member') {
     throw new ConflictError(
-      'This account belongs to a customer; manage it from the customer screen',
+      'บัญชีนี้เป็นของลูกค้า — กรุณาจัดการที่หน้าลูกค้า',
       'NOT_A_STAFF_ACCOUNT',
     );
   }
@@ -122,7 +122,7 @@ export async function updateStaff(input: UpdateStaffInput): Promise<StaffMember>
    */
   if (input.actorId === existing.id && (nextRole !== 'admin' || !nextIsActive)) {
     throw new ConflictError(
-      'You cannot demote or deactivate your own account — ask another administrator',
+      'ไม่สามารถลดสิทธิ์หรือปิดบัญชีของตัวเองได้ — กรุณาให้ผู้ดูแลระบบคนอื่นทำแทน',
       'SELF_DEMOTION',
     );
   }
@@ -199,8 +199,8 @@ async function assertNotLastAdmin(
 
   if (others === 0) {
     throw new ConflictError(
-      'This is the only active administrator. Promote someone else first, or you will ' +
-        'lock the shop out of its own settings.',
+      'นี่คือผู้ดูแลระบบที่ใช้งานอยู่เพียงคนเดียว — กรุณาเลื่อนตำแหน่งให้คนอื่นก่อน ' +
+        'ไม่เช่นนั้นร้านจะเข้าหน้าตั้งค่าของตัวเองไม่ได้',
       'LAST_ADMIN',
     );
   }
@@ -220,7 +220,7 @@ async function assertNothingDangling(db: Db, userId: string): Promise<void> {
   });
   if (openLog) {
     throw new ConflictError(
-      'This person is still clocked in. Close their timesheet before deactivating them.',
+      'คนนี้ยังไม่ได้กดออกตอน — กรุณาปิดใบบันทึกเวลาของเขาก่อนปิดบัญชี',
       'STAFF_STILL_CLOCKED_IN',
     );
   }
@@ -231,7 +231,7 @@ async function assertNothingDangling(db: Db, userId: string): Promise<void> {
   });
   if (openShift) {
     throw new ConflictError(
-      'This person has an open cash drawer. Close the shift before deactivating them.',
+      'คนนี้ยังเปิดลิ้นชักค้างอยู่ — กรุณาปิดกะก่อนปิดบัญชี',
       'STAFF_HAS_OPEN_SHIFT',
     );
   }

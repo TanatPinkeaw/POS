@@ -78,7 +78,7 @@ export function buildSettlement(input: {
   })) {
     if (value !== undefined && (!Number.isFinite(value) || value < 0)) {
       throw new ConflictError(
-        `Payment amounts cannot be negative or non-finite (received ${label}=${value})`,
+        `ยอดเงินที่รับมาต้องไม่ติดลบและต้องเป็นตัวเลขจริง (${label}=${value})`,
         'INVALID_PAYMENT_AMOUNT',
       );
     }
@@ -86,7 +86,7 @@ export function buildSettlement(input: {
 
   if (isEmptyRequest(request)) {
     throw new ConflictError(
-      'A settlement must apply at least one payment, redemption, or cash handover',
+      'การปิดบิลต้องมีการชำระเงิน การใช้แต้ม หรือการส่งมอบเงินสด อย่างน้อย 1 อย่าง',
       'EMPTY_SETTLEMENT',
     );
   }
@@ -106,15 +106,15 @@ export function buildSettlement(input: {
   const applied = toSatang(cashThb) + toSatang(promptpayThb);
   if (applied === 0 && pointsRedeemed === 0) {
     throw new ConflictError(
-      'A settlement must apply at least one payment, redemption, or cash handover',
+      'การปิดบิลต้องมีการชำระเงิน การใช้แต้ม หรือการส่งมอบเงินสด อย่างน้อย 1 อย่าง',
       'EMPTY_SETTLEMENT',
     );
   }
 
   if (applied !== toSatang(netDue)) {
     throw new ConflictError(
-      `Payment must cover the amount due exactly: amount due is ${netDue} THB ` +
-        `after a ${discountThb} THB points discount, but ${applied / 100} THB was applied`,
+      `ยอดชำระต้องตรงกับยอดที่ต้องจ่ายพอดี: ต้องจ่าย ${netDue} บาท ` +
+        `หลังหักส่วนลดจากแต้ม ${discountThb} บาท แต่ชำระไป ${applied / 100} บาท`,
       'PAYMENT_MISMATCH',
     );
   }
@@ -124,8 +124,8 @@ export function buildSettlement(input: {
   const changeThb = roundThb(receivedCash - cashThb);
   if (changeThb < 0) {
     throw new ConflictError(
-      `Cash received (${receivedCash} THB) is less than the cash applied ` +
-        `(${cashThb} THB), so the change would be negative`,
+      `เงินสดที่ได้รับมา (${receivedCash} บาท) น้อยกว่ายอดเงินสดที่ใช้ไป ` +
+        `(${cashThb} บาท) เงินทอนจึงติดลบ`,
       'NEGATIVE_CHANGE',
     );
   }

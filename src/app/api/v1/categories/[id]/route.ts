@@ -19,7 +19,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 function parseCategoryId(raw: string): number {
   const id = Number(raw);
   if (!Number.isInteger(id) || id <= 0) {
-    throw new ValidationError(`"${raw}" is not a category id`);
+    throw new ValidationError(`"${raw}" ไม่ใช่รหัสหมวดหมู่ที่ถูกต้อง`);
   }
   return id;
 }
@@ -54,8 +54,8 @@ export async function DELETE(_request: Request, context: RouteContext): Promise<
 
     if (category._count.products > 0) {
       throw new ConflictError(
-        `"${category.name}" still has ${category._count.products} product(s). ` +
-          'Move them to another category first.',
+        `หมวดหมู่ "${category.name}" ยังมีสินค้าอยู่ ${category._count.products} รายการ ` +
+          '— กรุณาย้ายสินค้าออกจากหมวดหมู่นี้ก่อน',
         'CATEGORY_IN_USE',
       );
     }

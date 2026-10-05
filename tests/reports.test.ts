@@ -127,11 +127,15 @@ describe('resolveReportRange', () => {
   });
 
   it('rejects a reversed range', () => {
-    expect(() => resolveReportRange({ from: '2026-09-30', to: '2026-09-01' })).toThrow(/before/i);
+    expect(() => resolveReportRange({ from: '2026-09-30', to: '2026-09-01' })).toThrow(
+      /ไม่อยู่ก่อนวันที่เริ่ม/,
+    );
   });
 
   it('rejects a day that does not exist', () => {
-    expect(() => resolveReportRange({ from: '2026-02-31', to: '2026-03-01' })).toThrow(/real calendar/);
+    expect(() => resolveReportRange({ from: '2026-02-31', to: '2026-03-01' })).toThrow(
+      /ไม่ใช่วันที่ที่มีอยู่จริงในปฏิทิน/,
+    );
   });
 });
 

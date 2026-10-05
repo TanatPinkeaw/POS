@@ -27,7 +27,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
 
     const shift = await prisma.cash_shifts.findUnique({ where: { id: body.shiftId } });
     if (!shift || shift.status !== 'open') {
-      throw new ConflictError(`Cash drawer #${body.shiftId} is not open`, 'NO_OPEN_SHIFT');
+      throw new ConflictError(`ไม่พบลิ้นชัก #${body.shiftId} ที่เปิดอยู่`, 'NO_OPEN_SHIFT');
     }
 
     const summary = await completeOrder({

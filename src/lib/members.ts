@@ -162,7 +162,7 @@ export async function updateMember(input: UpdateMemberInput): Promise<Member> {
   }
   if (existing.role !== 'member') {
     throw new ConflictError(
-      'This account belongs to staff; manage it from the staff screen',
+      'บัญชีนี้เป็นของพนักงาน — กรุณาจัดการที่หน้าพนักงาน',
       'NOT_A_MEMBER_ACCOUNT',
     );
   }

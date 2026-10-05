@@ -11,11 +11,13 @@ import { prisma } from './db';
 import { ConflictError } from './errors';
 import {
   canFulfil,
+  fulfilmentStateLabel,
   nextFulfilment,
   type FulfilmentAction,
   type FulfilmentState,
 } from './fulfilment-state';
 import type { Db } from './inventory';
+import { orderStatusLabel } from './order-state';
 import { lockOrder, TRANSACTION_OPTIONS } from './orders';
 import { formatQueueNumber } from './queue-number';
 
@@ -115,8 +117,10 @@ async function advance(input: {
      */
     if (locked.status !== 'completed') {
       throw new ConflictError(
-        `Order ${input.orderId} is ${locked.status}; only a completed sale has goods waiting`,
+        `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${orderStatusLabel(locked.status)}" `
+          + '— มีเฉพาะบิลที่ปิดแล้วเท่านั้นที่ถึงขั้นตอนการเรียกเลขได้',
         'NOT_A_COMPLETED_SALE',
+        `Order ${input.orderId} is ${locked.status}; only a completed sale has goods waiting`,
       );
     }
 
@@ -130,15 +134,19 @@ async function advance(input: {
     // for would put a number on a screen that was never called.
     if (!row.fulfilment) {
       throw new ConflictError(
-        `Order ${input.orderId} has no call ticket`,
+        `ออเดอร์ ${locked.order_number} ไม่มีเลขคิว`,
         'NO_CALL_TICKET',
+        `Order ${input.orderId} has no call ticket`,
       );
     }
 
     if (!canFulfil(row.fulfilment, input.action)) {
       throw new ConflictError(
-        `Order ${input.orderId} is "${row.fulfilment}" and cannot be ${input.action === 'mark_ready' ? 'made ready' : 'collected'} again`,
+        `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${fulfilmentStateLabel(row.fulfilment)}" แล้ว `
+          + `จึง${input.action === 'mark_ready' ? 'ทำเครื่องหมายว่าพร้อมรับ' : 'ทำเครื่องหมายว่ารับสินค้าแล้ว'}ซ้ำไม่ได้`,
         'INVALID_FULFILMENT_TRANSITION',
+        `Order ${input.orderId} is "${row.fulfilment}" and cannot be `
+          + `${input.action === 'mark_ready' ? 'made ready' : 'collected'} again`,
       );
     }
 

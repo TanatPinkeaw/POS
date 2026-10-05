@@ -41,7 +41,7 @@ import {
 import { enqueueNotification } from './notify-outbox';
 import { consumeIntent } from './payment-intents';
 import { fromDecimal, roundThb, sumThb } from './money';
-import { canTransition, type OrderStatus } from './order-state';
+import { canTransition, orderStatusLabel, type OrderStatus } from './order-state';
 import { verifyPickupToken } from './pickup-token';
 import { applyPointChange } from './points';
 import { buildSettlement, type SettlementBreakdown, type SettlementRequest } from './settlement';
@@ -146,7 +146,7 @@ export function pickupHoldHours(): number {
  */
 async function priceCart(db: Db, lines: CartLine[]): Promise<PricedLine[]> {
   if (lines.length === 0) {
-    throw new ValidationError('An order needs at least one item');
+    throw new ValidationError('ออเดอร์ต้องมีอย่างน้อย 1 รายการ');
   }
 
   // Merge duplicate product ids so a cart cannot smuggle in two lines of the
@@ -155,7 +155,7 @@ async function priceCart(db: Db, lines: CartLine[]): Promise<PricedLine[]> {
   for (const line of lines) {
     if (!Number.isInteger(line.quantity) || line.quantity <= 0) {
       throw new ValidationError(
-        `Quantity for ${line.productId} must be a positive whole number`,
+        'จำนวนสินค้าในออเดอร์ต้องเป็นจำนวนเต็มที่มากกว่า 0',
       );
     }
     requested.set(line.productId, (requested.get(line.productId) ?? 0) + line.quantity);
@@ -173,7 +173,7 @@ async function priceCart(db: Db, lines: CartLine[]): Promise<PricedLine[]> {
       throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${productId}`);
     }
     if (!product.is_active) {
-      throw new ConflictError(`"${product.name}" is no longer for sale`, 'PRODUCT_INACTIVE');
+      throw new ConflictError(`"${product.name}" ไม่ได้จำหน่ายแล้ว`, 'PRODUCT_INACTIVE');
     }
 
     const unitPrice = fromDecimal(product.sale_price);
@@ -221,9 +221,19 @@ export async function nextOrderNumber(db: Db): Promise<string> {
  * writer takes it the same way, and "first lock the order, then check the
  * transition" has to be one rule rather than a habit at each call site.
  */
-export async function lockOrder(db: Db, orderId: string): Promise<{ id: string; status: OrderStatus }> {
-  const rows = await db.$queryRaw<{ id: string; status: OrderStatus }[]>`
-    SELECT "id", "status" FROM "orders" WHERE "id" = ${orderId}::uuid FOR UPDATE
+export async function lockOrder(
+  db: Db,
+  orderId: string,
+): Promise<{ id: string; status: OrderStatus; order_number: string }> {
+  /*
+   * `order_number` came back with the status because every refusal raised off this
+   * lock used to quote the uuid instead — "Order 8f2c-a91e… is cancelled" — which is
+   * a row id for a machine and nothing at all for the person holding the screen. The
+   * number is the same one printed on the receipt, so it is the thing an operator can
+   * actually read back, and it costs one more column on a row that is already locked.
+   */
+  const rows = await db.$queryRaw<{ id: string; status: OrderStatus; order_number: string }[]>`
+    SELECT "id", "status", "order_number" FROM "orders" WHERE "id" = ${orderId}::uuid FOR UPDATE
   `;
   const row = rows[0];
   if (!row) {
@@ -245,7 +255,7 @@ async function allocatePickupPin(db: Db): Promise<string> {
     }
   }
   throw new ConflictError(
-    'Could not allocate a unique pickup PIN after 50 attempts',
+    'หาเลข PIN สำหรับรับสินค้าที่ไม่ซ้ำไม่สำเร็จ หลังลอง 50 ครั้ง',
     'PIN_ALLOCATION_FAILED',
   );
 }
@@ -331,7 +341,7 @@ export async function resolveSaleTax(
    */
   if (settings.configured && !settings.pricesIncludeVat) {
     throw new ConflictError(
-      'This shop is set to VAT-exclusive pricing, which this version does not support yet',
+      'ร้านนี้ตั้งค่าราคาไม่รวมภาษี ซึ่งเวอร์ชันนี้ยังไม่รองรับ',
       'VAT_MODE_UNSUPPORTED',
     );
   }
@@ -543,7 +553,7 @@ export async function createPosSale(input: {
     const manualDiscount = roundThb(input.manualDiscountThb ?? 0);
 
     if (manualDiscount < 0 || manualDiscount > subtotal) {
-      throw new ValidationError('Discount must be between 0 and the order subtotal');
+      throw new ValidationError('ส่วนลดต้องอยู่ระหว่าง 0 กับยอดรวมของออเดอร์');
     }
 
     const amountDueBeforePoints = roundThb(subtotal - manualDiscount);
@@ -891,8 +901,9 @@ export async function confirmOrder(input: {
     const locked = await lockOrder(tx, input.orderId);
     if (!canTransition(locked.status, 'confirm')) {
       throw new ConflictError(
-        `Order ${input.orderId} is ${locked.status} and can no longer be confirmed`,
+        `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${orderStatusLabel(locked.status)}" แล้ว จึงยืนยันไม่ได้`,
         'INVALID_TRANSITION',
+        `Order ${input.orderId} is ${locked.status}; confirm is no longer legal`,
       );
     }
 
@@ -927,7 +938,7 @@ export async function confirmOrder(input: {
 
     if (remaining._count._all === 0) {
       throw new ConflictError(
-        'Every item was removed; cancel the order instead of confirming an empty one',
+        'สินค้าถูกลบออกหมด — กรุณายกเลิกออเดอร์แทนการยืนยันออเดอร์ที่ไม่มีสินค้า',
         'EMPTY_ORDER',
       );
     }
@@ -966,8 +977,9 @@ export async function markOrderReady(input: {
     const locked = await lockOrder(tx, input.orderId);
     if (!canTransition(locked.status, 'mark_ready')) {
       throw new ConflictError(
-        `Order ${input.orderId} is ${locked.status}; only a confirmed order can be marked ready`,
+        `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${orderStatusLabel(locked.status)}" — เฉพาะออเดอร์ที่ยืนยันแล้วเท่านั้นที่จะทำเครื่องหมายว่าพร้อมรับได้`,
         'INVALID_TRANSITION',
+        `Order ${input.orderId} is ${locked.status}; only a confirmed order can be marked ready`,
       );
     }
 
@@ -1044,8 +1056,9 @@ export async function completeOrder(input: {
     const locked = await lockOrder(tx, input.orderId);
     if (!canTransition(locked.status, 'complete')) {
       throw new ConflictError(
-        `Order ${input.orderId} is ${locked.status}; only a packed order can be collected`,
+        `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${orderStatusLabel(locked.status)}" — เฉพาะออเดอร์ที่พร้อมรับแล้วเท่านั้นที่จะทำเครื่องหมายว่ารับสินค้าแล้วได้`,
         'INVALID_TRANSITION',
+        `Order ${input.orderId} is ${locked.status}; only a packed order can be collected`,
       );
     }
 
@@ -1225,8 +1238,9 @@ export async function cancelOrder(input: {
     const locked = await lockOrder(tx, input.orderId);
     if (!canTransition(locked.status, 'cancel')) {
       throw new ConflictError(
-        `Order ${input.orderId} is ${locked.status} and cannot be cancelled`,
+        `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${orderStatusLabel(locked.status)}" แล้ว จึงยกเลิกไม่ได้`,
         'INVALID_TRANSITION',
+        `Order ${input.orderId} is ${locked.status} and cannot be cancelled`,
       );
     }
 
@@ -1386,7 +1400,7 @@ export async function findOrderForHandover(input: {
 }) {
   if (!input.pin && !input.orderId && !input.phone && !input.pickupToken) {
     throw new ValidationError(
-      'Look up a pre-order by its pickup PIN, QR code, order id, or the registered phone number',
+      'กรุณาค้นหาด้วยเลข PIN, QR code, รหัสออเดอร์ หรือเบอร์โทรที่ลงทะเบียนไว้',
     );
   }
 

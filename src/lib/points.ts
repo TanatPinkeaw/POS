@@ -27,7 +27,7 @@ export async function applyPointChange(
   },
 ): Promise<number> {
   if (!Number.isInteger(input.delta) || input.delta === 0) {
-    throw new ConflictError('A point change must be a non-zero whole number', 'POINTS_NOOP');
+    throw new ConflictError('การเปลี่ยนแต้มต้องเป็นจำนวนเต็มที่ไม่ใช่ศูนย์', 'POINTS_NOOP');
   }
 
   const rows = await db.$queryRaw<{ points_balance: number }[]>`
@@ -42,9 +42,9 @@ export async function applyPointChange(
   const updated = rows[0];
   if (!updated) {
     throw new ConflictError(
-      `Cannot apply a ${input.delta} point change: the customer does not exist or ` +
-        'the balance would become negative',
+      `เปลี่ยนแต้ม ${input.delta} ไม่ได้ — ไม่พบลูกค้า หรือแต้มคงเหลือจะติดลบ`,
       'INSUFFICIENT_POINTS',
+      `Cannot apply a ${input.delta} point change: the customer does not exist or the balance would become negative`,
     );
   }
 

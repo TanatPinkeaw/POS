@@ -47,7 +47,7 @@ export async function initialiseSystem(input: SystemSetupInput): Promise<SystemS
       } catch (error) {
         if (isUniqueViolation(error)) {
           // Two wizard submissions raced, and this is the loser.
-          throw new ConflictError('This system has already been set up', 'ALREADY_INITIALISED');
+          throw new ConflictError('ระบบนี้ตั้งค่าเรียบร้อยแล้ว', 'ALREADY_INITIALISED');
         }
         throw error;
       }

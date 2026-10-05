@@ -387,11 +387,11 @@ describe('what the offline slip says', () => {
   it('refuses to price a bill against a product the device has no price for', () => {
     expect(() =>
       priceOfflineSale(basket({ lines: [{ productId: 'p-ghost', quantity: 1 }] }), context(), 45),
-    ).toThrow(/no price for/);
+    ).toThrow(/ไม่มีราคามาให้คิด/);
   });
 
   it('refuses cash that does not cover the bill, rather than drawing a negative change', () => {
-    expect(() => priceOfflineSale(basket(), context(), 40)).toThrow(/less cash than it costs/);
+    expect(() => priceOfflineSale(basket(), context(), 40)).toThrow(/คิดเงินได้น้อยกว่ายอดจริง/);
     // Exactly the bill is fine: the customer hands over the right money and gets nothing back.
     expect(priceOfflineSale(basket(), context(), 45).changeThb).toBe(0);
   });
@@ -399,9 +399,9 @@ describe('what the offline slip says', () => {
 
 describe('a basket that could not have come from the till', () => {
   it('is a programming mistake, so it throws rather than refusing politely', () => {
-    expect(() => decideOfflineSale(basket({ lines: [] }), context())).toThrow(/at least one line/);
+    expect(() => decideOfflineSale(basket({ lines: [] }), context())).toThrow(/อย่างน้อย 1 รายการ/);
     expect(() =>
       decideOfflineSale(basket({ lines: [{ productId: 'p-coffee', quantity: 1.5 }] }), context()),
-    ).toThrow(/positive whole number/);
+    ).toThrow(/เป็นจำนวนเต็มที่มากกว่า 0/);
   });
 });

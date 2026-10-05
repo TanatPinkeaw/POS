@@ -52,7 +52,7 @@ import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { type Db, recordStockMovement, returnRefundedStock } from './inventory';
 import { fromDecimal, roundThb, sumThb, toSatang } from './money';
-import { canTransition } from './order-state';
+import { canTransition, orderStatusLabel } from './order-state';
 import { lockOrder } from './orders';
 import { applyPointChange } from './points';
 import { planRefund, refundTax, type RefundableLine, type RefundRequestLine } from './refund-plan';
@@ -97,10 +97,10 @@ export async function refundOrder(input: {
 }): Promise<RefundSummary> {
   const reason = input.reason.trim();
   if (reason.length === 0) {
-    throw new ValidationError('A refund needs a reason — it is the only record of why the money left');
+    throw new ValidationError('การคืนเงินต้องมีเหตุผล — เหตุผลคือบันทึกเดียวที่บอกได้ว่าเงินออกไปทำไม');
   }
   if (reason.length > MAX_REASON_LENGTH) {
-    throw new ValidationError(`A refund reason must be at most ${MAX_REASON_LENGTH} characters`);
+    throw new ValidationError(`เหตุผลการคืนเงินต้องไม่ยาวเกิน ${MAX_REASON_LENGTH} ตัวอักษร`);
   }
 
   return prisma.$transaction(async (tx) => {
@@ -108,9 +108,10 @@ export async function refundOrder(input: {
     if (!canTransition(locked.status, 'refund')) {
       throw new ConflictError(
         locked.status === 'refunded'
-          ? `Order ${input.orderId} has already been refunded`
-          : `Order ${input.orderId} is ${locked.status}; only a completed sale can be refunded`,
+          ? `ออเดอร์ ${locked.order_number} คืนเงินไปแล้ว`
+          : `ออเดอร์ ${locked.order_number} อยู่ในสถานะ "${orderStatusLabel(locked.status)}" — มีเฉพาะบิลที่ปิดแล้วเท่านั้นที่จะคืนเงินได้`,
         'INVALID_TRANSITION',
+        `Order ${input.orderId} is ${locked.status}; canTransition('refund') is false`,
       );
     }
 
@@ -187,7 +188,7 @@ export async function refundOrder(input: {
     const allocation = await allocateCreditNoteNumber(tx, new Date());
     if (allocation === null) {
       throw new ConflictError(
-        'This deployment has no shop row, so no credit note can be numbered',
+        'ระบบนี้ยังไม่มีข้อมูลร้าน จึงออกเลขใบเสร็จคืนเงินไม่ได้',
         'SHOP_NOT_CONFIGURED',
       );
     }
@@ -302,8 +303,9 @@ export async function refundOrder(input: {
       const item = itemsById.get(line.orderItemId);
       if (!item) {
         throw new ConflictError(
-          `Order item ${line.orderItemId} vanished while the refund was being written`,
+          'รายการสินค้าในบิลนี้หายไประหว่างเขียนใบคืนเงิน',
           'ORDER_ITEM_MISSING',
+          `Order item ${line.orderItemId} vanished while the refund was being written`,
         );
       }
 

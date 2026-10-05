@@ -94,7 +94,7 @@ describe('resolveBangkokRange', () => {
 
   it('refuses a reversed range', () => {
     expect(() => resolveBangkokRange({ from: '2026-09-30', to: '2026-09-01' })).toThrow(
-      /before/i,
+      /ไม่อยู่ก่อนวันที่เริ่ม/,
     );
   });
 });

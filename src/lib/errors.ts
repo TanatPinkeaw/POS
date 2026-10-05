@@ -57,11 +57,24 @@ export class InsufficientStockError extends DomainError {
     readonly available: number,
     productName?: string,
   ) {
+    /*
+     * Of the three classes that write their own sentence rather than being handed one,
+     * the other two already wrote Thai; this one was assembling an English line out of
+     * ids and quantities. It is thrown at the till the moment a cashier rings up more
+     * units than the shelf holds, in front of the customer, so the sentence has to name
+     * the two numbers that are wrong and not much else.
+     *
+     * The English goes to `detail` for the same reason every other call site now
+     * splits its message: the log is where the product id belongs, and `productId` is
+     * on neither side of this counter so nothing on screen could act on it.
+     */
     super(
-      `Insufficient stock${productName ? ` for "${productName}"` : ''}: ` +
-        `requested ${requested}, available ${available}`,
+      `ของไม่พอ${productName ? ` — "${productName}"` : ''}: ต้องการ ${requested} ชิ้น แต่มี ${available} ชิ้น`,
       'INSUFFICIENT_STOCK',
       409,
+      undefined,
+      `Insufficient stock${productName ? ` for "${productName}"` : ''}: ` +
+        `requested ${requested}, available ${available} (product ${productId})`,
     );
   }
 }
@@ -90,8 +103,22 @@ export class NotFoundError extends DomainError {
  * conflicts with the current state of the record.
  */
 export class ConflictError extends DomainError {
-  constructor(message: string, code = 'CONFLICT') {
-    super(message, code, 409);
+  /**
+   * Takes the same optional English line `NotFoundError` does.
+   *
+   * Added when the conflict sentences were translated: roughly a dozen of them are
+   * guards against two tablets doing the same thing at once, and the only thing that
+   * identifies *which* order lost the race is a UUID that means nothing to the person
+   * reading the screen. That UUID used to be interpolated into the message, which is
+   * how `Order 8f2c-a91e-… is cancelled and can no longer be confirmed` ended up in
+   * the till's error notice. The sentence now names the state in Thai, and the id goes
+   * to the log where an operator's clock and the row can be reconciled.
+   *
+   * Third rather than second so the existing `ConflictError(message, code)` calls —
+   * the machine-readable code is what a client branches on — keep working untouched.
+   */
+  constructor(message: string, code = 'CONFLICT', detail?: string) {
+    super(message, code, 409, undefined, detail);
   }
 }
 

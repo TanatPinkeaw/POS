@@ -34,7 +34,7 @@ describe('cash settlement', () => {
         request: { cash: 155, receivedCash: 100 },
         customerPointsBalance: 0,
       }),
-    ).toThrow(/change/i);
+    ).toThrow(/เงินทอนจึงติดลบ/);
   });
 
   it('allows the drawer to be short only when the difference is paid another way', () => {
@@ -44,7 +44,7 @@ describe('cash settlement', () => {
         request: { cash: 100 },
         customerPointsBalance: 0,
       }),
-    ).toThrow(/exactly/i);
+    ).toThrow(/ต้องตรงกับยอดที่ต้องจ่ายพอดี/);
   });
 });
 
@@ -127,7 +127,7 @@ describe('validation', () => {
   it('refuses an empty settlement', () => {
     expect(() =>
       buildSettlement({ amountDueThb: 10, request: {}, customerPointsBalance: 0 }),
-    ).toThrow(/at least one/i);
+    ).toThrow(/อย่างน้อย 1 อย่าง/);
   });
 
   it('refuses a negative amount', () => {
@@ -137,7 +137,7 @@ describe('validation', () => {
         request: { cash: -10 },
         customerPointsBalance: 0,
       }),
-    ).toThrow(/negative/i);
+    ).toThrow(/ต้องไม่ติดลบ/);
   });
 
   it('refuses points for a walk-in customer with no account', () => {
@@ -147,6 +147,6 @@ describe('validation', () => {
         request: { points: 100, cash: 9 },
         customerPointsBalance: 0,
       }),
-    ).toThrow(/exactly/i);
+    ).toThrow(/ต้องตรงกับยอดที่ต้องจ่ายพอดี/);
   });
 });

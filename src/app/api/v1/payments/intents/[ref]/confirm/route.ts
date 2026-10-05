@@ -34,7 +34,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
 
     if (requestHasPaymentSecret(request)) {
       if (!process.env.PAYMENT_WEBHOOK_SECRET) {
-        throw new ConflictError('Webhook confirmation is not configured', 'NO_WEBHOOK_SECRET');
+        throw new ConflictError('ยังไม่ได้ตั้งค่าการยืนยันผ่าน Webhook', 'NO_WEBHOOK_SECRET');
       }
       const intent = await confirmIntent({ ref, confirmedByUserId: null });
       if (intent.status === 'paid' || intent.status === 'consumed') {

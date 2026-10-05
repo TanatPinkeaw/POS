@@ -147,7 +147,7 @@ export async function createShop(input: ShopSettingsInput): Promise<ShopView> {
     return toShopView(row);
   } catch (error) {
     if (isUniqueViolation(error)) {
-      throw new ConflictError('This system has already been set up', 'ALREADY_INITIALISED');
+      throw new ConflictError('ระบบนี้ตั้งค่าเรียบร้อยแล้ว', 'ALREADY_INITIALISED');
     }
     throw error;
   }
@@ -157,7 +157,7 @@ export async function createShop(input: ShopSettingsInput): Promise<ShopView> {
 export async function updateShop(input: ShopSettingsInput): Promise<ShopView> {
   const existing = await prisma.shops.findUnique({ where: { id: SHOP_ROW_ID }, select: { id: true } });
   if (!existing) {
-    throw new ConflictError('Set this system up before editing shop settings', 'SHOP_NOT_CONFIGURED');
+    throw new ConflictError('กรุณาตั้งค่าร้านก่อนจึงจะแก้ไขข้อมูลร้านได้', 'SHOP_NOT_CONFIGURED');
   }
 
   const row = await prisma.shops.update({

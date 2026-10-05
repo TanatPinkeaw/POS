@@ -24,7 +24,7 @@ export async function PUT(request: Request): Promise<Response> {
 
     if ((await loadShop()) === null) {
       throw new ConflictError(
-        'This system has not been set up yet; run the setup wizard first',
+        'ระบบนี้ยังไม่ได้ตั้งค่า — กรุณาตั้งค่าร้านให้เรียบร้อยก่อน',
         'SHOP_NOT_CONFIGURED',
       );
     }

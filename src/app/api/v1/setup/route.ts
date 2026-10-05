@@ -37,7 +37,7 @@ export async function POST(request: Request): Promise<Response> {
     await chargeRateLimit(request, 'setup_attempt');
 
     if (await hasShop()) {
-      throw new ConflictError('This system has already been set up', 'ALREADY_INITIALISED');
+      throw new ConflictError('ระบบนี้ตั้งค่าเรียบร้อยแล้ว', 'ALREADY_INITIALISED');
     }
 
     const body = await readJson(request, setupSchema);

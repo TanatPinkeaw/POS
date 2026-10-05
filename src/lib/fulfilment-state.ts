@@ -66,6 +66,26 @@ export function isWaiting(state: FulfilmentState): boolean {
 /** Every state, in the order a ticket moves through them. */
 export const FULFILMENT_STATES: readonly FulfilmentState[] = ['preparing', 'ready', 'collected'];
 
+/**
+ * The state as the bar says it out loud.
+ *
+ * The call board refuses re-taps with a sentence, and that sentence used to quote the
+ * raw state — `Order 8f2c is "collected" and cannot be collected again` — so the one
+ * screen that had to explain it to a customer in Thai was the one showing English.
+ * Same reasoning as `orderStatusLabel`, and for the same reason the map is here and
+ * not in the board: the refusal is raised in the domain layer.
+ */
+const FULFILMENT_STATE_LABELS: Record<FulfilmentState, string> = {
+  preparing: 'กำลังเตรียม',
+  ready: 'พร้อมรับแล้ว',
+  collected: 'ส่งมอบแล้ว',
+};
+
+/** What a person behind the bar is told this ticket's state is. */
+export function fulfilmentStateLabel(state: FulfilmentState): string {
+  return FULFILMENT_STATE_LABELS[state];
+}
+
 /** True when `value` is one of this machine's states — for reading rows back. */
 export function isFulfilmentState(value: string): value is FulfilmentState {
   return (FULFILMENT_STATES as readonly string[]).includes(value);
