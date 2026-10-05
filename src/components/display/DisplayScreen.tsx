@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { PinPad, QrPanel, Spinner, Thumb } from '@/components/ds';
+import { PinPad, QrCode, QrPanel, Spinner, Thumb } from '@/components/ds';
 import { apiFetch } from '@/lib/client-api';
 import { bangkokTimeString } from '@/lib/bangkok-time';
 import { DISPLAY_THANKS_MS } from '@/lib/display-view';
@@ -183,7 +183,20 @@ export function DisplayScreen() {
 
   const lines = state.cart?.lines ?? [];
   const paying = state.intent !== null;
-  const selling = !paying && lines.length > 0;
+  /* A cart snapshot is a bill, never a payment: the till re-pushes the basket
+   * the moment the QR appears (received/change go null while a QR is live), so
+   * a `selling` bill under a live QR is the old basket, not a second mode. Only
+   * when the QR is gone — paid, cancelled, expired — does the bill own the
+   * screen again. */
+  const selling = lines.length > 0;
+  /*
+   * What the customer handed over, shown only while the till is still counting
+   * it on screen. After a QR is dropped the till cancels the intent but the
+   * next basket push can lag a beat behind, and a stale received/change is a
+   * promise about a payment that no longer exists — it rejoins only with a
+   * fresh snapshot taken while no intent is live.
+   */
+  const showTendered = !paying;
   /* The Steps show only at checkout: a null step is the idle and collection
    * board, where no sale is on any circle. */
   const step = checkoutStepIndex({ selling, paying, thanks });
@@ -208,11 +221,42 @@ export function DisplayScreen() {
       {step !== null ? <CheckoutSteps current={step} /> : null}
 
       {paying && state.intent ? (
-        <section className={styles.stage}>
-          <QrPanel intent={state.intent} size={320} />
-          <p className={styles.instruction}>
-            เปิดแอปธนาคารแล้วสแกน QR นี้ · ยอดเงินถูกล็อกไว้แล้ว
-          </p>
+        <section className={`${styles.stage} ${styles.paySplit}`}>
+          <div className={styles.payBill}>
+            {lines.length > 0 ? (
+              <>
+                <ul className={styles.lines}>
+                  {lines.map((line, index) => (
+                    <li key={`${line.name}-${index}`} className={styles.line}>
+                      <Thumb url={line.imageUrl} size="lg" />
+                      <span className={styles.lineName}>
+                        {line.name}
+                        {line.quantity > 1 ? (
+                          <span className={styles.qty}>
+                            {' '}
+                            × {line.quantity} · {formatThb(line.unitPrice)} ต่อชิ้น
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className={styles.linePrice}>{formatThb(line.totalPrice)}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className={styles.totals}>
+                  <div className={`${styles.totalRow} ${styles.grand}`}>
+                    <span>รวมทั้งสิ้น</span>
+                    <span>{formatThb(state.cart?.totalThb ?? 0)}</span>
+                  </div>
+                </div>
+              </>
+            ) : null}
+          </div>
+          <div className={styles.payQr}>
+            <QrPanel intent={state.intent} size={320} />
+            <p className={styles.instruction}>
+              เปิดแอปธนาคารแล้วสแกน QR นี้ · ยอดเงินถูกล็อกไว้แล้ว
+            </p>
+          </div>
         </section>
       ) : null}
 
@@ -266,13 +310,13 @@ export function DisplayScreen() {
               <span>รวมทั้งสิ้น</span>
               <span>{formatThb(state.cart?.totalThb ?? 0)}</span>
             </div>
-            {state.cart && state.cart.receivedThb !== null && state.cart.receivedThb > 0 ? (
+            {showTendered && state.cart && state.cart.receivedThb !== null && state.cart.receivedThb > 0 ? (
               <div className={styles.totalRow}>
                 <span>ลูกค้ายื่นมา</span>
                 <span>{formatThb(state.cart.receivedThb)}</span>
               </div>
             ) : null}
-            {state.cart && state.cart.changeThb !== null && state.cart.changeThb > 0 ? (
+            {showTendered && state.cart && state.cart.changeThb !== null && state.cart.changeThb > 0 ? (
               <div className={`${styles.totalRow} ${styles.change}`}>
                 <span>เงินทอน</span>
                 <span>{formatThb(state.cart.changeThb)}</span>
@@ -285,6 +329,29 @@ export function DisplayScreen() {
               สมาชิก <strong>{state.cart.memberFirstName}</strong> — แต้มจะถูกบันทึกให้อัตโนมัติ
             </p>
           ) : null}
+        </section>
+      ) : null}
+
+      {!paying &&
+      !selling &&
+      state.receipt !== null ? (
+        <section className={styles.stage}>
+          {/*
+           * The till's receipt link, drawn here so the customer scans the screen
+           * in front of them rather than the cashier's. The URL is the receipt
+           * *page* on this origin, not the API path the server issued — the same
+           * one the till's own dialog draws, so the two QRs agree. The Display
+           * is the till's mirror, not a second minter, so it never invents a
+           * link of its own.
+           */}
+          <QrCode
+            value={`${window.location.origin}/receipts?t=${encodeURIComponent(state.receipt.token)}`}
+            size={320}
+            alt={`ใบเสร็จ ${state.receipt.orderNumber}`}
+          />
+          <p className={styles.instruction}>
+            สแกนเพื่อเก็บบิล {state.receipt.orderNumber} ไว้ในมือถือ · ลิงก์มีอายุ ใช้อีกครั้งต้องขอใหม่ที่เคาน์เตอร์
+          </p>
         </section>
       ) : null}
 

@@ -15,6 +15,7 @@ import {
   type DisplayIdlePayload,
   type DisplayReadyOrder,
   type DisplayReadyPayload,
+  type DisplayReceiptLink,
 } from './display-view';
 import { listQueueTickets } from './fulfilment';
 import { listOrderViews } from './order-view';
@@ -36,6 +37,18 @@ export function broadcastCart(payload: DisplayCartPayload): void {
 /** A QR was issued. Both screens show it; the customer's is the one they scan. */
 export function broadcastIntent(intent: PaymentIntentView): void {
   emitToDisplays(REALTIME_EVENTS.paymentIntent, intent);
+}
+
+/**
+ * A receipt link was minted at the till, and the customer asked for the screen.
+ *
+ * Re-emitted by the server rather than built here: the till posts what it was
+ * given by the receipt-link route, and this trims it to the fields a queue may
+ * see. Ephemeral by design — like the cart snapshot it is replaced by the next
+ * sale, never stored, and clearing it is a second call with `null`.
+ */
+export function broadcastReceiptLink(link: DisplayReceiptLink | null): void {
+  emitToDisplays(REALTIME_EVENTS.displayReceipt, link);
 }
 
 /** The money arrived — the event that closes a bill without anybody tapping. */

@@ -32,6 +32,13 @@ export const REALTIME_EVENTS = {
   displayCart: 'display:cart',
   /** A QR was issued for this amount. Both the till and the display need it. */
   paymentIntent: 'payment:intent',
+  /**
+   * A receipt link minted at the till, for the customer screen to show as a QR.
+   *
+   * A payload rather than a nudge: unlike the bar's board, the display cannot
+   * re-read anything without a session, so it is *sent* what to draw.
+   */
+  displayReceipt: 'display:receipt',
   /** The money arrived. This is what closes the bill without anyone tapping. */
   paymentPaid: 'payment:paid',
   /** The QR stopped being payable: paid, cancelled, or out of time. */

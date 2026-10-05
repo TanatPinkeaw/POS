@@ -886,6 +886,13 @@ export const displayDeviceSchema = z.object({
   label: z.string().trim().min(1).max(60).nullable().optional(),
 });
 
+/** A receipt link the till hands to the customer display, or null to clear it. */
+export const displayReceiptSchema = z.object({
+  orderNumber: z.string().trim().min(1).max(60),
+  token: z.string().trim().min(1).max(2000),
+  path: z.string().trim().min(1).max(2000),
+}).nullable();
+
 /** The bill being rung up, pushed to the customer display. */
 export const displayCartSchema = z.object({
   lines: z

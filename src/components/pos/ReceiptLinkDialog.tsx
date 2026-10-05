@@ -38,8 +38,12 @@ export function ReceiptLinkDialog({
   onClose: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [apiPath, setApiPath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [onScreen, setOnScreen] = useState(false);
+  const [screenError, setScreenError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,6 +56,8 @@ export function ReceiptLinkDialog({
         }
         // The customer's page, on this shop's own origin — the server does not know
         // which host a till is reached on, so the browser supplies it.
+        setToken(minted.token);
+        setApiPath(minted.path);
         setUrl(`${window.location.origin}/receipts?t=${encodeURIComponent(minted.token)}`);
       } catch (caught) {
         if (!cancelled) {
@@ -79,10 +85,42 @@ export function ReceiptLinkDialog({
     }
   }
 
+  /*
+   * The customer screen is cleared on the way out: a receipt QR left standing
+   * after the dialog closes is a link the next customer in line can scan, and
+   * this dialog mints a fresh link per open — the screen must not outlive it.
+   */
+  const close = (): void => {
+    if (onScreen && token !== null && apiPath !== null) {
+      void apiPost('/api/v1/pos/display/receipt', null).catch(() => {
+        // Fire-and-forget like the cart post: the screen replaces this with the
+        // next sale's facts, and a till must not hang on a screen in the corner.
+      });
+    }
+    onClose();
+  };
+
+  async function showOnScreen(): Promise<void> {
+    if (token === null || apiPath === null) {
+      return;
+    }
+    setScreenError(null);
+    try {
+      await apiPost('/api/v1/pos/display/receipt', {
+        orderNumber,
+        token,
+        path: apiPath,
+      });
+      setOnScreen(true);
+    } catch (caught) {
+      setScreenError(caught instanceof Error ? caught.message : 'ส่งขึ้นจอลูกค้าไม่สำเร็จ');
+    }
+  }
+
   return (
     <Overlay
       open
-      onClose={onClose}
+      onClose={close}
       title={`ลิงก์ใบเสร็จ · ${orderNumber}`}
       description="ให้ลูกค้าสแกนหรือเปิดลิงก์นี้ — ลิงก์มีอายุจำกัดและใช้ได้ภายใน 1 เดือนหลังการซื้อ"
       footer={
@@ -90,7 +128,10 @@ export function ReceiptLinkDialog({
           <Button variant="secondary" icon="print" disabled={url === null} onClick={() => window.print()}>
             พิมพ์
           </Button>
-          <Button variant="primary" onClick={onClose}>
+          <Button variant="secondary" icon="monitor" disabled={url === null || onScreen} onClick={() => void showOnScreen()}>
+            {onScreen ? 'ขึ้นจอแล้ว' : 'ขึ้นจอลูกค้า'}
+          </Button>
+          <Button variant="primary" onClick={close}>
             ปิด
           </Button>
         </div>
@@ -112,6 +153,14 @@ export function ReceiptLinkDialog({
               {copied ? 'คัดลอกแล้ว' : 'คัดลอกลิงก์'}
             </Button>
           </div>
+          {screenError ? (
+            <p className={styles.hint} role="alert">
+              {screenError}
+            </p>
+          ) : null}
+          {onScreen ? (
+            <p className={styles.hint}>แสดงบนจอลูกค้าแล้ว — ปิดหน้าต่างนี้เพื่อเอาออกจากจอ</p>
+          ) : null}
         </div>
       ) : null}
     </Overlay>

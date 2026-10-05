@@ -120,6 +120,22 @@ export type DisplayStage =
 export const DISPLAY_THANKS_MS = 4000;
 
 /**
+ * A signed receipt link, minted at the till and mirrored on the customer screen.
+ *
+ * The same shape the reprint route returns — a token plus the path — so the
+ * counter and the screen agree on the document without a second minting. A path
+ * rather than an absolute URL: the server does not know the origin a shop is
+ * reached on, so the screen prefixes its own. Token and expiry live server-side
+ * inside the signed value; what travels here is only what a queue may read.
+ */
+export interface DisplayReceiptLink {
+  /** The order number the receipt belongs to, the one fact the screen shows. */
+  orderNumber: string;
+  token: string;
+  path: string;
+}
+
+/**
  * Where the display sends its device token.
  *
  * Declared here rather than in `display-devices.ts` because the screen's own code

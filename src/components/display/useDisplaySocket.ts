@@ -9,6 +9,7 @@ import {
   type DisplayCartPayload,
   type DisplayIdlePayload,
   type DisplayReadyPayload,
+  type DisplayReceiptLink,
 } from '@/lib/display-view';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import type { PaymentIntentView } from '@/lib/payment-intents-view';
@@ -16,6 +17,8 @@ import type { PaymentIntentView } from '@/lib/payment-intents-view';
 export interface DisplayState {
   cart: DisplayCartPayload | null;
   intent: PaymentIntentView | null;
+  /** A receipt link minted at the till, shown as a QR the customer scans. */
+  receipt: DisplayReceiptLink | null;
   ready: DisplayReadyPayload | null;
   /** The shop's name and best sellers, for the idle stage. Fetched, not pushed. */
   idle: DisplayIdlePayload | null;
@@ -29,6 +32,7 @@ export interface DisplayState {
 const EMPTY: DisplayState = {
   cart: null,
   intent: null,
+  receipt: null,
   ready: null,
   idle: null,
   paid: null,
@@ -136,6 +140,10 @@ export function useDisplaySocket(token: string | null): DisplayState {
 
     socket.on(REALTIME_EVENTS.displayReady, (payload: DisplayReadyPayload) => {
       setState((current) => ({ ...current, ready: payload }));
+    });
+
+    socket.on(REALTIME_EVENTS.displayReceipt, (payload: DisplayReceiptLink | null) => {
+      setState((current) => ({ ...current, receipt: payload }));
     });
 
     return () => {

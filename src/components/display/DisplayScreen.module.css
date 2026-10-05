@@ -54,6 +54,49 @@
   text-align: center;
 }
 
+/*
+ * Paying as two columns: the bill on the left, the QR on the right.
+ *
+ * The customer checks two things at once — "is that my bill" and "where do I
+ * scan" — and stacked, the QR pushes the bill off a short landscape screen. The
+ * QR column keeps the code at its scannable 320px while the bill takes whatever
+ * is left. Below 60rem — a portrait screen held up to a phone camera — the
+ * columns stack with the QR first, because the scan is the action and the bill
+ * is the confirmation.
+ */
+.paySplit {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--ln-space-8);
+}
+
+.payBill {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 46rem;
+  display: grid;
+  gap: var(--ln-space-4);
+  align-content: start;
+}
+
+.payQr {
+  flex: 0 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-4);
+}
+
+@media (max-width: 60rem) {
+  .paySplit {
+    flex-direction: column;
+    align-items: center;
+  }
+  .payQr {
+    order: -1;
+  }
+}
+
 /* ------------------------------------------------------------------ selling */
 
 .lines {
