@@ -16,6 +16,7 @@ import {
   useDisplaySocket,
 } from './useDisplaySocket';
 import { checkoutStepIndex } from './checkout-step';
+import { displayStage } from './display-stage';
 import { CheckoutSteps } from './CheckoutSteps';
 
 /**
@@ -184,27 +185,41 @@ export function DisplayScreen() {
   const lines = state.cart?.lines ?? [];
   const paying = state.intent !== null;
   /*
-   * The bill owns the screen only while no QR does: the till re-pushes the
-   * basket the moment a QR appears (received/change go null while one is
-   * live), so the paying section draws the bill itself from the same snapshot
-   * and this section stays off — rendering both is the same bill twice.
+   * One stage at a time, decided in one place. The five sections below used to
+   * carry their own near-mutually-exclusive conditions, and two of them being
+   * true at once is exactly what went wrong on a real screen: a bill snapshot
+   * left on the display hid the receipt QR the cashier had just pushed, and with
+   * the bill gone the receipt then drew *on top of* the idle welcome. The
+   * precedence now lives in `display-stage.ts`, where it is tested.
    */
-  const selling = !paying && lines.length > 0;
-  /* The Steps show only at checkout: a null step is the idle and collection
-   * board, where no sale is on any circle. */
-  const step = checkoutStepIndex({ selling, paying, thanks });
+  const readyBoard =
+    (state.ready?.calls.length ?? 0) > 0 || (state.ready?.orders.length ?? 0) > 0;
+  /* Bound to a local so the receipt section below narrows to non-null. */
+  const receipt = state.receipt;
+  const stage = displayStage({
+    hasPaymentQr: paying,
+    hasReceipt: receipt !== null,
+    lineCount: lines.length,
+    hasReadyBoard: readyBoard,
+  });
+  const selling = stage === 'selling';
+  /* The Steps show only at checkout: a null step is a receipt, the collection
+   * board or the idle screen, where no sale is on any circle. */
+  const step = checkoutStepIndex({ selling, paying: stage === 'paying', thanks });
 
   return (
     <main className={styles.screen}>
       <header className={styles.bar}>
         <span className={styles.stageLabel}>
-          {paying
+          {stage === 'paying'
             ? 'สแกนจ่ายด้วยพร้อมเพย์'
-            : selling
-              ? 'รายการที่กำลังคิดเงิน'
-              : thanks
-                ? 'ขอบคุณที่ใช้บริการ'
-                : 'ยินดีต้อนรับ'}
+            : stage === 'receipt'
+              ? `ใบเสร็จ ${receipt?.orderNumber ?? ''}`
+              : stage === 'selling'
+                ? 'รายการที่กำลังคิดเงิน'
+                : thanks
+                  ? 'ขอบคุณที่ใช้บริการ'
+                  : 'ยินดีต้อนรับ'}
         </span>
         <span className={styles.connection} aria-live="polite">
           {state.connected ? null : 'การเชื่อมต่อขาด — กำลังเชื่อมใหม่'}
@@ -213,7 +228,7 @@ export function DisplayScreen() {
 
       {step !== null ? <CheckoutSteps current={step} /> : null}
 
-      {paying && state.intent ? (
+      {stage === 'paying' && state.intent ? (
         <section className={`${styles.stage} ${styles.paySplit}`}>
           <div className={styles.payBill}>
             {lines.length > 0 ? (
@@ -325,9 +340,7 @@ export function DisplayScreen() {
         </section>
       ) : null}
 
-      {!paying &&
-      !selling &&
-      state.receipt !== null ? (
+      {stage === 'receipt' && receipt !== null ? (
         <section className={styles.stage}>
           {/*
            * The till's receipt link, drawn here so the customer scans the screen
@@ -338,19 +351,17 @@ export function DisplayScreen() {
            * link of its own.
            */}
           <QrCode
-            value={`${window.location.origin}/receipts?t=${encodeURIComponent(state.receipt.token)}`}
+            value={`${window.location.origin}/receipts?t=${encodeURIComponent(receipt.token)}`}
             size={320}
-            alt={`ใบเสร็จ ${state.receipt.orderNumber}`}
+            alt={`ใบเสร็จ ${receipt.orderNumber}`}
           />
           <p className={styles.instruction}>
-            สแกนเพื่อเก็บบิล {state.receipt.orderNumber} ไว้ในมือถือ · ลิงก์มีอายุ ใช้อีกครั้งต้องขอใหม่ที่เคาน์เตอร์
+            สแกนเพื่อเก็บบิล {receipt.orderNumber} ไว้ในมือถือ · ลิงก์มีอายุ ใช้อีกครั้งต้องขอใหม่ที่เคาน์เตอร์
           </p>
         </section>
       ) : null}
 
-      {!paying &&
-      !selling &&
-      ((state.ready?.calls.length ?? 0) > 0 || (state.ready?.orders.length ?? 0) > 0) ? (
+      {stage === 'ready' ? (
         <section className={styles.stage}>
           {/*
            * The walk-in calls first, and biggest: these are numbers somebody is
@@ -389,10 +400,7 @@ export function DisplayScreen() {
         </section>
       ) : null}
 
-      {!paying &&
-      !selling &&
-      (state.ready?.orders.length ?? 0) === 0 &&
-      (state.ready?.calls.length ?? 0) === 0 ? (
+      {stage === 'idle' ? (
         <section className={`${styles.stage} ${styles.idle}`}>
           {/*
            * The logo is plain `<img>` rather than `next/image`: the shop's logo is
