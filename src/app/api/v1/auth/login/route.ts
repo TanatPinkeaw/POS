@@ -40,11 +40,11 @@ export async function POST(request: Request): Promise<Response> {
 
       // One message for both cases: telling the caller which half was wrong
       // would let them enumerate who has an account.
-      throw new UnauthenticatedError('Incorrect phone number/email or password');
+      throw new UnauthenticatedError('เบอร์โทร อีเมล หรือรหัสผ่านไม่ถูกต้อง');
     }
 
     if (!user.is_active) {
-      throw new UnauthenticatedError('This account has been deactivated');
+      throw new UnauthenticatedError('บัญชีนี้ถูกปิดการใช้งานแล้ว');
     }
 
     const role = user.role as Role;

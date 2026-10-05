@@ -217,7 +217,7 @@ export async function revokeDisplayDevice(input: {
 }): Promise<DisplayDeviceView> {
   const existing = await prisma.display_devices.findUnique({ where: { id: BigInt(input.id) } });
   if (!existing) {
-    throw new NotFoundError(`Display device ${input.id}`);
+    throw new NotFoundError('ไม่พบจอแสดงผลที่ระบุ', `Display device ${input.id}`);
   }
   if (existing.revoked_at !== null) {
     throw new ConflictError('จอนี้ถูกยกเลิกไปแล้ว', 'DISPLAY_ALREADY_REVOKED');

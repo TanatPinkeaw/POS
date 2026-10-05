@@ -702,7 +702,7 @@ async function applyReport(input: {
       select: { last_used_number: true, reported_at: true, cancelled_at: true, opened_by: true },
     });
     if (!row) {
-      throw new NotFoundError('Number block');
+      throw new NotFoundError('ไม่พบชุดเลขที่ระบุ', 'Number block');
     }
     if (row.opened_by !== input.userId) throw new ConflictError('ชุดเลขเป็นของผู้ใช้อื่น — ใช้บัญชีที่ยืมชุดเลข', 'REPLAY_WRONG_CASHIER');
     if (row.reported_at !== null || row.cancelled_at !== null) {

@@ -15,7 +15,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
 
     // A member may only read their own order; staff may read any.
     if (session.role === 'member' && order.customer?.id !== session.id) {
-      throw new ForbiddenError('You can only view your own orders');
+      throw new ForbiddenError('ดูได้เฉพาะออเดอร์ของคุณเท่านั้น');
     }
 
     return order;

@@ -66,7 +66,7 @@ export async function setConsignment(
     },
   });
   if (!product) {
-    throw new NotFoundError(`Product ${input.productId}`);
+    throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
   }
 
   const consignor = await db.users.findUnique({
@@ -157,7 +157,7 @@ export async function withdrawConsignment(
     },
   });
   if (!product) {
-    throw new NotFoundError(`Product ${input.productId}`);
+    throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
   }
   if (!product.consignor_user_id) {
     throw new ValidationError('สินค้านี้ไม่ได้อยู่ในระบบฝากขาย');

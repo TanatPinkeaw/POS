@@ -114,7 +114,7 @@ export async function requireActiveUser(): Promise<{
   });
 
   if (!user || !user.is_active) {
-    throw new UnauthenticatedError('This account is no longer active');
+    throw new UnauthenticatedError('บัญชีนี้ไม่ได้ใช้งานอีกต่อไป');
   }
 
   return {

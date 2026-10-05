@@ -185,7 +185,7 @@ export async function openNumberBlock(input: {
 
       const to = bumped[0]?.to_number;
       if (to === undefined) {
-        throw new NotFoundError('Shop');
+        throw new NotFoundError('ไม่พบข้อมูลร้าน', 'Shop');
       }
 
       /*
@@ -251,7 +251,7 @@ export async function claimNumberFromBlock(
   `;
   const row = rows[0];
   if (!row) {
-    throw new NotFoundError('Number block');
+    throw new NotFoundError('ไม่พบชุดเลขที่ระบุ', 'Number block');
   }
   assertOpen(row);
 
@@ -342,7 +342,7 @@ export async function reportNumberBlock(input: {
     `;
     const row = rows[0];
     if (!row) {
-      throw new NotFoundError('Number block');
+      throw new NotFoundError('ไม่พบชุดเลขที่ระบุ', 'Number block');
     }
     assertOpen(row);
 
@@ -409,7 +409,7 @@ export async function cancelNumberBlock(input: {
     `;
     const row = rows[0];
     if (!row) {
-      throw new NotFoundError('Number block');
+      throw new NotFoundError('ไม่พบชุดเลขที่ระบุ', 'Number block');
     }
     assertOpen(row);
 

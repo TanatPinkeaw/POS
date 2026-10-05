@@ -170,7 +170,7 @@ async function priceCart(db: Db, lines: CartLine[]): Promise<PricedLine[]> {
   for (const [productId, quantity] of requested) {
     const product = byId.get(productId);
     if (!product) {
-      throw new NotFoundError(`Product ${productId}`);
+      throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${productId}`);
     }
     if (!product.is_active) {
       throw new ConflictError(`"${product.name}" is no longer for sale`, 'PRODUCT_INACTIVE');
@@ -227,7 +227,7 @@ export async function lockOrder(db: Db, orderId: string): Promise<{ id: string; 
   `;
   const row = rows[0];
   if (!row) {
-    throw new NotFoundError(`Order ${orderId}`);
+    throw new NotFoundError('ไม่พบออเดอร์ที่ระบุ', `Order ${orderId}`);
   }
   return row;
 }

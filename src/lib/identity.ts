@@ -288,7 +288,7 @@ export async function changeCustomerPhone(input: {
     select: { ...CUSTOMER_SELECT, google_subject: true },
   });
   if (!existing) {
-    throw new NotFoundError(`Customer ${input.userId}`);
+    throw new NotFoundError('ไม่พบลูกค้าที่ระบุ', `Customer ${input.userId}`);
   }
   if (existing.role !== 'member') {
     throw new ConflictError('บัญชีนี้ไม่ใช่บัญชีลูกค้า', 'NOT_A_MEMBER_ACCOUNT');

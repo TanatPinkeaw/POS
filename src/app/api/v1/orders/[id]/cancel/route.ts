@@ -44,7 +44,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     if (session.role === 'member') {
       const existing = await loadOrderView(id);
       if (existing.customer?.id !== session.id) {
-        throw new ForbiddenError('You can only cancel your own orders');
+        throw new ForbiddenError('ยกเลิกได้เฉพาะออเดอร์ของคุณเท่านั้น');
       }
     }
 

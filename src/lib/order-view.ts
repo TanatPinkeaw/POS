@@ -168,7 +168,7 @@ export async function loadOrderView(orderId: string): Promise<OrderView> {
     include: fullInclude,
   });
   if (!order) {
-    throw new NotFoundError(`Order ${orderId}`);
+    throw new NotFoundError('ไม่พบออเดอร์ที่ระบุ', `Order ${orderId}`);
   }
 
   return {
@@ -392,7 +392,7 @@ export async function loadReceiptPayload(orderId: string): Promise<ReceiptPayloa
   });
 
   if (!order) {
-    throw new NotFoundError(`Order ${orderId}`);
+    throw new NotFoundError('ไม่พบออเดอร์ที่ระบุ', `Order ${orderId}`);
   }
   /*
    * A refunded sale keeps its receipt. The invoice was issued, it was handed to a

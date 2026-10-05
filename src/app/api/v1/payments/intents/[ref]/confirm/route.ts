@@ -68,6 +68,6 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
 export async function GET(): Promise<Response> {
   return withApi(async () => {
     await requireRole(['employee', 'admin']);
-    throw new ForbiddenError('Confirmation must be posted, not opened');
+    throw new ForbiddenError('ต้องส่งคำยืนยันด้วยวิธี POST เท่านั้น');
   });
 }

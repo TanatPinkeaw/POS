@@ -40,7 +40,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     if (!customer.isActive) {
-      throw new UnauthenticatedError('This account has been deactivated');
+      throw new UnauthenticatedError('บัญชีนี้ถูกปิดการใช้งานแล้ว');
     }
 
     await startSession({

@@ -33,7 +33,7 @@ export async function POST(request: Request): Promise<Response> {
       select: { name: true },
     });
     if (!product) {
-      throw new NotFoundError(`Product ${body.productId}`);
+      throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${body.productId}`);
     }
 
     notifyStockChanged({

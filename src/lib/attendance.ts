@@ -158,7 +158,7 @@ export async function loadAttendanceRow(logId: number): Promise<AttendanceRow> {
   );
   const row = rows[0];
   if (!row) {
-    throw new NotFoundError(`Time log #${logId}`);
+    throw new NotFoundError('ไม่พบบันทึกเวลาที่ระบุ', `Time log #${logId}`);
   }
   return toAttendanceRow(row);
 }
@@ -292,7 +292,7 @@ export async function createManualLog(input: {
 export async function deleteLog(logId: number): Promise<void> {
   const result = await prisma.time_logs.deleteMany({ where: { id: logId } });
   if (result.count === 0) {
-    throw new NotFoundError(`Time log #${logId}`);
+    throw new NotFoundError('ไม่พบบันทึกเวลาที่ระบุ', `Time log #${logId}`);
   }
 }
 
@@ -422,7 +422,7 @@ export async function loadSchedule(scheduleId: number): Promise<ScheduleRow> {
     include: { employee: { select: { full_name: true, phone: true } } },
   });
   if (!row) {
-    throw new NotFoundError(`Work schedule #${scheduleId}`);
+    throw new NotFoundError('ไม่พบตารางงานที่ระบุ', `Work schedule #${scheduleId}`);
   }
 
   return {
@@ -441,7 +441,7 @@ export async function loadSchedule(scheduleId: number): Promise<ScheduleRow> {
 export async function deleteSchedule(scheduleId: number): Promise<void> {
   const result = await prisma.work_schedules.deleteMany({ where: { id: scheduleId } });
   if (result.count === 0) {
-    throw new NotFoundError(`Work schedule #${scheduleId}`);
+    throw new NotFoundError('ไม่พบตารางงานที่ระบุ', `Work schedule #${scheduleId}`);
   }
 }
 

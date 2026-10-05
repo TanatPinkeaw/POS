@@ -37,7 +37,7 @@ export async function POST(_request: Request, context: RouteContext): Promise<Re
     });
 
     if (!order) {
-      throw new NotFoundError(`Order ${id}`);
+      throw new NotFoundError('ไม่พบออเดอร์ที่ระบุ', `Order ${id}`);
     }
     if (order.status !== 'completed' && order.status !== 'refunded') {
       throw new ConflictError(

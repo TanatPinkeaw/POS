@@ -128,7 +128,7 @@ export async function reserveStock(
   // The guard failed. Read the row again purely to explain why in the error.
   const current = await readStockBalance(db, input.productId);
   if (!current) {
-    throw new NotFoundError(`Product ${input.productId}`);
+    throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
   }
   throw new InsufficientStockError(
     input.productId,
@@ -225,7 +225,7 @@ export async function sellFromStock(
 
   const current = await readStockBalance(db, input.productId);
   if (!current) {
-    throw new NotFoundError(`Product ${input.productId}`);
+    throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
   }
   throw new InsufficientStockError(
     input.productId,
@@ -265,7 +265,7 @@ export async function returnRefundedStock(
 
   const balance = rows[0];
   if (!balance) {
-    throw new NotFoundError(`Product ${input.productId}`);
+    throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
   }
   return balance;
 }
@@ -304,7 +304,7 @@ export async function settleReplayedSale(
 
   const balance = rows[0];
   if (!balance) {
-    throw new NotFoundError(`Product ${input.productId}`);
+    throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
   }
   return balance;
 }
@@ -344,7 +344,7 @@ export async function adjustStock(
   if (!balance) {
     const current = await readStockBalance(db, input.productId);
     if (!current) {
-      throw new NotFoundError(`Product ${input.productId}`);
+      throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${input.productId}`);
     }
     throw new ConflictError(
       `Adjusting by ${input.delta} would leave stock at ${current.stock_qty + input.delta}, ` +

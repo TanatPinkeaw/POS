@@ -32,7 +32,7 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Re
 
     const existing = await prisma.categories.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundError(`Category ${id}`);
+      throw new NotFoundError('ไม่พบหมวดหมู่ที่ระบุ', `Category ${id}`);
     }
 
     return prisma.categories.update({ where: { id }, data: { name } });
@@ -49,7 +49,7 @@ export async function DELETE(_request: Request, context: RouteContext): Promise<
       include: { _count: { select: { products: true } } },
     });
     if (!category) {
-      throw new NotFoundError(`Category ${id}`);
+      throw new NotFoundError('ไม่พบหมวดหมู่ที่ระบุ', `Category ${id}`);
     }
 
     if (category._count.products > 0) {

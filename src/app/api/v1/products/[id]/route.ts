@@ -20,7 +20,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       include: { category: { select: { name: true } } },
     });
     if (!product) {
-      throw new NotFoundError(`Product ${id}`);
+      throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${id}`);
     }
 
     return {
@@ -53,7 +53,7 @@ export async function PATCH(request: Request, context: RouteContext): Promise<Re
 
     const existing = await prisma.products.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundError(`Product ${id}`);
+      throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${id}`);
     }
 
     // A price change must not quietly rewrite what an open pre-order owes, so
@@ -108,7 +108,7 @@ export async function DELETE(_request: Request, context: RouteContext): Promise<
 
     const existing = await prisma.products.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundError(`Product ${id}`);
+      throw new NotFoundError('ไม่พบสินค้าที่ระบุ', `Product ${id}`);
     }
 
     const updated = await prisma.products.update({

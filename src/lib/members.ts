@@ -158,7 +158,7 @@ export async function createMember(input: CreateMemberInput): Promise<Member> {
 export async function updateMember(input: UpdateMemberInput): Promise<Member> {
   const existing = await prisma.users.findUnique({ where: { id: input.id } });
   if (!existing) {
-    throw new NotFoundError(`Customer ${input.id}`);
+    throw new NotFoundError('ไม่พบลูกค้าที่ระบุ', `Customer ${input.id}`);
   }
   if (existing.role !== 'member') {
     throw new ConflictError(

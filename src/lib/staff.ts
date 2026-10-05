@@ -102,7 +102,7 @@ export async function createStaff(input: CreateStaffInput): Promise<StaffMember>
 export async function updateStaff(input: UpdateStaffInput): Promise<StaffMember> {
   const existing = await prisma.users.findUnique({ where: { id: input.id } });
   if (!existing) {
-    throw new NotFoundError(`Staff member ${input.id}`);
+    throw new NotFoundError('ไม่พบพนักงานที่ระบุ', `Staff member ${input.id}`);
   }
   if (existing.role === 'member') {
     throw new ConflictError(

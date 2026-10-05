@@ -700,7 +700,10 @@ export async function creditNoteHistoryFor(
 export async function requireCreditNoteDocument(orderId: string): Promise<CreditNoteDocument> {
   const document = await loadCreditNoteDocument(orderId);
   if (!document) {
-    throw new NotFoundError(`No credit note for order ${orderId}`);
+    throw new NotFoundError(
+      'ไม่พบใบลดหนี้ของออเดอร์นี้',
+      `No credit note for order ${orderId}`,
+    );
   }
   return document;
 }

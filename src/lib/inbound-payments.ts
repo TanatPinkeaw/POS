@@ -293,7 +293,7 @@ export async function dismissInboundTransfer(input: {
   if (updated.count === 0) {
     const existing = await prisma.inbound_payments.findUnique({ where: { id } });
     if (!existing) {
-      throw new NotFoundError(`Inbound payment ${input.id}`);
+      throw new NotFoundError('ไม่พบรายการรับเงินที่ระบุ', `Inbound payment ${input.id}`);
     }
     if (existing.status === 'matched') {
       throw new ConflictError(

@@ -23,6 +23,23 @@ export class DomainError extends Error {
      * `unknown`: a validation issue is whatever the validator produced.
      */
     readonly context?: Record<string, unknown>,
+    /**
+     * The same failure written in English, for the server log only.
+     *
+     * `message` goes to the client, and this app talks to a Thai shop counter: the
+     * person reading it is an employee standing in front of a customer, so it has to
+     * be a sentence they can read aloud. That is a real constraint on an error class,
+     * because it used to be `NotFoundError` that appended the English — it took a
+     * noun and built `` `${what} not found` ``, so every one of its forty-nine call
+     * sites shipped English no matter what noun it was handed, and no amount of care
+     * at the call site could prevent it.
+     *
+     * So the sentence is the caller's to write, in the shop's language, and this is
+     * where the debugging half goes instead: the ids and quantities that make the log
+     * line worth having, kept out of the response so a customer-facing surface cannot
+     * leak them. `errorResponse` writes it to the console whenever it is present.
+     */
+    readonly detail?: string,
   ) {
     super(message);
     this.name = new.target.name;
@@ -49,10 +66,21 @@ export class InsufficientStockError extends DomainError {
   }
 }
 
-/** A row was expected to exist and did not. */
+/**
+ * A row was expected to exist and did not.
+ *
+ * Takes the sentence to show rather than composing one. Every caller of this used to
+ * hand over an English noun and get English back, which is why "No order is waiting
+ * for collection with those details not found" reached a cashier in the middle of a
+ * handover: a trailing "not found" stuck onto a sentence that had already finished.
+ *
+ * The second argument is the English line for the log, and is worth passing whenever
+ * there is an id worth recording — the whole reason this error is hard to debug from
+ * a 404 alone is that the 404 cannot say which row it wanted.
+ */
 export class NotFoundError extends DomainError {
-  constructor(what: string) {
-    super(`${what} not found`, 'NOT_FOUND', 404);
+  constructor(message: string, detail?: string) {
+    super(message, 'NOT_FOUND', 404, undefined, detail);
   }
 }
 
@@ -86,10 +114,16 @@ export class SeriesReservedError extends DomainError {
   }
 }
 
-/** The caller is authenticated but lacks permission. */
+/**
+ * The caller is authenticated but lacks permission.
+ *
+ * Takes an optional English line for the log, for the same reason `NotFoundError`
+ * does: the sentence a screen shows cannot carry the two identifiers whose mismatch
+ * caused the refusal, so the log is where that pair has to live.
+ */
 export class ForbiddenError extends DomainError {
-  constructor(message = 'You do not have permission to perform this action') {
-    super(message, 'FORBIDDEN', 403);
+  constructor(message = 'คุณไม่มีสิทธิ์ทำรายการนี้', detail?: string) {
+    super(message, 'FORBIDDEN', 403, undefined, detail);
   }
 }
 
@@ -144,8 +178,8 @@ function formatWait(seconds: number): string {
 
 /** The caller is not authenticated. */
 export class UnauthenticatedError extends DomainError {
-  constructor(message = 'Sign in to continue') {
-    super(message, 'UNAUTHENTICATED', 401);
+  constructor(message = 'กรุณาเข้าสู่ระบบก่อน', detail?: string) {
+    super(message, 'UNAUTHENTICATED', 401, undefined, detail);
   }
 }
 

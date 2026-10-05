@@ -202,14 +202,14 @@ export async function confirmIntent(input: {
     // bill you already closed" is worth showing.
     const existing = await findIntent(input.ref);
     if (!existing) {
-      throw new NotFoundError(`Payment intent ${input.ref}`);
+      throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${input.ref}`);
     }
     return existing;
   }
 
   const intent = await findIntent(input.ref);
   if (!intent) {
-    throw new NotFoundError(`Payment intent ${input.ref}`);
+    throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${input.ref}`);
   }
 
   if (input.authorizedByUserId) {
@@ -253,7 +253,7 @@ export async function consumeIntent(
   if (rows.length === 0) {
     const existing = await findIntent(input.ref);
     if (!existing) {
-      throw new NotFoundError(`Payment intent ${input.ref}`);
+      throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${input.ref}`);
     }
     throw new ConflictError(
       `การชำระเงิน ${input.ref} อยู่ในสถานะ "${existing.status}" และปิดบิลซ้ำไม่ได้`,
@@ -263,7 +263,7 @@ export async function consumeIntent(
 
   const intent = await findIntent(input.ref);
   if (!intent) {
-    throw new NotFoundError(`Payment intent ${input.ref}`);
+    throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${input.ref}`);
   }
   return intent;
 }
@@ -284,7 +284,7 @@ export async function cancelIntent(input: {
   if (rows.length === 0) {
     const existing = await findIntent(input.ref);
     if (!existing) {
-      throw new NotFoundError(`Payment intent ${input.ref}`);
+      throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${input.ref}`);
     }
     throw new ConflictError(
       `ยกเลิกไม่ได้ เพราะรายการนี้อยู่ในสถานะ "${existing.status}"`,
@@ -294,7 +294,7 @@ export async function cancelIntent(input: {
 
   const intent = await findIntent(input.ref);
   if (!intent) {
-    throw new NotFoundError(`Payment intent ${input.ref}`);
+    throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${input.ref}`);
   }
   return intent;
 }

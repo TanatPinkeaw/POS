@@ -68,7 +68,7 @@ export async function listCustomerPoints(
   ]);
 
   if (!user) {
-    throw new NotFoundError(`Customer ${userId}`);
+    throw new NotFoundError('ไม่พบลูกค้าที่ระบุ', `Customer ${userId}`);
   }
 
   return {
@@ -108,7 +108,7 @@ export async function loadCustomerReceipt(
   });
 
   if (!order) {
-    throw new NotFoundError(`Order ${orderId}`);
+    throw new NotFoundError('ไม่พบออเดอร์ที่ระบุ', `Order ${orderId}`);
   }
   if (order.customer_id !== customerId) {
     throw new ForbiddenError('ใบเสร็จนี้ไม่ใช่ของบัญชีคุณ');

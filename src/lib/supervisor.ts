@@ -447,16 +447,32 @@ export function assertApprovalMatches(
   claims: ApprovalClaims,
   expected: { action: SupervisorAction; targetId: string; actorId: string },
 ): void {
+  /*
+   * All three say what was approved versus what is being attempted, because "you do
+   * not have permission" sends the cashier hunting for a role problem when the real
+   * answer is that they are one approval behind — a supervisor approved a discount
+   * and the cashier is now trying to void the order.
+   *
+   * The action names are already Thai (`SUPERVISOR_ACTION_LABELS`); only the sentence
+   * around them was English.
+   */
   if (claims.action !== expected.action) {
     throw new ForbiddenError(
-      `This approval was granted for ${claims.action}, not for ${expected.action}`,
+      `อนุมัตินี้ใช้สำหรับ${SUPERVISOR_ACTION_LABELS[claims.action]} ไม่ใช่${SUPERVISOR_ACTION_LABELS[expected.action]}`,
+      `approval granted for ${claims.action}, expected ${expected.action}`,
     );
   }
   if (claims.targetId !== expected.targetId) {
-    throw new ForbiddenError('This approval was granted for a different amount or record');
+    throw new ForbiddenError(
+      'อนุมัตินี้ใช้กับยอดหรือรายการอื่น — กรุณาขออนุมัติใหม่',
+      `approval bound to target ${claims.targetId}, expected ${expected.targetId}`,
+    );
   }
   if (claims.actorId !== expected.actorId) {
-    throw new ForbiddenError('This approval was granted to a different user');
+    throw new ForbiddenError(
+      'อนุมัตินี้ให้กับผู้ใช้อื่น — กรุณาขออนุมัติใหม่',
+      `approval granted to actor ${claims.actorId}, expected ${expected.actorId}`,
+    );
   }
 }
 
@@ -475,7 +491,7 @@ async function loadPinHolder(userId: string): Promise<PinHolderRow> {
   });
 
   if (!user) {
-    throw new NotFoundError(`User ${userId}`);
+    throw new NotFoundError('ไม่พบผู้ใช้ที่ระบุ', `User ${userId}`);
   }
   if (!user.is_active) {
     throw new ConflictError('This account is no longer active', 'ACCOUNT_INACTIVE');

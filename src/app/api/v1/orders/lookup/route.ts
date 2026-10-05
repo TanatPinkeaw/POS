@@ -25,7 +25,11 @@ export async function POST(request: Request): Promise<Response> {
     const order = await findOrderForHandover(body);
     if (!order) {
       throw new NotFoundError(
-        'No order is waiting for collection with those details',
+        // The sentence a cashier reads when the scan finds nothing. It says what to
+        // try rather than only what failed, because the two things they just typed —
+        // a phone number and a PIN — are both plausible and only one of them is wrong.
+        'ไม่พบออเดอร์ที่รอรับสินค้าจากข้อมูลนี้ — ลองตรวจเบอร์โทรหรือ PIN อีกครั้ง',
+        `no order waiting for collection: ${JSON.stringify(body)}`,
       );
     }
 

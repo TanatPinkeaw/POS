@@ -34,6 +34,19 @@ export function fail(
  */
 export function errorResponse(error: unknown): NextResponse {
   if (error instanceof DomainError) {
+    /*
+     * The response carries only the Thai sentence. When the thrower also wrote an
+     * English line for the log — an id, a quantity, the row it wanted — it is written
+     * here and nowhere else, so a 404 that says "ไม่พบออเดอร์ที่ระบุ" can still be traced
+     * back to a specific order from the console.
+     *
+     * Logged rather than returned on purpose. A not-found is not an operator error and
+     * not a bug, but it is the one failure whose answer is a specific row, and a shop
+     * that cannot find it in the log has nothing to grep for.
+     */
+    if (error.detail) {
+      console.error(`[api] ${error.code}: ${error.detail}`);
+    }
     return fail(error.message, error.code, error.httpStatus, error.context);
   }
 

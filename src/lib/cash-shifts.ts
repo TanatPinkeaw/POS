@@ -211,7 +211,7 @@ export async function closeShift(input: {
     `;
     const current = locked[0];
     if (!current) {
-      throw new NotFoundError(`Cash drawer #${input.shiftId}`);
+      throw new NotFoundError('ไม่พบลิ้นชักที่ระบุ', `Cash drawer #${input.shiftId}`);
     }
     if (current.status === 'closed') {
       throw new ConflictError(
@@ -275,7 +275,7 @@ export async function recordDrawerOpening(input: {
       select: { id: true, status: true },
     });
     if (!shift) {
-      throw new NotFoundError(`Cash drawer #${input.shiftId}`);
+      throw new NotFoundError('ไม่พบลิ้นชักที่ระบุ', `Cash drawer #${input.shiftId}`);
     }
     if (shift.status !== 'open') {
       throw new ConflictError(

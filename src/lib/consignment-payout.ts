@@ -80,7 +80,7 @@ export async function payConsignor(db: Db, input: PayoutInput): Promise<PayoutRe
     select: { id: true, role: true },
   });
   if (!consignor) {
-    throw new NotFoundError(`User ${input.consignorUserId}`);
+    throw new NotFoundError('ไม่พบผู้ใช้ที่ระบุ', `User ${input.consignorUserId}`);
   }
 
   const balance = await consignorBalance(db, input.consignorUserId);

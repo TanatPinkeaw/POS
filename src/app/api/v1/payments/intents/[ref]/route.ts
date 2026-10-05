@@ -21,7 +21,7 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     const { ref } = await context.params;
     const intent = await findIntent(ref);
     if (!intent) {
-      throw new NotFoundError(`Payment intent ${ref}`);
+      throw new NotFoundError('ไม่พบรายการชำระเงินที่ระบุ', `Payment intent ${ref}`);
     }
     return intent;
   });
