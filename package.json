@@ -23,6 +23,7 @@
     "db:seed:demo": "tsx prisma/seed.ts --force",
     "db:studio": "prisma studio",
     "smoke": "tsx scripts/smoke-test.ts",
+    "server:check": "tsx scripts/server-check.ts",
     "acceptance": "tsx scripts/acceptance.ts",
     "route:audit": "tsx scripts/route-audit.ts",
     "limiter:race": "tsx scripts/rate-limit-race.ts",
