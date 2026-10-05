@@ -505,7 +505,7 @@ endpoint that says so.
 | §2 RBAC | `src/lib/roles.ts`, enforced in `src/proxy.ts` **and** every route handler |
 | Reversal of a paid sale (beyond the SRS) | `src/lib/credit-notes.ts` (the transaction) + `src/lib/refund-plan.ts` (the arithmetic) + `src/lib/order-state.ts` (the `refund` edge) — ADRs 0004, 0008 |
 | §3 pickup QR | `src/lib/pickup-token.ts` (the signed code), `pickup-scan.ts` (what the counter typed), rendered on the customer's order — ADR 0006 |
-| The drink queue (beyond the SRS) | `src/lib/queue-number.ts` (what a number looks like, pure) + `src/lib/fulfilment-state.ts` (the machine, pure) + `src/lib/fulfilment.ts` (the board and the taps), printed on the receipt, tapped at `/pos/queue`, called on `/display` — ADRs 0017, 0018 |
+| The drink queue (beyond the SRS) | `src/lib/queue-number.ts` (what a number looks like, pure) + `src/lib/fulfilment-state.ts` (the machine, pure) + `src/lib/fulfilment.ts` (the board and the taps), printed on the receipt, tapped at `/pos/queue`, called on `/display` — and switched off entirely by a shop that does not call its customers — ADRs 0017, 0018, 0027 |
 
 The domain rules are split into **pure functions** (loyalty, settlement, the state
 machine, the discrepancy formula, what the counter just scanned) and
@@ -797,7 +797,9 @@ reference is cancelled.
 beside ADR 0017: a three-digit number issued per walk-in sale, printed on the receipt so
 the customer can be called, and a board of what is being made versus what is waiting to
 be collected. A pre-order has no call number — its handover is the moment it is paid, and
-it has its own identifiers.
+it has its own identifiers. A shop that hands everything over in one bill turns the whole
+thing off in `ตั้งค่าร้าน` (`เรียกลูกด้วยเลขคิว`): no number on the slip, no ticket, no page in
+the till's navigation — see ADR 0027.
 
 **Sales history is a screen.** `/admin/sales` lists every completed sale, searchable by
 receipt number, customer name and Bangkok date range, and reprints a receipt from the
@@ -882,6 +884,7 @@ goes through them.
 | `docs/adr/0016-hosted-multi-tenant.md` | The rental as a hosted service: a schema per shop in one database, a control plane in `public`, a per-request seam with no default client, Google for the owner and phone-plus-password for the counter — and the invariants it deliberately does not spend. |
 | `docs/adr/0017-a-call-number-rides-with-the-receipt.md` | The number a customer is called by: why it is a second series rather than the receipt's, and the day that resets inside the statement that bumps it. |
 | `docs/adr/0018-the-board-that-calls-a-number.md` | The drink queue: a second state machine beside the order's status (because `completed` is what the money counts), the board the bar taps through, why only ready numbers reach the customer screen, and today as the board's horizon. |
+| `docs/adr/0027-the-shop-says-whether-it-calls.md` | The switch that turns the call number and the drink queue off for a shop that does not call its customers: one boolean rather than a shop type, obeyed by the sale so every screen corrects itself, and honoured by a prepared device. |
 | `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to, the replay that makes a device's queue idempotent — and the invariants that move out of the database, including the two stock constraints the shortage case needed relaxed. |
 | `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. |
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |

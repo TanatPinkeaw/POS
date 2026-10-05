@@ -60,6 +60,13 @@ export interface TillTransport {
 /** The shop's tax and discount settings, as the device last saw them. */
 export interface OfflineShopSettings {
   readonly isVatRegistered: boolean;
+  /**
+   * Whether this shop calls its customers by a number (ADR 0027), as the device last
+   * saw it. It is in the snapshot rather than in the device's own memory because it
+   * is the shop's setting: a device prepared last week has to hear the answer when
+   * the shop changes it, and the snapshot is how every other setting reaches it.
+   */
+  readonly callsNumbers: boolean;
   readonly vatRatePercent: number;
   readonly pricesIncludeVat: boolean;
   readonly receiptPrefix: string;
@@ -293,11 +300,15 @@ export function createTillStore(options: {
       shiftOpen: snapshot.shift !== null,
       supervisorDiscountLimitThb: snapshot.shop.supervisorDiscountLimitThb,
       isVatRegistered: snapshot.shop.isVatRegistered,
+      callsNumbers: snapshot.shop.callsNumbers,
       vatRatePercent: snapshot.shop.vatRatePercent,
       pricesIncludeVat: snapshot.shop.pricesIncludeVat,
       receiptPrefix: snapshot.shop.receiptPrefix,
       catalogue: snapshot.catalogue,
-      callBlocks: blocks.filter((block) => block.kind === 'queue'),
+      // Not handed to the sale at all while the switch is off, so a device prepared
+      // before it changed stops spending its numbers rather than spending them on
+      // bills nobody will be called for.
+      callBlocks: snapshot.shop.callsNumbers ? blocks.filter((block) => block.kind === 'queue') : [],
       receiptBlock: openBlockFor(blocks, 'receipt', null),
       pending: queue,
     };
@@ -580,7 +591,13 @@ export function createTillStore(options: {
         const day = bangkokDateString(now());
         const wanted = [
           ...(snapshot.shop.isVatRegistered ? [{ series: 'receipt' as const, day: null }] : []),
-          { series: 'queue' as const, day }, { series: 'queue' as const, day: addBangkokDays(day, 1) },
+          // Two days of call numbers, and only for a shop that calls anybody: a loan
+          // it will never spend is a range of numbers frozen away from the server for
+          // no reason (ADR 0027), which is the same harm as a device borrowing two
+          // receipt series.
+          ...(snapshot.shop.callsNumbers
+            ? [{ series: 'queue' as const, day }, { series: 'queue' as const, day: addBangkokDays(day, 1) }]
+            : []),
         ];
         for (const part of wanted) {
           if (snapshot.heldBlocks.some((entry) => entry.block.kind === part.series && entry.block.day === part.day)) continue;

@@ -24,6 +24,7 @@ function shop(overrides: Partial<ShopView> = {}): ShopView {
     address: null,
     phone: '021234567',
     isVatRegistered: true,
+    callsNumbers: true,
     vatRate: 7,
     pricesIncludeVat: true,
     receiptPrefix: 'RC',

@@ -291,6 +291,10 @@ export function useTill({
         pricesIncludeVat: shop.pricesIncludeVat,
         receiptPrefix: shop.receiptPrefix,
         supervisorDiscountLimitThb: shop.supervisorDiscountLimitThb,
+        // Carried for the same reason as the tax facts above: the device prices and
+        // numbers a bill with no network, so whether it numbers it at all is a
+        // published setting rather than something the till decides (ADR 0027).
+        callsNumbers: shop.callsNumbers,
       },
       catalogue: [...catalogueRef.current.values()],
       /*

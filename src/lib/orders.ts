@@ -635,7 +635,17 @@ export async function createPosSale(input: {
          * say the goods are owed — a ticket written anywhere else could exist for a
          * bill that was never settled.
          */
-        fulfilment: 'preparing',
+        /*
+         * And only when there is a number to call (ADR 0027).
+         *
+         * A ticket says "this drink is being made, call this number when it is
+         * ready", so a shop that does not call its customers has nothing to say with
+         * one: the board fills with numbers nobody shouts and the customer display
+         * with numbers nobody came in for. Null means no goods waiting, which is a
+         * state this column already has — a pre-order's handover *is* its payment,
+         * and every bill written before the fulfilment machine existed.
+         */
+        fulfilment: call ? 'preparing' : null,
       },
     });
 

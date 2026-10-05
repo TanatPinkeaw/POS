@@ -53,8 +53,18 @@ export function SetupWizard() {
     address: '',
   });
 
+  /*
+   * Whether this shop calls its customers by number (ADR 0027), asked here rather
+   * than guessed from anything else. It is the one question this wizard asks whose
+   * answer is not about money but about how the counter works, and it is asked on
+   * the step that already owns the slip the customer walks away with. Default true,
+   * matching the column: a shop that hands everything over on the spot turns it off
+   * in two taps, and a shop that calls people does not have to know the feature
+   * exists to get it.
+   */
   const [tax, setTax] = useState({
     isVatRegistered: false,
+    callsNumbers: true,
     vatRate: String(DEFAULT_VAT_RATE),
     taxId: '',
     receiptPrefix: DEFAULT_RECEIPT_PREFIX,
@@ -133,6 +143,7 @@ export function SetupWizard() {
           taxId: tax.taxId.trim() || null,
           receiptPrefix: tax.receiptPrefix.trim(),
           receiptFooter: tax.receiptFooter.trim() || null,
+          callsNumbers: tax.callsNumbers,
         },
         admin: {
           fullName: admin.fullName.trim(),
@@ -267,6 +278,14 @@ export function SetupWizard() {
               label="ร้านจดทะเบียน VAT"
               checked={tax.isVatRegistered}
               onChange={(next) => setTax({ ...tax, isVatRegistered: next })}
+            />
+
+            <ToggleField
+              id="setup-calls-numbers"
+              label="เรียกลูกด้วยเลขคิว"
+              help="สำหรับร้านที่ลูกค้าต้องยืนรอของอยู่ — ปิดไว้ถ้าร้านส่งของให้จบในบิลเดียว บิลก็จะไม่มีเลขคิว และหน้าขายจะไม่มีบอร์ดคิว"
+              checked={tax.callsNumbers}
+              onChange={(next) => setTax({ ...tax, callsNumbers: next })}
             />
 
             {tax.isVatRegistered ? (

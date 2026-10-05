@@ -50,6 +50,15 @@ export interface ShopSettingsInput {
   /** Omitted leaves the column alone — the DB default covers a new shop. */
   supervisorDiscountLimitThb?: number;
   /**
+   * Whether this shop calls its customers by a number (ADR 0027).
+   *
+   * Omitted leaves the column alone for the same reason, and the same way round:
+   * the setup wizard and every client written before the switch do not send it, and
+   * a shop that has chosen this setting must not have it changed by a form that
+   * never asked the question.
+   */
+  callsNumbers?: boolean;
+  /**
    * Both or neither: the till cannot build a payload from an id without knowing
    * which kind of account it is, so half a setting is refused at the schema.
    */
@@ -97,6 +106,7 @@ export function toShopView(row: shops): ShopView {
     promptpayId: row.promptpay_id,
     promptpayType: (row.promptpay_type as PromptPayIdType | null) ?? null,
     supervisorDiscountLimitThb: fromDecimal(row.supervisor_discount_limit_thb),
+    callsNumbers: row.calls_numbers,
   };
 }
 
@@ -315,6 +325,7 @@ export async function allocateQueueNumber(
            END,
            "queue_running_day" = ${day}::date
      WHERE "id" = ${SHOP_ROW_ID}
+       AND "calls_numbers"
        AND NOT EXISTS (
          SELECT 1 FROM "number_blocks" b
           WHERE b."series" = 'queue'
@@ -333,6 +344,14 @@ export async function allocateQueueNumber(
      * cannot be issued at all, while a customer can be handed their drink with a slip
      * that has no number on it. The block that caused it is a visible open row, and the
      * bill is otherwise ordinary.
+     *
+     * Two reasons now, and both are this one statement returning no row. A device
+     * holds the day's numbers (the NOT EXISTS below), or the shop does not call its
+     * customers by number at all (ADR 0027) and `calls_numbers` is false. The
+     * switch is read here, inside the statement that would have bumped the counter,
+     * rather than in the caller: a shop that has turned calling off must not have
+     * its counter moved by a sale that prints no number, or the day it turns back
+     * on would start at a number nobody has ever been called by.
      */
     return null;
   }
@@ -436,6 +455,9 @@ export function shopColumns(input: ShopSettingsInput) {
     receipt_prefix: input.receiptPrefix.trim(),
     receipt_footer: blankToNull(input.receiptFooter),
     logo_url: blankToNull(input.logoUrl),
+    // Absent means "leave it alone" rather than "turn it off", for the reason the
+    // input type gives: a form that never showed this setting must not answer it.
+    ...(input.callsNumbers === undefined ? {} : { calls_numbers: input.callsNumbers }),
     /*
      * Normalised on the way in, so what is stored is exactly what the payload
      * builder will carry. A shop that typed 081-234-5678 gets 0066812345678.

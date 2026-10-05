@@ -2,6 +2,7 @@ import { OfflineShellRegistrar } from '@/components/pos/OfflineShellRegistrar';
 import { AreaLayout } from '@/components/shell/AreaLayout';
 import type { NavItem } from '@/components/shell/AppShell';
 import { requireShellUser } from '@/lib/shell';
+import { loadShop } from '@/lib/shop';
 
 const POS_NAV: NavItem[] = [
   { href: '/pos', label: 'ขายหน้าร้าน', icon: 'cart' },
@@ -41,7 +42,20 @@ export default async function PosLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const user = await requireShellUser(['employee', 'admin']);
-  const nav = user.role === 'admin' ? [...POS_NAV, ADMIN_RETURN] : POS_NAV;
+  /*
+   * The drinks queue is offered only to a shop that calls its customers by number
+   * (ADR 0027). Hidden rather than disabled: a page in the navigation that a shop
+   * has said it does not have is a page somebody taps to find out, and the answer
+   * is a screen of nothing. The route itself stays, so a shop that turns the
+   * setting back on has somewhere to land — and an old bookmark stops being a
+   * dead end rather than becoming a 404 that looks like a bug.
+   *
+   * `loadShop` is one indexed read of a one-row table, per navigation, and it is
+   * the same read the till page already makes for the shop it prints on.
+   */
+  const shop = await loadShop();
+  const items = shop && !shop.callsNumbers ? POS_NAV.filter((item) => item.href !== '/pos/queue') : POS_NAV;
+  const nav = user.role === 'admin' ? [...items, ADMIN_RETURN] : items;
   return (
     <AreaLayout user={user} nav={nav} density="touch" variant="till">
       {/*

@@ -68,6 +68,7 @@ export type ShopsMinAggregateOutputType = {
   credit_note_running_number: bigint | null
   queue_running_number: number | null
   queue_running_day: Date | null
+  calls_numbers: boolean | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -94,6 +95,7 @@ export type ShopsMaxAggregateOutputType = {
   credit_note_running_number: bigint | null
   queue_running_number: number | null
   queue_running_day: Date | null
+  calls_numbers: boolean | null
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -120,6 +122,7 @@ export type ShopsCountAggregateOutputType = {
   credit_note_running_number: number
   queue_running_number: number
   queue_running_day: number
+  calls_numbers: number
   receipt_footer: number
   logo_url: number
   promptpay_id: number
@@ -166,6 +169,7 @@ export type ShopsMinAggregateInputType = {
   credit_note_running_number?: true
   queue_running_number?: true
   queue_running_day?: true
+  calls_numbers?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -192,6 +196,7 @@ export type ShopsMaxAggregateInputType = {
   credit_note_running_number?: true
   queue_running_number?: true
   queue_running_day?: true
+  calls_numbers?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -218,6 +223,7 @@ export type ShopsCountAggregateInputType = {
   credit_note_running_number?: true
   queue_running_number?: true
   queue_running_day?: true
+  calls_numbers?: true
   receipt_footer?: true
   logo_url?: true
   promptpay_id?: true
@@ -331,6 +337,7 @@ export type ShopsGroupByOutputType = {
   credit_note_running_number: bigint
   queue_running_number: number
   queue_running_day: Date | null
+  calls_numbers: boolean
   receipt_footer: string | null
   logo_url: string | null
   promptpay_id: string | null
@@ -380,6 +387,7 @@ export type shopsWhereInput = {
   credit_note_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   queue_running_number?: Prisma.IntFilter<"shops"> | number
   queue_running_day?: Prisma.DateTimeNullableFilter<"shops"> | Date | string | null
+  calls_numbers?: Prisma.BoolFilter<"shops"> | boolean
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
@@ -406,6 +414,7 @@ export type shopsOrderByWithRelationInput = {
   credit_note_running_number?: Prisma.SortOrder
   queue_running_number?: Prisma.SortOrder
   queue_running_day?: Prisma.SortOrderInput | Prisma.SortOrder
+  calls_numbers?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -435,6 +444,7 @@ export type shopsWhereUniqueInput = Prisma.AtLeast<{
   credit_note_running_number?: Prisma.BigIntFilter<"shops"> | bigint | number
   queue_running_number?: Prisma.IntFilter<"shops"> | number
   queue_running_day?: Prisma.DateTimeNullableFilter<"shops"> | Date | string | null
+  calls_numbers?: Prisma.BoolFilter<"shops"> | boolean
   receipt_footer?: Prisma.StringNullableFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableFilter<"shops"> | string | null
@@ -461,6 +471,7 @@ export type shopsOrderByWithAggregationInput = {
   credit_note_running_number?: Prisma.SortOrder
   queue_running_number?: Prisma.SortOrder
   queue_running_day?: Prisma.SortOrderInput | Prisma.SortOrder
+  calls_numbers?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrderInput | Prisma.SortOrder
   logo_url?: Prisma.SortOrderInput | Prisma.SortOrder
   promptpay_id?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -495,6 +506,7 @@ export type shopsScalarWhereWithAggregatesInput = {
   credit_note_running_number?: Prisma.BigIntWithAggregatesFilter<"shops"> | bigint | number
   queue_running_number?: Prisma.IntWithAggregatesFilter<"shops"> | number
   queue_running_day?: Prisma.DateTimeNullableWithAggregatesFilter<"shops"> | Date | string | null
+  calls_numbers?: Prisma.BoolWithAggregatesFilter<"shops"> | boolean
   receipt_footer?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   logo_url?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
   promptpay_id?: Prisma.StringNullableWithAggregatesFilter<"shops"> | string | null
@@ -521,6 +533,7 @@ export type shopsCreateInput = {
   credit_note_running_number?: bigint | number
   queue_running_number?: number
   queue_running_day?: Date | string | null
+  calls_numbers?: boolean
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -547,6 +560,7 @@ export type shopsUncheckedCreateInput = {
   credit_note_running_number?: bigint | number
   queue_running_number?: number
   queue_running_day?: Date | string | null
+  calls_numbers?: boolean
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -573,6 +587,7 @@ export type shopsUpdateInput = {
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
   queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  calls_numbers?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -599,6 +614,7 @@ export type shopsUncheckedUpdateInput = {
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
   queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  calls_numbers?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -625,6 +641,7 @@ export type shopsCreateManyInput = {
   credit_note_running_number?: bigint | number
   queue_running_number?: number
   queue_running_day?: Date | string | null
+  calls_numbers?: boolean
   receipt_footer?: string | null
   logo_url?: string | null
   promptpay_id?: string | null
@@ -651,6 +668,7 @@ export type shopsUpdateManyMutationInput = {
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
   queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  calls_numbers?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -677,6 +695,7 @@ export type shopsUncheckedUpdateManyInput = {
   credit_note_running_number?: Prisma.BigIntFieldUpdateOperationsInput | bigint | number
   queue_running_number?: Prisma.IntFieldUpdateOperationsInput | number
   queue_running_day?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  calls_numbers?: Prisma.BoolFieldUpdateOperationsInput | boolean
   receipt_footer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   logo_url?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   promptpay_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -703,6 +722,7 @@ export type shopsCountOrderByAggregateInput = {
   credit_note_running_number?: Prisma.SortOrder
   queue_running_number?: Prisma.SortOrder
   queue_running_day?: Prisma.SortOrder
+  calls_numbers?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -738,6 +758,7 @@ export type shopsMaxOrderByAggregateInput = {
   credit_note_running_number?: Prisma.SortOrder
   queue_running_number?: Prisma.SortOrder
   queue_running_day?: Prisma.SortOrder
+  calls_numbers?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -764,6 +785,7 @@ export type shopsMinOrderByAggregateInput = {
   credit_note_running_number?: Prisma.SortOrder
   queue_running_number?: Prisma.SortOrder
   queue_running_day?: Prisma.SortOrder
+  calls_numbers?: Prisma.SortOrder
   receipt_footer?: Prisma.SortOrder
   logo_url?: Prisma.SortOrder
   promptpay_id?: Prisma.SortOrder
@@ -849,6 +871,7 @@ export type shopsSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   credit_note_running_number?: boolean
   queue_running_number?: boolean
   queue_running_day?: boolean
+  calls_numbers?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -875,6 +898,7 @@ export type shopsSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   credit_note_running_number?: boolean
   queue_running_number?: boolean
   queue_running_day?: boolean
+  calls_numbers?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -901,6 +925,7 @@ export type shopsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   credit_note_running_number?: boolean
   queue_running_number?: boolean
   queue_running_day?: boolean
+  calls_numbers?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -927,6 +952,7 @@ export type shopsSelectScalar = {
   credit_note_running_number?: boolean
   queue_running_number?: boolean
   queue_running_day?: boolean
+  calls_numbers?: boolean
   receipt_footer?: boolean
   logo_url?: boolean
   promptpay_id?: boolean
@@ -936,7 +962,7 @@ export type shopsSelectScalar = {
   updated_at?: boolean
 }
 
-export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "credit_note_prefix" | "credit_note_running_number" | "queue_running_number" | "queue_running_day" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
+export type shopsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "legal_name" | "branch_label" | "tax_id" | "address" | "phone" | "is_vat_registered" | "vat_rate" | "prices_include_vat" | "receipt_prefix" | "receipt_running_number" | "credit_note_prefix" | "credit_note_running_number" | "queue_running_number" | "queue_running_day" | "calls_numbers" | "receipt_footer" | "logo_url" | "promptpay_id" | "promptpay_type" | "supervisor_discount_limit_thb" | "created_at" | "updated_at", ExtArgs["result"]["shops"]>
 
 export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "shops"
@@ -976,6 +1002,29 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
      */
     queue_running_number: number
     queue_running_day: Date | null
+    /**
+     * *
+     *    * Whether this shop calls its customers by a number at all (ADR 0027).
+     *    *
+     *    * The call series above is not a shop type. Most of what this system sells is
+     *    * handed over on the spot, and for those shops the number is a line on the slip
+     *    * nobody reads and a board nobody opens -- two pieces of screen given to a job
+     *    * the shop does not have.
+     *    *
+     *    * It lives on the shop row rather than in a component because the *sale* is what
+     *    * has to obey it. `allocateQueueNumber` reads it inside the very statement that
+     *    * bumps the counter, so a bill rung up while it is off carries no number and no
+     *    * fulfilment ticket, and everything downstream -- the printed slip, the queue
+     *    * board, the customer display -- has nothing to show without being separately
+     *    * told about it. Turning a feature off at the sale is the only way it is off
+     *    * everywhere.
+     *    *
+     *    * Defaults true, deliberately. A shop already selling through this was being
+     *    * called by these numbers; a migration is not the moment to take that away
+     *    * quietly, and the toggle in the settings is one tap for the shops that never
+     *    * wanted it.
+     */
+    calls_numbers: boolean
     receipt_footer: string | null
     logo_url: string | null
     /**
@@ -1433,6 +1482,7 @@ export interface shopsFieldRefs {
   readonly credit_note_running_number: Prisma.FieldRef<"shops", 'BigInt'>
   readonly queue_running_number: Prisma.FieldRef<"shops", 'Int'>
   readonly queue_running_day: Prisma.FieldRef<"shops", 'DateTime'>
+  readonly calls_numbers: Prisma.FieldRef<"shops", 'Boolean'>
   readonly receipt_footer: Prisma.FieldRef<"shops", 'String'>
   readonly logo_url: Prisma.FieldRef<"shops", 'String'>
   readonly promptpay_id: Prisma.FieldRef<"shops", 'String'>

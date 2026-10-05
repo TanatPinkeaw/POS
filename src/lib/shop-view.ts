@@ -41,6 +41,14 @@ export interface ShopView {
    * beside the VAT rate and the receipt series rather than in a component.
    */
   supervisorDiscountLimitThb: number;
+  /**
+   * Whether this shop calls its customers by a number (ADR 0027).
+   *
+   * False means no walk-in slip carries a number, no ticket is minted at the sale,
+   * and the till's navigation has no queue in it — set from the shop's own
+   * settings, not from what kind of shop this is taken to be.
+   */
+  callsNumbers: boolean;
 }
 
 /** The current Thai standard rate, used as the wizard's default. */
@@ -88,6 +96,9 @@ export const UNCONFIGURED_SHOP: ShopView = {
   // default rather than at zero: zero would make every discount require a PIN,
   // and a shop with no admins configured could not discount at all.
   supervisorDiscountLimitThb: DEFAULT_SUPERVISOR_DISCOUNT_LIMIT,
+  // True, to agree with the column this falls back from: a shop that has not been
+  // set up has no policy yet, and the column it defaults to says true.
+  callsNumbers: true,
 };
 
 /** What to print at the top of a receipt, and in the sidebar. */

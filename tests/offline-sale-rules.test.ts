@@ -87,6 +87,7 @@ function context(overrides: Partial<OfflineSaleContext> = {}): OfflineSaleContex
     shiftOpen: true,
     supervisorDiscountLimitThb: 50,
     isVatRegistered: true,
+    callsNumbers: true,
     vatRatePercent: 7,
     pricesIncludeVat: true,
     receiptPrefix: 'FR',

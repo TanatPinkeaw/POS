@@ -97,6 +97,14 @@ export interface OfflineSaleContext {
   readonly shiftOpen: boolean;
   readonly supervisorDiscountLimitThb: number;
   readonly isVatRegistered: boolean;
+  /**
+   * Whether this shop calls its customers by a number (ADR 0027).
+   *
+   * Part of the context and not of the device, because the answer is the shop's: a
+   * device that was prepared before the setting changed has the numbers either way,
+   * and must stop spending them the moment it hears the new answer.
+   */
+  readonly callsNumbers: boolean;
   /** The rate the shop last published, and whether its prices already carry it. */
   readonly vatRatePercent: number;
   readonly pricesIncludeVat: boolean;
@@ -486,22 +494,31 @@ export function decideOfflineSale(
   let callBlocks = context.callBlocks;
   let callNumber: OfflineSaleAllowed['callNumber'] = null;
 
+  /*
+   * A shop that does not call its customers by number (ADR 0027) issues none at all,
+   * and neither warning below applies to it: running out of a series nobody uses is
+   * not a shortfall, and a bill with no number is what this shop asked for. The
+   * block is left untouched rather than spent, so a shop that turns the setting back
+   * on with a prepared device still has its numbers.
+   */
   const todayBlock = blockForDay(callBlocks, day);
-  if (todayBlock && nextValue(todayBlock) !== null) {
-    const taken = spendChecked(todayBlock);
-    callBlocks = replaceBlock(callBlocks, taken.block);
-    callNumber = { value: taken.value, day };
-    const left = remaining(taken.block);
-    if (left <= LOW_NUMBERS_WARNING) {
-      warnings.push(numbersLowWarning('queue', left));
+  if (context.callsNumbers) {
+    if (todayBlock && nextValue(todayBlock) !== null) {
+      const taken = spendChecked(todayBlock);
+      callBlocks = replaceBlock(callBlocks, taken.block);
+      callNumber = { value: taken.value, day };
+      const left = remaining(taken.block);
+      if (left <= LOW_NUMBERS_WARNING) {
+        warnings.push(numbersLowWarning('queue', left));
+      }
+    } else {
+      /*
+       * The money is the money: a device out of call numbers sells and says so. A bill
+       * with no number is a ticket nobody can call, which the sync flags rather than
+       * losing (ADR 0019 decision 4).
+       */
+      warnings.push(noCallNumberWarning());
     }
-  } else {
-    /*
-     * The money is the money: a device out of call numbers sells and says so. A bill
-     * with no number is a ticket nobody can call, which the sync flags rather than
-     * losing (ADR 0019 decision 4).
-     */
-    warnings.push(noCallNumberWarning());
   }
 
   let receiptBlock = context.receiptBlock;

@@ -137,6 +137,14 @@ export const shopSettingsSchema = z
      * the setup wizard can omit it and let the column's own default apply.
      */
     supervisorDiscountLimitThb: z.number().min(0).max(100_000).optional(),
+    /**
+     * Whether the shop calls its customers by a number (ADR 0027).
+     *
+     * Optional so a setup wizard or a client written before the switch can omit it
+     * and let the column's own default stand — a form that never asked must not
+     * answer.
+     */
+    callsNumbers: z.boolean().optional(),
     /** Where the shop receives PromptPay transfers; enables the till's QR. */
     promptpayId: z.string().trim().max(20).nullable().optional(),
     promptpayType: z.enum(PROMPTPAY_ID_TYPES).nullable().optional(),

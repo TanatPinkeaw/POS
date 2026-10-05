@@ -2497,6 +2497,7 @@ export const ShopsScalarFieldEnum = {
   credit_note_running_number: 'credit_note_running_number',
   queue_running_number: 'queue_running_number',
   queue_running_day: 'queue_running_day',
+  calls_numbers: 'calls_numbers',
   receipt_footer: 'receipt_footer',
   logo_url: 'logo_url',
   promptpay_id: 'promptpay_id',

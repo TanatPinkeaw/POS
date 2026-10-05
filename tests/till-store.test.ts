@@ -76,6 +76,7 @@ function snapshot(overrides: Partial<TillSnapshot> = {}): TillSnapshot {
     deviceLabel: 'แท็บเล็ตหน้าเคาน์เตอร์',
     shop: {
       isVatRegistered: true,
+      callsNumbers: true,
       vatRatePercent: 7,
       pricesIncludeVat: true,
       receiptPrefix: 'FR',

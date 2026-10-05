@@ -120,6 +120,9 @@ export function ShopSettingsForm({
         receiptFooter: shop.receiptFooter,
         logoUrl: shop.logoUrl,
         supervisorDiscountLimitThb: Number(discountLimitDraft) || 0,
+        // Always sent, never omitted: this form is the switch's home, and a save
+        // that left it out would be a save that could not turn it off.
+        callsNumbers: shop.callsNumbers,
         // Blank means "no PromptPay", which is a state rather than a gap: the
         // till then asks a cashier to confirm the transfer instead of issuing a
         // code. Both fields clear together, because half a setting cannot build
@@ -274,6 +277,22 @@ export function ShopSettingsForm({
                 onChange={(event) => setDiscountLimitDraft(event.target.value)}
               />
             </FieldRow>
+
+            {/*
+             * Whether the shop calls its customers by a number, in the same card
+             * because it is a decision about the paper they walk away with. Both of
+             * the call number and the board that shows it exist for a shop whose
+             * customers wait for something they have not paid for yet (ADR 0027);
+             * a shop that hands everything over on the spot prints a number nobody
+             * reads and opens a board nobody looks at.
+             */}
+            <ToggleField
+              id="shop-calls-numbers"
+              label="เรียกลูกด้วยเลขคิว"
+              help="ปิดไปแล้วใบเสร็จจะไม่มีเลขคิว และบอร์ดคิวจะไม่ขึ้นในหน้าขาย — เหมาะกับร้านที่ส่งของให้จบในบิลเดียว"
+              checked={shop.callsNumbers}
+              onChange={(next) => setShop({ ...shop, callsNumbers: next })}
+            />
 
             {/*
              * PromptPay: where the shop is paid. Needed before the till can put a

@@ -48,6 +48,7 @@ const snapshot = (overrides: Partial<NonNullable<PersistedTill['snapshot']>> = {
   deviceLabel: 'เครื่องหน้าร้าน',
   shop: {
     isVatRegistered: true,
+    callsNumbers: true,
     vatRatePercent: 7,
     pricesIncludeVat: true,
     receiptPrefix: 'LN',
