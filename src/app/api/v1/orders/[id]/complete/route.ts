@@ -2,11 +2,12 @@ import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
 import { broadcastPointsFor, broadcastStockFor } from '@/lib/broadcast';
 import { prisma } from '@/lib/db';
-import { broadcastReadyBoard } from '@/lib/display-broadcast';
+import { broadcastPaymentClosed, broadcastReadyBoard } from '@/lib/display-broadcast';
 import { ConflictError } from '@/lib/errors';
 import { loadOrderView } from '@/lib/order-view';
 import { completeOrder } from '@/lib/orders';
 import { notifyOrderUpdated } from '@/lib/notify';
+import { findIntent } from '@/lib/payment-intents';
 import { completeOrderSchema } from '@/lib/schemas';
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -34,6 +35,7 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
       employeeId: session.id,
       shiftId: body.shiftId,
       settlement: body.settlement,
+      ...(body.intentRef ? { intentRef: body.intentRef } : {}),
     });
 
     const order = await loadOrderView(id);
@@ -61,6 +63,19 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
      */
     if (order.orderType === 'preorder') {
       await broadcastReadyBoard();
+    }
+
+    /*
+     * The customer's own QR is spent once the bill is closed, so both screens stop
+     * showing a code that is no longer payable — the same broadcast the walk-in sale
+     * sends. Without it a customer who scanned at handover still sees a live, payable
+     * PromptPay code for a bill that has already been settled and handed over.
+     */
+    if (body.intentRef) {
+      const consumed = await findIntent(body.intentRef);
+      if (consumed) {
+        broadcastPaymentClosed(consumed);
+      }
     }
 
     return { ...order, changeThb: summary.changeThb, paidThb: summary.paidThb };

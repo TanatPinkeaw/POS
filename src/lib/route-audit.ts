@@ -78,6 +78,12 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/admin/consignors', area: 'admin', session: 'admin', landsOn: '/admin/consignors', label: 'the consignors' },
   { path: '/admin/members', area: 'admin', session: 'admin', landsOn: '/admin/members', label: 'the customers' },
   { path: '/admin/audit', area: 'admin', session: 'admin', landsOn: '/admin/audit', label: 'the audit trail' },
+  /*
+   * `cashier` rather than `admin`: the page matrix opens sales history to an
+   * employee, so auditing it with an admin session would prove a permission nobody
+   * asked about.
+   */
+  { path: '/admin/sales', area: 'admin', session: 'cashier', landsOn: '/admin/sales', label: 'the sales history' },
   { path: '/admin/reports', area: 'admin', session: 'admin', landsOn: '/admin/reports', label: 'the reports' },
   { path: '/admin/schedules', area: 'admin', session: 'admin', landsOn: '/admin/schedules', label: 'the roster' },
   { path: '/admin/settings', area: 'admin', session: 'admin', landsOn: '/admin/settings', label: 'the shop settings' },

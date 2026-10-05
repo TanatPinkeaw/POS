@@ -23,7 +23,7 @@
  * setup wizard already does it.
  */
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
   Button,
@@ -39,8 +39,10 @@ import {
   ToggleField,
   Toolbar,
 } from '@/components/ds';
-import { apiPut } from '@/lib/client-api';
-import { formatReceiptNumber, type ShopView } from '@/lib/shop-view';
+import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
+import { apiFetch, apiPut } from '@/lib/client-api';
+import { REALTIME_EVENTS } from '@/lib/realtime-events';
+import { nextReceiptPreview, type ShopView } from '@/lib/shop-view';
 
 export function ShopSettingsForm({
   initialShop,
@@ -53,6 +55,36 @@ export function ShopSettingsForm({
   const [shop, setShop] = useState(initialShop);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+
+  /*
+   * The counter, re-read from the server rather than remembered.
+   *
+   * This card used to compute its number from `initialShop` — a snapshot the server
+   * rendered when the page loaded — and never ask again. It therefore showed
+   * `RC-2026-000001` for as long as the tab stayed open, which is what "เลขใบเสร็จถัดไป
+   * ไม่อัปเดต" is: the number was right when the page loaded and wrong an hour later,
+   * because the shop sold things on the till meanwhile. The card's whole purpose is to
+   * tell an operator the series is continuous *right now*, and a stale figure is worse
+   * than no figure — it says something false with confidence.
+   *
+   * Two things move it: this shop's own saves already return the fresh row, and a sale
+   * anywhere in the shop arrives as a socket event, so the counter follows the till
+   * without anybody pressing anything.
+   */
+  const refreshCounter = useCallback(async (): Promise<void> => {
+    try {
+      const fresh = await apiFetch<ShopView>('/api/v1/shop');
+      setShop((current) => ({ ...current, receiptRunningNumber: fresh.receiptRunningNumber }));
+    } catch {
+      // The card is a readout, not a gate: a failed refresh must not put an error
+      // banner above a form the operator is halfway through.
+    }
+  }, []);
+
+  useRealtimeEvent(
+    REALTIME_EVENTS.orderUpdated,
+    useCallback(() => void refreshCounter(), [refreshCounter]),
+  );
 
   /*
    * The two decimal fields keep what was typed, as typed.
@@ -68,11 +100,7 @@ export function ShopSettingsForm({
     String(initialShop.supervisorDiscountLimitThb),
   );
 
-  const nextReceipt = formatReceiptNumber(
-    shop.receiptPrefix,
-    previewYear,
-    shop.receiptRunningNumber + 1,
-  );
+  const nextReceipt = nextReceiptPreview(shop, previewYear);
 
   async function save(): Promise<void> {
     setNotice(null);
@@ -134,6 +162,9 @@ export function ShopSettingsForm({
             <p className="ln-muted">
               เลขจะเดินต่อเนื่องไม่ข้าม และไม่ซ้ำ แม้รายการที่บันทึกไม่สำเร็จจะถูกยกเลิกทั้งรายการ
             </p>
+            <Button variant="ghost" size="sm" icon="refresh" onClick={() => void refreshCounter()}>
+              รีเฟรช
+            </Button>
           </Stack>
         </Card>
       }

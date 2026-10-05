@@ -1,0 +1,105 @@
+/*
+ * The carousel's own two shapes: the strip of slides and the control rail under it.
+ *
+ * `mandatory` snapping rather than `proximity`: on a board where one card is the whole
+ * job, "close enough" leaves a card half off the screen after a flick, and a half
+ * visible card on a touch screen is a card somebody swipes by. The cost of mandatory
+ * is that a slide wider than the viewport gets clipped, which is why the slide width is
+ * `100%` and nothing else.
+ *
+ * The scrollbar is hidden rather than thinned. A 40px horizontal scrollbar under a
+ * three-column board is a control that reads as "there is more over there", which is
+ * the message the dots and the counter already give, in a position the operator is
+ * already looking at.
+ */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-2);
+  min-width: 0;
+}
+
+.viewport {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  /* A swipe is not a selection, and a drag across a card must not start one. */
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+
+.viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.viewport:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+  border-radius: var(--ln-radius-md);
+}
+
+/*
+ * The height the caller asked for. A carousel only fixes the board's growth if the
+ * slide fills the box rather than sitting in it, so the slide and its card both take
+ * `height: 100%` — the card then scrolls its own middle section instead of stretching
+ * the column, which is the whole reason the board stopped growing.
+ */
+.slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  height: 100%;
+  display: flex;
+}
+
+.slide > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------------- controls */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ln-space-2);
+}
+
+.counter {
+  min-width: 4.5ch;
+  text-align: center;
+  font-size: var(--ln-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--ln-text-subtle);
+}
+
+/*
+ * The dot rail, hidden by the component above seven slides rather than collapsed
+ * here: a twenty-dot row is not a position indicator, it is a ruler, and it pushes the
+ * arrows off a narrow column.
+ */
+.dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-inline-start: var(--ln-space-1);
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--ln-radius-pill);
+  background: var(--ln-border-strong);
+  cursor: pointer;
+}
+
+.dotOn {
+  background: var(--ln-brand);
+  width: 16px;
+}

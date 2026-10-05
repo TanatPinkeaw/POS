@@ -636,6 +636,18 @@ export const closeNumberBlockSchema = z.discriminatedUnion('action', [
 export const completeOrderSchema = z.object({
   shiftId: z.number().int().positive(),
   settlement: settlementSchema,
+  /**
+   * The PromptPay intent this handover is settled against, when the customer paid by
+   * transfer (ADR 0017's sibling on the pre-order side).
+   *
+   * Only the reference is taken, and only so the server can consume *that* intent.
+   * The amount is never taken from the client here, exactly as on the walk-in sale —
+   * `consumeIntent` refuses an intent whose amount does not cover the bill, so a
+   * tampered client cannot present a ฿10 transfer against a ฿1000 pre-order. Before
+   * this existed a pre-order could only be handed over against cash or points, which
+   * is why a shop taking transfers had no way to close one at the counter.
+   */
+  intentRef: z.string().trim().min(1).max(12).optional(),
 });
 
 export const cancelOrderSchema = z.object({
@@ -772,6 +784,30 @@ export const orderListQuerySchema = z.object({
     .optional(),
   type: z.enum(['pos_walkin', 'preorder']).optional(),
   limit: z.coerce.number().int().min(1).max(200).default(50),
+  /**
+   * The sales-history screen's own filters (#9).
+   *
+   * `from`/`to` are `YYYY-MM-DD` Bangkok days rather than timestamps, because the
+   * question being asked is "Tuesday's takings" and a timestamp asks the shop to know
+   * what time its own trading day ends. Both ends are inclusive of the named day; the
+   * route widens `to` to the next Bangkok midnight before it queries.
+   *
+   * A half-typed receipt number is legal rather than refused. Somebody reading a
+   * number off a slip types it a digit at a time, and an exact-match filter that
+   * answered "not found" for `RC-20` would make the field look broken while they are
+   * still halfway through typing `RC-2026-00042`.
+   */
+  receiptNumber: z.string().trim().max(64).optional(),
+  customerName: z.string().trim().max(100).optional(),
+  from: z
+    .string()
+    .refine(isValidCalendarDay, 'A date must be a real calendar day, as YYYY-MM-DD')
+    .optional(),
+  to: z
+    .string()
+    .refine(isValidCalendarDay, 'A date must be a real calendar day, as YYYY-MM-DD')
+    .optional(),
+  offset: z.coerce.number().int().min(0).max(10_000).default(0),
 });
 
 // ------------------------------------------------- supervisor approval

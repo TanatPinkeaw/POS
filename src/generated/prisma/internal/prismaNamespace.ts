@@ -2690,6 +2690,7 @@ export const OrdersScalarFieldEnum = {
   cashier_id: 'cashier_id',
   pickup_pin: 'pickup_pin',
   pickup_expires_at: 'pickup_expires_at',
+  confirm_deadline: 'confirm_deadline',
   subtotal_amount: 'subtotal_amount',
   discount_amount: 'discount_amount',
   final_amount: 'final_amount',

@@ -1,5 +1,5 @@
 /*
- * The board's own two shapes: the four columns, and one order card inside them.
+ * The board's own two shapes: the three columns, and one order card inside them.
  *
  * `auto-fit` rather than a fixed three-up grid: a shop with one order on the board
  * still gets readable columns instead of three empty thirds, and the completed
@@ -12,6 +12,20 @@
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
 }
 
+/*
+ * The lane a phase's carousel runs in, and the reason the board stopped growing.
+ *
+ * A height cap with the card allowed to scroll its own middle is what turns "the
+ * column is as long as its longest queue" into "the column is one card tall".
+ * `min()` rather than a fixed value so a short board does not leave a tall empty
+ * box on a tablet in landscape, and `vh` rather than `rem` so the three columns
+ * stay level with each other regardless of how many orders each one holds.
+ */
+.lane {
+  height: min(60vh, 26rem);
+  min-height: 12rem;
+}
+
 .order {
   display: flex;
   flex-direction: column;
@@ -21,17 +35,20 @@
   border-left: 3px solid var(--ln-border-strong);
   border-radius: var(--ln-radius-md);
   background: var(--ln-surface);
+  height: 100%;
+  overflow-y: auto;
 }
 
 /*
- * An order about to time out. Tinted and barred rather than red text alone: the
- * operator is watching three columns at once, and the one thing that must be
- * findable at a glance is the order that is about to cancel itself.
+ * An order about to time out no longer tints its whole card.
+ *
+ * It used to: the card carried `data-urgent`, so the danger bar and the tinted
+ * surface were set from the board's own clock. Moving that clock inside `Countdown`
+ * took the card out of reach of it, and the honest answer is that the urgent line
+ * inside the card says it — bold red, five minutes out, adjacent to the buttons.
+ * Re-threading a ticking flag up through three columns to repaint a border is a lot
+ * of machinery for a signal the operator is already looking straight at.
  */
-.order[data-urgent='true'] {
-  border-left-color: var(--ln-danger);
-  background: var(--ln-danger-soft);
-}
 
 .orderHead {
   display: flex;
@@ -48,12 +65,14 @@
 .countdown {
   font-size: var(--ln-size-sm);
   color: var(--ln-text-subtle);
+  margin: 0;
 }
 
 .urgent {
   font-size: var(--ln-size-sm);
   font-weight: 650;
   color: var(--ln-danger);
+  margin: 0;
 }
 
 .lines {

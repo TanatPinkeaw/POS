@@ -470,6 +470,30 @@
   color: var(--ln-text-muted);
 }
 
+/*
+ * The collection desk's strip above the split pane.
+ *
+ * Full width and above everything rather than inside the bill pane: it is a
+ * different job from the cart (it finds an order rather than building one), and a
+ * cashier holding a customer's QR is not in the middle of a sale, so it does not
+ * need to sit beside the total. The field grows and the button does not, so the tap
+ * target keeps its size whatever the screen width.
+ */
+.handoverStrip {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--ln-space-2);
+}
+
+.handoverStrip > * {
+  flex: 1;
+  min-width: 0;
+}
+
+.handoverStrip > :last-child {
+  flex: none;
+}
+
 .settingsRow {
   display: flex;
   align-items: center;

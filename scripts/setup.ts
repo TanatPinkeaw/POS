@@ -124,7 +124,7 @@ function ensureEnvFile(): string {
     'PORT=3000',
     'HOSTNAME=localhost',
     '',
-    'PREORDER_CONFIRM_TIMEOUT_MINUTES=15',
+    'PREORDER_CONFIRM_TIMEOUT_MINUTES=30',
     'PREORDER_HOLD_HOURS=4',
     '',
   ].join('\n');

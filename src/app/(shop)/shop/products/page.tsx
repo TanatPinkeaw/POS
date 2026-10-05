@@ -5,6 +5,7 @@ import { getSessionUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { availableQty } from '@/lib/inventory';
 import { fromDecimal } from '@/lib/money';
+import { confirmTimeoutMinutes } from '@/lib/orders';
 
 /**
  * The member storefront — SRS §3 Phase 1.
@@ -59,7 +60,7 @@ export default async function ShopProductsPage() {
           </Pill>
         }
       />
-      <ShopCatalog initialProducts={initialProducts} />
+      <ShopCatalog initialProducts={initialProducts} confirmMinutes={confirmTimeoutMinutes()} />
     </Stack>
   );
 }

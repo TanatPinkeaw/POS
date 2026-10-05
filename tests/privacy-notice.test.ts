@@ -44,7 +44,16 @@ function renderedCopy(path: string): string {
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 }
 
-const CUSTOMER = renderedCopy('src/app/privacy/page.tsx');
+/*
+ * The notice body, not the page.
+ *
+ * The copy moved out of `page.tsx` and into `PrivacyNoticeBody.tsx` when the sign-in
+ * page started rendering the same notice in an overlay scrim — one document, two
+ * surfaces. The assertions below are about what the notice *says*, so they follow the
+ * text rather than the wrapper; pointing them at the page again would have let a
+ * violation slip through into the file that now actually renders the words.
+ */
+const CUSTOMER = renderedCopy('src/app/privacy/PrivacyNoticeBody.tsx');
 const STAFF = renderedCopy('src/app/privacy/staff/page.tsx');
 
 it('reads the copy rather than the comments', () => {

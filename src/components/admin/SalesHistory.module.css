@@ -1,0 +1,13 @@
+/*
+ * The history screen's one piece of layout: the pager under the table.
+ *
+ * Centred rather than left-aligned because it belongs to neither the filters above
+ * nor the table, and a row of buttons hanging off the left edge under a full-width
+ * table reads as a filter that has gone wrong.
+ */
+
+.pager {
+  display: flex;
+  justify-content: center;
+  gap: var(--ln-space-2);
+}

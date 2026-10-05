@@ -1,0 +1,35 @@
+/*
+ * Two pieces of layout around the notice overlay: the trigger that replaces the bare
+ * footer link, and the "open as a full page" escape inside the dialog.
+ *
+ * The trigger is inline rather than a block so it sits in the same footer line as the
+ * brand tagline — it is one item in a row of small print, and giving it its own block
+ * would promote a legal notice above the shop's name on the page.
+ */
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ln-space-1);
+  flex-wrap: wrap;
+}
+
+.link {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.link:focus-visible,
+.footerLink:focus-visible {
+  outline: 2px solid var(--ln-brand);
+  outline-offset: 2px;
+  border-radius: var(--ln-radius-sm);
+}
+
+/* Matches a ghost button so the footer row has two same-sized things in it. */
+.footerLink {
+  align-self: center;
+  padding: 0 var(--ln-space-3);
+  color: var(--ln-text-muted);
+  text-decoration: underline;
+}

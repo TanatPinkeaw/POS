@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Button,
   Card,
+  Carousel,
   ConfirmDialog,
   DataTable,
   EmptyState,
@@ -16,19 +17,17 @@ import {
   Spinner,
   Stack,
   StatusPill,
-  TextField,
   Thumb,
   Toolbar,
   type Column,
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPost } from '@/lib/client-api';
-import { handoverLookupBody } from '@/lib/pickup-scan';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import { playWarningChime } from '@/lib/sound';
 
 import styles from './PreOrderBoard.module.css';
-import { useOpenShift } from './useOpenShift';
+import { PreOrderHandover, lookupHandoverOrder, type HandoverOrder } from './PreOrderHandover';
 
 interface OrderRow {
   id: string;
@@ -39,17 +38,17 @@ interface OrderRow {
   customerName: string | null;
   customerPhone: string | null;
   pickupPin: string | null;
+  /**
+   * When the shop must confirm this order or it releases itself — written by the
+   * server when the order was placed and read straight back, rather than
+   * recomputed here from the shop's timeout setting.
+   */
+  confirmDeadline: string | null;
   createdAt: string;
   readyAt: string | null;
 }
 
-interface OrderDetail {
-  id: string;
-  orderNumber: string;
-  status: string;
-  finalAmountThb: number;
-  pickupPin: string | null;
-  customer: { id: string; fullName: string; phone: string; pointsBalance: number } | null;
+interface OrderDetail extends HandoverOrder {
   items: {
     id: string;
     productId: string;
@@ -62,9 +61,6 @@ interface OrderDetail {
   }[];
 }
 
-/** SRS §3 Phase 1 deadline; the server is the authority, this is the display. */
-const CONFIRM_TIMEOUT_MINUTES = 15;
-
 /** Column definitions, in lifecycle order. */
 const COLUMNS = [
   { status: 'pending', title: '1 · รอยืนยัน' },
@@ -72,9 +68,39 @@ const COLUMNS = [
   { status: 'ready_for_pickup', title: '3 · พร้อมรับ' },
 ] as const;
 
-function minutesLeft(createdAt: string, now: number): number {
-  const deadline = new Date(createdAt).getTime() + CONFIRM_TIMEOUT_MINUTES * 60_000;
-  return Math.max(0, Math.round((deadline - now) / 60_000));
+/**
+ * The countdown on one order.
+ *
+ * Its own component with its own clock, for a reason that turned out to be the
+ * difference between a usable board and an unusable one. This used to be a single
+ * `setInterval` in the board setting `now`, which re-rendered all three columns and
+ * every card in them once a second — and because `Overlay`'s focus effect was keyed
+ * on its `onClose` prop (a fresh arrow function every render), opening the handover
+ * dialog while that clock ran meant the caret was thrown out of the cash field back
+ * onto the first button, once a second, for as long as the dialog was open.
+ *
+ * Moving the tick inside the one card that shows a number fixes both halves at once:
+ * the board no longer re-renders on a timer, and the dialog is no longer open next
+ * to a clock.
+ */
+function Countdown({ deadline }: { deadline: string }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    // Once a second, but only while this card is mounted — a column of finished
+    // orders has no countdown and therefore no timer.
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const left = Math.max(0, Math.round((new Date(deadline).getTime() - now) / 60_000));
+  const urgent = left <= 5;
+
+  return (
+    <p className={urgent ? styles.urgent : styles.countdown} role="status">
+      เหลือเวลา {left} นาที ก่อนหมดอายุอัตโนมัติ
+    </p>
+  );
 }
 
 /**
@@ -82,7 +108,7 @@ function minutesLeft(createdAt: string, now: number): number {
  *
  * Staff see all four phases at once and drive each order forward. Three things
  * make it usable on a busy counter: pending orders carry a live countdown so the
- * 15-minute timeout is visible before it fires; every action re-reads the server
+ * timeout is visible before it fires; every action re-reads the server
  * rather than mutating local state, because the server is the only thing that
  * knows whether the stock guard actually passed; and the two writes that decide an
  * order's fate — confirming (possibly dropping a damaged item) and handing over
@@ -99,16 +125,13 @@ function minutesLeft(createdAt: string, now: number): number {
  * already on their way, and it is one tap away from "ยืนยัน" on the same card.
  */
 export function PreOrderBoard() {
-  const { shift } = useOpenShift();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Date.now());
 
   const [lookup, setLookup] = useState('');
-  const [handover, setHandover] = useState<OrderDetail | null>(null);
-  const [settlement, setSettlement] = useState({ cash: '', receivedCash: '', usePoints: false });
+  const [handover, setHandover] = useState<HandoverOrder | null>(null);
   const [removeIds, setRemoveIds] = useState<string[]>([]);
   const [confirming, setConfirming] = useState<OrderDetail | null>(null);
   const [cancelling, setCancelling] = useState<{ order: OrderRow; reason: string } | null>(null);
@@ -128,12 +151,6 @@ export function PreOrderBoard() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  // Countdown ticker for the Phase 1 deadline.
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   // Any change from any terminal re-reads the list.
   useRealtimeEvent(REALTIME_EVENTS.orderCreated, useCallback(() => void load(), [load]));
@@ -197,9 +214,8 @@ export function PreOrderBoard() {
   const openHandover = async (order: OrderRow): Promise<void> => {
     setBusyId(order.id);
     try {
-      const detail = await apiFetch<OrderDetail>(`/api/v1/orders/${order.id}`);
+      const detail = await apiFetch<HandoverOrder>(`/api/v1/orders/${order.id}`);
       setHandover(detail);
-      setSettlement({ cash: String(detail.finalAmountThb), receivedCash: '', usePoints: false });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'เปิดรายละเอียดไม่สำเร็จ');
     } finally {
@@ -207,6 +223,12 @@ export function PreOrderBoard() {
     }
   };
 
+  /**
+   * One box, three shapes. A scanner types a JWS, the customer reads out four
+   * digits, and the customer who lost the slip gives a phone number — and the
+   * screen cannot ask which one it is, because at a counter that question is
+   * already answered by what just arrived. See `handoverLookupBody`.
+   */
   const lookupOrder = async (): Promise<void> => {
     const term = lookup.trim();
     if (!term) {
@@ -214,56 +236,11 @@ export function PreOrderBoard() {
     }
     setError(null);
     try {
-      /*
-       * One box, three shapes. A scanner types a JWS, the customer reads out four
-       * digits, and the customer who lost the slip gives a phone number — and the
-       * screen cannot ask which one it is, because at a counter that question is
-       * already answered by what just arrived. See `looksLikePickupToken`.
-       */
-      const found = await apiPost<OrderDetail>(
-        '/api/v1/orders/lookup',
-        handoverLookupBody(term),
-      );
+      const found = await lookupHandoverOrder(term);
       setHandover(found);
-      setSettlement({ cash: String(found.finalAmountThb), receivedCash: '', usePoints: false });
       setLookup('');
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.message : 'ไม่พบออเดอร์');
-    }
-  };
-
-  const complete = async (): Promise<void> => {
-    if (!handover) {
-      return;
-    }
-    if (!shift) {
-      setError('ต้องเปิดลิ้นชักก่อนรับชำระเงิน');
-      return;
-    }
-
-    const cash = Number(settlement.cash || 0);
-    const points =
-      settlement.usePoints && handover.customer
-        ? Math.floor(handover.customer.pointsBalance / 100) * 100
-        : 0;
-
-    setBusyId(handover.id);
-    setError(null);
-    try {
-      await apiPost(`/api/v1/orders/${handover.id}/complete`, {
-        shiftId: shift.id,
-        settlement: {
-          points,
-          cash,
-          receivedCash: Number(settlement.receivedCash || cash),
-        },
-      });
-      setHandover(null);
-      await load();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : 'ปิดการขายไม่สำเร็จ');
-    } finally {
-      setBusyId(null);
     }
   };
 
@@ -290,12 +267,10 @@ export function PreOrderBoard() {
   ];
 
   const renderOrder = (order: OrderRow) => {
-    const left = minutesLeft(order.createdAt, now);
-    const urgent = order.status === 'pending' && left <= 5;
     const busy = busyId === order.id;
 
     return (
-      <article className={styles.order} data-urgent={urgent} key={order.id}>
+      <article className={styles.order} key={order.id}>
         <div className={styles.orderHead}>
           <span className="ln-mono">{order.orderNumber}</span>
           <Money amount={order.finalAmountThb} />
@@ -306,10 +281,8 @@ export function PreOrderBoard() {
           รายการ
         </span>
 
-        {order.status === 'pending' ? (
-          <p className={urgent ? styles.urgent : styles.countdown}>
-            เหลือเวลา {left} นาที ก่อนหมดอายุอัตโนมัติ
-          </p>
+        {order.status === 'pending' && order.confirmDeadline ? (
+          <Countdown deadline={order.confirmDeadline} />
         ) : null}
 
         {order.status === 'ready_for_pickup' && order.pickupPin ? (
@@ -416,11 +389,22 @@ export function PreOrderBoard() {
               title={column.title}
               actions={<StatusPill status={column.status} label={String(rows.length)} />}
             >
-              {rows.length === 0 ? (
-                <p className="ln-muted">ว่าง</p>
-              ) : (
-                <Stack gap="sm">{rows.map(renderOrder)}</Stack>
-              )}
+              {/*
+               * One card at a time, swiped rather than scrolled. The three columns used
+               * to be three lists, so a queue of fourteen unconfirmed orders was a
+               * column fourteen cards tall and the two the cashier needed were a
+               * scroll away from a screen read from standing up. The carousel keeps the
+               * column the height of one card, keeps every card tappable, and shows
+               * the position — which is the trade for not letting it move by itself.
+               */}
+              <div className={styles.lane}>
+                <Carousel
+                  label={`ออเดอร์${column.title.replace(/^\d+\s·\s*/, '')}`}
+                  empty={<p className="ln-muted">ว่าง</p>}
+                >
+                  {rows.map(renderOrder)}
+                </Carousel>
+              </div>
             </Card>
           );
         })}
@@ -500,89 +484,20 @@ export function PreOrderBoard() {
         </ul>
       </Overlay>
 
-      {/* Phase 4: handover and settlement. */}
-      <Overlay
+      {/*
+       * Phase 4 lives in its own component because two screens open it: this board
+       * and the till at `/pos`, where a customer holding a collection QR gets paid
+       * without being walked to another tab.
+       */}
+      <PreOrderHandover
+        order={handover}
         open={handover !== null}
         onClose={() => setHandover(null)}
-        title={handover ? `รับสินค้า ${handover.orderNumber}` : ''}
-        description={handover?.customer ? `สมาชิก ${handover.customer.fullName}` : 'ลูกค้าทั่วไป'}
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setHandover(null)}>
-              ปิด
-            </Button>
-            <Button
-              variant="success"
-              icon="cash"
-              disabled={busyId === handover?.id || !shift}
-              onClick={() => void complete()}
-            >
-              ยืนยันการชำระเงิน
-            </Button>
-          </>
-        }
-      >
-        <Stack gap="md">
-          {!shift ? (
-            <InlineNotice tone="warning">ต้องเปิดลิ้นชักก่อน จึงจะรับชำระเงินได้</InlineNotice>
-          ) : null}
-
-          <ul className={styles.lines}>
-            {handover?.items.map((item) => (
-              <li className={styles.lineItem} key={item.id}>
-                <Thumb url={item.imageUrl} size="sm" />
-                <span className={`${styles.lineName} ln-break`}>
-                  {item.name} × {item.quantity}
-                </span>
-                <Money amount={item.totalPrice} />
-              </li>
-            ))}
-          </ul>
-
-          <div className={styles.line}>
-            <span>ยอดที่ต้องชำระ</span>
-            <Money amount={handover?.finalAmountThb ?? 0} size="lg" />
-          </div>
-
-          {handover?.customer && handover.customer.pointsBalance >= 100 ? (
-            <label className={styles.pick}>
-              <input
-                type="checkbox"
-                checked={settlement.usePoints}
-                onChange={(event) =>
-                  setSettlement((current) => ({ ...current, usePoints: event.target.checked }))
-                }
-              />
-              <span>
-                ใช้คะแนน {handover.customer.pointsBalance} คะแนน ของ {handover.customer.fullName}
-              </span>
-            </label>
-          ) : null}
-
-          <div className="ln-row">
-            <TextField
-              id="handover-cash"
-              label="เงินสดที่รับ (บาท)"
-              inputMode="decimal"
-              className="ln-num"
-              value={settlement.cash}
-              onChange={(event) =>
-                setSettlement((current) => ({ ...current, cash: event.target.value }))
-              }
-            />
-            <TextField
-              id="handover-received"
-              label="ลูกค้ายื่นมา (บาท)"
-              inputMode="decimal"
-              className="ln-num"
-              value={settlement.receivedCash}
-              onChange={(event) =>
-                setSettlement((current) => ({ ...current, receivedCash: event.target.value }))
-              }
-            />
-          </div>
-        </Stack>
-      </Overlay>
+        onCompleted={() => {
+          setHandover(null);
+          void load();
+        }}
+      />
 
       <ConfirmDialog
         open={cancelling !== null}

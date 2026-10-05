@@ -22,6 +22,7 @@ import {
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { ApiError, apiFetch, apiPatch, apiPost } from '@/lib/client-api';
+import { probeImageUrl } from '@/lib/image-url';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 
 export interface AdminProduct {
@@ -131,6 +132,10 @@ export function AdminProducts({
   const [editDraft, setEditDraft] = useState(EMPTY_PRODUCT);
   const [editingImage, setEditingImage] = useState<AdminProduct | null>(null);
   const [imageDraft, setImageDraft] = useState('');
+  /** True while the browser is trying the link, so the save button can say so. */
+  const [imageChecking, setImageChecking] = useState(false);
+  /** Why the link will not load, in Thai, shown on the field itself. */
+  const [imageError, setImageError] = useState<string | null>(null);
   const [editingReserve, setEditingReserve] = useState<AdminProduct | null>(null);
   const [reserveDraft, setReserveDraft] = useState('');
   const [consigning, setConsigning] = useState<AdminProduct | null>(null);
@@ -352,13 +357,41 @@ export function AdminProducts({
       return;
     }
     setError(null);
+
+    /*
+     * Try the link before saving it, and refuse to save a broken one.
+     *
+     * Every way this went wrong before looked the same from the back office: the
+     * save succeeded, the row said `image_url`, and the tiles showed a grey glyph
+     * forever. A link to a Nextcloud share that returns a login page, a link to a
+     * folder, a link copied out of a browser address bar with the session's query
+     * stripped off, and a plain 404 are indistinguishable in the database and
+     * indistinguishable on the till.
+     *
+     * Empty is not a failure — clearing the picture is a thing a shop asks for, and
+     * an empty string has nothing to probe.
+     */
+    const candidate = imageDraft.trim();
+    if (candidate !== '') {
+      setImageChecking(true);
+      const probe = await probeImageUrl(candidate);
+      setImageChecking(false);
+      if (!probe.ok) {
+        setImageError(probe.message ?? 'เปิดลิงก์รูปนี้ไม่ได้');
+        return;
+      }
+      setImageError(null);
+    } else {
+      setImageError(null);
+    }
+
     setSaving(true);
     try {
       await apiPatch(`/api/v1/products/${editingImage.id}`, {
-        imageUrl: imageDraft.trim() || null,
+        imageUrl: candidate || null,
       });
       setNotice(
-        imageDraft.trim()
+        candidate
           ? `บันทึกลิงก์รูปของ \"${editingImage.name}\" แล้ว`
           : `เอารูปของ \"${editingImage.name}\" ออกแล้ว`,
       );
@@ -611,6 +644,7 @@ export function AdminProducts({
             onClick={() => {
               setError(null);
               setImageDraft(product.imageUrl ?? '');
+              setImageError(null);
               setEditingImage(product);
             }}
           >
@@ -916,13 +950,17 @@ export function AdminProducts({
         open={editingImage !== null}
         onClose={() => setEditingImage(null)}
         title={editingImage ? `รูปสินค้า · ${editingImage.name}` : ''}
-        description="วางลิงก์ https ของรูป — ระบบเก็บลิงก์ไว้ ไม่ได้เก็บไฟล์รูป"
+        description="วางลิงก์ https ของรูป — ระบบเก็บลิงก์ไว้ ไม่ได้เก็บไฟล์รูป และจะทดลองเปิดให้ดูก่อนบันทึก"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setEditingImage(null)} disabled={saving}>
+            <Button
+              variant="secondary"
+              onClick={() => setEditingImage(null)}
+              disabled={saving || imageChecking}
+            >
               ยกเลิก
             </Button>
-            <Button loading={saving} onClick={() => void saveImage()}>
+            <Button loading={saving || imageChecking} onClick={() => void saveImage()}>
               บันทึก
             </Button>
           </>
@@ -936,7 +974,13 @@ export function AdminProducts({
             help="เว้นว่างเพื่อเอารูปออก"
             placeholder="https://drive.example.com/s/xxxx/preview"
             value={imageDraft}
-            onChange={(event) => setImageDraft(event.target.value)}
+            error={imageError ?? undefined}
+            onChange={(event) => {
+              setImageDraft(event.target.value);
+              if (imageError !== null) {
+                setImageError(null);
+              }
+            }}
           />
           {/*
            * The preview is the whole point of the dialog: a link that returns a login

@@ -56,7 +56,21 @@ interface Placed {
  * customer choosing from a picture and a cashier scanning a barcode are looking at
  * the same goods, and the shop should not have to describe them twice.
  */
-export function ShopCatalog({ initialProducts }: { initialProducts: ShopProduct[] }) {
+export function ShopCatalog({
+  initialProducts,
+  confirmMinutes,
+}: {
+  initialProducts: ShopProduct[];
+  /**
+   * How long the shop has to confirm, in minutes — passed in from the server.
+   *
+   * This confirmation line used to say "15 นาที" in Thai copy while the deadline it
+   * was describing was computed from the shop's setting. It is a promise made to a
+   * customer at the moment they press จอง, so it has to be the same number the
+   * sweeper will act on, and the client is the wrong place to know it.
+   */
+  confirmMinutes: number;
+}) {
   const [products, setProducts] = useState(initialProducts);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +154,7 @@ export function ShopCatalog({ initialProducts }: { initialProducts: ShopProduct[
       {placed ? (
         <InlineNotice tone="success" title="จองสำเร็จ!">
           เลขที่ออเดอร์ <strong className="ln-mono">{placed.orderNumber}</strong> —{' '}
-          ร้านจะยืนยันภายใน 15 นาที มิฉะนั้นออเดอร์จะถูกยกเลิกและคืนสต็อกอัตโนมัติ
+          ร้านจะยืนยันภายใน {confirmMinutes} นาที มิฉะนั้นออเดอร์จะถูกยกเลิกและคืนสต็อกอัตโนมัติ
         </InlineNotice>
       ) : null}
 

@@ -238,8 +238,8 @@ describe('auditing one page', () => {
 });
 
 describe('the route walk', () => {
-  it('covers twenty-four distinct paths across the four areas', () => {
-    expect(routePaths()).toHaveLength(24);
+  it('covers twenty-five distinct paths across the four areas', () => {
+    expect(routePaths()).toHaveLength(25);
     expect(new Set(ROUTE_WALK.map((entry) => entry.area))).toEqual(
       new Set(['public', 'admin', 'pos', 'shop']),
     );

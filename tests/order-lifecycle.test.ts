@@ -216,10 +216,18 @@ describe('the Phase 1 timeout guard', () => {
     const placed = await placePreOrder({ customerId: people.memberId, lines: [{ productId, quantity: 2 }] });
     expect(await readCounters(productId)).toEqual({ stockQty: 4, reservedQty: 2 });
 
-    // Back-date the order past the 15-minute deadline.
+    /*
+     * Back-date the *deadline*, not `created_at`.
+     *
+     * The deadline is a stored column stamped at placement rather than derived from
+     * the creation time and the shop's current timeout setting, so moving the
+     * creation time no longer ages an order. Moving the deadline is the honest way to
+     * say "this order has been waiting past its time", and it is what the sweeper
+     * actually reads.
+     */
     await prisma.orders.update({
       where: { id: placed.orderId },
-      data: { created_at: new Date(Date.now() - 20 * 60_000) },
+      data: { confirm_deadline: new Date(Date.now() - 1 * 60_000) },
     });
 
     const swept = await expireStalePendingOrders();
@@ -247,9 +255,14 @@ describe('the Phase 1 timeout guard', () => {
     const placed = await placePreOrder({ customerId: people.memberId, lines: [{ productId, quantity: 1 }] });
     await confirmOrder({ orderId: placed.orderId, employeeId: people.employeeId });
 
+    // Both the creation time and the deadline are ancient, and neither expires it:
+    // only an order still sitting in Phase 1 can be swept.
     await prisma.orders.update({
       where: { id: placed.orderId },
-      data: { created_at: new Date(Date.now() - 60 * 60_000) },
+      data: {
+        created_at: new Date(Date.now() - 60 * 60_000),
+        confirm_deadline: new Date(Date.now() - 60 * 60_000),
+      },
     });
 
     const swept = await expireStalePendingOrders();

@@ -1,5 +1,6 @@
 import { readJson, withApi } from '@/lib/api';
 import { requireRole } from '@/lib/auth';
+import { resolveBangkokRange } from '@/lib/bangkok-time';
 import { broadcastPointsFor, broadcastStockFor } from '@/lib/broadcast';
 import { prisma } from '@/lib/db';
 import { ConflictError } from '@/lib/errors';
@@ -24,13 +25,36 @@ export async function GET(request: Request): Promise<Response> {
       status: params.get('status') ?? undefined,
       type: params.get('type') ?? undefined,
       limit: params.get('limit') ?? undefined,
+      receiptNumber: params.get('receiptNumber') ?? undefined,
+      customerName: params.get('customerName') ?? undefined,
+      from: params.get('from') ?? undefined,
+      to: params.get('to') ?? undefined,
+      offset: params.get('offset') ?? undefined,
     });
+
+    /*
+     * The history filters are resolved to Bangkok instants here rather than in the
+     * projection, because a day range is a calendar question (rule 10) and the caller
+     * that has to get it right is the route, not the query builder. `to` is inclusive
+     * of the named day, so it widens to the next Bangkok midnight before it queries —
+     * otherwise "1–31 August" quietly excludes every sale after midnight on the 31st,
+     * which is the one sale a month-end reconciliation is looking for.
+     *
+     * Only when a range was actually asked for: the boards pass no dates, and
+     * defaulting them would hide every order that is not from the last thirty days
+     * from a board whose whole job is to show what is in front of the shop.
+     */
+    const range = query.from || query.to ? resolveBangkokRange({ from: query.from, to: query.to }) : null;
 
     return listOrderViews({
       statuses: query.status ? [query.status] : undefined,
       orderType: query.type,
       customerId: session.role === 'member' ? session.id : undefined,
       limit: query.limit,
+      ...(query.receiptNumber ? { receiptNumber: query.receiptNumber } : {}),
+      ...(query.customerName ? { customerName: query.customerName } : {}),
+      ...(range ? { from: range.fromDate, toExclusive: range.toExclusive } : {}),
+      offset: query.offset,
     });
   });
 }

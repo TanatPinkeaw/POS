@@ -31,6 +31,30 @@ function useOverlay(open: boolean, onClose: () => void) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const restoreTo = useRef<HTMLElement | null>(null);
 
+  /*
+   * `onClose` in a ref, and the effect keyed on `open` alone.
+   *
+   * This is the bug this file existed to prevent, in its own implementation. Every
+   * call site writes `onClose={() => setSomething(null)}`, which is a *new function
+   * on every render* of the parent — so putting `onClose` in the dependency array
+   * tears the effect down and rebuilds it on every parent re-render, and rebuilding it
+   * runs the two lines at the top and the middle that must only happen once per
+   * opening: it re-reads `restoreTo` from whatever currently has focus, and it calls
+   * `focus()` on the panel's first control.
+   *
+   * Together those are a focus thief that fires on a timer. `PreOrderBoard` ticks its
+   * countdown every second, so a cashier typing a cash amount into the handover dialog
+   * had the cursor thrown back onto the "ปิด" button once per second — which reads as
+   * "the keyboard cancels my typing" and is the single most-reported defect this
+   * codebase had. The fix is not to ask forty call sites to memoise their handlers; it
+   * is for the one hook that owns focus to depend on the one thing that actually means
+   * "this dialog just opened".
+   */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -56,7 +80,7 @@ function useOverlay(open: boolean, onClose: () => void) {
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -92,7 +116,7 @@ function useOverlay(open: boolean, onClose: () => void) {
       document.body.style.overflow = previousOverflow;
       restoreTo.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return panelRef;
 }

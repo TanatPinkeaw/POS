@@ -219,24 +219,63 @@ function GoogleDoor({
         <div className={styles.googleSlot} ref={slot} />
       ) : (
         <div className={styles.door}>
-          <p className="ln-muted">ใช้เบอร์โทรศัพท์ของคุณเพื่อสร้างบัญชีลูกค้า</p>
+          {/*
+            The one step in this flow a customer cannot skip, said as a requirement
+            rather than left to be inferred.
+
+            The screen used to show a grey sentence above an empty box, and the
+            obvious reading was "optional field, move on" — people tapped through it,
+            hit a disabled button with no stated reason, and left. Google proves who
+            they are; the number is where their points and their orders hang, so
+            without it the account cannot be created at all (ADR 0020 §5).
+
+            So this is a warning-toned banner with the word จำเป็น in it, the field is
+            focused, and the button explains itself instead of simply being grey.
+            `InlineNotice` already carries its own live region — `assertive` for a
+            warning tone — so this step is announced when it appears after the network
+            round trip, without a second nested region competing with it.
+          */}
+          <InlineNotice tone="warning" title="ขั้นตอนที่ 2 จาก 2">
+            <strong>จำเป็นต้องกรอกเบอร์มือถือ</strong> เพื่อเปิดบัญชีลูกค้า — เบอร์นี้ใช้ผูกคะแนนสะสม
+            ประวัติการซื้อ และใช้ยืนยันตัวตนเวลาจองสินค้า ร้านจะใช้ส่งแจ้งเตือนเรื่องพรีออเดอร์ให้คุณเท่านั้น
+          </InlineNotice>
           <TextField
             id="googlePhone"
-            label="เบอร์โทรศัพท์"
+            label="เบอร์มือถือของคุณ"
             inputMode="tel"
             autoComplete="tel"
+            autoFocus
+            required
+            placeholder="08xxxxxxxx"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            help="ใช้เป็นตัวระบุตัวตนของบัญชี และติดต่อกลับได้ในกรณีที่มีปัญหากับออเดอร์"
           />
           <NoticeAcknowledge acknowledged={acknowledged} onChange={setAcknowledged} />
           <Button
             variant="primary"
+            size="lg"
+            block
             loading={busy}
             disabled={phone.trim().length === 0 || !acknowledged}
             onClick={() => void completeSignup()}
           >
             ยืนยันและเข้าสู่ระบบ
           </Button>
+          {/*
+            The never-silent half of a button that is disabled for two different
+            reasons. Without it the customer sees a grey button and has to guess which
+            of the two is still missing.
+          */}
+          {phone.trim().length === 0 || !acknowledged ? (
+            <p className={styles.stepHint} role="alert">
+              {phone.trim().length === 0 && !acknowledged
+                ? 'กรอกเบอร์มือถือและอ่านนโยบายด้านบนก่อน จึงจะกดยืนยันได้'
+                : phone.trim().length === 0
+                  ? 'ยังไม่ได้กรอกเบอร์มือถือ'
+                  : 'ยังไม่ได้อ่านและยืนยันนโยบายคุ้มครองข้อมูลส่วนบุคคล'}
+            </p>
+          ) : null}
         </div>
       )}
     </section>

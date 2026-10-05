@@ -1,0 +1,53 @@
+/*
+ * The handover dialog's own layout. Deliberately plain — every control in here comes
+ * from the design system, so what is left is the four things the design system does
+ * not do: stacking the sections in the order a cashier reads them, keeping the item
+ * name from pushing its price out, and giving the QR a centred column of its own.
+ */
+
+.body {
+  display: grid;
+  gap: var(--ln-space-4);
+}
+
+/*
+ * The photo and the name share a line, and the name grows — a long Thai product name
+ * wraps instead of pushing the row's price off the edge of a narrow dialog.
+ */
+.itemName {
+  flex: 1;
+  min-width: 0;
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ln-space-2);
+}
+
+/* A native checkbox with its label, so the tap target is the whole sentence. */
+.pick {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ln-space-2);
+  cursor: pointer;
+}
+
+.cashRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ln-space-3);
+}
+
+.qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--ln-space-2);
+}
+
+.hint {
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+  text-align: center;
+}

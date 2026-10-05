@@ -87,6 +87,14 @@ interface PagePermission {
 const PAGES: PagePermission[] = [
   { prefix: '/admin/dashboard', roles: ['admin', 'employee'] },
   { prefix: '/admin/reports', roles: ['admin', 'employee'] },
+  /*
+   * Sales history opens to an employee for the same reason the reports do: looking
+   * up a sale and reprinting its receipt is part of working the till, and a
+   * cashier who must fetch a manager to answer "what did you charge me on Tuesday"
+   * cannot answer it in front of the customer. What it does *not* grant is refunding
+   * — that stays behind `requireApproval` at the route, which no page can widen.
+   */
+  { prefix: '/admin/sales', roles: ['admin', 'employee'] },
   { prefix: '/admin', roles: ['admin'] },
   { prefix: '/pos', roles: ['employee', 'admin'] },
   /*

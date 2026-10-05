@@ -11,6 +11,7 @@
  * are gone as well, and `npm run ui:audit` is what keeps them from coming back.
  */
 export { Button, LinkButton } from './Button';
+export { Carousel } from './Carousel';
 export { Card, CardGrid, PageHeader } from './Card';
 export { TrendChart } from './Chart';
 export { DataTable, TableSummaryRow, type Column } from './DataTable';

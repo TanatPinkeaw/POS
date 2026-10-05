@@ -4,6 +4,8 @@ import { Button, InlineNotice, Numpad, Overlay, QrPanel, QuickCash, Tabs } from 
 import { formatThb } from '@/lib/money';
 import { PAYMENT_INTENT_STATUS_LABELS } from '@/lib/payment-intents-view';
 
+import type { ShopView } from '@/lib/shop-view';
+
 import type { TenderMode, Till } from './useTill';
 import styles from './Till.module.css';
 
@@ -27,10 +29,19 @@ import styles from './Till.module.css';
  */
 export function PaySheet({
   till,
+  shop,
   open,
   onClose,
 }: {
   till: Till;
+  /**
+   * The shop's own settings, for the "no PromptPay number set" notice.
+   *
+   * Passed in rather than read from the till's hook: the hook deliberately does not
+   * return the shop, because nothing in the sale's arithmetic depends on it, and one
+   * screen asking for it is not a reason to widen a hook's surface for all of them.
+   */
+  shop: ShopView;
   open: boolean;
   onClose: () => void;
 }) {
@@ -103,8 +114,34 @@ export function PaySheet({
             >
               ยกเลิก QR
             </Button>
-            <Button size="lg" icon="qr" loading disabled>
-              รอเงินเข้า…
+            {/*
+              The two ways out of "the money is in flight" that this deployment
+              needed and did not have. A shop with no bank notification bridge
+              never receives the event that closes the bill, so the screen sat on
+              "รอเงินเข้า…" with no button at all — the only thing a cashier could do
+              was take the customer away and leave the basket open. Confirming by
+              hand is the endpoint and the audit action this codebase already had;
+              the refresh is a fresh intent, because re-drawing the same payload
+              would leave a code that is still expired and a countdown still at
+              zero.
+            */}
+            <Button
+              variant="secondary"
+              icon="refresh"
+              loading={till.intentBusy}
+              disabled={till.busy}
+              onClick={() => void till.refreshIntent()}
+            >
+              ออก QR ใหม่
+            </Button>
+            <Button
+              variant="primary"
+              icon="check"
+              loading={till.intentBusy}
+              disabled={till.busy}
+              onClick={() => void till.confirmTransferManually()}
+            >
+              ยืนยันว่าโอนแล้ว
             </Button>
           </>
         ) : (
@@ -136,6 +173,19 @@ export function PaySheet({
           <InlineNotice tone="warning">{till.payBlockedReason}</InlineNotice>
         ) : null}
         {deviceCashOnly ? <InlineNotice tone="warning">รับเฉพาะเงินสดไม่ผูกสมาชิก — ส่งบิลและคืนชุดเลขก่อนใช้พร้อมเพย์ สมาชิก หรือแต้ม</InlineNotice> : null}
+        {/*
+          Said here, on the sheet, rather than only in the settings screen.
+          This is the single most common reason "the QR button does nothing" in a
+          shop that has never taken a transfer: `shops.promptpay_id` is null, so the
+          intent cannot be built and the POST fails with a message about
+          configuration, not about money. A cashier cannot act on that and does not
+          need to know what it means — they need to be told where the setting is.
+        */}
+        {!shop.promptpayId ? (
+          <InlineNotice tone="warning">
+            ร้านยังไม่ได้ตั้งเลขพร้อมเพย์ — ออก QR ไม่ได้จนกว่าจะกรอกใน <strong>ตั้งค่าร้าน › เลขพร้อมเพย์</strong> ระหว่างนี้รับเป็นเงินสดได้ตามปกติ
+          </InlineNotice>
+        ) : null}
         <Tabs
           label="วิธีชำระเงิน"
           variant="segmented"
@@ -178,6 +228,11 @@ export function PaySheet({
                     ? 'ให้ลูกค้าสแกนที่จอนี้หรือที่จอลูกค้า — เมื่อเงินเข้าบิลจะปิดเอง'
                     : PAYMENT_INTENT_STATUS_LABELS[till.intent.status]}
                 </p>
+                {till.intentError ? (
+                  <p className={styles.hint} role="alert">
+                    {till.intentError}
+                  </p>
+                ) : null}
               </>
             ) : (
               <>

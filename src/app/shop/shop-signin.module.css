@@ -126,3 +126,22 @@
   color: var(--ln-text-muted);
   text-decoration: underline;
 }
+
+/*
+ * Why the "ยืนยันและเข้าสู่ระบบ" button is grey, on the sign-in card.
+ *
+ * A disabled control with no explanation is the single most common way a form loses a
+ * customer, and this one had two independent reasons to be disabled — no number typed
+ * and the notice not ticked — so guessing which one was still outstanding is a coin
+ * flip. It sits under the button rather than beside the field it is about, because the
+ * question "why can't I press this" is asked while looking at the button.
+ *
+ * `warning` rather than `danger`: nothing has gone wrong, something is outstanding,
+ * and the tone that means "an error occurred" would be a lie here.
+ */
+.stepHint {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-muted);
+}
+

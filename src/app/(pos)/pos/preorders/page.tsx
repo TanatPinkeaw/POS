@@ -1,6 +1,6 @@
 import { InlineNotice, PageHeader, Stack } from '@/components/ds';
 import { PreOrderBoard } from '@/components/pos/PreOrderBoard';
-import { expireStalePendingOrders } from '@/lib/orders';
+import { confirmTimeoutMinutes, expireStalePendingOrders } from '@/lib/orders';
 
 /**
  * The board also sweeps on read.
@@ -13,11 +13,20 @@ import { expireStalePendingOrders } from '@/lib/orders';
 export default async function PreOrdersPage() {
   const swept = await expireStalePendingOrders();
 
+  /*
+   * The subtitle states the shop's actual timeout rather than a number typed beside
+   * it. It said "15 นาที" long after the setting was thirty, which is a customer-facing
+   * promise the shop was not keeping — and it is the third copy of this figure, after
+   * the board's own constant and the catalogue's confirmation line. The server owns
+   * the number; this is where it is read.
+   */
+  const confirmMinutes = confirmTimeoutMinutes();
+
   return (
     <Stack gap="lg">
       <PageHeader
         title="กระดานพรีออเดอร์"
-        subtitle="ออเดอร์ที่ไม่ได้ยืนยันภายใน 15 นาที จะถูกยกเลิกและคืนสต็อกอัตโนมัติ"
+        subtitle={`ออเดอร์ที่ไม่ได้ยืนยันภายใน ${confirmMinutes} นาที จะถูกยกเลิกและคืนสต็อกอัตโนมัติ`}
       />
       {swept.expired > 0 ? (
         <InlineNotice tone="warning">

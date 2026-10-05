@@ -118,9 +118,19 @@ export interface OrderSummary {
   queueNumber: string | null;
 }
 
-/** SRS §3 Phase 1: how long an unconfirmed pre-order may live. */
+/**
+ * SRS §3 Phase 1: how long an unconfirmed pre-order may live.
+ *
+ * Thirty minutes rather than the fifteen this shipped with, because fifteen is a
+ * number chosen for a shop that knows its customer is standing at the counter. This
+ * shop's pre-orders arrive from a phone, and by the time somebody has decided to buy
+ * something the order they left pending has already cancelled itself and released the
+ * stock — so the customer comes back to an order that no longer exists and a cashier
+ * who has to explain it. The value is env-overridable and the screens read the
+ * deadline the server writes, so a shop that wants fifteen again changes one line.
+ */
 export function confirmTimeoutMinutes(): number {
-  return optionalNumberEnv('PREORDER_CONFIRM_TIMEOUT_MINUTES', 15);
+  return optionalNumberEnv('PREORDER_CONFIRM_TIMEOUT_MINUTES', 30);
 }
 
 /** SRS §3 Phase 3: how long a packed order is held before it can be a no-show. */
@@ -782,6 +792,14 @@ export async function placePreOrder(input: {
          */
         net_amount: subtotal,
         vat_amount: 0,
+        /*
+         * The Phase 1 deadline, stored rather than recomputed. It is written from
+         * the same `Date` the row's `created_at` default uses as close as possible —
+         * computed inside the create so both come off one clock read, which keeps the
+         * board's countdown from being a few milliseconds out of step with the
+         * sweeper's.
+         */
+        confirm_deadline: new Date(Date.now() + confirmTimeoutMinutes() * 60_000),
       },
     });
 
@@ -842,7 +860,7 @@ export async function placePreOrder(input: {
       orderNumber,
       status: 'pending' as OrderStatus,
       subtotalThb: subtotal,
-      confirmDeadline: new Date(Date.now() + confirmTimeoutMinutes() * 60_000),
+      confirmDeadline: order.confirm_deadline ?? new Date(Date.now() + confirmTimeoutMinutes() * 60_000),
     };
   }, TRANSACTION_OPTIONS);
 }
@@ -1009,6 +1027,18 @@ export async function completeOrder(input: {
   employeeId: string;
   shiftId: number;
   settlement: SettlementRequest;
+  /**
+   * The PromptPay intent this handover settles against, when the customer paid by
+   * transfer — the pre-order side of what `createPosSale` has always done.
+   *
+   * Only a reference crosses the wire; the amount comes from the intent's own row and
+   * `consumeIntent` refuses one that does not cover the bill, so a tampered client
+   * cannot present a ฿10 transfer against a ฿1000 pre-order. Consumed inside the
+   * transaction and before the stock leaves, for the same reason the walk-in sale
+   * does it there: a second submission of one intent has to fail before the goods are
+   * gone, not after.
+   */
+  intentRef?: string;
 }): Promise<OrderSummary> {
   return prisma.$transaction(async (tx) => {
     const locked = await lockOrder(tx, input.orderId);
@@ -1085,6 +1115,13 @@ export async function completeOrder(input: {
         paid_at: at,
       })),
     });
+
+    // Consumed inside the transaction, and before the points or the stock move: a
+    // second submission of the same intent has to fail here rather than after the
+    // goods have left. Same position, and same reason, as `createPosSale`.
+    if (input.intentRef) {
+      await consumeIntent(tx, { ref: input.intentRef, orderId: order.id });
+    }
 
     if (order.customer_id) {
       if (settlement.pointsRedeemed > 0) {
@@ -1170,9 +1207,19 @@ export async function cancelOrder(input: {
   orderId: string;
   actorId: string;
   reason: string;
-  /** Set when a supervisor's PIN was required — a staff cancellation, not a
-   *  member withdrawing their own pre-order. */
-  authorizedByUserId?: string | null;
+  /**
+   * True when a member of staff cancelled, rather than a customer withdrawing their
+   * own pre-order (ADR 0026).
+   *
+   * It replaces the `authorizedByUserId` this used to take. That field existed to
+   * record *which supervisor's PIN allowed it*, and since staff no longer need one
+   * there is nothing to record — but dropping the audit row along with it would have
+   * been the wrong trade. A pre-order cancellation releases stock somebody else may
+   * have been counting on, and "who released this reservation and why" is exactly the
+   * kind of question a trail exists to answer; so the row is now written for every
+   * staff cancellation with the employee as the actor and no approver.
+   */
+  staffVoid?: boolean;
 }): Promise<{ orderId: string; status: OrderStatus; releasedLines: number }> {
   return prisma.$transaction(async (tx) => {
     const locked = await lockOrder(tx, input.orderId);
@@ -1210,21 +1257,27 @@ export async function cancelOrder(input: {
       select: { order_number: true },
     });
 
-    // Only a staff cancellation needed a PIN, so only that one is an audited
-    // void. A member withdrawing their own pre-order is not an event the shop
-    // has to account for, and logging every one would drown the ones that are.
-    if (input.authorizedByUserId) {
+    // Only a staff cancellation is an audited void. A member withdrawing their own
+    // pre-order is not an event the shop has to account for, and logging every one
+    // would drown the ones that are.
+    if (input.staffVoid) {
       await recordAudit(
         {
           action: 'void_order',
           actorUserId: input.actorId,
-          authorizedByUserId: input.authorizedByUserId,
           targetType: 'order',
           targetId: input.orderId,
           detail: {
             orderNumber: cancelled.order_number,
             reason: input.reason,
             releasedLines: items.length,
+            /*
+             * Recorded rather than inferred later. The approver column is empty here
+             * and that emptiness is the fact: this is a staff void that did not need a
+             * supervisor, which is the shape an owner scanning the trail is looking
+             * for after the PIN requirement was dropped (ADR 0026).
+             */
+            approval: 'not_required',
           },
         },
         tx,
@@ -1253,6 +1306,13 @@ export async function cancelOrder(input: {
 export async function expireStalePendingOrders(
   now: Date = new Date(),
 ): Promise<{ expired: number; orderIds: string[] }> {
+  /*
+   * The fallback for rows with no stored deadline: a pre-order that predates the
+   * `confirm_deadline` column, and nothing else. The query is an OR rather than a
+   * default value on the column, because a row that has no deadline and a row whose
+   * deadline has *not yet passed* are different things and only one of them is
+   * stale — coalescing them would expire an order the moment it was placed.
+   */
   const cutoff = new Date(now.getTime() - confirmTimeoutMinutes() * 60_000);
 
   return prisma.$transaction(async (tx) => {
@@ -1264,7 +1324,10 @@ export async function expireStalePendingOrders(
     }
 
     const stale = await tx.orders.findMany({
-      where: { status: 'pending', created_at: { lt: cutoff } },
+      where: {
+        status: 'pending',
+        OR: [{ confirm_deadline: { lt: now } }, { confirm_deadline: null, created_at: { lt: cutoff } }],
+      },
       select: { id: true, order_number: true },
       orderBy: { created_at: 'asc' },
       take: 200,

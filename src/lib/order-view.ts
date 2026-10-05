@@ -107,8 +107,35 @@ export interface OrderListView {
    * collect nothing.
    */
   pickupToken: string | null;
+  /**
+   * When an unconfirmed pre-order stops waiting (SRS §3 Phase 1).
+   *
+   * Sent to the screen instead of the timeout in minutes, and this is the second time
+   * that decision has been made in the wrong place. The board used to carry its own
+   * `CONFIRM_TIMEOUT_MINUTES = 15` and count down from `createdAt`, which meant the
+   * figure a cashier read was whatever the env var said on the server *and* whatever
+   * the compiled JavaScript said — two numbers that agree only until somebody changes
+   * the shop's timeout, at which point the countdown and the sweeper disagree and the
+   * board announces an expiry the server is not going to perform.
+   *
+   * The deadline is already a column, written once when the order is placed, so the
+   * display and the sweeper now read the same value by construction and there is no
+   * second place to change when the shop changes its mind.
+   */
+  confirmDeadline: Date | null;
   createdAt: Date;
   readyAt: Date | null;
+  /**
+   * The tax-invoice number, for the sales-history screen (#9).
+   *
+   * Null on anything that never became a sale. It is in the list projection rather
+   * than fetched per row because the one screen that lists a lot of orders is the one
+   * that prints them, and a second round trip per order is how that screen becomes
+   * the slow one.
+   */
+  receiptNumber: string | null;
+  /** When the sale closed — the receipt's own timestamp, for ordering and filtering. */
+  completedAt: Date | null;
 }
 
 const fullInclude = {
@@ -209,18 +236,72 @@ export async function listOrderViews(filter: {
   orderType?: 'pos_walkin' | 'preorder';
   customerId?: string;
   limit: number;
+  /** The sales-history screen's own filters; absent for the boards. */
+  receiptNumber?: string;
+  customerName?: string;
+  /** Bangkok calendar days, already resolved by the caller. */
+  from?: Date;
+  /** Exclusive — the next Bangkok midnight, from `resolveBangkokRange`. */
+  toExclusive?: Date;
+  offset?: number;
 }): Promise<OrderListView[]> {
   const orders = await prisma.orders.findMany({
     where: {
       ...(filter.statuses ? { status: { in: filter.statuses } } : {}),
       ...(filter.orderType ? { order_type: filter.orderType } : {}),
       ...(filter.customerId ? { customer_id: filter.customerId } : {}),
+      /*
+       * `contains` rather than an exact match, and case-insensitive by Prisma's own
+       * default, because the number a shop has written down is the one a customer read
+       * off a receipt and the one a tax inspector asks for. `RC-2026-00007` and
+       * `rc-2026-00007` are the same document, and a search that distinguishes them
+       * fails exactly when it matters and looks like the document does not exist.
+       *
+       * It also matches the order number, because a receipt number only exists for a
+       * VAT-registered shop — `resolveSaleTax` allocates one out of the receipt series,
+       * which is a tax document. A shop that is not registered therefore has
+       * `receipt_number` set to null on *every* sale, and a search that only looked
+       * there would answer "no such sale" to every number the shop can actually see on
+       * its own screen. The two numbers are both printed on the same paperwork, so
+       * either one typed should find the sale.
+       */
+      ...(filter.receiptNumber
+        ? {
+            OR: [
+              { receipt_number: { contains: filter.receiptNumber, mode: 'insensitive' } },
+              { order_number: { contains: filter.receiptNumber, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+      ...(filter.customerName
+        ? {
+            customer: {
+              is: { full_name: { contains: filter.customerName, mode: 'insensitive' } },
+            },
+          }
+        : {}),
+      /*
+       * Filtered on the moment the sale *closed*, not the moment it was placed, which
+       * is the only one of the two that means "the sales on Tuesday". A pre-order
+       * placed on Monday and collected on Wednesday belongs to Wednesday's takings,
+       * and filtering on `created_at` would file it under Monday — which is the whole
+       * question an owner reconciles a bank statement against.
+       */
+      ...(filter.from || filter.toExclusive
+        ? {
+            completed_at: {
+              ...(filter.from ? { gte: filter.from } : {}),
+              ...(filter.toExclusive ? { lt: filter.toExclusive } : {}),
+            },
+          }
+        : {}),
     },
     include: {
       customer: { select: { full_name: true, phone: true } },
       _count: { select: { items: true } },
     },
     orderBy: { created_at: 'desc' },
+    skip: filter.offset,
     take: filter.limit,
   });
 
@@ -247,8 +328,11 @@ export async function listOrderViews(filter: {
               expiresAt: order.pickup_expires_at,
             })
           : null,
+      confirmDeadline: order.confirm_deadline,
+      receiptNumber: order.receipt_number,
       createdAt: order.created_at,
       readyAt: order.ready_at,
+      completedAt: order.completed_at,
     })),
   );
 }

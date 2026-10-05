@@ -13,6 +13,7 @@ import {
   Money,
   Overlay,
   Pill,
+  SearchField,
   SplitPane,
   TextField,
   useToast,
@@ -26,6 +27,7 @@ import { APPROVAL_HEADER } from '@/lib/supervisor-view';
 import { numbersRemaining, offlineNotice } from '@/lib/till-store';
 
 import { PaySheet } from './PaySheet';
+import { PreOrderHandover, lookupHandoverOrder, type HandoverOrder } from './PreOrderHandover';
 import { ReceiptLinkDialog } from './ReceiptLinkDialog';
 import { RefundDialog, type RefundTarget } from './RefundDialog';
 import { SupervisorApprovalDialog } from './SupervisorApprovalDialog';
@@ -90,6 +92,39 @@ export function Till({
   const [linkTarget, setLinkTarget] = useState<{ orderId: string; orderNumber: string } | null>(
     null,
   );
+  /*
+   * The pre-order being collected, found by scanning the customer's QR, by their PIN
+   * or by their phone number.
+   *
+   * Its own field rather than the catalogue's search box, because that box is wired to
+   * the till's barcode scanner: a collection QR that went through it would be looked
+   * up as a product barcode, find nothing, and read to the cashier as "unknown code".
+   * Two scanners' worth of input, two boxes.
+   */
+  const [handoverOrder, setHandoverOrder] = useState<HandoverOrder | null>(null);
+  const [handoverTerm, setHandoverTerm] = useState('');
+  const [handoverBusy, setHandoverBusy] = useState(false);
+  const [handoverError, setHandoverError] = useState<string | null>(null);
+
+  const collectHandover = async (): Promise<void> => {
+    const term = handoverTerm.trim();
+    if (!term) {
+      return;
+    }
+    setHandoverBusy(true);
+    setHandoverError(null);
+    try {
+      const found = await lookupHandoverOrder(term);
+      setHandoverOrder(found);
+      setHandoverTerm('');
+    } catch (caught) {
+      setHandoverError(
+        caught instanceof Error ? caught.message : 'ไม่พบพรีออเดอร์ที่ตรงกับรหัสนี้',
+      );
+    } finally {
+      setHandoverBusy(false);
+    }
+  };
 
   const toast = useToast();
   const approval = useSupervisorApproval();
@@ -320,6 +355,32 @@ export function Till({
         </InlineNotice>
       ) : null}
 
+      {/*
+        The collection desk, at the till rather than on the pre-order board.
+        Before this, taking money for a pre-order meant walking the customer to
+        another screen — which is not a thing you do with a queue behind them.
+      */}
+      <div className={styles.handoverStrip}>
+        <SearchField
+          id="preorder-collect"
+          label="รับพรีออเดอร์ — สแกนคิวอาร์ของลูกค้า หรือพิมพ์ PIN 4 หลัก / เบอร์โทร"
+          placeholder="สแกนคิวอาร์, PIN 4 หลัก, หรือเบอร์โทร"
+          value={handoverTerm}
+          onChange={setHandoverTerm}
+          onSubmit={() => void collectHandover()}
+          mono
+        />
+        <Button
+          icon="scan"
+          loading={handoverBusy}
+          disabled={handoverTerm.trim() === ''}
+          onClick={() => void collectHandover()}
+        >
+          รับสินค้า
+        </Button>
+      </div>
+      {handoverError ? <InlineNotice tone="danger">{handoverError}</InlineNotice> : null}
+
       <div style={{ flex: 1, minHeight: 0 }}>
         <SplitPane
           label="บิลปัจจุบัน"
@@ -341,7 +402,21 @@ export function Till({
         </SplitPane>
       </div>
 
-      <PaySheet till={till} open={payOpen} onClose={() => setPayOpen(false)} />
+      <PaySheet till={till} shop={shop} open={payOpen} onClose={() => setPayOpen(false)} />
+
+      <PreOrderHandover
+        order={handoverOrder}
+        open={handoverOrder !== null}
+        onClose={() => setHandoverOrder(null)}
+        onCompleted={() => {
+          setHandoverOrder(null);
+          // The collection happened, so the bar's board and the till's own counts are
+          // both stale. `refresh` re-reads the drawer; the stock totals are pushed by
+          // the server's broadcast rather than fetched here.
+          refresh();
+          till.scanInput.current?.focus();
+        }}
+      />
 
       {/*
         Rendered after the pay sheet so it paints over it: a discount past the

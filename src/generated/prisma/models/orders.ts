@@ -59,6 +59,7 @@ export type OrdersMinAggregateOutputType = {
   cashier_id: string | null
   pickup_pin: string | null
   pickup_expires_at: Date | null
+  confirm_deadline: Date | null
   subtotal_amount: runtime.Decimal | null
   discount_amount: runtime.Decimal | null
   final_amount: runtime.Decimal | null
@@ -91,6 +92,7 @@ export type OrdersMaxAggregateOutputType = {
   cashier_id: string | null
   pickup_pin: string | null
   pickup_expires_at: Date | null
+  confirm_deadline: Date | null
   subtotal_amount: runtime.Decimal | null
   discount_amount: runtime.Decimal | null
   final_amount: runtime.Decimal | null
@@ -123,6 +125,7 @@ export type OrdersCountAggregateOutputType = {
   cashier_id: number
   pickup_pin: number
   pickup_expires_at: number
+  confirm_deadline: number
   subtotal_amount: number
   discount_amount: number
   final_amount: number
@@ -181,6 +184,7 @@ export type OrdersMinAggregateInputType = {
   cashier_id?: true
   pickup_pin?: true
   pickup_expires_at?: true
+  confirm_deadline?: true
   subtotal_amount?: true
   discount_amount?: true
   final_amount?: true
@@ -213,6 +217,7 @@ export type OrdersMaxAggregateInputType = {
   cashier_id?: true
   pickup_pin?: true
   pickup_expires_at?: true
+  confirm_deadline?: true
   subtotal_amount?: true
   discount_amount?: true
   final_amount?: true
@@ -245,6 +250,7 @@ export type OrdersCountAggregateInputType = {
   cashier_id?: true
   pickup_pin?: true
   pickup_expires_at?: true
+  confirm_deadline?: true
   subtotal_amount?: true
   discount_amount?: true
   final_amount?: true
@@ -364,6 +370,7 @@ export type OrdersGroupByOutputType = {
   cashier_id: string | null
   pickup_pin: string | null
   pickup_expires_at: Date | null
+  confirm_deadline: Date | null
   subtotal_amount: runtime.Decimal
   discount_amount: runtime.Decimal
   final_amount: runtime.Decimal
@@ -419,6 +426,7 @@ export type ordersWhereInput = {
   cashier_id?: Prisma.UuidNullableFilter<"orders"> | string | null
   pickup_pin?: Prisma.StringNullableFilter<"orders"> | string | null
   pickup_expires_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
+  confirm_deadline?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   subtotal_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -460,6 +468,7 @@ export type ordersOrderByWithRelationInput = {
   cashier_id?: Prisma.SortOrderInput | Prisma.SortOrder
   pickup_pin?: Prisma.SortOrderInput | Prisma.SortOrder
   pickup_expires_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  confirm_deadline?: Prisma.SortOrderInput | Prisma.SortOrder
   subtotal_amount?: Prisma.SortOrder
   discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
@@ -507,6 +516,7 @@ export type ordersWhereUniqueInput = Prisma.AtLeast<{
   cashier_id?: Prisma.UuidNullableFilter<"orders"> | string | null
   pickup_pin?: Prisma.StringNullableFilter<"orders"> | string | null
   pickup_expires_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
+  confirm_deadline?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   subtotal_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -546,6 +556,7 @@ export type ordersOrderByWithAggregationInput = {
   cashier_id?: Prisma.SortOrderInput | Prisma.SortOrder
   pickup_pin?: Prisma.SortOrderInput | Prisma.SortOrder
   pickup_expires_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  confirm_deadline?: Prisma.SortOrderInput | Prisma.SortOrder
   subtotal_amount?: Prisma.SortOrder
   discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
@@ -586,6 +597,7 @@ export type ordersScalarWhereWithAggregatesInput = {
   cashier_id?: Prisma.UuidNullableWithAggregatesFilter<"orders"> | string | null
   pickup_pin?: Prisma.StringNullableWithAggregatesFilter<"orders"> | string | null
   pickup_expires_at?: Prisma.DateTimeNullableWithAggregatesFilter<"orders"> | Date | string | null
+  confirm_deadline?: Prisma.DateTimeNullableWithAggregatesFilter<"orders"> | Date | string | null
   subtotal_amount?: Prisma.DecimalWithAggregatesFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalWithAggregatesFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalWithAggregatesFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -616,6 +628,7 @@ export type ordersCreateInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -657,6 +670,7 @@ export type ordersUncheckedCreateInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -694,6 +708,7 @@ export type ordersUpdateInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -735,6 +750,7 @@ export type ordersUncheckedUpdateInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -774,6 +790,7 @@ export type ordersCreateManyInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -804,6 +821,7 @@ export type ordersUpdateManyMutationInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -836,6 +854,7 @@ export type ordersUncheckedUpdateManyInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -883,6 +902,7 @@ export type ordersCountOrderByAggregateInput = {
   cashier_id?: Prisma.SortOrder
   pickup_pin?: Prisma.SortOrder
   pickup_expires_at?: Prisma.SortOrder
+  confirm_deadline?: Prisma.SortOrder
   subtotal_amount?: Prisma.SortOrder
   discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
@@ -927,6 +947,7 @@ export type ordersMaxOrderByAggregateInput = {
   cashier_id?: Prisma.SortOrder
   pickup_pin?: Prisma.SortOrder
   pickup_expires_at?: Prisma.SortOrder
+  confirm_deadline?: Prisma.SortOrder
   subtotal_amount?: Prisma.SortOrder
   discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
@@ -959,6 +980,7 @@ export type ordersMinOrderByAggregateInput = {
   cashier_id?: Prisma.SortOrder
   pickup_pin?: Prisma.SortOrder
   pickup_expires_at?: Prisma.SortOrder
+  confirm_deadline?: Prisma.SortOrder
   subtotal_amount?: Prisma.SortOrder
   discount_amount?: Prisma.SortOrder
   final_amount?: Prisma.SortOrder
@@ -1213,6 +1235,7 @@ export type ordersCreateWithoutCustomerInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1252,6 +1275,7 @@ export type ordersUncheckedCreateWithoutCustomerInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1299,6 +1323,7 @@ export type ordersCreateWithoutCashierInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1338,6 +1363,7 @@ export type ordersUncheckedCreateWithoutCashierInput = {
   customer_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1406,6 +1432,7 @@ export type ordersScalarWhereInput = {
   cashier_id?: Prisma.UuidNullableFilter<"orders"> | string | null
   pickup_pin?: Prisma.StringNullableFilter<"orders"> | string | null
   pickup_expires_at?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
+  confirm_deadline?: Prisma.DateTimeNullableFilter<"orders"> | Date | string | null
   subtotal_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFilter<"orders"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1452,6 +1479,7 @@ export type ordersCreateWithoutItemsInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1492,6 +1520,7 @@ export type ordersUncheckedCreateWithoutItemsInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1544,6 +1573,7 @@ export type ordersUpdateWithoutItemsInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1584,6 +1614,7 @@ export type ordersUncheckedUpdateWithoutItemsInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1620,6 +1651,7 @@ export type ordersCreateWithoutPaymentsInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1660,6 +1692,7 @@ export type ordersUncheckedCreateWithoutPaymentsInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1712,6 +1745,7 @@ export type ordersUpdateWithoutPaymentsInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1752,6 +1786,7 @@ export type ordersUncheckedUpdateWithoutPaymentsInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1788,6 +1823,7 @@ export type ordersCreateWithoutCredit_notesInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1828,6 +1864,7 @@ export type ordersUncheckedCreateWithoutCredit_notesInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1880,6 +1917,7 @@ export type ordersUpdateWithoutCredit_notesInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1920,6 +1958,7 @@ export type ordersUncheckedUpdateWithoutCredit_notesInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1956,6 +1995,7 @@ export type ordersCreateWithoutPayment_intentsInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -1996,6 +2036,7 @@ export type ordersUncheckedCreateWithoutPayment_intentsInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2048,6 +2089,7 @@ export type ordersUpdateWithoutPayment_intentsInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2088,6 +2130,7 @@ export type ordersUncheckedUpdateWithoutPayment_intentsInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2124,6 +2167,7 @@ export type ordersCreateWithoutNotificationsInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2164,6 +2208,7 @@ export type ordersUncheckedCreateWithoutNotificationsInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2216,6 +2261,7 @@ export type ordersUpdateWithoutNotificationsInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2256,6 +2302,7 @@ export type ordersUncheckedUpdateWithoutNotificationsInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2292,6 +2339,7 @@ export type ordersCreateWithoutConsignor_payablesInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2332,6 +2380,7 @@ export type ordersUncheckedCreateWithoutConsignor_payablesInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2384,6 +2433,7 @@ export type ordersUpdateWithoutConsignor_payablesInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2424,6 +2474,7 @@ export type ordersUncheckedUpdateWithoutConsignor_payablesInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2460,6 +2511,7 @@ export type ordersCreateWithoutPoint_transactionsInput = {
   status?: $Enums.order_status
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2500,6 +2552,7 @@ export type ordersUncheckedCreateWithoutPoint_transactionsInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2552,6 +2605,7 @@ export type ordersUpdateWithoutPoint_transactionsInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2592,6 +2646,7 @@ export type ordersUncheckedUpdateWithoutPoint_transactionsInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2629,6 +2684,7 @@ export type ordersCreateManyCustomerInput = {
   cashier_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2660,6 +2716,7 @@ export type ordersCreateManyCashierInput = {
   customer_id?: string | null
   pickup_pin?: string | null
   pickup_expires_at?: Date | string | null
+  confirm_deadline?: Date | string | null
   subtotal_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2690,6 +2747,7 @@ export type ordersUpdateWithoutCustomerInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2729,6 +2787,7 @@ export type ordersUncheckedUpdateWithoutCustomerInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2767,6 +2826,7 @@ export type ordersUncheckedUpdateManyWithoutCustomerInput = {
   cashier_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2797,6 +2857,7 @@ export type ordersUpdateWithoutCashierInput = {
   status?: Prisma.Enumorder_statusFieldUpdateOperationsInput | $Enums.order_status
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2836,6 +2897,7 @@ export type ordersUncheckedUpdateWithoutCashierInput = {
   customer_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2874,6 +2936,7 @@ export type ordersUncheckedUpdateManyWithoutCashierInput = {
   customer_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_pin?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   pickup_expires_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  confirm_deadline?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subtotal_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   discount_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   final_amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -2991,6 +3054,7 @@ export type ordersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   cashier_id?: boolean
   pickup_pin?: boolean
   pickup_expires_at?: boolean
+  confirm_deadline?: boolean
   subtotal_amount?: boolean
   discount_amount?: boolean
   final_amount?: boolean
@@ -3033,6 +3097,7 @@ export type ordersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   cashier_id?: boolean
   pickup_pin?: boolean
   pickup_expires_at?: boolean
+  confirm_deadline?: boolean
   subtotal_amount?: boolean
   discount_amount?: boolean
   final_amount?: boolean
@@ -3067,6 +3132,7 @@ export type ordersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   cashier_id?: boolean
   pickup_pin?: boolean
   pickup_expires_at?: boolean
+  confirm_deadline?: boolean
   subtotal_amount?: boolean
   discount_amount?: boolean
   final_amount?: boolean
@@ -3101,6 +3167,7 @@ export type ordersSelectScalar = {
   cashier_id?: boolean
   pickup_pin?: boolean
   pickup_expires_at?: boolean
+  confirm_deadline?: boolean
   subtotal_amount?: boolean
   discount_amount?: boolean
   final_amount?: boolean
@@ -3124,7 +3191,7 @@ export type ordersSelectScalar = {
   cancelled_at?: boolean
 }
 
-export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "fulfilment" | "points_earned" | "points_redeemed" | "cancel_reason" | "client_ref" | "sold_at" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
+export type ordersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "order_number" | "order_type" | "status" | "customer_id" | "cashier_id" | "pickup_pin" | "pickup_expires_at" | "confirm_deadline" | "subtotal_amount" | "discount_amount" | "final_amount" | "net_amount" | "vat_amount" | "vat_rate_used" | "is_vat_invoice" | "receipt_number" | "queue_number" | "queue_day" | "fulfilment" | "points_earned" | "points_redeemed" | "cancel_reason" | "client_ref" | "sold_at" | "created_at" | "confirmed_at" | "ready_at" | "completed_at" | "cancelled_at", ExtArgs["result"]["orders"]>
 export type ordersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   customer?: boolean | Prisma.orders$customerArgs<ExtArgs>
   cashier?: boolean | Prisma.orders$cashierArgs<ExtArgs>
@@ -3175,6 +3242,18 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     cashier_id: string | null
     pickup_pin: string | null
     pickup_expires_at: Date | null
+    /**
+     * *
+     *    * When this pre-order stops waiting for staff confirmation (SRS §3 Phase 1).
+     *    *
+     *    * Stored rather than derived from `created_at` plus the shop's timeout setting,
+     *    * because the deadline was being computed twice — once by the sweeper and once
+     *    * by the board — and changing the setting silently re-dated the orders already
+     *    * in the queue. One stored instant is read by both.
+     *    *
+     *    * Null on a walk-in sale (no Phase 1) and on rows that predate the column.
+     */
+    confirm_deadline: Date | null
     subtotal_amount: runtime.Decimal
     discount_amount: runtime.Decimal
     final_amount: runtime.Decimal
@@ -3680,6 +3759,7 @@ export interface ordersFieldRefs {
   readonly cashier_id: Prisma.FieldRef<"orders", 'String'>
   readonly pickup_pin: Prisma.FieldRef<"orders", 'String'>
   readonly pickup_expires_at: Prisma.FieldRef<"orders", 'DateTime'>
+  readonly confirm_deadline: Prisma.FieldRef<"orders", 'DateTime'>
   readonly subtotal_amount: Prisma.FieldRef<"orders", 'Decimal'>
   readonly discount_amount: Prisma.FieldRef<"orders", 'Decimal'>
   readonly final_amount: Prisma.FieldRef<"orders", 'Decimal'>

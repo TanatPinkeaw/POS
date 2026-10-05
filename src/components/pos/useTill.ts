@@ -734,6 +734,52 @@ export function useTill({
   }, [intent]);
 
   /**
+   * A fresh QR for the same amount, replacing the one on screen.
+   *
+   * A new *intent* rather than a re-render of the old payload, and that choice is the
+   * whole reason this button is worth having. The three things that go wrong with a
+   * PromptPay code are all about the passage of time: it expires on its own TTL, the
+   * customer's banking app refuses a code that is more than a few minutes old, and a
+   * customer who closed the sheet and came back finds a dead code and a cashier who
+   * has no way to move them forward. Re-drawing the same payload would fix the look of
+   * the problem and none of its causes — the countdown would still read zero, because
+   * it is derived from the intent's own `expiresAt`.
+   *
+   * The old reference is cancelled first, deliberately: a live QR for a bill being
+   * paid is a QR the next customer can pay, and a replacement that left the first one
+   * live would be two payable codes for one basket.
+   */
+  const refreshIntent = useCallback(async (): Promise<void> => {
+    const amountThb = round2(promptpayDue > 0 ? promptpayDue : due);
+    setIntentBusy(true);
+    setIntentError(null);
+    try {
+      const current = intent;
+      if (current && current.status === 'pending') {
+        try {
+          await apiPost(`/api/v1/payments/intents/${current.ref}/cancel`, {});
+        } catch {
+          // Ignored: an old code that refuses to cancel will expire on its own, and
+          // holding the cashier up to make sure of it is the worse trade.
+        }
+      }
+      setIntent(null);
+      consumedRef.current = null;
+      const created = await apiPost<PaymentIntentView>('/api/v1/payments/intents', {
+        shiftId: shift?.id ?? 0,
+        amountThb,
+      });
+      setIntent(created);
+    } catch (caught) {
+      setIntentError(
+        caught instanceof ApiError ? caught.message : 'ออก QR ใหม่ไม่สำเร็จ',
+      );
+    } finally {
+      setIntentBusy(false);
+    }
+  }, [intent, promptpayDue, due, shift]);
+
+  /**
    * Settles the sale against a paid intent, once.
    *
    * The reference is what makes this safe: the server re-reads the intent's own
@@ -751,6 +797,57 @@ export function useTill({
     },
     [],
   );
+
+  /**
+   * The cashier says the money arrived, and a supervisor agrees.
+   *
+   * This is the path a shop without a bank bridge has, and until now the till had no
+   * way to take it: `waitingForTransfer` removed "ยืนยันรับเงิน" from the sheet and
+   * replaced it with a disabled "รอเงินเข้า…", so a cashier who had watched the money
+   * land in the banking app had nothing left to press and the bill could not be
+   * closed at all. The server already had the endpoint, the audit action and the PIN
+   * gate — `POST /api/v1/payments/intents/{ref}/confirm` — so nothing new is trusted
+   * here; the till is given a button that reaches work it already had.
+   *
+   * The approval is bound to the intent's reference, so a supervisor who approved one
+   * transfer cannot have that approval spent on a different bill.
+   */
+  const confirmTransferManually = useCallback(async (): Promise<SaleResult | null> => {
+    const current = intent;
+    if (!current || current.status !== 'pending' || !requestApproval) {
+      return null;
+    }
+
+    const token = await requestApproval({
+      action: 'manual_payment_confirm',
+      targetId: current.ref,
+      summary: `ยืนยันว่าโอนแล้ว ${formatThb(current.amountThb)} · รหัสอ้างอิง ${current.ref}`,
+    });
+    if (!token) {
+      return null;
+    }
+
+    setIntentBusy(true);
+    setIntentError(null);
+    try {
+      const confirmed = await apiFetch<PaymentIntentView>(
+        `/api/v1/payments/intents/${current.ref}`,
+        { method: 'POST', headers: { [APPROVAL_HEADER]: token } },
+      );
+      if (confirmed.status !== 'paid' && confirmed.status !== 'consumed') {
+        setIntentError('ยังยืนยันไม่ได้ — รหัสอ้างอิงนี้อาจหมดอายุแล้ว ลองออก QR ใหม่');
+        return null;
+      }
+      return await settlePaidIntent(confirmed.ref);
+    } catch (caught) {
+      setIntentError(
+        caught instanceof ApiError ? caught.message : 'ยืนยันการโอนไม่สำเร็จ',
+      );
+      return null;
+    } finally {
+      setIntentBusy(false);
+    }
+  }, [intent, requestApproval, settlePaidIntent]);
 
   /**
    * The money arrived — from the socket, or from the poll.
@@ -1117,6 +1214,8 @@ export function useTill({
     intentError,
     startIntent,
     dropIntent,
+    refreshIntent,
+    confirmTransferManually,
     // cart
     lines,
     addProduct,

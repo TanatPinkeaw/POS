@@ -754,6 +754,57 @@ owes, the goods they have left with the shop and how much of each has sold, and 
 a payout reading as a settled statement, a refund as a reversal. The view is scoped to the
 signed-in member's session, so one phone number can never read another's balance.
 
+### The counter at `/pos` (ADR 0026)
+
+A week of real use turned up four defects that were one bug each, and they are all the
+same mistake: a rule copied into a second place instead of asked for once.
+
+**A staff cancellation is audited, not approved.** An employee cancelling a pre-order
+used to be refused outright — the route demanded a supervisor's PIN and the PIN prompt
+was never wired into the board, so the button could not do anything at all. `void_order`
+gates the *till's* void because that reverses money that already changed hands; an
+unconfirmed pre-order holds only a reservation, and releasing one is a shelf decision.
+So `cancelOrder` now takes `staffVoid` and writes a `void_order` row naming the employee,
+with no approver and `detail.approval = 'not_required'`. The trail still answers "who
+released this". A member withdrawing their own pre-order is still not audited, and a
+refund still needs a PIN.
+
+**The countdown counts to the server's deadline.** `orders.confirm_deadline` is stamped
+when the pre-order is placed, and both the board and the expiry sweeper read it. Before
+this the board held its own `CONFIRM_TIMEOUT_MINUTES = 15` while the server swept on
+`created_at + PREORDER_CONFIRM_TIMEOUT_MINUTES`, so changing the setting silently
+re-dated the orders already in the queue. The default is now **30 minutes** — these
+pre-orders arrive from a phone, not from a counter. A walk-in sale has no Phase 1, so the
+column is null for most of the table.
+
+**Pre-orders can be scanned and paid at the till.** `PreOrderHandover` is one dialog
+with two callers: the board at `/pos/preorders`, and a collection strip on `/pos` where a
+customer holding a QR, a PIN or a phone number is paid without being walked to another
+screen. It offers cash, PromptPay and a split, because the money rules for a pre-order
+are the walk-in sale's (`buildSettlement` is shared) — `completeOrderSchema` gained
+`intentRef` and `completeOrder` consumes the intent exactly as `createPosSale` does.
+
+**Transfers can be confirmed by hand, and a dead QR can be replaced.** A shop with no
+bank notification bridge never receives the event that closes a PromptPay bill, and the
+sheet used to *remove* "ยืนยันรับเงิน" while one was in flight — leaving a cashier who
+had watched the money land with nothing to press. Two buttons, both reaching work the
+server already had: **ยืนยันว่าโอนแล้ว** (a supervisor approval bound to the intent's
+reference, audited as `manual_payment_confirm`) and **ออก QR ใหม่**, which issues a fresh
+intent rather than re-drawing the same payload, so the countdown restarts and the old
+reference is cancelled.
+
+**The queue numbers are the call numbers.** `คิวเครื่องดื่ม` on `/pos/queue` is ADR 0018
+beside ADR 0017: a three-digit number issued per walk-in sale, printed on the receipt so
+the customer can be called, and a board of what is being made versus what is waiting to
+be collected. A pre-order has no call number — its handover is the moment it is paid, and
+it has its own identifiers.
+
+**Sales history is a screen.** `/admin/sales` lists every completed sale, searchable by
+receipt number, customer name and Bangkok date range, and reprints a receipt from the
+same projection the printed one uses. It exists because the three previous answers were
+not answers: reports export spreadsheets, `/receipts?t=` only opens a link the customer
+already holds, and the till and the board show no history.
+
 ### A member offers their own goods (ADR 0025)
 
 A member who makes things at home should not have to stand at the counter while an owner types one
@@ -836,6 +887,7 @@ goes through them.
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
 | `docs/adr/0025-a-member-offers-goods-on-their-own-account.md` | ฝากขายผ่านหน้าบัญชีของสมาชิก: the offer form is a panel in the member's own ฝากขาย tab, the session names the owner so there is no unmatched phone, a double tap is one offer, and only an owner turns an offer into a product with a share — the documents ride along as links. |
+| `docs/adr/0026-the-counter-owns-its-own-rules.md` | Two rules that had been copied into a second place instead of asked for once: a staff pre-order cancel needs no supervisor (the PIN gated the *till's* void, which reverses money — a reservation is a shelf decision) but is still written to the trail with the employee named, and the Phase 1 deadline is stamped on the order rather than recomputed, so changing the timeout cannot re-date the orders already waiting. |
 | `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
 | `docs/adr/0024-a-prepared-till-launches-without-the-network.md` | The cold launch: a prepared till keeps its own shell so it opens with no connection, what the worker may and may not cache (never the API), the drawer as the one thing a device may answer from memory, and offline navigation as a document load rather than a router change. |
 | `docs/offline-till-spec.md` | Shipped prepared cash offline flow: durable storage, exclusive writer, borrowed numbers, ordered idempotent replay, original cashier/shift, local tickets, close/release and admin recovery; actual Chromium proof and explicit limits. |

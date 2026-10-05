@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { BrandMark } from '@/brand/BrandMark';
 import { BRAND } from '@/brand/brand';
 import { CustomerSignIn } from '@/components/shop/CustomerSignIn';
+import { PrivacyScrim } from '@/components/shop/PrivacyScrim';
+import { PrivacyNoticeBody } from '@/app/privacy/PrivacyNoticeBody';
 import { getSessionUser } from '@/lib/auth';
 import { readGoogleClientId } from '@/lib/google-id-token';
 import { homePathForRole } from '@/lib/roles';
@@ -40,6 +41,20 @@ export default async function ShopSignInPage() {
 
   const shop = await loadShop();
 
+  /*
+   * The same projection `/privacy` builds, read once here and handed to the scrim, so
+   * the notice rendered over the sign-in form names the same shop as the page — the
+   * controller's legal name, its trading name, its address and its phone. A notice
+   * that renders from `shop?.name` directly prints a blank line before the shop has
+   * been set up, which is the one thing a notice is required not to do.
+   */
+  const contact = {
+    name: shopDisplayName(shop),
+    legalName: shop?.legalName ?? null,
+    address: shop?.address ?? null,
+    phone: shop?.phone ?? null,
+  };
+
   return (
     /*
      * Touch density, because this screen is the customer's phone and not a desk.
@@ -72,8 +87,11 @@ export default async function ShopSignInPage() {
           The door a customer walks in through is the one place they are told what the
           shop does with their phone number, which is the first moment a notice can be
           read by the person it is about (ADR 0020 collects a number and a name here).
+          It opens as a scrim so reading it does not throw away a half-filled form.
         */}
-        <Link href="/privacy">นโยบายคุ้มครองข้อมูลส่วนบุคคลสำหรับลูกค้า</Link>
+        <PrivacyScrim shopName={shopDisplayName(shop)}>
+          <PrivacyNoticeBody contact={contact} />
+        </PrivacyScrim>
       </p>
     </main>
   );

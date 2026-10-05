@@ -7,15 +7,33 @@ import { loadOrderView } from '@/lib/order-view';
 import { cancelOrder } from '@/lib/orders';
 import { notifyOrderUpdated } from '@/lib/notify';
 import { cancelOrderSchema } from '@/lib/schemas';
-import { requireApproval } from '@/lib/supervisor';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * SRS §3 — cancellation from any live phase, always restoring stock.
  *
- * A member may cancel their own order while it is still theirs to cancel; staff
- * may cancel any, which covers the out-of-stock and no-show cases.
+ * A member may cancel their own order while it is still theirs to cancel; staff may
+ * cancel any (ADR 0026).
+ *
+ * **Why staff no longer need a supervisor PIN here.** This route used to call
+ * `requireApproval(request, 'void_order', id)`, which meant an employee could not
+ * cancel *any* pre-order — not their own, not a mistake they had just made, not one
+ * they had themselves entered at the counter ten seconds earlier. The PIN belongs to
+ * the walk-in till's "ยกเลิกบิล" button, where the thing being reversed is money that
+ * has already changed hands and the person pressing the button did not take it in. A
+ * pre-order that has not been confirmed yet holds nothing but a reservation, and
+ * releasing a reservation is a shelf decision, not a financial one.
+ *
+ * Leaving the gate in place had a second cost that is easy to miss: the PIN prompt is
+ * not wired into this screen at all, so an employee who pressed "ยกเลิก" got a bare
+ * 403 and no way forward. A rule that cannot be satisfied from the screen is a rule
+ * that reads as a broken button.
+ *
+ * What replaces it is not silence. Every staff cancellation writes a `void_order`
+ * audit row naming the employee — see `cancelOrder` — so the trail still answers "who
+ * released this reservation", which is the question an owner actually asks. The rule
+ * changed from *who may press it* to *who pressed it*.
  */
 export async function POST(request: Request, context: RouteContext): Promise<Response> {
   return withApi(async () => {
@@ -23,28 +41,21 @@ export async function POST(request: Request, context: RouteContext): Promise<Res
     const { id } = await context.params;
     const body = await readJson(request, cancelOrderSchema);
 
-    /*
-     * A member withdrawing their own pre-order needs nothing extra — it is their
-     * basket and their decision. Staff cancelling somebody else's order is the
-     * till's ยกเลิกบิล, and that is gated: it releases reserved stock, moves an
-     * order to a terminal state, and is the first thing an owner looks for when
-     * they suspect the numbers.
-     */
-    let approverId: string | null = null;
     if (session.role === 'member') {
       const existing = await loadOrderView(id);
       if (existing.customer?.id !== session.id) {
         throw new ForbiddenError('You can only cancel your own orders');
       }
-    } else {
-      approverId = (await requireApproval(request, 'void_order', id)).approverId;
     }
 
     const result = await cancelOrder({
       orderId: id,
       actorId: session.id,
       reason: body.reason,
-      authorizedByUserId: approverId,
+      // The one bit of the actor the audit row needs to decide what kind of event
+      // this is. A member withdrawing their own basket is not something the shop has
+      // to account for; staff releasing somebody else's reservation is.
+      staffVoid: session.role !== 'member',
     });
 
     const order = await loadOrderView(id);
