@@ -105,6 +105,15 @@ Recorded so a session starts from the truth rather than from the last commit mes
   server left over from before a rebuild serves HTML whose asset files no longer exist,
   which on screen reads exactly like a bug in the change just made, and cost more than one
   round of "the fix did not work" before anyone measured it.
+- **The build targets the phone a customer holds** (ADR 0031). `.browserslistrc` pins the
+  floor at Safari 15.6, because an iPhone 7 Plus cannot be updated past iOS 15 and
+  iOS has one engine — Safari, Chrome and LINE's in-app browser are all WebKit, so
+  there is no browser to switch to. Without that pin Next 16 builds for Safari 16.4,
+  and Safari 16.4 is the first version that parses a class static block, which Next's
+  own App Router runtime contains: the chunk died at parse time on the shop's own
+  test phone, the page kept its server HTML, and every control needing JavaScript was
+  silently dead. `npm run browser:target` reads the built chunks and fails on it, and
+  it is in `verify:all` and in CI beside the other gates that read the build.
 - **Deliberately not built**: README's *Not built yet* — overtime approval and leave,
   LINE addresses for customers, multiple branches, a second register, **storing** a
   product image (a photo is a link now — ADR 0014), RTL, object storage, and a

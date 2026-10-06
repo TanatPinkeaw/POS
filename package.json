@@ -26,6 +26,7 @@
     "server:check": "tsx scripts/server-check.ts",
     "acceptance": "tsx scripts/acceptance.ts",
     "route:audit": "tsx scripts/route-audit.ts",
+    "browser:target": "tsx scripts/browser-target.ts",
     "limiter:race": "tsx scripts/rate-limit-race.ts",
     "offline:browser": "tsx scripts/offline-browser.ts",
     "bank:bridge": "tsx scripts/bank-bridge.ts",

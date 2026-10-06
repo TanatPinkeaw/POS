@@ -106,13 +106,14 @@ Three decisions are worth knowing before changing anything here:
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
 | `npm run route:audit` | Builds, serves, and opens every screen it knows about (25 today): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
+| `npm run browser:target` | Reads the build the other gates made and fails if any file in it needs syntax newer than the phone a customer holds (ADR 0031). A class static block is a `SyntaxError` on a phone that stopped at iOS 15, and everything that needs JavaScript on that page is dead after it — a green `build` and a styled page say nothing about it. Makes no build of its own. |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build — a process left over from before a rebuild keeps serving HTML whose asset files no longer exist, which on screen reads exactly like a code bug. Read-only; `-- --url <base>`, `-- --verbose`. |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run line:wizard` | Walks the human half of the LINE feature (ADR 0030): the two channels to create in LINE's console, the values to paste, the callback/webhook URLs to register. `-- --verify` reports which doors the current `.env` opens. |
 | `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
-| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `limiter:race`, `offline:browser` against the one build the journey makes. Stops at first failure; matches CI. |
+| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser` against the one build the journey makes. Stops at first failure; matches CI. |
 | `npm run offline:browser` | Real Chromium/IndexedDB offline cash, replay/reconnect, loan release and recovery on a test-only scratch schema. Install Chromium with `npx playwright install chromium`; `-- --skip-build` reuses the production build. |
 
 The migration is **finished**: every route is on the design system
@@ -207,10 +208,11 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1231 tests across 95 files: unit + integration
+npm test                # 1320 tests across 105 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (25 today) renders, and renders styled
+npm run browser:target  # that build still parses on the phone a customer holds
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
@@ -220,7 +222,8 @@ npm run otp:gateway     # prints an OTP instead of texting it (local dev)
 
 `npm run verify:all` is those gates in dependency order and nothing new: types and
 tests first, because nothing is built for them; then the journey, which builds once;
-then the audit, race and Chromium offline journey, against that one artefact, because
+then the gates that read that one artefact — the audit and the phone-compatibility
+check — and the race and Chromium offline journey, because
 a release check should be checking one build rather than several. It stops at the first failure, and it
 is what the two CI jobs run between them.
 
@@ -911,6 +914,7 @@ goes through them.
 | `docs/homelab-deploy.md` | Running it on a box at home: the systemd units in `deploy/systemd/`, the TLS the secure cookie requires before a second device works, the backup timer, the restore drill, and upgrades. |
 | `docs/adr/0001-schema-deviations-from-srs.md` | Every place the database departs from SRS §7, and why. |
 | `docs/adr/0002-shop-identity-and-vat.md` | Shop identity, VAT and gapless receipt numbering — a requirement the SRS never states. |
+| `docs/adr/0003-design-system.md` | The เหลี่ยมนอก design system and how it replaced Hope UI: the primitives under `src/components/ds/`, the `--ln-*` tokens, and why the retired theme must not come back. |
 | `docs/adr/0004-credit-notes-and-refunds.md` | Reversing a paid sale: the credit-note series, the refund leg, and why money is signed by direction. |
 | `docs/adr/0005-automatic-transfer-confirmation.md` | Closing a bill from the shop's own bank notification, and why the matcher refuses when it is not certain. |
 | `docs/adr/0006-pickup-handover-code.md` | The pickup QR: a minted signed code that expires with the hold, why the PIN stays beside it, and what the queue-facing board must not show. |
@@ -930,7 +934,9 @@ goes through them.
 | `docs/adr/0028-the-shop-says-whether-it-takes-pre-orders.md` | The switch that turns pre-orders off for a shop that prepares nothing: a second boolean rather than the other half of the queue's, refused where the order is placed so an open storefront is still answered, and why the board stays reachable for orders already placed. |
 | `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to, the replay that makes a device's queue idempotent — and the invariants that move out of the database, including the two stock constraints the shortage case needed relaxed. |
 | `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. |
+| `docs/adr/0029-the-front-door-belongs-to-the-customer.md` | The one sign-in URL a person can be given: `/login` is the customer's door — Google, LINE, or phone and password — with the staff form folded behind one button, and `/shop` a redirect to it, so the domain root and every printed QR code land on the same screen. |
 | `docs/adr/0030-a-customer-is-reached-on-line.md` | The LINE door and LINE notifications: binding a LINE account to a customer by OTP, consent as two facts (the customer's timestamp and the friend list the webhook keeps), the collection code riding the customer's own LINE or nothing, and the shop's group gaining the refund and dismissed-transfer facts — opens ADR 0007 decision 3 the way it asked to be opened. |
+| `docs/adr/0031-the-build-picks-the-phone.md` | The build targets the phone a customer is holding: why Next 16's own baseline (Safari 16.4) shipped a page that rendered with every button dead on iOS 15, the measurement that found it, the gate that keeps it found, and the two layers knowingly left — CSS `color-mix()` and runtime APIs no syntax check can see. |
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
 | `docs/adr/0025-a-member-offers-goods-on-their-own-account.md` | ฝากขายผ่านหน้าบัญชีของสมาชิก: the offer form is a panel in the member's own ฝากขาย tab, the session names the owner so there is no unmatched phone, a double tap is one offer, and only an owner turns an offer into a product with a share — the documents ride along as links. |

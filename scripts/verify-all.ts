@@ -14,10 +14,14 @@
  *   2. `acceptance` — the renter's journey from an empty schema. It *builds*, so it is
  *      also the only step that does.
  *   3. `route:audit` — every screen renders styled, against the build step 2 produced.
- *   4. `limiter:race` — two servers, one database, one limit (ADR 0012).
- *   5. `offline:browser` — actual Chromium storage and cashier outage/replay journey.
+ *   4. `browser:target` — that build is still *parseable* by the phone a customer holds
+ *      (ADR 0031). It reads the artefact rather than making one, which is why it sits
+ *      here and not in `verify`: a chunk that no iOS 15 phone can parse renders a page
+ *      with every button dead, and every other gate here reports it green.
+ *   5. `limiter:race` — two servers, one database, one limit (ADR 0012).
+ *   6. `offline:browser` — actual Chromium storage and cashier outage/replay journey.
  *
- * Steps 3–5 reuse step 2's build with `--skip-build`, deliberately. A release
+ * Steps 3–6 reuse step 2's build with `--skip-build`, deliberately. A release
  * check should be checking *one* artefact: rebuilding between gates would mean the
  * markup the audit walked is not the markup the journey sold through, and a build that
  * differs by nothing still costs a minute each time. `--skip-build` therefore means
@@ -75,6 +79,15 @@ const steps: Step[] = [
     command: `npm run route:audit --${reuseBuild}${keepFlag}`,
   },
   {
+    /*
+     * No flags: it starts no server and makes no build, so there is nothing to reuse
+     * and nothing to keep. It fails outright when `.next` is absent, which is the one
+     * way running it out of order can be loud rather than quiet.
+     */
+    label: 'browser target (the build parses on the phone a customer holds)',
+    command: 'npm run browser:target',
+  },
+  {
     label: 'limiter race (two servers, one database, one limit)',
     command: `npm run limiter:race --${reuseBuild}${keepFlag}`,
   },
@@ -97,8 +110,8 @@ console.log('POS — every gate, in order');
 console.log('==========================');
 console.log(
   skipBuild
-    ? '\n5 steps. No build: every step reuses the existing `.next`.'
-    : '\n5 steps. The build is made once, by the journey, and the later gates reuse it.',
+    ? '\n6 steps. No build: every step reuses the existing `.next`.'
+    : '\n6 steps. The build is made once, by the journey, and the later gates reuse it.',
 );
 
 const results: Result[] = [];

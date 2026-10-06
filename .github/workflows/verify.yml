@@ -120,6 +120,12 @@ jobs:
       # collide however their order changes.
       - run: npm run route:audit -- --skip-build
 
+      # The build is only worth shipping if the phone at the counter can parse it: a
+      # class static block is a SyntaxError on a phone that stopped at iOS 15, and
+      # nothing hydrates after it — the page renders and every button is dead (ADR
+      # 0031). Reads the same build, builds nothing.
+      - run: npm run browser:target
+
       # Two servers against one database, spending the same cashier's burst from
       # both — the deployment ADR 0012 exists for. Same scratch schema and port
       # story as the audit above, and the same reuse of the build.

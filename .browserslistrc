@@ -1,0 +1,27 @@
+# The build target, lowered from Next 16's default.
+#
+# With no browserslist config, Next 16 compiles for "baseline widely available" —
+# chrome 111, edge 111, firefox 111, safari 16.4 (node_modules/next/dist/shared/
+# lib/modern-browserslist-target.js) — and hands that to Turbopack as its
+# browserslistQuery. Safari 16.4 happens to be the first version that parses a
+# class *static block*, and Next's own App Router client runtime ships one, so the
+# emitted chunk threw a SyntaxError during parsing on a phone whose last update was
+# iOS 15. Nothing hydrated after it: the page kept its server HTML and lost every
+# button that needs JavaScript. Measured on the chunk `/login` loads, taken from the
+# running shop: `acorn.parse(code, { ecmaVersion: 2021 })` fails at offset 667 while
+# `ecmaVersion: 2022` passes — i.e. an ES2021 engine cannot read it at all.
+#
+# The floor is 15.6, the newest Safari 15, because the phone is the constraint: an
+# iPhone 7 Plus or 6s cannot be updated past iOS 15, and on iOS every browser —
+# Safari, Chrome, and the in-app browsers — is WebKit, so there is no browser to
+# switch to that escapes it. A shop's customers hold those phones.
+#
+# Everything else stays exactly where Next put it. `npm run browser:target` fails
+# the build if this file disappears or its Safari floor creeps back up, because the
+# failure mode above is invisible in every other gate: the markup compiles, the page
+# renders, and only a real old phone shows the hole.
+chrome 111
+edge 111
+firefox 111
+safari 15.6
+ios_saf 15.6

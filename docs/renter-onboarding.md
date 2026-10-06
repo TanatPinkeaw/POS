@@ -276,7 +276,11 @@ optional and independent of everything above:
   with LINE, give their phone number once, and receive a code to prove the number
   is theirs. From then on that LINE account opens their customer account — points,
   orders and receipts — exactly as the phone or Google does. One LINE account
-  belongs to one customer, forever; a staff phone number is refused outright.
+  belongs to one customer, forever; a staff phone number is refused outright. One
+  thing to know when a customer says a button is missing: LINE opens pages in its
+  own in-app browser, and **Google refuses to sign anyone in there** — that is
+  Google's rule, not ours. Tell them to tap **เข้าสู่ระบบด้วย LINE** (which works
+  inside LINE), or to open the page in Safari/Chrome and use the Google button.
 - **Bind from the account page.** A customer already signed in opens
   `/shop/account` → **LINE** → ผูกบัญชี LINE, which walks them through LINE's own
   consent screen and back. No code needed — they are already signed in.
