@@ -79,6 +79,24 @@ Recorded so a session starts from the truth rather than from the last commit mes
   outbox the shop runs (ADR 0007), a pickup code the counter scans (ADR 0006), and a
   limiter on the doors worth guessing at, whose buckets are shared between processes
   (ADRs 0009, 0012).
+- **A pasted image link is read in one place** (ADR 0014, amended): a product photo and
+  the shop logo both go through `renderableImageUrl`, which also reads a Nextcloud
+  public share link as the picture inside it — the share link itself answers
+  `text/html`, `/preview` beside it answers `image/png`. The shop logo was settable only
+  from a database client until now — `/admin/settings` sent `logo_url` with every save
+  and showed nothing to type it into.
+- **The customer screen has rules of its own** (ADR 0018): which stage is showing is
+  one pure decision (`src/components/display/display-stage.ts`) rather than five
+  conditions kept in step by hand, the bill sits beside the payment QR, and a receipt
+  link mirrored onto it is cleared when the sheet closes — one customer's QR is not the
+  next one's to scan.
+- **The fonts are Inter (Latin) and Mitr (Thai)**, self-hosted through `next/font`; the
+  receipt drawn to a canvas follows `--font-thai` because a canvas cannot read a CSS
+  variable.
+- **`npm run server:check` exists because the expensive failure was not in the code.** A
+  server left over from before a rebuild serves HTML whose asset files no longer exist,
+  which on screen reads exactly like a bug in the change just made, and cost more than one
+  round of "the fix did not work" before anyone measured it.
 - **Deliberately not built**: README's *Not built yet* — overtime approval and leave,
   LINE addresses for customers, multiple branches, a second register, **storing** a
   product image (a photo is a link now — ADR 0014), RTL, object storage, and a
@@ -165,7 +183,8 @@ owner.
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
-| `npm run route:audit` | Builds, serves, and checks that every one of the 18 screens renders a page whose CSS defines every class on it. | Postgres |
+| `npm run route:audit` | Builds, serves, and checks that every screen renders a page whose CSS defines every class on it (25 today, 28 requests). | Postgres |
+| `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build. `-- --url <base>`, `-- --verbose`. | A running server |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the app icons. `-- --preview` prints them as text. | — |
 | `npm run db:generate` | Regenerates the Prisma client after a schema change — **and commit it**. | — |
@@ -398,15 +417,20 @@ This has bitten every round of UI verification. In order of preference:
 2. **The sandboxed browser may not reach the host at all** — loopback, the LAN
    IP, the Tailscale IP and `host.docker.internal` can all fail with
    `chrome-error` while the public internet loads fine. When that happens, run
-   `npm run route:audit`: it fetches each of the eighteen routes from the built
+   `npm run route:audit`: it fetches each route from the built
    server, collects the stylesheets each one links, and asserts that every class
    in the HTML is defined in that CSS. Do not re-write that check by hand — the
    first hand-written version is what caught the vendored theme's Google Fonts
    `@import`, which the "fonts are self-hosted" fix had not actually removed.
-3. **A production session cookie is `Secure`**, so a plain-HTTP login cannot be
-   stored by the browser. Mint a token with `createSessionToken()` from
-   `src/lib/session-token.ts` and set it as `pos_session`, or pass it as a
-   `Cookie:` header to `curl`.
+3. **A production session cookie is `Secure`, and a *minted* token opens the API but
+   not a page.** Measured on a production build: a token from `createSessionToken()`
+   (`src/lib/session-token.ts`) set as `pos_session` answers `/api/v1/…` with 200 and
+   every *page* with a 307 to `/login` — the proxy runs in a different runtime from the
+   route handlers, which is the only place the difference can come from. So mint for
+   `curl` and for API work, and to drive pages log in through `POST /api/v1/auth/login`
+   with `{ "identifier": "0800000001", "password": … }` — it is `identifier`, not
+   `phone` — keeping the cookie jar. Cookies ignore the port, so one login at `:3106`
+   also authenticates `:3107`, which is what makes several scratch servers cheap.
 4. **Screenshots need a composited tab.** Read values from the DOM
    (`getComputedStyle`, geometry) instead, and use an explicit tab id — the
    preview tools follow the *active* tab otherwise. CSS transitions read as their
@@ -432,7 +456,11 @@ The `origin` remote fetches over SSH and pushes over HTTPS, because SSH is not
 authorised on this machine (the local `~/.ssh/id_ed25519` is not registered on
 GitHub) while a cached HTTPS credential is. Add the key to GitHub and
 `git remote set-url --push origin git@github.com:TanatPinkeaw/POS.git` to make
-both halves SSH again.
+both halves SSH again. Until then `git fetch origin` fails outright — its last line,
+`and the repository exists.`, reads like a missing repository and is not — so read the
+remote with `git ls-remote https://github.com/TanatPinkeaw/POS.git refs/heads/main`.
+A push over HTTPS works and updates `origin/main` locally, so `git status -sb` is
+trustworthy straight after one.
 
 ---
 
@@ -446,9 +474,9 @@ from the shop's own bank notification with
 no payment provider (ADR 0005), a pre-order is handed over with either a scanned QR
 or the PIN beside it (ADR 0006), and the messages that used to need somebody
 watching a screen are queued with the fact that produced them and sent by a worker
-the shop runs (ADR 0007). All eighteen routes are on `src/components/ds/`,
+the shop runs (ADR 0007). Every route is on `src/components/ds/`,
 the vendored Hope UI theme is deleted, `ui:audit` keeps it that way, `route:audit`
-walks all eighteen screens, and `acceptance` drives the renter journey **including a
+walks every screen, and `acceptance` drives the renter journey **including a
 refund, a machine-confirmed transfer and a pre-order collected by code** — all in
 CI. The test count lives in `README.md` and in the `verify` output; do not quote it
 from here, it drifts.
@@ -485,8 +513,9 @@ Open threads, roughly in the order worth doing:
    so the library is visible in one place rather than inferred from call sites.
 5. **A command that prints where this checkout stands** — branch, how much of it is
    unpushed, and the last gate's numbers — so the round after this one starts from a
-   measurement instead of a remembered one. The state a session begins with is
-   currently reconstructed by four commands typed from memory.
+   measurement instead of a remembered one. `npm run server:check` answered the
+   *adjacent* question (is the process on this port serving this checkout's build);
+   this one is still reconstructed by four commands typed from memory.
 
 Known product gaps are listed at the end of `README.md` (overtime approval, LINE
 addresses for customers, multiple branches, product images, RTL, object storage).

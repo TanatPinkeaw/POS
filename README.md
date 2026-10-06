@@ -94,7 +94,7 @@ Three decisions are worth knowing before changing anything here:
 - **The icons are ours.** `src/components/ds/icons.ts` is a hand-written 24×24
   stroke set. The previous arrangement used text glyphs (`☰`, `☾`) and emoji,
   which render differently on Windows, iOS and Android.
-- **The fonts are self-hosted.** `next/font` downloads Inter and Noto Sans Thai at
+- **The fonts are self-hosted.** `next/font` downloads Inter (Latin) and Mitr (Thai) at
   build time and serves them from this origin. The old build `@import`ed Google
   Fonts on every page load, so a shop with flaky internet got fallback glyphs for
   Thai text — a till that mis-renders its own language is not a cosmetic problem.
@@ -105,7 +105,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
-| `npm run route:audit` | Builds, serves, and opens all 26 screens: each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
+| `npm run route:audit` | Builds, serves, and opens every screen it knows about (25 today): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build — a process left over from before a rebuild keeps serving HTML whose asset files no longer exist, which on screen reads exactly like a code bug. Read-only; `-- --url <base>`, `-- --verbose`. |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
@@ -206,10 +206,10 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1164 tests across 86 files: unit + integration
+npm test                # 1231 tests across 95 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
-npm run route:audit     # all 27 screens render, and render styled
+npm run route:audit     # every screen (25 today) renders, and renders styled
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
@@ -244,7 +244,7 @@ configured shop.
 
 `npm run route:audit` covers the other blind spot. Acceptance never reads a byte
 of HTML, so a screen whose module was renamed, whose stylesheet was never imported,
-or that quietly began fetching a font from another origin passes all 191 of its
+or that quietly began fetching a font from another origin passes every one of its
 checks. So this one builds, serves, sets up a shop the way a renter would, opens
 every screen with the session that screen needs, and compares the markup against
 the CSS that came back with it.
@@ -526,7 +526,7 @@ and the tax rate were hardcoded — so this is the largest *addition* to it. See
 | Surface | What it is for |
 | --- | --- |
 | `/setup` + `POST /api/v1/setup` | The wizard: shop, VAT and the first administrator, written in one transaction. Refuses with 409 once a shop exists. |
-| `/admin/settings` | Shop name, branch, tax id, VAT registration and rate, inclusive vs exclusive pricing, receipt prefix and footer, plus the **next receipt number**. |
+| `/admin/settings` | Shop name, branch, legal name, tax id, VAT registration and rate, the **shop logo link** (a link to where the shop keeps its pictures, not an upload — ADR 0014), receipt prefix and footer, the supervisor discount limit, the PromptPay account it receives on, the two switches (**เรียกลูกด้วยเลขคิว**, **เปิดรับพรีออเดอร์**) and the **next receipt number**. |
 | `/admin/staff` | Staff accounts, created from the app rather than from SQL. The last administrator cannot be deactivated. |
 | `POST /api/v1/members` + `/admin/members` | Enrolling a customer, with a temporary password they change themselves later, plus a searchable list, their points and deactivation. Reachable from the till (`/pos`) as a dialog over the bill and from the back office as a screen; editing an account stays admin-only. |
 | `/admin/products` | The catalogue: create a product, or **edit** one — name, category, barcode, cost and sale price, description — without opening the spreadsheet again. Stock moves only through the signed adjustment, so every change of goods keeps a reason and a `stock_logs` row; the photo, the offline reserve and the consignment terms each keep the dialog they need, because they answer different questions. |

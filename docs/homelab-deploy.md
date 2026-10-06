@@ -361,6 +361,12 @@ exit
 sudo systemctl start pos
 ```
 
+Once the service is back up, `npm run server:check` is the cheap proof that the restart
+took: it reads `.next/BUILD_ID`, asks the running server for that build's manifest, and
+names the asset files it cannot serve. A server started *before* the build answers with
+pages that have no stylesheet — which looks like a broken update rather than a stale
+process, and is why the command exists.
+
 `npm run db:deploy` is not interchangeable with `prisma migrate dev`: parts of the
 schema — a generated column, several `CHECK` constraints, the order-number sequence —
 exist only in hand-written migration SQL, and `migrate dev` would propose dropping them

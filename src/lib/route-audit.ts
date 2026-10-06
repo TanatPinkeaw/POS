@@ -17,7 +17,7 @@
  * deliberately so — see `offSiteReferences`. Three properties are worth more than
  * cleverness:
  *
- *   * **The route list is data.** Twenty-two paths across four areas, each with the
+ *   * **The route list is data.** One path per screen, across four areas, each with the
  *     session it needs and the path it must land on. That table is also the only
  *     place the areas are written down outside `roles.ts`, so a screen that is
  *     moved and forgotten shows up as a redirect to a page the audit did not

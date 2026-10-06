@@ -5,14 +5,14 @@
  * and that the walk covers every page file in `src/app`. This is the part that
  * cannot be proven from a string: build the app, serve the production build
  * against a schema that has just been set up the way a renter would set it up,
- * open all eighteen screens with the session each one needs, and check the CSS
+ * open every screen with the session each one needs, and check the CSS
  * that came back actually defines the markup.
  *
  * Why it is worth a whole script rather than six assertions in `acceptance.ts`:
  * the failure it catches is invisible to every other check. `acceptance` drives
  * the API and never reads a byte of HTML, so a screen whose module was renamed,
  * whose stylesheet was never imported, or that quietly began fetching a font
- * from a CDN, passes all 140 of its checks and ships unstyled. That is not a
+ * from a CDN, passes every one of its checks and ships unstyled. That is not a
  * thought experiment — the theme deletion left exactly such a bug behind, and it
  * was found by doing this by hand.
  *
@@ -106,11 +106,10 @@ interface Fetched {
 /**
  * Fetches a page, following redirects by hand.
  *
- * By hand because the walk has to know *where* a request ended up: fifteen of
- * these eighteen paths redirect to `/login` when handed no session, so a check
- * that only looked at the status code would call the login page eighteen
- * different screens. `redirect: 'follow'` would hide the chain and
- * `redirect: 'error'` would hide the page.
+ * By hand because the walk has to know *where* a request ended up: a protected path
+ * handed no session answers with a redirect to `/login`, so a check that only looked at
+ * the status code would call the login page whichever screen it had asked for.
+ * `redirect: 'follow'` would hide the chain and `redirect: 'error'` would hide the page.
  */
 async function fetchPage(path: string, cookie: string): Promise<Fetched> {
   const chain: string[] = [];
@@ -326,7 +325,7 @@ async function main(): Promise<void> {
 }
 
 /**
- * Creates everything the eighteen screens need to render *with content*.
+ * Creates everything the screens need to render *with content*.
  *
  * Through the API wherever an API exists, because that is the path a renter
  * takes and it keeps this script from depending on internals. The two things it
