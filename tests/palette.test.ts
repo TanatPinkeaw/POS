@@ -8,10 +8,13 @@ import {
   BRAND_ANCHOR_STEPS,
   buildBrandRamp,
   buildNeutralRamp,
+  CATEGORY_COLORS,
+  CATEGORY_TINT,
   NEUTRAL_STEPS,
   primaryAnchor,
   renderRampBlock,
   SEED_STEP,
+  withAlpha,
 } from '@/lib/palette';
 
 const HEX = /^#[0-9a-f]{6}$/;
@@ -119,9 +122,39 @@ describe('renderRampBlock', () => {
   });
 
   it('emits exactly one declaration per brand and neutral step, plus on-brand', () => {
+    // The alpha derivatives are named `--ln-brand-50-a60`, so the `-50:` count below
+    // is unaffected by them — that separation is the point of the name.
     expect(block.match(/--ln-brand-(50|100|200|300|400|500|600|700|800|900):/g)).toHaveLength(10);
     expect(block.match(/--ln-neutral-\d+:/g)).toHaveLength(NEUTRAL_STEPS.length);
     expect(block.match(/--ln-on-brand:/g)).toHaveLength(1);
+  });
+
+  it('writes every translucent brand colour as a value, not as a mixing recipe', () => {
+    /*
+     * These are the tints, rings and washes the semantic layer reads. They are
+     * generated rather than hand-written so that re-anchoring the brand moves them
+     * too, and they are `rgba()` rather than `color-mix()` because a phone without
+     * that function does not merely lose the tint — it loses the whole declaration
+     * (ADR 0031).
+     */
+    const derivatives = block.match(/--ln-brand-\d+-a\d+: rgba\([^)]+\);/g) ?? [];
+    expect(derivatives).toHaveLength(7);
+    // The block *explains* the removal in a comment; what it must not contain is a
+    // declaration that asks a browser to do the mixing.
+    expect(block.replace(/\/\*[\s\S]*?\*\//g, '')).not.toContain('color-mix(');
+    // Named for the step and the alpha, so the number exists once.
+    expect(block).toContain('--ln-brand-50-a60: rgba(251, 218, 178, 0.6);');
+  });
+
+  it('gives every category hue its own wash, in both schemes', () => {
+    /*
+     * The chip behind an aisle label used to be `color-mix(var(--cat) 14 %, surface)`,
+     * mixed at paint time — which on the phone this shop supports was a category pill
+     * with no background at all. One hue, one wash, per scheme.
+     */
+    const washes = block.match(/--ln-cat-[a-z]+-wash:/g) ?? [];
+    expect(washes).toHaveLength(CATEGORY_COLORS.length * 2);
+    expect(block).toContain(`--ln-cat-blue-wash: ${withAlpha('#1d4ed8', CATEGORY_TINT)};`);
   });
 
   it('carries no Bootstrap-era token, so nothing outlives the bridge', () => {

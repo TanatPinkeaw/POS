@@ -16,16 +16,15 @@
  * legible" but "are these two colours *different*" — a status must not look like
  * the brand, and the nine aisle colours must not look like each other.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 
 import { describe, expect, it } from 'vitest';
 
 import { contrastRatio, deltaE, mix, relativeLuminance } from '@/lib/color';
+/* The chip's tint comes from the generator that writes it, not a copy here. */
+import { CATEGORY_TINT } from '@/lib/palette';
 
 const TOKENS_PATH = 'src/design/tokens.css';
-
-/** The weight of a category chip's tint. Mirrored from `Value.module.css`. */
-const CATEGORY_TINT = 0.14;
 
 interface Rgba {
   r: number;
@@ -137,13 +136,15 @@ function parseColor(value: string): Rgba | null {
 }
 
 /**
- * Resolves a token to a colour, following `var()` and the one `color-mix` form
- * this design system uses.
+ * Resolves a token to a colour, following `var()` chains.
  *
- * `color-mix(in srgb, C 16%, transparent)` is how a dark-mode soft fill is
- * written, and CSS mixes alpha premultiplied — so `C` at 16 % alpha is exactly
- * what the browser paints. Handling that one form keeps the test honest instead
- * of skipping half of dark mode.
+ * Alpha is written into the value — `rgba(85, 107, 47, 0.35)` — rather than computed
+ * by asking the browser to mix, which is why there is no `color-mix()` branch here to
+ * take: that form is Safari 16.2 against this shop's 15.6 floor (ADR 0031), so the
+ * installed stylesheet no longer contains one. The absence is deliberate rather than
+ * tidy — a token that went back to mixing would resolve to `null` here, and every
+ * assertion that needs it would fail loudly instead of reading a colour the phone
+ * cannot paint.
  */
 function resolve(name: string, tokens: TokenMap, depth = 0): Rgba | null {
   if (depth > 8) {
@@ -160,17 +161,6 @@ function resolve(name: string, tokens: TokenMap, depth = 0): Rgba | null {
   const variable = /^var\(\s*(--[\w-]+)\s*\)$/.exec(value);
   if (variable) {
     return resolve(variable[1]!, tokens, depth + 1);
-  }
-
-  const mixed = /^color-mix\(\s*in srgb\s*,\s*(.+?)\s+([\d.]+)%\s*,\s*transparent\s*\)$/i.exec(
-    value,
-  );
-  if (mixed) {
-    const base = resolveColorExpression(mixed[1]!, tokens, depth + 1);
-    if (!base) {
-      return null;
-    }
-    return { ...base, a: (base.a * Number(mixed[2]!)) / 100 };
   }
 
   return resolveColorExpression(value, tokens, depth);
@@ -325,11 +315,11 @@ describe.each(['light', 'dark'] as const)('tokens.css contrast (%s)', (scheme) =
       );
 
       //
-      // The chip's own tint, at the 14 % the pill component uses. The category
-      // token is opaque, so the tint has to be mixed here rather than composited —
-      // that is exactly what `color-mix(in srgb, var(--ln-cat-x) 14%, surface)`
-      // does in the component, and mixing it the same way is what makes this test
-      // about the real chip rather than about an imaginary translucent one.
+      // The chip's own tint, at the 14 % the pill paints. The component reads a
+      // precomputed `--ln-cat-<key>-wash` rather than mixing at paint time (ADR
+      // 0031); flattening that wash onto the surface is the same arithmetic, and
+      // doing it here is what makes this a test about the real chip rather than
+      // about an imaginary translucent one.
       const tinted = mix(foreground, color(scheme, '--ln-surface'), 1 - CATEGORY_TINT);
       const onTint = contrastRatio(foreground, tinted);
       expect(onTint, `${name} on its tint is ${onTint.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
@@ -481,5 +471,150 @@ describe('density tokens', () => {
       const value = Number.parseFloat(new RegExp(`${token}:\\s*(\\d+)px`).exec(touch)?.[1] ?? '0');
       expect(value, `${token} is under the 44px touch floor`).toBeGreaterThanOrEqual(44);
     }
+  });
+});
+
+/*
+ * The rest of this file is about colours *translated* rather than colours legible.
+ *
+ * Every tint, hairline, ring and wash in the design system is written down as a
+ * value, where it used to be a `color-mix()` the browser evaluated at paint time.
+ * That is a trade with one obvious failure mode — a base colour changes and the
+ * derivative quietly keeps the old one — so the derivations are declared once below
+ * and recomputed here from the tokens they claim to come from.
+ */
+
+interface AlphaDerivative {
+  /** The token as components use it. */
+  token: string;
+  /** The token it must agree with, byte for byte on the RGB channels. */
+  base: string;
+  /** The alpha the derivative's name promises. */
+  alpha: number;
+}
+
+/*
+ * Every tint, hairline and ring that is its own colour at a lower alpha. The
+ * filled button's hover is not here: it is a *mix*, so its RGB is meant to differ
+ * from its base, and it has an assertion of its own below.
+ */
+const ALPHA_DERIVATIVES: Record<'light' | 'dark', readonly AlphaDerivative[]> = {
+  light: [
+    /* Generated from the ramp by `npm run brand:palette`. */
+    { token: '--ln-brand-soft', base: '--ln-brand-50', alpha: 0.6 },
+    { token: '--ln-brand-ring', base: '--ln-brand-600', alpha: 0.35 },
+    { token: '--ln-brand-wash', base: '--ln-brand-600', alpha: 0.12 },
+    /* Hand-written beside the tone they derive from. */
+    { token: '--ln-success-line', base: '--ln-success', alpha: 0.3 },
+    { token: '--ln-warning-line', base: '--ln-warning', alpha: 0.35 },
+    { token: '--ln-danger-line', base: '--ln-danger', alpha: 0.35 },
+    { token: '--ln-danger-ring', base: '--ln-danger', alpha: 0.3 },
+    { token: '--ln-info-line', base: '--ln-info', alpha: 0.3 },
+    { token: '--ln-on-brand-soft', base: '--ln-on-brand', alpha: 0.25 },
+  ],
+  dark: [
+    { token: '--ln-brand-soft', base: '--ln-brand-300', alpha: 0.16 },
+    { token: '--ln-brand-soft-border', base: '--ln-brand-300', alpha: 0.4 },
+    { token: '--ln-brand-ring', base: '--ln-brand-300', alpha: 0.45 },
+    { token: '--ln-brand-wash', base: '--ln-brand-300', alpha: 0.12 },
+    { token: '--ln-success-line', base: '--ln-success', alpha: 0.3 },
+    { token: '--ln-warning-line', base: '--ln-warning', alpha: 0.35 },
+    { token: '--ln-danger-line', base: '--ln-danger', alpha: 0.35 },
+    { token: '--ln-danger-ring', base: '--ln-danger', alpha: 0.3 },
+    { token: '--ln-info-line', base: '--ln-info', alpha: 0.3 },
+    { token: '--ln-on-brand-soft', base: '--ln-on-brand', alpha: 0.25 },
+  ],
+};
+
+/** A token with its alpha intact, which `color()` throws away. */
+function rgba(scheme: 'light' | 'dark', name: string): Rgba {
+  const resolved = resolve(name, tokens[scheme]);
+  if (!resolved) {
+    throw new Error(`${name} does not resolve in ${scheme} mode (check ${TOKENS_PATH})`);
+  }
+  return resolved;
+}
+
+describe.each(['light', 'dark'] as const)('precomputed derivatives (%s)', (scheme) => {
+  it.each(ALPHA_DERIVATIVES[scheme].map((entry) => [entry.token, entry] as const))(
+    'derives %s from the token it names',
+    (_token, entry) => {
+      const base = rgba(scheme, entry.base);
+      const derived = rgba(scheme, entry.token);
+
+      expect(
+        { r: derived.r, g: derived.g, b: derived.b },
+        `${entry.token} has drifted off ${entry.base}`,
+      ).toEqual({ r: base.r, g: base.g, b: base.b });
+      expect(
+        derived.a,
+        `${entry.token} should be ${entry.base} at ${entry.alpha} alpha`,
+      ).toBeCloseTo(entry.alpha, 3);
+    },
+  );
+
+  it('darkens the filled-button hover by the weight it claims', () => {
+    const base = rgba(scheme, '--ln-success');
+    const expected = toHex({
+      r: base.r * (1 - 0.15),
+      g: base.g * (1 - 0.15),
+      b: base.b * (1 - 0.15),
+      a: 1,
+    });
+    expect(color(scheme, '--ln-success-hover')).toBe(expected);
+  });
+
+  it('gives every category wash the hue it belongs to', () => {
+    for (const key of CATEGORY_KEYS) {
+      const hue = rgba(scheme, `--ln-cat-${key}`);
+      const wash = rgba(scheme, `--ln-cat-${key}-wash`);
+      expect({ r: wash.r, g: wash.g, b: wash.b }, `${key}'s wash is not its own hue`).toEqual({
+        r: hue.r,
+        g: hue.g,
+        b: hue.b,
+      });
+      expect(wash.a, `${key}'s wash is not the chip's tint`).toBeCloseTo(CATEGORY_TINT, 3);
+    }
+  });
+});
+
+/**
+ * No stylesheet mixes colours while the page paints.
+ *
+ * This is the rule that keeps the whole idea honest, and the reason it is a test
+ * rather than a note: `color-mix()` is Safari 16.2, and what an engine without it
+ * does is not *skip* the mix — the declaration becomes invalid at computed-value
+ * time and takes the entire property with it. A focus ring written that way is a
+ * field with no ring; a page background written as `radial-gradient(…), var(--ln-bg)`
+ * loses its canvas along with its glow.
+ *
+ * The fix at every site is a value: precomputed by the palette generator when it
+ * derives from the ramp, written beside its base and checked above when it does not.
+ */
+describe('runtime colour mixing', () => {
+  function collectSheets(dir: string, found: string[] = []): string[] {
+    for (const entry of readdirSync(dir)) {
+      const path = `${dir}/${entry}`;
+      if (statSync(path).isDirectory()) {
+        collectSheets(path, found);
+      } else if (entry.endsWith('.css')) {
+        found.push(path);
+      }
+    }
+    return found;
+  }
+
+  it('is gone from every stylesheet under src/, comments aside', () => {
+    const sheets = collectSheets('src');
+    expect(sheets.length).toBeGreaterThan(20);
+
+    const offenders = sheets.filter((path) =>
+      readFileSync(path, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').includes('color-mix('),
+    );
+
+    expect(
+      offenders,
+      `these sheets mix colours at paint time, which an iOS 15 phone cannot do (ADR 0031): ${offenders.join(', ')}`,
+    ).toEqual([]);
   });
 });

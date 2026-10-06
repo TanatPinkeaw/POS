@@ -6,7 +6,7 @@
  * anchor must survive verbatim, the on-brand text must be legible), and a script
  * whose only entry point is `main()` cannot be tested without writing a file.
  */
-import { mix, readableTextOn } from './color';
+import { hexToRgb, mix, readableTextOn } from './color';
 
 /**
  * The steps the anchors occupy, lightest first.
@@ -183,6 +183,63 @@ export const RAMP_START = '/* ramp:start */';
 export const RAMP_END = '/* ramp:end */';
 
 /**
+ * `#556b2f` at 35 % → `rgba(85, 107, 47, 0.35)`.
+ *
+ * Mixing a colour with `transparent` in sRGB is alpha and nothing else — the
+ * premultiplied interpolation the browser does lands on the same RGB at a lower
+ * alpha — so this is the identical colour the `color-mix()` form produced, written
+ * where an engine that has never heard of `color-mix()` can still read it.
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  const { r, g, b } = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** `0.6` → `60`, the label a derivative's name carries. */
+function alphaLabel(alpha: number): string {
+  return String(Math.round(alpha * 100));
+}
+
+/**
+ * The alphas the semantic layer reads off the brand ramp.
+ *
+ * Written out here rather than mixed by the browser because `color-mix()` is
+ * Safari 16.2 and the floor this shop supports is 15.6 (ADR 0031) — on an older
+ * phone the declaration was not merely missed, it was *invalid at computed-value
+ * time*, which took the whole property with it: the focus ring and every tint
+ * disappeared, and a page background declared as `radial-gradient(…), var(--ln-bg)`
+ * lost its canvas along with its glow.
+ *
+ * They are generated rather than hand-written for the reason the whole ramp is: a
+ * re-anchored brand rewrites the colour and its alphas in one command, so there is
+ * no `rgba()` sitting somewhere else that quietly keeps the old hue. The alpha is
+ * in the name (`--ln-brand-50-a60`), so the number has one home.
+ *
+ * Only the pairs the semantic layer actually asks for are emitted: a derivative
+ * with no consumer is a token nobody can delete safely.
+ */
+const BRAND_ALPHA_DERIVATIVES: readonly { step: number; alpha: number }[] = [
+  /* light: the soft fill, the focus ring, the page wash */
+  { step: 50, alpha: 0.6 },
+  { step: 600, alpha: 0.35 },
+  { step: 600, alpha: 0.12 },
+  /* dark: the same three decisions, taken on the step dark mode points `--ln-brand` at */
+  { step: 300, alpha: 0.16 },
+  { step: 300, alpha: 0.4 },
+  { step: 300, alpha: 0.45 },
+  { step: 300, alpha: 0.12 },
+];
+
+/**
+ * The weight of a category chip's own tint.
+ *
+ * `Value.module.css` used to mix this at paint time; it reads the precomputed
+ * `--ln-cat-<key>-wash` now, and `tests/contrast.test.ts` mixes it the same way to
+ * keep asserting that chip text stays legible on its own tint in both schemes.
+ */
+export const CATEGORY_TINT = 0.14;
+
+/**
  * Category colours.
  *
  * The reference design identifies a menu category by colour, not only by name,
@@ -273,16 +330,37 @@ export function renderRampBlock(anchors: readonly string[]): string {
   lines.push('');
   lines.push('  /* Legible text on a brand fill, chosen by contrast rather than by taste. */');
   lines.push(`  --ln-on-brand: ${readableTextOn(seed)};`);
+
+  lines.push('');
+  lines.push('  /*');
+  lines.push('   * The same ramp at the alphas the semantic layer reads, written out rather than');
+  lines.push('   * mixed in the browser: `color-mix()` needs Safari 16.2 and the phone this shop');
+  lines.push('   * supports stops at iOS 15 (ADR 0031). Generated, so re-anchoring the brand');
+  lines.push('   * moves the tints with it.');
+  lines.push('   */');
+  for (const { step, alpha } of BRAND_ALPHA_DERIVATIVES) {
+    const hex = brand.find((entry) => entry.step === step)?.hex;
+    if (!hex) {
+      throw new Error(`No brand step ${step} to derive an alpha from`);
+    }
+    lines.push(`  --ln-brand-${step}-a${alphaLabel(alpha)}: ${withAlpha(hex, alpha)};`);
+  }
+
   lines.push('}');
 
   lines.push('');
   lines.push('/*');
   lines.push(' * Category hues, emitted for both schemes so the same HTML is colour-coded');
   lines.push(' * on a light till and a dark one without a client-side theme read.');
+  lines.push(' *');
+  lines.push(' * Each hue carries its own wash — the tint the aisle chip paints behind its');
+  lines.push(` * label, at ${Math.round(CATEGORY_TINT * 100)} %. Precomputed for the same reason the brand alphas are: a phone`);
+  lines.push(' * with no `color-mix()` has to be given a colour, not a recipe.');
   lines.push(' */');
   lines.push(':root {');
   for (const color of CATEGORY_COLORS) {
     lines.push(`  --ln-cat-${color.key}: ${color.light};`);
+    lines.push(`  --ln-cat-${color.key}-wash: ${withAlpha(color.light, CATEGORY_TINT)};`);
   }
   lines.push('}');
   lines.push('');
@@ -290,6 +368,7 @@ export function renderRampBlock(anchors: readonly string[]): string {
   lines.push('html:has(body.dark) {');
   for (const color of CATEGORY_COLORS) {
     lines.push(`  --ln-cat-${color.key}: ${color.dark};`);
+    lines.push(`  --ln-cat-${color.key}-wash: ${withAlpha(color.dark, CATEGORY_TINT)};`);
   }
   lines.push('}');
 

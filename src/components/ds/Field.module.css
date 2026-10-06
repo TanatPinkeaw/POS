@@ -76,7 +76,7 @@
 
 .invalid:focus {
   border-color: var(--ln-danger);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ln-danger) 30%, transparent);
+  box-shadow: 0 0 0 3px var(--ln-danger-ring);
 }
 
 .help {

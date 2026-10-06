@@ -77,16 +77,68 @@ failure is invisible everywhere else: the build is green, the tests are green,
 `route:audit` confirms every class is styled, and the page still does nothing on the
 phone it was written for.
 
-### 3. What is knowingly not fixed here
+### 3. Translucent colour is written down, not mixed while the page paints
 
-- **CSS.** `color-mix()` is Safari 16.2 and appears in 21 places, several of them
-  semantic tokens (`--ln-brand-soft`, `--ln-brand-ring`, `--ln-brand-soft-border`). On
-  iOS 15 those declarations are invalid at computed-value time, so the tint or ring they
-  define is simply absent — text stays legible and nothing stops working, which is why
-  the JavaScript layer was fixed first and this one was left. Two candidates are
-  recorded for when it is done: compute the mixes in `brand:palette` and emit plain
-  values, or keep `color-mix()` and wrap every use in `@supports`. `:has()` in the same
-  file needs no work — Safari 15.4 has it, and it was checked rather than assumed.
+`color-mix()` is Safari 16.2. Twenty-one uses of it were spread across the design
+system, and what an engine without it does is worse than the phrase "unsupported
+value" suggests: for a declaration containing a `var()` — which every one of these
+did — the browser cannot rule it out at parse time, so the declaration survives the
+cascade and *then* becomes invalid at computed-value time, which leaves the property
+unset rather than restoring the declaration it beat. The tint did not go missing; the
+property went missing. A field's focus ring was a field with no ring, and a page
+background written as `radial-gradient(…), var(--ln-bg)` lost its canvas along with
+its glow — a white page under a dark theme, which is how this was found rather than
+by anyone measuring a Tint.
+
+The decision is that **every translucent colour is a value**, and the work splits by
+where the colour comes from:
+
+- **Derived from the ramp → generated.** `renderRampBlock` emits the brand alphas
+  (`--ln-brand-600-a35`) and each category hue's wash (`--ln-cat-blue-wash`) beside
+  the colour they come from, and the semantic layer points at them. Re-anchoring the
+  brand therefore moves the tints in the same command, which is the property a
+  hand-written `rgba()` beside the ramp would have quietly lost.
+- **Hand-picked tones → written beside their base, and checked.** The status colours
+  are chosen, not built from anchors, so their derivations (`--ln-danger-line`,
+  `--ln-danger-ring`, `--ln-success-hover`, `--ln-on-brand-soft`) are hand-written —
+  and `tests/contrast.test.ts` recomputes each one from the token it derives from and
+  fails if the two disagree. That is what replaces the generator here: a rebrand that
+  forgets one prints the value it should have been.
+- **`currentColor` → `opacity`, because there is nothing else.** The loader's three
+  rings are `currentColor` at 35 %, 60 % and 100 %, and the dynamic colour is the
+  point (a filled button's spinner has to be the button's white). The only alpha
+  available without `color-mix()` is `opacity`, and an element's opacity reaches its
+  descendants — so the rings became three sibling spans instead of an element and its
+two pseudo-elements. Nesting them would have dimmed the inner two by the outer one's
+  35 %.
+
+**Rejected: wrapping each use in `@supports`.** It works — an `@supports` condition
+contains no `var()`, so it is evaluated by syntax and an old browser simply skips the
+block — but it leaves two values for one colour in every rule, one of them a recipe
+and one an approximation, and the whole point of the semantic layer is that a colour
+is decided in one place. Precomputing also removes the paint-time work rather than
+keeping it for newer devices.
+
+**Rejected: leaving it.** The JavaScript layer made the page *usable*; this layer is
+what a shop's customer sees when they open the sign-in page on their own phone, and
+on the phone this ADR exists for, three of those pages painted a white canvas in dark
+mode.
+
+Four values changed by a hair, each named so a reviewer can see it: a destructive
+outlined button's border is the notice hairline's 35 % rather than 45 % (the same
+pixel on a 1 px border), a supervisor dialog's error fill is `--ln-danger-soft`
+rather than an 8 % wash of its own, the skeleton's shimmer stop is `--ln-border`
+rather than a 60/40 mix of `--ln-surface-2` and it (within 4/255 in light, 7/255 in
+dark), and the brand page's veil is the sign-in cards' 12 % rather than 10 %.
+
+What holds it: `tests/contrast.test.ts` fails if any stylesheet under `src/` mixes
+colours at paint time, and its token resolver no longer has a `color-mix()` branch to
+take — a token that went back to mixing resolves to nothing and the assertion that
+needs it fails. `:has()` in the same file needs no work: Safari 15.4 has it, and it
+was checked rather than assumed.
+
+### 4. What is knowingly not fixed here
+
 - **Runtime APIs.** No syntax tree can see `AbortSignal.timeout` (Safari 16) or
   `URL.canParse` (Safari 17). The client bundle was searched for the ones this phone
   lacks and carries none: both of those are server-side calls here, and
@@ -96,7 +148,8 @@ phone it was written for.
 - **Behaviour on the phone.** Playwright is Chromium. The gate proves the syntax level
   the build promises; only the device proves the page works. The test that closes this
   is two taps on the owner's own iPhone 7 Plus: the staff toggle must open (JavaScript
-  is alive at all) and the Google button must appear.
+  is alive at all), the Google button must appear, and a dark-mode page must still have
+  a canvas rather than a white one.
 
 ## Consequences
 
@@ -117,4 +170,6 @@ phone it was written for.
   before doing it.
 - Next offers a per-surface target, at which point the till can keep the modern one
   while `/login`, `/shop/*`, `/receipts` and `/display` keep the low one.
-- The `color-mix()` layer is fixed, which retires decision 3's first bullet.
+- A future floor reaches Safari 16.2, at which point `color-mix()` could come back as
+  a simplification rather than a hazard — every value here is still derived from a base
+  token, so the recipes are reconstructible from what is written down.

@@ -172,10 +172,14 @@
  *
  * The text sits on its own 14 % tint of itself, which is the pair the contrast
  * test measures — so the chip cannot become unreadable without the suite failing,
- * in either scheme, for every hue.
+ * in either scheme, for every hue. The tint arrives as the wash the hue carries out
+ * of `palette.ts` (`--ln-cat-<key>-wash`) rather than as a `color-mix()`, because a
+ * browser without that function dropped the chip's whole `background` declaration —
+ * a category pill with no fill, on the phone this shop has to support (ADR 0031).
  */
 .category {
   --cat: var(--ln-cat-slate);
+  --cat-wash: var(--ln-cat-slate-wash);
   display: inline-flex;
   align-items: center;
   gap: var(--ln-space-1);
@@ -186,32 +190,40 @@
   font-weight: 600;
   white-space: nowrap;
   color: var(--cat);
-  background: color-mix(in srgb, var(--cat) 14%, var(--ln-surface));
+  background: var(--cat-wash);
 }
 
 .category[data-cat='blue'] {
   --cat: var(--ln-cat-blue);
+  --cat-wash: var(--ln-cat-blue-wash);
 }
 .category[data-cat='teal'] {
   --cat: var(--ln-cat-teal);
+  --cat-wash: var(--ln-cat-teal-wash);
 }
 .category[data-cat='green'] {
   --cat: var(--ln-cat-green);
+  --cat-wash: var(--ln-cat-green-wash);
 }
 .category[data-cat='amber'] {
   --cat: var(--ln-cat-amber);
+  --cat-wash: var(--ln-cat-amber-wash);
 }
 .category[data-cat='orange'] {
   --cat: var(--ln-cat-orange);
+  --cat-wash: var(--ln-cat-orange-wash);
 }
 .category[data-cat='red'] {
   --cat: var(--ln-cat-red);
+  --cat-wash: var(--ln-cat-red-wash);
 }
 .category[data-cat='rose'] {
   --cat: var(--ln-cat-rose);
+  --cat-wash: var(--ln-cat-rose-wash);
 }
 .category[data-cat='violet'] {
   --cat: var(--ln-cat-violet);
+  --cat-wash: var(--ln-cat-violet-wash);
 }
 
 /* -------------------------------------------------------------------- pill */

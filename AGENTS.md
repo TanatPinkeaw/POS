@@ -253,6 +253,10 @@ tried and hurt, and several are enforced by a test or a check.
    `--ln-brand`, not `--ln-brand-600`; `--ln-brand-600` is a colour while
    `--ln-brand` is a decision, and dark mode changes the decision without
    touching a component. `tests/contrast.test.ts` asserts the pairs stay legible.
+   A translucent colour is a token too — `--ln-danger-ring`, never a
+   `color-mix()`: it is Safari 16.2 against this shop's floor, it is banned by
+   that same test, and an invalid declaration takes the whole property with it
+   (ADR 0031).
 6. **User-facing copy is Thai.** Comments, commit messages, identifiers and log
    lines are English. A refusal a user reads (a 403, a validation error) is Thai
    and says what they can do; a programming mistake is English and is a 500.

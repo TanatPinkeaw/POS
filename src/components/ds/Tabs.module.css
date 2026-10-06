@@ -134,6 +134,6 @@
 }
 
 [data-density='touch'] .segmented .selected .badge {
-  background: color-mix(in srgb, var(--ln-on-brand) 25%, transparent);
+  background: var(--ln-on-brand-soft);
   color: var(--ln-on-brand);
 }

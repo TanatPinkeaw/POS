@@ -20,7 +20,7 @@
   background:
     radial-gradient(
       120% 90% at 50% -10%,
-      color-mix(in srgb, var(--ln-brand) 12%, transparent),
+      var(--ln-brand-wash),
       transparent 62%
     ),
     var(--ln-bg);

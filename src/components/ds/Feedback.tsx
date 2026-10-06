@@ -26,7 +26,20 @@ const TONE_ICON: Record<Tone, IconName> = {
  * `Spinner` supplies one, and `Button` keeps its own name visible while it works.
  */
 export function Loader() {
-  return <span className={styles.loader} aria-hidden="true" />;
+  /*
+   * Three spans, and that is deliberate rather than decorative markup: each ring's
+   * strength is an `opacity`, which is the only alpha `currentColor` can carry on a
+   * browser without `color-mix()` (ADR 0031), and an element's opacity would reach
+   * the other two rings if they were nested inside it. `Feedback.module.css` says
+   * the same thing from the other side.
+   */
+  return (
+    <span className={styles.loader} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  );
 }
 
 export function Spinner({ label = 'กำลังโหลด…' }: { label?: string }) {

@@ -66,7 +66,8 @@
   padding: var(--ln-space-3);
   border: 1px solid var(--ln-danger);
   border-radius: var(--ln-radius-sm);
-  background: color-mix(in srgb, var(--ln-danger) 8%, transparent);
+  /* The toned fill a danger notice uses, rather than the 8 % wash this alone mixed. */
+  background: var(--ln-danger-soft);
   color: var(--ln-danger);
   font-size: var(--ln-size-sm);
 }

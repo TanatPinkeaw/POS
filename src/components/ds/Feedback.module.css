@@ -42,7 +42,31 @@
   display: inline-grid;
   width: 1em;
   height: 1em;
-  background: color-mix(in srgb, currentColor 35%, transparent);
+}
+
+/*
+ * Three elements, one per ring, instead of the element and its two pseudo-elements.
+ *
+ * The three strengths are 35 %, 60 % and 100 %, and the only way to get an alpha out
+ * of `currentColor` — which has to stay the colour it *inherits*, so a filled
+ * button's white spinner is white — without `color-mix()` (Safari 16.2, against this
+ * shop's 15.6 floor; ADR 0031) is `opacity`. An element's opacity lands on its
+ * descendants too, which is exactly why the rings can no longer be nested: the outer
+ * one paints first and would have dimmed the two inside it. Siblings composite
+ * independently, so each ring's opacity is its own alpha and nothing else's.
+ *
+ * Every layer is one grid cell, and the inner two are inset by a margin rather than
+ * given a width — that is what keeps the three concentric at any size instead of
+ * only at the one they were drawn at.
+ */
+.loader > span {
+  grid-area: 1 / 1;
+  background: currentColor;
+  animation: ln-spin 1.4s linear infinite;
+}
+
+.loader > span:nth-child(1) {
+  opacity: 0.35;
   clip-path: polygon(
     100% 50%,
     85.36% 85.36%,
@@ -53,23 +77,11 @@
     50% 0%,
     85.36% 14.64%
   );
-  animation: ln-spin 1.4s linear infinite;
 }
 
-/*
- * Both inner polygons are one grid cell, and are inset by a margin rather than given
- * a width — which is what keeps the three concentric at any size instead of only at
- * the one they were drawn at.
- */
-.loader::before,
-.loader::after {
-  content: '';
-  grid-area: 1 / 1;
-}
-
-.loader::before {
+.loader > span:nth-child(2) {
   margin: 10%;
-  background: color-mix(in srgb, currentColor 60%, transparent);
+  opacity: 0.6;
   clip-path: polygon(
     100% 50%,
     81.17% 89.09%,
@@ -79,14 +91,14 @@
     38.87% 1.25%,
     81.17% 10.91%
   );
-  animation: ln-spin 2.3s linear infinite;
+  animation-duration: 2.3s;
 }
 
-.loader::after {
+.loader > span:nth-child(3) {
   margin: 20%;
-  background: currentColor;
   clip-path: polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0% 50%, 25% 6.7%, 75% 6.7%);
-  animation: ln-spin 0.7s linear infinite reverse;
+  animation-duration: 0.7s;
+  animation-direction: reverse;
 }
 
 .spinnerLabel {
@@ -136,25 +148,25 @@
 
 .notice_info {
   background: var(--ln-info-soft);
-  border-color: color-mix(in srgb, var(--ln-info) 30%, transparent);
+  border-color: var(--ln-info-line);
   color: var(--ln-info);
 }
 
 .notice_success {
   background: var(--ln-success-soft);
-  border-color: color-mix(in srgb, var(--ln-success) 30%, transparent);
+  border-color: var(--ln-success-line);
   color: var(--ln-success);
 }
 
 .notice_warning {
   background: var(--ln-warning-soft);
-  border-color: color-mix(in srgb, var(--ln-warning) 35%, transparent);
+  border-color: var(--ln-warning-line);
   color: var(--ln-warning);
 }
 
 .notice_danger {
   background: var(--ln-danger-soft);
-  border-color: color-mix(in srgb, var(--ln-danger) 35%, transparent);
+  border-color: var(--ln-danger-line);
   color: var(--ln-danger);
 }
 
@@ -203,12 +215,18 @@
 
 /* -------------------------------------------------------------- skeleton */
 
+/*
+ * The shimmer's bright stop is `--ln-border`, which is the colour the old
+ * `color-mix(--ln-surface-2 60 %, --ln-border)` landed within 4/255 of in light mode
+ * and 7/255 in dark. An existing token rather than a new one: a skeleton is a
+ * decoration, and a token used in exactly one gradient is a token nobody dares delete.
+ */
 .skeleton {
   display: block;
   background: linear-gradient(
     90deg,
     var(--ln-surface-2) 25%,
-    color-mix(in srgb, var(--ln-surface-2) 60%, var(--ln-border)) 37%,
+    var(--ln-border) 37%,
     var(--ln-surface-2) 63%
   );
   background-size: 400% 100%;

@@ -140,7 +140,11 @@
 .danger {
   background: var(--ln-surface);
   color: var(--ln-danger);
-  border-color: color-mix(in srgb, var(--ln-danger) 45%, transparent);
+  /*
+   * 35 %, which is the notice border's own hairline: the 45 % this used to mix is the
+   * same pixel on a 1 px border, and two names for one edge is how they drift.
+   */
+  border-color: var(--ln-danger-line);
 }
 
 .danger:hover:not(:disabled) {
@@ -154,7 +158,7 @@
 }
 
 .success:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--ln-success) 85%, #000000);
+  background: var(--ln-success-hover);
   color: #ffffff;
 }
 

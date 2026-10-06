@@ -60,35 +60,71 @@
 
   /* Legible text on a brand fill, chosen by contrast rather than by taste. */
   --ln-on-brand: #ffffff;
+
+  /*
+   * The same ramp at the alphas the semantic layer reads, written out rather than
+   * mixed in the browser: `color-mix()` needs Safari 16.2 and the phone this shop
+   * supports stops at iOS 15 (ADR 0031). Generated, so re-anchoring the brand
+   * moves the tints with it.
+   */
+  --ln-brand-50-a60: rgba(251, 218, 178, 0.6);
+  --ln-brand-600-a35: rgba(85, 107, 47, 0.35);
+  --ln-brand-600-a12: rgba(85, 107, 47, 0.12);
+  --ln-brand-300-a16: rgba(197, 179, 128, 0.16);
+  --ln-brand-300-a40: rgba(197, 179, 128, 0.4);
+  --ln-brand-300-a45: rgba(197, 179, 128, 0.45);
+  --ln-brand-300-a12: rgba(197, 179, 128, 0.12);
 }
 
 /*
  * Category hues, emitted for both schemes so the same HTML is colour-coded
  * on a light till and a dark one without a client-side theme read.
+ *
+ * Each hue carries its own wash — the tint the aisle chip paints behind its
+ * label, at 14 %. Precomputed for the same reason the brand alphas are: a phone
+ * with no `color-mix()` has to be given a colour, not a recipe.
  */
 :root {
   --ln-cat-slate: #44546b;
+  --ln-cat-slate-wash: rgba(68, 84, 107, 0.14);
   --ln-cat-blue: #1d4ed8;
+  --ln-cat-blue-wash: rgba(29, 78, 216, 0.14);
   --ln-cat-teal: #0f6f68;
+  --ln-cat-teal-wash: rgba(15, 111, 104, 0.14);
   --ln-cat-green: #15733a;
+  --ln-cat-green-wash: rgba(21, 115, 58, 0.14);
   --ln-cat-amber: #8a5f05;
+  --ln-cat-amber-wash: rgba(138, 95, 5, 0.14);
   --ln-cat-orange: #a8480a;
+  --ln-cat-orange-wash: rgba(168, 72, 10, 0.14);
   --ln-cat-red: #b3261e;
+  --ln-cat-red-wash: rgba(179, 38, 30, 0.14);
   --ln-cat-rose: #9d174d;
+  --ln-cat-rose-wash: rgba(157, 23, 77, 0.14);
   --ln-cat-violet: #6326cc;
+  --ln-cat-violet-wash: rgba(99, 38, 204, 0.14);
 }
 
 html body.dark,
 html:has(body.dark) {
   --ln-cat-slate: #aab7cc;
+  --ln-cat-slate-wash: rgba(170, 183, 204, 0.14);
   --ln-cat-blue: #93b4ff;
+  --ln-cat-blue-wash: rgba(147, 180, 255, 0.14);
   --ln-cat-teal: #7fd8cf;
+  --ln-cat-teal-wash: rgba(127, 216, 207, 0.14);
   --ln-cat-green: #86e0a5;
+  --ln-cat-green-wash: rgba(134, 224, 165, 0.14);
   --ln-cat-amber: #ffd95e;
+  --ln-cat-amber-wash: rgba(255, 217, 94, 0.14);
   --ln-cat-orange: #ffa03a;
+  --ln-cat-orange-wash: rgba(255, 160, 58, 0.14);
   --ln-cat-red: #ff5252;
+  --ln-cat-red-wash: rgba(255, 82, 82, 0.14);
   --ln-cat-rose: #f7a6c4;
+  --ln-cat-rose-wash: rgba(247, 166, 196, 0.14);
   --ln-cat-violet: #c3abff;
+  --ln-cat-violet-wash: rgba(195, 171, 255, 0.14);
 }
 /* ramp:end */
 
@@ -206,9 +242,21 @@ html:root {
    * the surface keeps the tint legible in both directions and matches the form dark
    * mode already uses.
    */
-  --ln-brand-soft: color-mix(in srgb, var(--ln-brand-50) 60%, transparent);
+  --ln-brand-soft: var(--ln-brand-50-a60);
   --ln-brand-soft-border: var(--ln-brand-200);
-  --ln-brand-ring: color-mix(in srgb, var(--ln-brand-600) 35%, transparent);
+  --ln-brand-ring: var(--ln-brand-600-a35);
+  /*
+   * The glow behind a sign-in card and the brand page's backdrop. It used to be a
+   * `color-mix()` inside the gradient, which on a browser without it did not simply
+   * lose the glow: the declaration became invalid at computed-value time, so the
+   * page lost its `--ln-bg` canvas as well and painted white. A token cannot take a
+   * declaration down with it.
+   *
+   * One token for all three pages, which is a 2 % change for the brand page (10 % →
+   * 12 %). Below the point where anyone can see the difference, and one name is what
+   * stops the three drifting apart.
+   */
+  --ln-brand-wash: var(--ln-brand-600-a12);
   /*
    * The ground under the app mark (ADR 0015). Transparent here: the artwork's ink
    * is a deep olive that clears a light surface on its own, so the sidebar and the
@@ -225,6 +273,28 @@ html:root {
   --ln-danger-soft: #fdecea;
   --ln-info: #12616f;
   --ln-info-soft: #e6f4f6;
+
+  /*
+   * Four uses a tone has beyond its fill: the hairline around a toned notice
+   * (`-line`), the ring around a field that failed validation (`-ring`), the filled
+   * button's pressed colour (`-hover`), and the tint behind a badge sitting on a
+   * brand fill (`--ln-on-brand-soft`).
+   *
+   * Every one is an alpha — or, for the hover, a mix toward black — that the browser
+   * used to compute with `color-mix()`, which is Safari 16.2 against this shop's
+   * 15.6 floor (ADR 0031). They are hand-written here because the colours they derive
+   * from are hand-picked rather than built from anchors, and the derivation is not
+   * left to trust: `tests/contrast.test.ts` recomputes each one from the token above
+   * it and fails if the two disagree, so changing `--ln-danger` cannot leave a stale
+   * border behind.
+   */
+  --ln-success-line: rgba(25, 121, 74, 0.3);
+  --ln-success-hover: #15673f;
+  --ln-warning-line: rgba(154, 91, 6, 0.35);
+  --ln-danger-line: rgba(179, 38, 30, 0.35);
+  --ln-danger-ring: rgba(179, 38, 30, 0.3);
+  --ln-info-line: rgba(18, 97, 111, 0.3);
+  --ln-on-brand-soft: rgba(255, 255, 255, 0.25);
 
   /* money — green in, red out, used only for figures that are money */
   --ln-money-in: var(--ln-success);
@@ -383,9 +453,11 @@ html:has(body.dark) {
   --ln-brand-hover: var(--ln-brand-100);
   --ln-brand-active: var(--ln-brand-50);
   --ln-on-brand: var(--ln-neutral-950);
-  --ln-brand-soft: color-mix(in srgb, var(--ln-brand-300) 16%, transparent);
-  --ln-brand-soft-border: color-mix(in srgb, var(--ln-brand-300) 40%, transparent);
-  --ln-brand-ring: color-mix(in srgb, var(--ln-brand-300) 45%, transparent);
+  --ln-brand-soft: var(--ln-brand-300-a16);
+  --ln-brand-soft-border: var(--ln-brand-300-a40);
+  --ln-brand-ring: var(--ln-brand-300-a45);
+  /* The same wash decision as light mode, taken on the step dark mode points at. */
+  --ln-brand-wash: var(--ln-brand-300-a12);
   /*
    * The mark needs a light ground here rather than a light *ink*: the artwork has
    * one rendering, it is a raster, and its deep olive reaches only about 2:1
@@ -413,6 +485,16 @@ html:has(body.dark) {
   --ln-danger-soft: rgba(179, 38, 30, 0.24);
   --ln-info: #7fd0dc;
   --ln-info-soft: rgba(18, 97, 111, 0.24);
+
+  /* The same four derivations on the dark tones, checked by the same test. */
+  --ln-success-line: rgba(111, 211, 162, 0.3);
+  --ln-success-hover: #5eb38a;
+  --ln-warning-line: rgba(255, 201, 77, 0.35);
+  --ln-danger-line: rgba(255, 82, 82, 0.35);
+  --ln-danger-ring: rgba(255, 82, 82, 0.3);
+  --ln-info-line: rgba(127, 208, 220, 0.3);
+  /* `--ln-on-brand` flips to ink here, so the badge tint has to flip with it. */
+  --ln-on-brand-soft: rgba(12, 13, 18, 0.25);
 
   --ln-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --ln-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
