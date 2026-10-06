@@ -37,7 +37,10 @@ export type RateLimitPolicyName =
   | 'member_create'
   | 'otp_send_number'
   | 'otp_send_address'
-  | 'consignment_offer';
+  | 'consignment_offer'
+  | 'line_signin'
+  | 'line_link'
+  | 'line_webhook';
 
 export interface RateLimitPolicy {
   /** Attempts that may be spent back to back, from an idle caller. */
@@ -183,6 +186,30 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * that has mistaken a retry loop for an offer.
    */
   consignment_offer: { capacity: 10, windowMs: 10 * 60_000 },
+  /*
+   * The LINE door (ADR 0030). Keyed by the address alone: the token a caller
+   * presents is either genuinely LINE's or it is refused before anything else
+   * happens, so there is no per-account scope worth taking — the walk itself is
+   * what is counted. Same shape as `pair_attempt`: a door that answers a wrong
+   * credential for free, so the ceiling exists to make walking it slow.
+   */
+  line_signin: { capacity: 10, windowMs: 15 * 60_000 },
+  /*
+   * Finishing a first LINE sign-in: an OTP is consumed on the success path, but
+   * the *attempts* are what cost — each one is a bcrypt compare inside the
+   * challenge's own attempt budget plus a JWT verification, and a script walking
+   * the code space is exactly what a limiter exists to slow. The same ceiling as
+   * `otp_send_address`, because the two doors are walked by the same screen.
+   */
+  line_link: { capacity: 10, windowMs: 15 * 60_000 },
+  /*
+   * The webhook LINE's platform posts (ADR 0030 §4). Signature-checked before
+   * anything is written, so a caller without the secret gains nothing by
+   * reaching the door — but an unauthenticated door that writes rows is a
+   * row-filler's door otherwise, and the ceiling turns a flood into a refusal
+   * before the signature work runs at volume.
+   */
+  line_webhook: { capacity: 60, windowMs: 60_000 },
 };
 
 /** A caller's bucket, as it stands after the last decision about it. */

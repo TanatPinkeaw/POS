@@ -84,6 +84,25 @@ export type number_blocks = Prisma.number_blocksModel
  */
 export type users = Prisma.usersModel
 /**
+ * Model line_friends
+ * *
+ *  * Whether this customer is a friend of the shop's Official Account.
+ *  *
+ *  * A LINE push is only delivered to friends: an unfollowed user's push is refused
+ *  * with a 200, so planning a message for one would burn the outbox's whole retry
+ *  * schedule against a door nobody is behind. The webhook's `follow` event writes a
+ *  * row here, `unfollow` clears it, and the customer planner reads it beside the
+ *  * consent it sits beside (ADR 0030 §2).
+ *  *
+ *  * Keyed by the subject rather than the user id so an unbound customer (one still
+ *  * walking the first sign-in) can be followed before they finish binding, and the
+ *  * row is here waiting when they do. Deliberately a standalone table with no
+ *  * foreign key, like `otp_challenges`: the webhook writes and clears it by subject
+ *  * alone, before any binding exists, and a customer row it cannot find must not
+ *  * be a row it cannot record.
+ */
+export type line_friends = Prisma.line_friendsModel
+/**
  * Model categories
  * 
  */

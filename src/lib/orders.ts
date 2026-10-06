@@ -39,6 +39,14 @@ import {
   readNotifyConfig,
 } from './notify-message';
 import { enqueueNotification } from './notify-outbox';
+/*
+ * The LINE customer planner rides the same enqueue (ADR 0030): when the shop's
+ * channel is LINE, the customer's own subject — bound, consented, friended — is
+ * who the code goes to, and the webhook-channel planner below plans nothing on
+ * a LINE channel exactly as ADR 0007 decision 3 wrote.
+ */
+import { planLineCustomerReadyMessage } from './line-notify';
+import { prisma as lineFriendDb } from './db';
 import { consumeIntent } from './payment-intents';
 import { fromDecimal, roundThb, sumThb } from './money';
 import { canTransition, orderStatusLabel, type OrderStatus } from './order-state';
@@ -1047,8 +1055,59 @@ export async function markOrderReady(input: {
      */
     const order = await tx.orders.findUniqueOrThrow({
       where: { id: input.orderId },
-      select: { order_number: true, customer: { select: { phone: true } } },
+      select: {
+        order_number: true,
+        customer: {
+          select: {
+            phone: true,
+            line_subject: true,
+            line_consent_at: true,
+          },
+        },
+      },
     });
+
+    /*
+     * The customer's own channel first (ADR 0030): on a LINE configuration, the
+     * code goes to the customer's bound, consented, friended subject — and the
+     * friend row is read outside the planner so the planner stays pure. Where the
+     * customer cannot be told on LINE, nothing is queued for them: the code stays
+     * on their order screen, and the shop's group is never a fallback for it
+     * (ADR 0007 decision 3, kept rather than reopened).
+     */
+    const notifyConfig = readNotifyConfig();
+    if (notifyConfig.channel === 'line' && order.customer?.line_subject) {
+      const friend = await lineFriendDb.line_friends.findUnique({
+        where: { line_subject: order.customer.line_subject },
+        select: { line_subject: true },
+      });
+      const lineMessage = planLineCustomerReadyMessage({
+        orderId: input.orderId,
+        orderNumber: order.order_number,
+        pickupPin,
+        holdUntil: pickupExpiresAt,
+        channel: notifyConfig.channel,
+        staffTo: notifyConfig.staffTo,
+        customerLineSubject: order.customer.line_subject,
+        consentAt: order.customer.line_consent_at,
+        isFriend: friend !== null,
+      });
+      if (lineMessage !== null) {
+        await enqueueNotification(tx, {
+          kind: 'order_ready',
+          channel: 'line',
+          recipient: lineMessage.recipient,
+          text: lineMessage.text,
+          orderId: lineMessage.orderId,
+        });
+      }
+    }
+
+    /*
+     * The planner ADR 0007 built, unchanged: it answers null on a LINE channel,
+     * so the two planners together plan exactly one customer message per order
+     * and never the shop's group for a customer's code.
+     */
     await enqueueNotification(
       tx,
       planOrderReadyNotification(
@@ -1059,7 +1118,7 @@ export async function markOrderReady(input: {
           holdUntil: pickupExpiresAt,
           customerPhone: order.customer?.phone ?? null,
         },
-        readNotifyConfig(),
+        notifyConfig,
       ),
     );
 

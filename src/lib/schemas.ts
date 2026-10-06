@@ -74,6 +74,43 @@ export const googleSignupSchema = z.object({
   noticeVersion: z.string().trim().max(10).optional(),
 });
 
+/* ------------------------------------------------------------- a LINE door (ADR 0030) */
+
+/** The first half of a LINE sign-in: the id token alone, like the Google door. */
+export const lineSignInSchema = z.object({
+  idToken: z.string().trim().min(1, 'A LINE credential is required'),
+});
+
+/**
+ * The second half of a first LINE sign-in: the token, the number, and the code
+ * that proves the number is held.
+ *
+ * Both halves travel together for the same reason the Google pair does — the token
+ * is re-verified rather than held in a half-signed-up state on the server. The code
+ * is what makes this door a *binding* rather than a typed-number signup (ADR 0030
+ * §1): attaching a second door to a row that may already hold points and history
+ * is the act a typed number cannot be trusted for.
+ */
+export const lineLinkSchema = z.object({
+  idToken: z.string().trim().min(1, 'A LINE credential is required'),
+  phone: z.string().trim().max(20),
+  code: z.string().trim().max(10),
+  fullName: z.string().trim().min(1).max(100).optional(),
+  noticeVersion: z.string().trim().max(10).optional(),
+});
+
+/**
+ * A customer clearing their own LINE binding (ADR 0030 §2).
+ *
+ * There is nothing to type and nothing to prove beyond the session: the act is a
+ * withdrawal, and requiring a code to *stop* being reachable would be asking the
+ * customer for permission to leave them alone.
+ */
+export const lineUnbindSchema = z.object({});
+
+/** Recording (or refreshing) consent to be notified on LINE. */
+export const lineConsentSchema = z.object({});
+
 /**
  * A customer moving their own number to a new one (ADR 0020 §5).
  *

@@ -40,6 +40,9 @@ export type UsersMinAggregateOutputType = {
   id: string | null
   email: string | null
   google_subject: string | null
+  line_subject: string | null
+  line_consent_at: Date | null
+  line_consent_version: string | null
   phone: string | null
   password_hash: string | null
   full_name: string | null
@@ -57,6 +60,9 @@ export type UsersMaxAggregateOutputType = {
   id: string | null
   email: string | null
   google_subject: string | null
+  line_subject: string | null
+  line_consent_at: Date | null
+  line_consent_version: string | null
   phone: string | null
   password_hash: string | null
   full_name: string | null
@@ -74,6 +80,9 @@ export type UsersCountAggregateOutputType = {
   id: number
   email: number
   google_subject: number
+  line_subject: number
+  line_consent_at: number
+  line_consent_version: number
   phone: number
   password_hash: number
   full_name: number
@@ -103,6 +112,9 @@ export type UsersMinAggregateInputType = {
   id?: true
   email?: true
   google_subject?: true
+  line_subject?: true
+  line_consent_at?: true
+  line_consent_version?: true
   phone?: true
   password_hash?: true
   full_name?: true
@@ -120,6 +132,9 @@ export type UsersMaxAggregateInputType = {
   id?: true
   email?: true
   google_subject?: true
+  line_subject?: true
+  line_consent_at?: true
+  line_consent_version?: true
   phone?: true
   password_hash?: true
   full_name?: true
@@ -137,6 +152,9 @@ export type UsersCountAggregateInputType = {
   id?: true
   email?: true
   google_subject?: true
+  line_subject?: true
+  line_consent_at?: true
+  line_consent_version?: true
   phone?: true
   password_hash?: true
   full_name?: true
@@ -241,6 +259,9 @@ export type UsersGroupByOutputType = {
   id: string
   email: string | null
   google_subject: string | null
+  line_subject: string | null
+  line_consent_at: Date | null
+  line_consent_version: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -281,6 +302,9 @@ export type usersWhereInput = {
   id?: Prisma.UuidFilter<"users"> | string
   email?: Prisma.StringNullableFilter<"users"> | string | null
   google_subject?: Prisma.StringNullableFilter<"users"> | string | null
+  line_subject?: Prisma.StringNullableFilter<"users"> | string | null
+  line_consent_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
+  line_consent_version?: Prisma.StringNullableFilter<"users"> | string | null
   phone?: Prisma.StringFilter<"users"> | string
   password_hash?: Prisma.StringFilter<"users"> | string
   full_name?: Prisma.StringFilter<"users"> | string
@@ -324,6 +348,9 @@ export type usersOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   google_subject?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_subject?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_consent_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_consent_version?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -367,10 +394,13 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   id?: string
   email?: string
   google_subject?: string
+  line_subject?: string
   phone?: string
   AND?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
   OR?: Prisma.usersWhereInput[]
   NOT?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
+  line_consent_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
+  line_consent_version?: Prisma.StringNullableFilter<"users"> | string | null
   password_hash?: Prisma.StringFilter<"users"> | string
   full_name?: Prisma.StringFilter<"users"> | string
   role?: Prisma.Enumuser_roleFilter<"users"> | $Enums.user_role
@@ -407,12 +437,15 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   consignor_payouts_created?: Prisma.Consignor_payoutsListRelationFilter
   consignment_submissions_as_consignor?: Prisma.Consignment_submissionsListRelationFilter
   consignment_submissions_decided?: Prisma.Consignment_submissionsListRelationFilter
-}, "id" | "email" | "google_subject" | "phone">
+}, "id" | "email" | "google_subject" | "line_subject" | "phone">
 
 export type usersOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   google_subject?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_subject?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_consent_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_consent_version?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -438,6 +471,9 @@ export type usersScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"users"> | string
   email?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   google_subject?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
+  line_subject?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
+  line_consent_at?: Prisma.DateTimeNullableWithAggregatesFilter<"users"> | Date | string | null
+  line_consent_version?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   phone?: Prisma.StringWithAggregatesFilter<"users"> | string
   password_hash?: Prisma.StringWithAggregatesFilter<"users"> | string
   full_name?: Prisma.StringWithAggregatesFilter<"users"> | string
@@ -455,6 +491,9 @@ export type usersCreateInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -498,6 +537,9 @@ export type usersUncheckedCreateInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -541,6 +583,9 @@ export type usersUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -584,6 +629,9 @@ export type usersUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -627,6 +675,9 @@ export type usersCreateManyInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -644,6 +695,9 @@ export type usersUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -661,6 +715,9 @@ export type usersUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -688,6 +745,9 @@ export type usersCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   google_subject?: Prisma.SortOrder
+  line_subject?: Prisma.SortOrder
+  line_consent_at?: Prisma.SortOrder
+  line_consent_version?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -710,6 +770,9 @@ export type usersMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   google_subject?: Prisma.SortOrder
+  line_subject?: Prisma.SortOrder
+  line_consent_at?: Prisma.SortOrder
+  line_consent_version?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -727,6 +790,9 @@ export type usersMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   email?: Prisma.SortOrder
   google_subject?: Prisma.SortOrder
+  line_subject?: Prisma.SortOrder
+  line_consent_at?: Prisma.SortOrder
+  line_consent_version?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -1141,6 +1207,9 @@ export type usersCreateWithoutNumber_blocksInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1183,6 +1252,9 @@ export type usersUncheckedCreateWithoutNumber_blocksInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1230,6 +1302,9 @@ export type usersCreateWithoutBlocks_closedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1272,6 +1347,9 @@ export type usersUncheckedCreateWithoutBlocks_closedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1330,6 +1408,9 @@ export type usersUpdateWithoutNumber_blocksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1372,6 +1453,9 @@ export type usersUncheckedUpdateWithoutNumber_blocksInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1425,6 +1509,9 @@ export type usersUpdateWithoutBlocks_closedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1467,6 +1554,9 @@ export type usersUncheckedUpdateWithoutBlocks_closedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1509,6 +1599,9 @@ export type usersCreateWithoutConsigned_productsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1551,6 +1644,9 @@ export type usersUncheckedCreateWithoutConsigned_productsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1609,6 +1705,9 @@ export type usersUpdateWithoutConsigned_productsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1651,6 +1750,9 @@ export type usersUncheckedUpdateWithoutConsigned_productsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1693,6 +1795,9 @@ export type usersCreateWithoutStock_logsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1735,6 +1840,9 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1793,6 +1901,9 @@ export type usersUpdateWithoutStock_logsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1835,6 +1946,9 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1877,6 +1991,9 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1919,6 +2036,9 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1966,6 +2086,9 @@ export type usersCreateWithoutSchedules_authoredInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2008,6 +2131,9 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2066,6 +2192,9 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2108,6 +2237,9 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2161,6 +2293,9 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2203,6 +2338,9 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2245,6 +2383,9 @@ export type usersCreateWithoutTime_logsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2287,6 +2428,9 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2345,6 +2489,9 @@ export type usersUpdateWithoutTime_logsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2387,6 +2534,9 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2429,6 +2579,9 @@ export type usersCreateWithoutShifts_openedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2471,6 +2624,9 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2518,6 +2674,9 @@ export type usersCreateWithoutShifts_closedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2560,6 +2719,9 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2618,6 +2780,9 @@ export type usersUpdateWithoutShifts_openedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2660,6 +2825,9 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2713,6 +2881,9 @@ export type usersUpdateWithoutShifts_closedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2755,6 +2926,9 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2797,6 +2971,9 @@ export type usersCreateWithoutAudit_logs_actedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2839,6 +3016,9 @@ export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2886,6 +3066,9 @@ export type usersCreateWithoutAudit_logs_approvedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2928,6 +3111,9 @@ export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2986,6 +3172,9 @@ export type usersUpdateWithoutAudit_logs_actedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3028,6 +3217,9 @@ export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3081,6 +3273,9 @@ export type usersUpdateWithoutAudit_logs_approvedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3123,6 +3318,9 @@ export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3165,6 +3363,9 @@ export type usersCreateWithoutNotice_acknowledgementsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3207,6 +3408,9 @@ export type usersUncheckedCreateWithoutNotice_acknowledgementsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3265,6 +3469,9 @@ export type usersUpdateWithoutNotice_acknowledgementsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3307,6 +3514,9 @@ export type usersUncheckedUpdateWithoutNotice_acknowledgementsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3349,6 +3559,9 @@ export type usersCreateWithoutOrders_as_customerInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3391,6 +3604,9 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3438,6 +3654,9 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3480,6 +3699,9 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3538,6 +3760,9 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3580,6 +3805,9 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3633,6 +3861,9 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3675,6 +3906,9 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3717,6 +3951,9 @@ export type usersCreateWithoutCredit_notes_issuedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3759,6 +3996,9 @@ export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3806,6 +4046,9 @@ export type usersCreateWithoutCredit_notes_approvedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3848,6 +4091,9 @@ export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3906,6 +4152,9 @@ export type usersUpdateWithoutCredit_notes_issuedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3948,6 +4197,9 @@ export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4001,6 +4253,9 @@ export type usersUpdateWithoutCredit_notes_approvedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4043,6 +4298,9 @@ export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4085,6 +4343,9 @@ export type usersCreateWithoutPayment_intentsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4127,6 +4388,9 @@ export type usersUncheckedCreateWithoutPayment_intentsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4174,6 +4438,9 @@ export type usersCreateWithoutIntents_confirmedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4216,6 +4483,9 @@ export type usersUncheckedCreateWithoutIntents_confirmedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4274,6 +4544,9 @@ export type usersUpdateWithoutPayment_intentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4316,6 +4589,9 @@ export type usersUncheckedUpdateWithoutPayment_intentsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4369,6 +4645,9 @@ export type usersUpdateWithoutIntents_confirmedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4411,6 +4690,9 @@ export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4453,6 +4735,9 @@ export type usersCreateWithoutInbound_dismissalsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4495,6 +4780,9 @@ export type usersUncheckedCreateWithoutInbound_dismissalsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4553,6 +4841,9 @@ export type usersUpdateWithoutInbound_dismissalsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4595,6 +4886,9 @@ export type usersUncheckedUpdateWithoutInbound_dismissalsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4637,6 +4931,9 @@ export type usersCreateWithoutDisplay_devicesInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4679,6 +4976,9 @@ export type usersUncheckedCreateWithoutDisplay_devicesInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4737,6 +5037,9 @@ export type usersUpdateWithoutDisplay_devicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4779,6 +5082,9 @@ export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4821,6 +5127,9 @@ export type usersCreateWithoutConsignor_payablesInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4863,6 +5172,9 @@ export type usersUncheckedCreateWithoutConsignor_payablesInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4921,6 +5233,9 @@ export type usersUpdateWithoutConsignor_payablesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4963,6 +5278,9 @@ export type usersUncheckedUpdateWithoutConsignor_payablesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5005,6 +5323,9 @@ export type usersCreateWithoutConsignor_payoutsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5047,6 +5368,9 @@ export type usersUncheckedCreateWithoutConsignor_payoutsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5094,6 +5418,9 @@ export type usersCreateWithoutConsignor_payouts_createdInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5136,6 +5463,9 @@ export type usersUncheckedCreateWithoutConsignor_payouts_createdInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5194,6 +5524,9 @@ export type usersUpdateWithoutConsignor_payoutsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5236,6 +5569,9 @@ export type usersUncheckedUpdateWithoutConsignor_payoutsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5289,6 +5625,9 @@ export type usersUpdateWithoutConsignor_payouts_createdInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5331,6 +5670,9 @@ export type usersUncheckedUpdateWithoutConsignor_payouts_createdInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5373,6 +5715,9 @@ export type usersCreateWithoutConsignment_submissions_as_consignorInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5415,6 +5760,9 @@ export type usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5462,6 +5810,9 @@ export type usersCreateWithoutConsignment_submissions_decidedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5504,6 +5855,9 @@ export type usersUncheckedCreateWithoutConsignment_submissions_decidedInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5562,6 +5916,9 @@ export type usersUpdateWithoutConsignment_submissions_as_consignorInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5604,6 +5961,9 @@ export type usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5657,6 +6017,9 @@ export type usersUpdateWithoutConsignment_submissions_decidedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5699,6 +6062,9 @@ export type usersUncheckedUpdateWithoutConsignment_submissions_decidedInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5741,6 +6107,9 @@ export type usersCreateWithoutPoint_transactionsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5783,6 +6152,9 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   id?: string
   email?: string | null
   google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5841,6 +6213,9 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5883,6 +6258,9 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -6181,6 +6559,9 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   id?: boolean
   email?: boolean
   google_subject?: boolean
+  line_subject?: boolean
+  line_consent_at?: boolean
+  line_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6225,6 +6606,9 @@ export type usersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   id?: boolean
   email?: boolean
   google_subject?: boolean
+  line_subject?: boolean
+  line_consent_at?: boolean
+  line_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6242,6 +6626,9 @@ export type usersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   id?: boolean
   email?: boolean
   google_subject?: boolean
+  line_subject?: boolean
+  line_consent_at?: boolean
+  line_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6259,6 +6646,9 @@ export type usersSelectScalar = {
   id?: boolean
   email?: boolean
   google_subject?: boolean
+  line_subject?: boolean
+  line_consent_at?: boolean
+  line_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6272,7 +6662,7 @@ export type usersSelectScalar = {
   updated_at?: boolean
 }
 
-export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "google_subject" | "phone" | "password_hash" | "full_name" | "role" | "points_balance" | "is_active" | "pin_hash" | "pin_failed_attempts" | "pin_locked_until" | "created_at" | "updated_at", ExtArgs["result"]["users"]>
+export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "google_subject" | "line_subject" | "line_consent_at" | "line_consent_version" | "phone" | "password_hash" | "full_name" | "role" | "points_balance" | "is_active" | "pin_hash" | "pin_failed_attempts" | "pin_locked_until" | "created_at" | "updated_at", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders_as_customer?: boolean | Prisma.users$orders_as_customerArgs<ExtArgs>
   orders_as_cashier?: boolean | Prisma.users$orders_as_cashierArgs<ExtArgs>
@@ -6339,6 +6729,9 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     id: string
     email: string | null
     google_subject: string | null
+    line_subject: string | null
+    line_consent_at: Date | null
+    line_consent_version: string | null
     phone: string
     password_hash: string
     full_name: string
@@ -6802,6 +7195,9 @@ export interface usersFieldRefs {
   readonly id: Prisma.FieldRef<"users", 'String'>
   readonly email: Prisma.FieldRef<"users", 'String'>
   readonly google_subject: Prisma.FieldRef<"users", 'String'>
+  readonly line_subject: Prisma.FieldRef<"users", 'String'>
+  readonly line_consent_at: Prisma.FieldRef<"users", 'DateTime'>
+  readonly line_consent_version: Prisma.FieldRef<"users", 'String'>
   readonly phone: Prisma.FieldRef<"users", 'String'>
   readonly password_hash: Prisma.FieldRef<"users", 'String'>
   readonly full_name: Prisma.FieldRef<"users", 'String'>

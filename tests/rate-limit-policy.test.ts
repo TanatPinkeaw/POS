@@ -144,6 +144,9 @@ describe('the policy table', () => {
       'otp_send_number',
       'otp_send_address',
       'consignment_offer',
+      'line_signin',
+      'line_link',
+      'line_webhook',
     ]);
 
     for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {

@@ -61,6 +61,16 @@ of the identifier.
   "soft copy": it is generated from the order, not a stored file.
 - **OTP** — the one-time code that proves a phone number. It verifies the **phone**, not
   the person, which is why a phone is the identity and Google is only a door (ADR 0020).
+- **Subject / Binding / Consent / Friend** — the four words of the LINE door (ADR 0030).
+  A **subject** is the LINE user id a verified token names (`line_subject`, the shape of
+  `google_subject`). **Binding** is the act that attaches a subject to a customer row —
+  by OTP on a first sign-in, by session from the account page — and it is the word for
+  what people call "syncing": there are no two accounts to merge, one row gains a door.
+  **Consent** is the customer's yes to being notified (`line_consent_at` + version);
+  there is no "no" state, withdrawal clears binding and consent together. A **friend**
+  is the shop's half of it — LINE delivers a push only to friends of the Official
+  Account, so `line_friends` is what the webhook keeps and the planner reads beside
+  the consent. Say which of the four; "LINE ของลูกค้า" alone has said all of them.
 
 ## What this session has settled so far
 

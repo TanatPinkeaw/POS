@@ -54,6 +54,7 @@ export const ModelName = {
   shops: 'shops',
   number_blocks: 'number_blocks',
   users: 'users',
+  line_friends: 'line_friends',
   categories: 'categories',
   products: 'products',
   stock_logs: 'stock_logs',
@@ -149,6 +150,9 @@ export const UsersScalarFieldEnum = {
   id: 'id',
   email: 'email',
   google_subject: 'google_subject',
+  line_subject: 'line_subject',
+  line_consent_at: 'line_consent_at',
+  line_consent_version: 'line_consent_version',
   phone: 'phone',
   password_hash: 'password_hash',
   full_name: 'full_name',
@@ -163,6 +167,14 @@ export const UsersScalarFieldEnum = {
 } as const
 
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+
+
+export const Line_friendsScalarFieldEnum = {
+  line_subject: 'line_subject',
+  followed_at: 'followed_at'
+} as const
+
+export type Line_friendsScalarFieldEnum = (typeof Line_friendsScalarFieldEnum)[keyof typeof Line_friendsScalarFieldEnum]
 
 
 export const CategoriesScalarFieldEnum = {

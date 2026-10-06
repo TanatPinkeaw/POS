@@ -32,7 +32,9 @@ export type AuditAction =
   | 'consignment_paid'
   | 'consignment_offer_submitted'
   | 'consignment_submission_approved'
-  | 'consignment_submission_rejected';
+  | 'consignment_submission_rejected'
+  | 'line_bound'
+  | 'line_unbound';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -56,6 +58,8 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'consignment_offer_submitted',
   'consignment_submission_approved',
   'consignment_submission_rejected',
+  'line_bound',
+  'line_unbound',
 ];
 
 /**
@@ -87,6 +91,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   consignment_offer_submitted: 'สมาชิกส่งคำขอฝากขาย',
   consignment_submission_approved: 'อนุมัติคำขอฝากขายเป็นสินค้า',
   consignment_submission_rejected: 'ปฏิเสธคำขอฝากขาย',
+  line_bound: 'ผูกบัญชี LINE',
+  line_unbound: 'ยกเลิกบัญชี LINE',
 };
 
 /**
@@ -152,6 +158,10 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   // A member's offer turned down. Not a problem in the shop, but the one row of the
   // three a member may ask to see explained.
   consignment_submission_rejected: 'warning',
+  // A second door gaining a credential (or losing one). Worth a read — "which LINE
+  // may sign in as this customer" changed — but nothing moved and nobody got in.
+  line_bound: 'info',
+  line_unbound: 'info',
 };
 
 /**

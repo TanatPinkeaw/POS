@@ -468,6 +468,21 @@ enum audit_action {
    * own account, which is the point of not deleting it.
    */
   consignment_submission_rejected
+  /**
+   * A customer bound a LINE account to their own row, by a first sign-in that
+   * consumed an OTP for the phone it anchored to, or by the account page's link
+   * flow (ADR 0030). Its own action rather than a member_updated note because the
+   * detail names the subject and the consent text — "which LINE may sign in as
+   * this customer" is a question the trail exists to answer months later.
+   */
+  line_bound
+  /**
+   * The customer cleared their own LINE binding — subject and consent together
+   * (ADR 0030 §2). Kept as its own action rather than folded into the bound row's
+   * opposite, because a trail that reads "bound, then later unbound, by whom" is
+   * the honest shape of the answer.
+   */
+  line_unbound
 }
 
 // ---------------------------------------------------------------- users
@@ -481,6 +496,21 @@ model users {
   // account cannot attach to two customers. Null is the normal state: the counter
   // flow (ADR 0011) never sets it, and the phone remains the identity.
   google_subject      String?   @unique @db.VarChar(255)
+  // ---------------------------------------------------- a LINE door (ADR 0030)
+  // The subject id from a verified LINE Login id token, in the shape the Google
+  // column above established: nullable, unique, and written only by the binding act
+  // (a first sign-in that consumed an OTP for the phone it is anchored to, or the
+  // account page's link flow). Null is the normal state — the counter flow never
+  // sets it — and one LINE account belongs to exactly one customer.
+  line_subject        String?   @unique @db.VarChar(120)
+  //
+  // When the customer consented to being notified on LINE, and under which version
+  // of the consent text. A timestamp rather than a flag so "never asked" (null) is
+  // distinct from any answer, and so the trail can name the text that was shown.
+  // There is deliberately no "no" state: withdrawing clears this column and
+  // `line_subject` together (ADR 0030 §2), which is the strongest form of stop.
+  line_consent_at     DateTime? @db.Timestamptz(6)
+  line_consent_version String?  @db.VarChar(40)
   phone               String    @unique @db.VarChar(20)
   password_hash       String    @db.VarChar(255)
   full_name           String    @db.VarChar(100)
@@ -533,6 +563,30 @@ model users {
   // same person, and Prisma confuses the two without a name on each.
   consignment_submissions_as_consignor consignment_submissions[] @relation("submission_consignor")
   consignment_submissions_decided      consignment_submissions[] @relation("submission_decider")
+}
+
+// ---------------------------------------------------------------- a LINE door (ADR 0030)
+
+/**
+ * Whether this customer is a friend of the shop's Official Account.
+ *
+ * A LINE push is only delivered to friends: an unfollowed user's push is refused
+ * with a 200, so planning a message for one would burn the outbox's whole retry
+ * schedule against a door nobody is behind. The webhook's `follow` event writes a
+ * row here, `unfollow` clears it, and the customer planner reads it beside the
+ * consent it sits beside (ADR 0030 §2).
+ *
+ * Keyed by the subject rather than the user id so an unbound customer (one still
+ * walking the first sign-in) can be followed before they finish binding, and the
+ * row is here waiting when they do. Deliberately a standalone table with no
+ * foreign key, like `otp_challenges`: the webhook writes and clears it by subject
+ * alone, before any binding exists, and a customer row it cannot find must not
+ * be a row it cannot record.
+ */
+model line_friends {
+  /** The LINE user id — the same value that lands on `users.line_subject`. */
+  line_subject String  @id @db.VarChar(120)
+  followed_at  DateTime @default(now()) @db.Timestamptz(6)
 }
 
 // ---------------------------------------------------------------- catalog

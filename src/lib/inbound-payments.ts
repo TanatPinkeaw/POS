@@ -27,7 +27,10 @@ import { bangkokDayBounds } from './bangkok-time';
 import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { matchInboundTransfer, type InboundRefusalReason } from './inbound-match';
+import { planShopInboundDismissedMessage as planInboundDismissedFact } from './line-notify';
 import { fromDecimal, roundThb } from './money';
+import { readNotifyConfig } from './notify-message';
+import { enqueueNotification } from './notify-outbox';
 import { confirmIntent } from './payment-intents';
 import { recordAudit } from './audit';
 import type { InboundStatus, InboundTransferView } from './inbound-transfer-view';
@@ -305,6 +308,23 @@ export async function dismissInboundTransfer(input: {
   }
 
   const row = await prisma.inbound_payments.findUniqueOrThrow({ where: { id } });
+
+  /*
+   * The shop's own fact, for the shop's own group (ADR 0030 §3): a person said
+   * this money is not ours, and the owner hears it the moment it is said — not
+   * when they next open the dashboard. Queued *after* the dismissal has been
+   * accepted (the conditional UPDATE above picked the winner), and deduped on
+   * `(kind, recipient)` where the recipient is the transfer's own id — one
+   * dismissal, one message, however the screen retried.
+   */
+  const notifyConfig = readNotifyConfig();
+  await enqueueNotification(prisma, planInboundDismissedFact({
+    channel: notifyConfig.channel,
+    staffTo: notifyConfig.staffTo,
+    transferId: row.id.toString(),
+    amountThb: row.amount === null ? null : fromDecimal(row.amount),
+    reason,
+  }));
 
   await recordAudit({
     action: 'inbound_transfer_dismissed',

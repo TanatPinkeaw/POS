@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
@@ -95,9 +96,11 @@ interface ConsignmentPage {
 export function AccountPortal({
   phone,
   pointsBalance,
+  line,
 }: {
   phone: string;
   pointsBalance: number;
+  line: LineBindingView;
 }) {
   const [tab, setTab] = useState('points');
 
@@ -112,6 +115,7 @@ export function AccountPortal({
           { key: 'receipts', label: 'ใบเสร็จ' },
           { key: 'consignment', label: 'ฝากขาย' },
           { key: 'phone', label: 'เบอร์โทรศัพท์' },
+          { key: 'line', label: 'LINE' },
         ]}
       />
 
@@ -128,6 +132,148 @@ export function AccountPortal({
         </Stack>
       ) : null}
       {tab === 'phone' ? <PhonePanel phone={phone} /> : null}
+      {tab === 'line' ? <LinePanel line={line} /> : null}
+    </Stack>
+  );
+}
+
+/* --------------------------------------------------------------------- line */
+
+/** What the server sent about this customer's LINE, as one card's worth of facts. */
+export interface LineBindingView {
+  lineSubject: string | null;
+  consentAt: string | null;
+  consentVersion: string | null;
+}
+
+/**
+ * The LINE card (ADR 0030): what is bound, what is consented, and the two acts
+ * that change either.
+ *
+ * The tab is a tab and not a section of เบอร์โทรศัพท์ because the two answer
+ * different questions — the phone is *who you are*, LINE is *where the shop may
+ * reach you* — and because a member looking for "ทำไมไม่ได้รับแจ้งเตือน" should
+ * find one place whose whole subject is that.
+ *
+ * Two states the page renders honestly:
+ *
+ *   * **Bound and consented** — the card says so, and offers the withdrawal.
+ *     Withdrawing clears both facts (the strongest form of stop), so the button
+ *     says exactly that rather than dressing it up as a pause.
+ *   * **Not bound** — the card explains the two halves (ผูกบัญชี, then เพิ่มเพื่อน)
+ *     because the friend condition is real: the shop's Official Account must be
+ *     added before a push can arrive, and a customer who consented but never
+ *     added the shop would otherwise be told the shop is ignoring them.
+ */
+function LinePanel({ line }: { line: LineBindingView }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [binding, setBinding] = useState(line);
+
+  /*
+   * The callback redirect lands here with `?line=bound` (or `=error` / `=session`),
+   * so the card re-reads its own state from the server after the redirect — the
+   * server component re-renders on `router.refresh()`, but the props it passed down
+   * were serialised before this client component mounted on the old page. Reading
+   * once on mount keeps the card from showing yesterday's binding.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('line') === null) {
+      return;
+    }
+    window.history.replaceState(null, '', '/shop/account');
+    void (async () => {
+      try {
+        setBinding(await apiFetch<LineBindingView>('/api/v1/account/line'));
+        router.refresh();
+      } catch {
+        // The card keeps what it was given; a retry is one reload away.
+      }
+    })();
+  }, [router]);
+
+  async function unbind(): Promise<void> {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPost('/api/v1/account/line', { unlink: true });
+      setBinding({ lineSubject: null, consentAt: null, consentVersion: null });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'ยกเลิกการผูกไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function reconsent(): Promise<void> {
+    setBusy(true);
+    setError(null);
+    try {
+      await apiPost('/api/v1/account/line', { consentOnly: true });
+      setBinding((current) => ({ ...current, consentAt: new Date().toISOString() }));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'บันทึกการยินยอมไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const masked = binding.lineSubject
+    ? `U${'•'.repeat(6)}${binding.lineSubject.slice(-4)}`
+    : null;
+
+  return (
+    <Stack gap="md">
+      <Card title="บัญชี LINE" subtitle="ที่ที่ร้านส่งแจ้งเตือนพรีออเดอร์ให้คุณ">
+        <Stack gap="md">
+          {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
+
+          {binding.lineSubject === null ? (
+            <>
+              <p className="ln-muted">
+                ผูกบัญชี LINE เพื่อรับแจ้งเตือน "สินค้าพร้อมรับ" ทาง LINE ของคุณเอง แทนที่จะต้องเปิดหน้าเว็บดู
+              </p>
+              <Button
+                variant="primary"
+                icon="link"
+                loading={busy}
+                onClick={() => {
+                  window.location.href = '/api/v1/auth/line/authorize';
+                }}
+              >
+                ผูกบัญชี LINE
+              </Button>
+              <p className="ln-muted ln-text-sm">
+                เปิดหน้ายืนยันของ LINE แล้วกลับมาที่หน้านี้ — คุณยังใช้เบอร์โทรและ Google เข้าได้เหมือนเดิม
+              </p>
+            </>
+          ) : (
+            <>
+              <p className={styles.currentPhone}>
+                ผูกกับบัญชี LINE <strong className="ln-mono">{masked}</strong>
+              </p>
+              {binding.consentAt ? (
+                <InlineNotice tone="success" title="รับการแจ้งเตือนทาง LINE">
+                  ยืนยันไว้เมื่อ {new Date(binding.consentAt).toLocaleString('th-TH')} —
+                  อย่าลืมเพิ่มเพื่อนร้านใน LINE ด้วย มิฉะนั้นข้อความจะส่งไม่ถึง
+                </InlineNotice>
+              ) : (
+                <Button variant="secondary" loading={busy} onClick={() => void reconsent()}>
+                  ยินยอมรับการแจ้งเตือนทาง LINE
+                </Button>
+              )}
+              <Button variant="ghost" loading={busy} onClick={() => void unbind()}>
+                ยกเลิกการผูกและหยุดรับการแจ้งเตือน
+              </Button>
+            </>
+          )}
+        </Stack>
+      </Card>
     </Stack>
   );
 }

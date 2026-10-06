@@ -110,6 +110,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
+| `npm run line:wizard` | Walks the human half of the LINE feature (ADR 0030): the two channels to create in LINE's console, the values to paste, the callback/webhook URLs to register. `-- --verify` reports which doors the current `.env` opens. |
 | `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
 | `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `limiter:race`, `offline:browser` against the one build the journey makes. Stops at first failure; matches CI. |
 | `npm run offline:browser` | Real Chromium/IndexedDB offline cash, replay/reconnect, loan release and recovery on a test-only scratch schema. Install Chromium with `npx playwright install chromium`; `-- --skip-build` reuses the production build. |
@@ -338,10 +339,35 @@ all** — a shop with no gateway gets no rows to clean up, and the in-app path i
 always had keeps working. `NOTIFY_CHANNEL=line` addresses a LINE user id or group
 id; `NOTIFY_CHANNEL=webhook` POSTs `{ to, text, kind }` to the shop's own gateway.
 
-A customer's collection code is never pushed to LINE, and that is a decision rather
-than an oversight: a LINE id is not a phone number, so the only id available is the
-shop's own group, and a room full of staff phones must not hold the codes that
-release parcels (`src/lib/notify-message.ts`, `tests/notify-message.test.ts`).
+A customer's collection code is never pushed to the **shop's own group**, and that
+is a decision rather than an oversight: a room full of staff phones must not hold
+the codes that release parcels (`src/lib/notify-message.ts`,
+`tests/notify-message.test.ts`). What a customer can get on LINE instead is their own
+address (ADR 0030, below) — the code rides the customer's own LINE or nothing.
+
+### The LINE door (ADR 0030)
+
+A customer can **sign in with LINE**, bind their LINE account to this one from
+their account page, and — with one more tap — be told "สินค้าพร้อมรับ" on their own
+LINE instead of only in the app. The phone stays the identity: LINE is a *door*,
+the same way Google is (ADR 0020), and binding a LINE account to a row that may
+already hold points and history proves the phone by **OTP**, because a callback in a
+stranger's browser plus a typed number is exactly the takeover ADR 0020 §4 refuses.
+Binding from an already-signed-in account page needs no OTP — the session is the proof.
+
+Consent is two facts, and a push needs both: the customer's (`line_consent_at`, with
+the version of the text they read; withdrawal clears the binding and the consent
+together) and the shop's — a push only reaches a **friend** of the Official Account,
+so the webhook (`POST /api/v1/line/webhook`, HMAC-verified over the raw body) records
+follows and unfollows. Planning a message for an unfollowed user would burn the retry
+schedule against a door LINE refuses with a 200.
+
+The shop's own group gains two facts about its own money, written in the same
+transaction as the act: **a bill was refunded**, and **a bank notification was
+dismissed by hand** — the two things an owner otherwise learns late.
+
+Provisioning is two LINE channels and five values; `npm run line:wizard` walks the
+human half and `-- --verify` reports which doors are open.
 
 Sending is `npm run notify:worker` — once for cron, or `--watch`. It claims each
 message by moving its next attempt forward *before* sending, so two workers cannot
@@ -904,6 +930,7 @@ goes through them.
 | `docs/adr/0028-the-shop-says-whether-it-takes-pre-orders.md` | The switch that turns pre-orders off for a shop that prepares nothing: a second boolean rather than the other half of the queue's, refused where the order is placed so an open storefront is still answered, and why the board stays reachable for orders already placed. |
 | `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to, the replay that makes a device's queue idempotent — and the invariants that move out of the database, including the two stock constraints the shortage case needed relaxed. |
 | `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. |
+| `docs/adr/0030-a-customer-is-reached-on-line.md` | The LINE door and LINE notifications: binding a LINE account to a customer by OTP, consent as two facts (the customer's timestamp and the friend list the webhook keeps), the collection code riding the customer's own LINE or nothing, and the shop's group gaining the refund and dismissed-transfer facts — opens ADR 0007 decision 3 the way it asked to be opened. |
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
 | `docs/adr/0025-a-member-offers-goods-on-their-own-account.md` | ฝากขายผ่านหน้าบัญชีของสมาชิก: the offer form is a panel in the member's own ฝากขาย tab, the session names the owner so there is no unmatched phone, a double tap is one offer, and only an owner turns an offer into a product with a share — the documents ride along as links. |
@@ -940,7 +967,10 @@ for the customer to scan, print or read down the phone.
 - **Customer messages on LINE.** The shop's own group can be reached, but a
   customer's collection code cannot: a LINE push needs a LINE user id, and this
   system does not capture one. SMS/webhook reaches the customer's phone today.
-  See ADR 0007 decision 3.
+  See ADR 0007 decision 3 — **built since, in the shape it left open** (ADR 0030): a
+  customer can sign in with LINE, bind their own account by OTP, and receive their
+  collection code on their own LINE; the shop's group keeps facts about orders. What
+  is still not built is the LIFF surface and broadcast.
 - **The hosted rental.** A shop signing itself up with Google and getting its own
   space on a box we run, instead of a shop installing this on its own machine. The
   direction is decided and written down (ADR 0016) and the order of work is

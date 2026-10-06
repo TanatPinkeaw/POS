@@ -92,6 +92,12 @@ Recorded so a session starts from the truth rather than from the last commit mes
   conditions kept in step by hand, the bill sits beside the payment QR, and a receipt
   link mirrored onto it is cleared when the sheet closes — one customer's QR is not the
   next one's to scan.
+- **A customer can be reached on LINE** (ADR 0030): a LINE account binds to a customer
+  by OTP (the callback-in-a-stranger's-browser is the takeover the proof exists for),
+  consent is two facts (`line_consent_at` on the row and the `line_friends` the webhook
+  keeps), the collection code rides the customer's own LINE or nothing — never the
+  shop's group — and the group gains the refund and dismissed-transfer facts, written
+  in the same transaction as the act. `npm run line:wizard` walks the human half.
 - **The fonts are Inter (Latin) and Mitr (Thai)**, self-hosted through `next/font`; the
   receipt drawn to a canvas follows `--font-thai` because a canvas cannot read a CSS
   variable.
@@ -506,11 +512,13 @@ Open threads, roughly in the order worth doing:
 2. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-3. **Customer messages on LINE.** Delivery works (ADR 0007); the *address* does
-   not. A LINE push needs a LINE user id, this system stores only phone numbers,
-   and asking members for one is a consent decision before it is a schema change.
-   Until then `line` means the shop's own group, and customers get SMS or a
-   webhook.
+3. **LINE beyond the door (ADR 0030 built the door).** Sign-in, binding, consent and
+   the customer's own "order ready" push are built; the webhook tracks the friend
+   condition. Still open: a **LIFF surface** (the in-LINE browser works against the
+   ordinary pages today, so LIFF is a UI decision, not a schema one), **broadcast**
+   (a consent question first — what a shop may push to everyone who said yes is a
+   policy, not a feature), and replying to customer messages (the Official
+   Account's own auto-response covers it for now).
 4. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 5. **A command that prints where this checkout stands** — branch, how much of it is
@@ -519,5 +527,5 @@ Open threads, roughly in the order worth doing:
    *adjacent* question (is the process on this port serving this checkout's build);
    this one is still reconstructed by four commands typed from memory.
 
-Known product gaps are listed at the end of `README.md` (overtime approval, LINE
-addresses for customers, multiple branches, product images, RTL, object storage).
+Known product gaps are listed at the end of `README.md` (overtime approval, the LIFF
+surface and broadcast on LINE, multiple branches, product images, RTL, object storage).

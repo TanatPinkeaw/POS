@@ -22,7 +22,18 @@ import { bangkokTimeString } from './bangkok-time';
  */
 export type NotificationChannel = 'line' | 'webhook';
 
-export type NotificationKind = 'pre_order_placed' | 'order_ready';
+/*
+ * Everything the outbox carries. The two customer kinds are planned here; the two
+ * shop-fact kinds (ADR 0030 §3) are planned by `line-notify.ts` because they answer
+ * a different question — what the *counter* needs to hear rather than what a
+ * *customer* is told. One union, so the table's vocabulary cannot drift from the
+ * planners' own.
+ */
+export type NotificationKind =
+  | 'pre_order_placed'
+  | 'order_ready'
+  | 'order_refunded'
+  | 'inbound_dismissed';
 
 export interface NotifyConfig {
   /** Null when the shop has not configured delivery; nothing is planned then. */
@@ -43,7 +54,13 @@ export interface PlannedNotification {
   channel: NotificationChannel;
   recipient: string;
   text: string;
-  orderId: string;
+  /**
+   * The order this is about — null for a fact about something that is not an
+   * order (an inbound transfer dismissed by hand, ADR 0030 §3). A null-order
+   * message dedupes on `(kind, recipient)` instead, which is the column that
+   * names the thing it is about when no order does.
+   */
+  orderId: string | null;
 }
 
 /** SMS is billed per 70 Thai characters; this is a tripwire, not a target. */
@@ -147,3 +164,11 @@ export function planPreOrderPlacedNotification(
       `${input.itemCount} รายการ รวม ${input.totalThb} บาท`,
   };
 }
+
+/*
+ * The two planners above keep their `orderId: string` in the type they return —
+ * widening it to `string | null` here would push a null check into every reader
+ * of a pre-order message for a case none of them can meet. The shop-fact planners
+ * in `line-notify.ts` return the widened shape directly, and `enqueueNotification`
+ * accepts both.
+ */

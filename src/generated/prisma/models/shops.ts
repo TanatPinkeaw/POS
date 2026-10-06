@@ -1053,7 +1053,7 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     calls_numbers: boolean
     /**
      * *
-     *    * Whether this shop takes pre-orders at all (ADR 0027, the pattern this one follows).
+     *    * Whether this shop takes pre-orders at all (ADR 0028, built on ADR 0027's pattern).
      *    *
      *    * The second switch, and the first one earned by asking rather than by guessing: a
      *    * shop that sells over the counter has no reason to let a customer order now and

@@ -251,8 +251,9 @@ message to actually leave the shop:
 1. Put `NOTIFY_CHANNEL` and your destination in `.env` — see the note under
    `NOTIFY_CHANNEL` in `.env.example`.
    - `NOTIFY_CHANNEL="line"` with `NOTIFY_STAFF_TO` = your LINE group id. This
-     reaches the *shop*. A LINE group cannot reach a customer, so collection codes
-     are never sent this way.
+     reaches the *shop* — and, once your customer has bound their own LINE
+     (§6.3), their "order ready" message and collection code reach their own LINE
+     instead of only the app. A collection code is never pushed to the group.
    - `NOTIFY_CHANNEL="webhook"` with `NOTIFY_WEBHOOK_URL` = your SMS gateway or a
      small script of your own. This is the one that reaches a **customer's phone**,
      and the shop's own messages go to `NOTIFY_STAFF_TO`.
@@ -262,6 +263,48 @@ message to actually leave the shop:
 Two messages go out: the shop gets a note when a pre-order arrives, and the
 customer gets their pickup PIN and hold deadline when their parcel is packed. Set
 nothing and nothing is queued — the app keeps working exactly as it does now.
+When a bill is refunded, or a bank notification is dismissed by hand on the
+dashboard, the shop's own destination hears about that too — the two facts an
+owner otherwise learns late.
+
+### 6.3 LINE: signing in, binding, and being told on LINE
+
+Your customers live on LINE, so the system can meet them there. Three parts, all
+optional and independent of everything above:
+
+- **Sign in with LINE.** On the sign-in page (`/login`) a customer can continue
+  with LINE, give their phone number once, and receive a code to prove the number
+  is theirs. From then on that LINE account opens their customer account — points,
+  orders and receipts — exactly as the phone or Google does. One LINE account
+  belongs to one customer, forever; a staff phone number is refused outright.
+- **Bind from the account page.** A customer already signed in opens
+  `/shop/account` → **LINE** → ผูกบัญชี LINE, which walks them through LINE's own
+  consent screen and back. No code needed — they are already signed in.
+- **Being told on LINE.** After binding, the same card asks whether they consent to
+  notifications. One more thing is on them, and the card says it plainly: they must
+  **add the shop as a friend** on LINE, or no message can arrive — that is LINE's
+  rule, not ours. ยกเลิกการผูก on that card stops everything at once: no more
+  messages, and the LINE account no longer opens the account.
+
+What you must do once, as the shop owner (the wizard walks you through it):
+
+1. Create an **Official Account** for the shop at https://account.line.biz, then
+   in https://developers.line.biz create **two channels** under it: a **Messaging
+   API** channel and a **LINE Login** channel.
+2. From the Messaging API channel take the **channel access token** (this is
+   `NOTIFY_LINE_TOKEN`) and the **channel secret**
+   (`LINE_MESSAGING_CHANNEL_SECRET`); from the LINE Login channel take the
+   **channel ID and secret** (`LINE_LOGIN_CHANNEL_ID`,
+   `LINE_LOGIN_CHANNEL_SECRET`).
+3. Register two URLs with LINE — the callback on the LINE Login channel and the
+   webhook on the Messaging API channel. Both are your system's own address plus
+   `/api/v1/auth/line/callback` and `/api/v1/line/webhook`.
+4. `npm run line:wizard` collects all of this into `.env`, and
+   `npm run line:wizard -- --verify` later tells you which doors are open.
+
+If messages stop arriving after a customer changed phones or removed the shop as a
+friend, it is almost always the friend condition: they re-add the shop as a friend
+and everything resumes — their consent was never withdrawn.
 
 If your gateway stops accepting messages, the worker retries on a schedule (about
 1, 5, 15, 60 and 360 minutes) and then **gives up**, leaving the reason from your
@@ -331,8 +374,10 @@ Recorded here so nobody discovers it during service:
 - No way to *send* a refund automatically — cash goes back out of an open drawer,
   or you transfer it yourself from your banking app.
 - No customer-facing online ordering — members can pre-order from inside the app.
-- Notifications are off until you configure a channel (§6.2), and a LINE channel
-  reaches the shop's own group only — not a customer's phone.
+- Notifications are off until you configure a channel (§6.2). With LINE configured
+  the shop's group gets facts about orders, and — after your customer binds their own
+  LINE (below) — the "order ready" message and collection code reach the customer's
+  own LINE. A code is never pushed to the group.
 - **No image upload.** A product photo is a *link* (ADR 0014): you paste the https
   link of a picture that already lives somewhere, and this system draws it on the
   till, the shop's catalogue and the back office. It cannot hold the file, resize it

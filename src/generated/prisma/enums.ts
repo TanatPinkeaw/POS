@@ -167,7 +167,9 @@ export const audit_action = {
   consignment_paid: 'consignment_paid',
   consignment_offer_submitted: 'consignment_offer_submitted',
   consignment_submission_approved: 'consignment_submission_approved',
-  consignment_submission_rejected: 'consignment_submission_rejected'
+  consignment_submission_rejected: 'consignment_submission_rejected',
+  line_bound: 'line_bound',
+  line_unbound: 'line_unbound'
 } as const
 
 export type audit_action = (typeof audit_action)[keyof typeof audit_action]

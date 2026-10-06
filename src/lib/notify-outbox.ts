@@ -63,8 +63,19 @@ export async function enqueueNotification(
     return null;
   }
 
+  /*
+   * The dedupe is the unique index's own logic, made explicit: a message about an
+   * order is one fact per order (`@@unique([kind, order_id])`), and a message
+   * about something else — a bank transfer dismissed by hand — is one fact per
+   * *thing it names*, which is what the recipient column carries when the order
+   * is null. Postgres treats nulls as distinct in a unique index, so the two
+   * shapes never interfere; the read here just mirrors whichever applies so a
+   * retried request gets the same row back rather than a refusal.
+   */
   const existing = await db.notifications.findFirst({
-    where: { kind: plan.kind, order_id: plan.orderId },
+    where: plan.orderId === null
+      ? { kind: plan.kind, recipient: plan.recipient }
+      : { kind: plan.kind, order_id: plan.orderId },
     select: { id: true },
   });
   if (existing) {

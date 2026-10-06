@@ -52,6 +52,9 @@ import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { type Db, recordStockMovement, returnRefundedStock } from './inventory';
 import { fromDecimal, roundThb, sumThb, toSatang } from './money';
+import { planShopFactMessage as refundOrderFact } from './line-notify';
+import { readNotifyConfig } from './notify-message';
+import { enqueueNotification } from './notify-outbox';
 import { canTransition, orderStatusLabel } from './order-state';
 import { lockOrder } from './orders';
 import { applyPointChange } from './points';
@@ -386,6 +389,23 @@ export async function refundOrder(input: {
         data: { status: 'refunded' },
       });
     }
+
+    /*
+     * The shop's own fact, for the shop's own group (ADR 0030 §3): money left the
+     * drawer, and the owner hears it where they hear everything else — written in
+     * this same transaction, so a refund and the fact of it commit together or
+     * not at all. `refundOrderFact` answers null when nothing is configured, so an
+     * unconfigured shop queues nothing exactly as before.
+     */
+    const notifyConfig = readNotifyConfig();
+    await enqueueNotification(tx, refundOrderFact({
+      channel: notifyConfig.channel,
+      staffTo: notifyConfig.staffTo,
+      orderId: order.id,
+      orderNumber: order.order_number,
+      reason,
+      refundedThb: finalAmount,
+    }));
 
     await recordAudit(
       {

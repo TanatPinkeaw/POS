@@ -400,6 +400,7 @@ export const ModelName = {
   shops: 'shops',
   number_blocks: 'number_blocks',
   users: 'users',
+  line_friends: 'line_friends',
   categories: 'categories',
   products: 'products',
   stock_logs: 'stock_logs',
@@ -439,7 +440,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "number_blocks" | "users" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "consignment_submissions" | "consignment_documents" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "line_friends" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "consignment_submissions" | "consignment_documents" | "point_transactions"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -662,6 +663,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.usersCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.UsersCountAggregateOutputType> | number
+        }
+      }
+    }
+    line_friends: {
+      payload: Prisma.$line_friendsPayload<ExtArgs>
+      fields: Prisma.line_friendsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.line_friendsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.line_friendsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>
+        }
+        findFirst: {
+          args: Prisma.line_friendsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.line_friendsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>
+        }
+        findMany: {
+          args: Prisma.line_friendsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>[]
+        }
+        create: {
+          args: Prisma.line_friendsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>
+        }
+        createMany: {
+          args: Prisma.line_friendsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.line_friendsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>[]
+        }
+        delete: {
+          args: Prisma.line_friendsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>
+        }
+        update: {
+          args: Prisma.line_friendsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>
+        }
+        deleteMany: {
+          args: Prisma.line_friendsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.line_friendsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.line_friendsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>[]
+        }
+        upsert: {
+          args: Prisma.line_friendsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_friendsPayload>
+        }
+        aggregate: {
+          args: Prisma.Line_friendsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLine_friends>
+        }
+        groupBy: {
+          args: Prisma.line_friendsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_friendsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.line_friendsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_friendsCountAggregateOutputType> | number
         }
       }
     }
@@ -2533,6 +2608,9 @@ export const UsersScalarFieldEnum = {
   id: 'id',
   email: 'email',
   google_subject: 'google_subject',
+  line_subject: 'line_subject',
+  line_consent_at: 'line_consent_at',
+  line_consent_version: 'line_consent_version',
   phone: 'phone',
   password_hash: 'password_hash',
   full_name: 'full_name',
@@ -2547,6 +2625,14 @@ export const UsersScalarFieldEnum = {
 } as const
 
 export type UsersScalarFieldEnum = (typeof UsersScalarFieldEnum)[keyof typeof UsersScalarFieldEnum]
+
+
+export const Line_friendsScalarFieldEnum = {
+  line_subject: 'line_subject',
+  followed_at: 'followed_at'
+} as const
+
+export type Line_friendsScalarFieldEnum = (typeof Line_friendsScalarFieldEnum)[keyof typeof Line_friendsScalarFieldEnum]
 
 
 export const CategoriesScalarFieldEnum = {
@@ -3518,6 +3604,7 @@ export type GlobalOmitConfig = {
   shops?: Prisma.shopsOmit
   number_blocks?: Prisma.number_blocksOmit
   users?: Prisma.usersOmit
+  line_friends?: Prisma.line_friendsOmit
   categories?: Prisma.categoriesOmit
   products?: Prisma.productsOmit
   stock_logs?: Prisma.stock_logsOmit
