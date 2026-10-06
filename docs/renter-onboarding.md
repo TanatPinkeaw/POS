@@ -335,7 +335,9 @@ Recorded here so nobody discovers it during service:
   this database. Whatever backs up the place you keep the picture is what protects it.
   A link to your file host's *preview* is better than one to the original file: the
   host then does the resizing. The shop logo is the same idea, set in
-  `/admin/settings`.
+  `/admin/settings` → **โลโก้ร้าน**: the same field and the same live preview, and it
+  refuses a link it cannot open. It appears on the customer screen (`/display`) while
+  the shop is idle — it is not printed on the receipt.
 - No purchase orders / supplier management; stock arrives through the import or
   through an adjustment.
 - **No cold offline start.** Cash works on an already-loaded, explicitly prepared

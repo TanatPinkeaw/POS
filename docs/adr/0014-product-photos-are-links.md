@@ -107,6 +107,12 @@ The preview is the whole point of the dialog: a link that returns a login page, 
 a folder rather than to a file, and a link that is simply the wrong picture all look
 identical to a good one until something tries to draw it.
 
+The shop logo is the same feature one surface earlier and gets the same treatment, in
+place rather than in a dialog: a **โลโก้ร้าน** card on `/admin/settings` with the link
+field, the same `Thumb` preview, and the same check before saving. It is the one field
+on that screen whose value is somebody else's server, so it is also the one field that
+is probed.
+
 ### 6. `imageUrl` moves from `ProductDto` into `ProductView`
 
 `ProductDto` is the browser shape with the back-office extras (cost price, description);
@@ -156,7 +162,9 @@ is what a folder link did before.
 - A shop that pastes a link gets the picture on the till, the storefront and the back
   office, and the import path already accepts the column, so a catalogue of photos can
   be entered as a spreadsheet.
-- **Every place a pasted link is drawn now reads it the same way.** Two surfaces were
+- **Every place a pasted link is drawn now reads it the same way, and it can be set
+  from the back office.** The shop logo gained the field it never had (settings saved
+  `logo_url` all along, with nothing on screen to type it into). Two surfaces were
   drawing one raw: the shop logo on `/display` (the owner's link, in front of customers)
   and a consignment offer's documents, whose projection carried a `drawable` flag
   computed *beside* the URL it was drawn from — so the flag could say yes while the
@@ -200,8 +208,11 @@ is what a folder link did before.
 - **Photos are per-browser cached only.** No HTTP cache headers are ours to set — the
   bytes come from the shop's host — so the same photo is fetched again on the next
   device.
-- **The shop logo field takes the same links, without the same dialog or any
-  fallback.** `/display` now draws it through `renderableImageUrl` like every product
-  photo — so a share link is read as its preview and a refused link draws nothing at
-  all — but it has no `onError`, so a link that 404s leaves the browser's own
-  broken-image glyph in front of customers, which is a thing a product tile never does.
+- **The shop logo has the same field, preview and probe now — but no dialog of its
+  own, and no fallback.** It is set on `/admin/settings` rather than behind a button,
+  it reads a share link as its preview like every product photo does, and a link that
+  cannot be opened is refused before it is saved (the probe runs only when the link
+  changed, so saving the VAT rate never waits on a photo host). What is still missing
+  is `onError` on `/display`: a link that drew when it was saved and 404s next month
+  leaves the browser's own broken-image glyph in front of customers, which is a thing
+  a product tile never does.

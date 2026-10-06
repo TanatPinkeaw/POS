@@ -38,9 +38,15 @@ interface FieldShellProps {
  * Exported because `FileField` lives in its own client module (it holds a ref,
  * and this file must stay free of hooks so server components can keep rendering
  * the fields) and still has to wire the same two ids.
+ *
+ * The help id is dropped while a failure is showing, because `FieldShell` replaces that
+ * paragraph rather than stacking under it (see its own note). Pointing at an id that is
+ * not on the page is a description a screen reader has nothing to read, and the failure is
+ * the sentence that matters at that moment anyway. Found live: a refused photo link left
+ * `aria-describedby="shop-logo-help shop-logo-error"` with only the second id rendered.
  */
 export function describedBy(id: string, help?: ReactNode, error?: ReactNode): string | undefined {
-  const ids = [help ? `${id}-help` : null, error ? `${id}-error` : null].filter(Boolean);
+  const ids = [help && !error ? `${id}-help` : null, error ? `${id}-error` : null].filter(Boolean);
   return ids.length > 0 ? ids.join(' ') : undefined;
 }
 

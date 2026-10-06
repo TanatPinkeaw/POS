@@ -23,7 +23,7 @@
  * setup wizard already does it.
  */
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import {
   Button,
@@ -36,11 +36,13 @@ import {
   Stat,
   TextAreaField,
   TextField,
+  Thumb,
   ToggleField,
   Toolbar,
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { apiFetch, apiPut } from '@/lib/client-api';
+import { probeImageUrl } from '@/lib/image-url';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import { nextReceiptPreview, type ShopView } from '@/lib/shop-view';
 
@@ -55,6 +57,20 @@ export function ShopSettingsForm({
   const [shop, setShop] = useState(initialShop);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
+  const [logoChecking, setLogoChecking] = useState(false);
+  const [logoError, setLogoError] = useState<string | null>(null);
+  /*
+   * The logo link as the server last confirmed it.
+   *
+   * The probe below runs only while this and the field disagree, and that is the whole
+   * point of remembering it: a settings save must not wait on somebody else's photo
+   * host for a link nobody touched, and must not refuse to change the VAT rate because
+   * the shop's file server is off this morning. What it *does* refuse is saving a logo
+   * link that was just pasted and cannot be opened — the failure the product dialog
+   * probes for, and the one that otherwise ends as a broken-image glyph in front of
+   * customers on `/display`.
+   */
+  const confirmedLogo = useRef(initialShop.logoUrl ?? '');
 
   /*
    * The counter, re-read from the server rather than remembered.
@@ -104,6 +120,28 @@ export function ShopSettingsForm({
 
   async function save(): Promise<void> {
     setNotice(null);
+
+    const logoDraft = (shop.logoUrl ?? '').trim();
+    if (logoDraft !== confirmedLogo.current.trim()) {
+      if (logoDraft !== '') {
+        setLogoChecking(true);
+        const probe = await probeImageUrl(logoDraft);
+        setLogoChecking(false);
+        if (!probe.ok) {
+          /*
+           * Said twice on purpose, and not the same sentence twice: the field carries
+           * what is wrong with the link, and the notice beside the save button carries
+           * why nothing was saved — the operator may be looking at either one when they
+           * press it.
+           */
+          setLogoError(probe.message ?? 'เปิดลิงก์รูปนี้ไม่ได้');
+          setNotice({ tone: 'danger', text: 'ยังไม่ได้บันทึก — ลิงก์โลโก้เปิดไม่ได้' });
+          return;
+        }
+      }
+      setLogoError(null);
+    }
+
     setSaving(true);
     try {
       const updated = await apiPut<ShopView>('/api/v1/shop', {
@@ -132,6 +170,8 @@ export function ShopSettingsForm({
         promptpayType: shop.promptpayId ? shop.promptpayType : null,
       });
       setShop(updated);
+      confirmedLogo.current = updated.logoUrl ?? '';
+      setLogoError(null);
       // Re-seeded from the server's answer, so a value the server normalised is shown
       // normalised. The draft and the shop cannot drift, because only the server writes
       // `updated` and this is the one place the drafts are set from it.
@@ -222,6 +262,45 @@ export function ShopSettingsForm({
               value={shop.address ?? ''}
               onChange={(event) => setShop({ ...shop, address: event.target.value })}
             />
+          </Stack>
+        </Card>
+
+        <Card
+          title="โลโก้ร้าน"
+          subtitle="แสดงบนจอลูกค้าตอนยังไม่มีลูกค้า — ไม่ได้พิมพ์บนใบเสร็จ"
+        >
+          <Stack gap="sm">
+            <TextField
+              id="shop-logo"
+              label="ลิงก์โลโก้ร้าน"
+              autoComplete="off"
+              placeholder="https://drive.example.com/s/xxxx/preview"
+              help="วางลิงก์รูป https เช่นไฟล์ที่แชร์จาก Nextcloud — เว้นว่างเพื่อเอาโลโก้ออก ระบบเก็บลิงก์ไว้ ไม่ได้เก็บไฟล์รูป"
+              value={shop.logoUrl ?? ''}
+              error={logoError ?? undefined}
+              onChange={(event) => {
+                setShop({ ...shop, logoUrl: event.target.value || null });
+                if (logoError !== null) {
+                  setLogoError(null);
+                }
+              }}
+            />
+            {/*
+             * The preview is what makes a link usable rather than a leap of faith: a
+             * link that returns a login page, one to a folder, and one that is simply the
+             * wrong picture all look alike until something tries to draw it. It is the same
+             * `Thumb` the till and the customer screen use, so a Nextcloud share link is
+             * read here exactly as `/display` will read it.
+             *
+             * A control size (`lg`), not the display's own `min(40vw, 18rem)`: this is a
+             * back-office control and no screen decides a pixel value for itself (rule 4).
+             * The question the preview answers is whether the link draws at all; how it
+             * looks from three metres is a question for the customer screen itself.
+             */}
+            <Thumb url={shop.logoUrl} size="lg" />
+            <p className="ln-muted">
+              โลโก้จะขึ้นที่จอลูกค้าในหน้า “ยินดีต้อนรับ” ตอนยังไม่มีลูกค้า — เปิดดูของจริงที่ /display ได้
+            </p>
           </Stack>
         </Card>
 
@@ -378,7 +457,7 @@ export function ShopSettingsForm({
 
         <Toolbar
           actions={
-            <Button icon="check" loading={saving} onClick={() => void save()}>
+            <Button icon="check" loading={saving || logoChecking} onClick={() => void save()}>
               บันทึกการตั้งค่า
             </Button>
           }
