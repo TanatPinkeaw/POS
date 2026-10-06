@@ -13,6 +13,12 @@
  * surface, and the icon generator, which resamples the same file into the PNG
  * app icons. Naming it once is what stops the tab icon drifting from the sidebar.
  *
+ * The name answers **วงใน** (WongNai) — *the in-crowd*, the circle a shop is
+ * either inside or outside of. เหลี่ยมนอก is the square that stands outside
+ * that circle: outside the frame, and square about it. The rules that concept
+ * imposes on every screen — sharp edges, the outsider voice, and where the
+ * name may appear — are written down in `docs/brand.md`.
+ *
  * "เหลี่ยมนอก" is literally *the square outside* — the corner that has come off
  * the box. The name still means that; the mark no longer draws it, because the
  * mark is the artwork the shop supplied (ADR 0015). The name is copy and the mark

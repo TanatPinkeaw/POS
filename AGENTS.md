@@ -6,8 +6,10 @@ is the spec this implements. This file is only the part that is easy to get wron
 from the outside: how to run it, what will get a change sent back, and the traps
 that have already cost real hours here.
 
-Read this file, then `README.md`, then the ADR that touches what you are about to
-change. **Do not restate or duplicate those documents** — if you learn something
+Read this file, then `README.md`, then the ADR that touches what you are
+about to change. The brand's concept — where the name เหลี่ยมนอก comes from and
+the rules every screen inherits from it — lives in `docs/brand.md`.
+**Do not restate or duplicate those documents** — if you learn something
 new and durable, put it in the file that owns it.
 
 ---
