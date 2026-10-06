@@ -77,10 +77,12 @@ means nothing is queued" as before.
 LINE's servers POST `follow`, `unfollow` and `message` events to
 `/api/v1/line/webhook` with an `x-line-signature` HMAC of the raw body under the
 channel secret. The body is read as text first — verifying the transformed body is
-the classic way this door fails — and verified in process with `jose`'s
-`jwsVerify`-shaped API, a dependency already in the repository. Unconfigured, the
-door answers 200 to everything, because a retrying platform hammering a refusal
-is noise in both directions. Rate-limited per address (ADR 0009 policy
+the classic way this door fails — and the signature is checked in process with
+`node:crypto`'s HMAC and `timingSafeEqual`. It is deliberately **not** `jose`,
+which this repository reaches for everywhere else: jose speaks JWS, and LINE's
+signature is not a JWS — it is a bare HMAC over the body with no header and no
+payload framing, and forcing it into a JWS-shaped envelope to keep one import
+would be ceremony. Rate-limited per address (ADR 0009 policy
 `line_webhook`), because an unauthenticated door that writes rows is a row-filler's
 door otherwise.
 
