@@ -200,7 +200,7 @@ owner.
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
-| `npm run route:audit` | Builds, serves, and checks that every screen renders a page whose CSS defines every class on it (25 today, 28 requests). | Postgres |
+| `npm run route:audit` | Builds, serves, and checks that every screen renders a page whose CSS defines every class on it (26 paths, 30 requests). | Postgres |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build. `-- --url <base>`, `-- --verbose`. | A running server |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the app icons. `-- --preview` prints them as text. | — |

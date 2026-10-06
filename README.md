@@ -105,7 +105,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
-| `npm run route:audit` | Builds, serves, and opens every screen it knows about (25 today): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
+| `npm run route:audit` | Builds, serves, and opens every screen it knows about (26 distinct paths, 30 walks): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run browser:target` | Reads the build the other gates made and fails if any file in it needs syntax newer than the phone a customer holds (ADR 0031). A class static block is a `SyntaxError` on a phone that stopped at iOS 15, and everything that needs JavaScript on that page is dead after it — a green `build` and a styled page say nothing about it. Makes no build of its own. |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build — a process left over from before a rebuild keeps serving HTML whose asset files no longer exist, which on screen reads exactly like a code bug. Read-only; `-- --url <base>`, `-- --verbose`. |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
@@ -208,10 +208,10 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1320 tests across 105 files: unit + integration
+npm test                # 1346 tests across 105 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
-npm run route:audit     # every screen (25 today) renders, and renders styled
+npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders styled
 npm run browser:target  # that build still parses on the phone a customer holds
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
