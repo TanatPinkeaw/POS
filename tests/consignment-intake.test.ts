@@ -383,7 +383,7 @@ describe('who can read what', () => {
     expect(view.status).toBe('approved');
     expect(view.decidedSharePercent).toBe(65);
     // A member's own page lists what they sent rather than drawing it.
-    expect(view.documents.every((document) => !document.drawable)).toBe(true);
+    expect(view.documents.every((document) => document.imageSrc === null)).toBe(true);
   });
 });
 

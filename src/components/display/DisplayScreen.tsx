@@ -6,6 +6,7 @@ import { PinPad, QrCode, QrPanel, Spinner, Thumb } from '@/components/ds';
 import { apiFetch } from '@/lib/client-api';
 import { bangkokTimeString } from '@/lib/bangkok-time';
 import { DISPLAY_THANKS_MS } from '@/lib/display-view';
+import { renderableImageUrl } from '@/lib/image-url';
 import { formatThb } from '@/lib/money';
 
 import styles from './DisplayScreen.module.css';
@@ -206,6 +207,15 @@ export function DisplayScreen() {
   /* The Steps show only at checkout: a null step is a receipt, the collection
    * board or the idle screen, where no sale is on any circle. */
   const step = checkoutStepIndex({ selling, paying: stage === 'paying', thanks });
+  /*
+   * The shop's logo through the same allowlist every product photo goes through: the
+   * field takes an arbitrary pasted link (ADR 0014), and this screen was the one place
+   * that drew it raw — a Nextcloud share page pasted there was a broken-image glyph in
+   * front of customers, where a product photo would at least have fallen back to a
+   * placeholder glyph. `renderableImageUrl` also reads a share link as the picture
+   * inside it, so the logo an owner pasted from their browser now draws.
+   */
+  const logoUrl = renderableImageUrl(state.idle?.logoUrl);
 
   return (
     <main className={styles.screen}>
@@ -407,9 +417,9 @@ export function DisplayScreen() {
            * an arbitrary URL an owner pasted in, and the optimizer would have to
            * be told to trust every host a shop might use.
            */}
-          {!thanks && state.idle?.logoUrl ? (
+          {!thanks && logoUrl !== null ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img className={styles.logo} src={state.idle.logoUrl} alt="" />
+            <img className={styles.logo} src={logoUrl} alt="" />
           ) : null}
 
           <p className={styles.shopName}>

@@ -381,11 +381,18 @@ export interface SubmissionDocumentView {
   label: string;
   url: string;
   /**
-   * False when the link is one this system would refuse to draw — a Drive *file*
-   * link sent as a photo, for instance. The screen then shows a link rather than a
-   * broken image, which is the honest rendering of a link nobody here can vouch for.
+   * The URL to draw this document from, or null when it must not be drawn at all: a
+   * link this system refuses (a Drive *file* link sent as a photo), or a member's own
+   * page, which lists what they sent rather than loading it (`toView`'s `drawPhotos`).
+   * The screen then shows the link alone, which is the honest rendering of a link
+   * nobody here can vouch for.
+   *
+   * A URL rather than a flag beside `url`, because a flag and an `src` derived from the
+   * same string are two answers that drift — and only one of them was going through
+   * `renderableImageUrl`, which is the function that also reads a share link as the
+   * picture inside it (ADR 0014 decision 8).
    */
-  drawable: boolean;
+  imageSrc: string | null;
 }
 
 export interface SubmissionView {
@@ -438,7 +445,7 @@ function toView(row: SubmissionRow, drawPhotos: boolean): SubmissionView {
       kind: document.kind,
       label: document.label,
       url: document.url,
-      drawable: drawPhotos && renderableImageUrl(document.url) !== null,
+      imageSrc: drawPhotos ? renderableImageUrl(document.url) : null,
     })),
   };
 }
@@ -531,7 +538,7 @@ export async function listProductDocuments(productId: string, db: Db): Promise<S
     kind: row.kind,
     label: row.label,
     url: row.url,
-    drawable: renderableImageUrl(row.url) !== null,
+    imageSrc: renderableImageUrl(row.url),
   }));
 }
 

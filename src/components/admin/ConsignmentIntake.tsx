@@ -66,7 +66,7 @@ export interface IntakeRow {
     kind: 'photo' | 'document';
     label: string;
     url: string;
-    drawable: boolean;
+    imageSrc: string | null;
   }[];
 }
 
@@ -130,11 +130,11 @@ export function ConsignmentIntake({ rows }: { rows: IntakeRow[] }) {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          {document.drawable ? (
+                          {document.imageSrc !== null ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               className={styles.photo}
-                              src={document.url}
+                              src={document.imageSrc}
                               alt={document.label}
                               loading="lazy"
                               decoding="async"

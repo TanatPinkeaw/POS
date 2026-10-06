@@ -29,6 +29,11 @@
  *   * protocol-relative, `//host/x.jpg` — the browser would honour it, and it is
  *     refused anyway: it is the one form whose destination is not visible in the link
  *     an operator pasted, and no shop needs it.
+ *
+ * One form is neither accepted as-is nor refused, because it is the paste a shop makes
+ * first and it is not a mistake worth an error message: a **public share link** from a
+ * Nextcloud or ownCloud (`https://cloud/s/<token>`) is the share's *page*, not the
+ * picture in it. `asSharePreview` below reads it as the picture the operator meant.
  */
 export function renderableImageUrl(value: string | null | undefined): string | null {
   const candidate = (value ?? '').trim();
@@ -42,10 +47,53 @@ export function renderableImageUrl(value: string | null | undefined): string | n
 
   try {
     const url = new URL(candidate);
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url.toString() : null;
+    return url.protocol === 'https:' || url.protocol === 'http:'
+      ? asSharePreview(url).toString()
+      : null;
   } catch {
     return null;
   }
+}
+
+/**
+ * The bare share root of a Nextcloud/ownCloud public link, and nothing else.
+ *
+ * `[A-Za-z0-9]+` is that server's own token alphabet, and matching only the bare root
+ * is what keeps a false positive from breaking a link that worked: a rule loose enough
+ * to accept `/s/abc123/photo.png` would append `/preview` to real photographs on hosts
+ * that merely happen to use those directory names. `/s/<token>/preview` and
+ * `/s/<token>/download` are already endpoints; a longer path is somebody else's URL.
+ */
+const PUBLIC_SHARE_PAGE = /^\/((?:index\.php\/)?s\/[A-Za-z0-9]+)\/?$/;
+
+/**
+ * Reads a public share link as the picture inside it.
+ *
+ * **Why this exists at all.** The link an operator copies out of the address bar is the
+ * one their browser is showing, and for a Nextcloud share that is the share's page.
+ * Measured against the reference installation's own cloud: `https://…/s/<token>`
+ * answers `200 text/html` — 26 kB of page whose `<title>` is the file's name — so an
+ * `<img src>` of it is a broken image. Every tile drew the placeholder, and the photo
+ * dialog's probe refused the link outright, which is how a shop ends up unable to save
+ * a picture it can see perfectly well in a browser. One segment further along,
+ * `https://…/s/<token>/preview` answers `200 image/png`, and the *host* does the
+ * resizing — a 480×360 preview instead of the original, which is the habit ADR 0014's
+ * *Known gaps* asked for and nothing enforced.
+ *
+ * The rewrite is at render time, in the one function that decides what a screen is
+ * allowed to load (ADR 0014 decision 2), so the column keeps exactly what the operator
+ * pasted and the decision stays testable without a server or a browser. The form's probe
+ * calls the same function, so a link that draws is a link that saves.
+ */
+function asSharePreview(url: URL): URL {
+  const share = PUBLIC_SHARE_PAGE.exec(url.pathname);
+  if (share === null) {
+    return url;
+  }
+  // `pathname` alone, so whatever the link carried — a folder share names the file in
+  // `?path=` — travels with it to the endpoint that understands it.
+  url.pathname = `/${share[1]}/preview`;
+  return url;
 }
 
 /** Why a link that looks like an image is not showing one, in the shop's words. */
@@ -160,7 +208,7 @@ export function probeImageUrl(
         ok: false,
         failure: 'unreachable',
         message:
-          'เปิดรูปไม่ได้ — ลิงก์อาจผิด ลบแล้ว ต้องล็อกอินก่อนจึงจะเห็น หรือเป็นลิงก์หน้าเว็บที่ไม่ใช่ไฟล์รูปตรง ๆ',
+          'เปิดรูปไม่ได้ — ลิงก์อาจผิด ไฟล์ถูกลบ ต้องล็อกอินก่อนจึงจะเห็น หรือเป็นลิงก์ของโฟลเดอร์ ไม่ใช่ตัวไฟล์รูป (ให้เปิดรูปนั้นแล้วคัดลอกลิงก์ของไฟล์)',
       });
     };
 

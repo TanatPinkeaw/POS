@@ -1,6 +1,8 @@
 # ADR 0014 — A product photo is a link, not a file we hold
 
 **Status:** accepted (2026-09-29)
+**Amended (2026-10-06):** decision 8, after a shop pasted the share *page* its browser
+was showing and could not get the picture onto a single tile.
 **Context:** `products.image_url` and `shops.logo_url` have been in the schema since the
 first migration, and three routes have written them since: product create, product
 `PATCH`, and the catalogue import (`URL รูปภาพ`, with `รูปภาพ` and `ลิงก์รูป` as accepted
@@ -120,6 +122,33 @@ which host a shop keeps its photos on is not knowable when the image is built �
 link typed at a counter. A configuration file that has to be edited and rebuilt before a
 photo can be added is worse than an `<img>` with `loading="lazy"`.
 
+### 8. A public share link is read as the picture inside it
+
+The link a shop pastes first is the one its browser was showing it, and for the file host
+this ADR's Context names that link is the share's *page*: `https://…/s/<token>` answers
+`200 text/html` (measured against the reference installation — 26 kB of page whose
+`<title>` is the file's name), so every tile drew the placeholder and the photo dialog's
+probe refused the link before it could even be saved. The picture is one segment further
+along, at `/preview`, which answers `200 image/png`.
+
+So `renderableImageUrl` rewrites the bare share root to that endpoint. The column keeps
+exactly what the operator pasted, and the rewrite happens at render time in the one
+function that decides what a screen may load (decision 2), which is why the probe and the
+tiles cannot disagree: both call it. Every row pasted this way starts drawing without a
+data migration.
+
+**The refused alternative is the help text.** Leave the link alone and tell the operator
+to append `/preview` themselves. It was rejected because it is a rule only a person who
+already knows Nextcloud's URL shape can follow, and the failure is silent in the meantime
+(a placeholder tile, not an error) — the same class of trap decision 2 exists to remove.
+
+The matching is deliberately narrow, because a rewrite edits a URL somebody else serves:
+only a bare share root, only Nextcloud's own alphanumeric token, only a link with a host
+(`/s/<token>/preview` and `/s/<token>/download` are already endpoints and are left alone,
+and a root-relative `/s/…` is this deployment's own file). What it does *not* do is check
+the file: a folder share rewritten to `/preview` is a 404, which is the placeholder, which
+is what a folder link did before.
+
 ## Consequences
 
 - A shop that fills nothing in sees exactly what it saw before: a placeholder glyph on
@@ -127,6 +156,12 @@ photo can be added is worse than an `<img>` with `loading="lazy"`.
 - A shop that pastes a link gets the picture on the till, the storefront and the back
   office, and the import path already accepts the column, so a catalogue of photos can
   be entered as a spreadsheet.
+- **Every place a pasted link is drawn now reads it the same way.** Two surfaces were
+  drawing one raw: the shop logo on `/display` (the owner's link, in front of customers)
+  and a consignment offer's documents, whose projection carried a `drawable` flag
+  computed *beside* the URL it was drawn from — so the flag could say yes while the
+  `src` was still the share page. The projection carries the renderable URL itself now
+  (`imageSrc`). A share link draws in all three; nothing else about those screens moved.
 - `npm run backup` does **not** cover the photos — they are in the shop's own file host
   (ADR 0014 decision 1), so they are covered by whatever backs that up. The deploy doc
   says so where an operator reads about backups.
@@ -142,14 +177,18 @@ photo can be added is worse than an `<img>` with `loading="lazy"`.
 
 ## Known gaps, stated rather than discovered
 
-- **Nothing validates what is at the other end.** The allowlist judges the link, not the
-  response: a link that returns HTML, a login page or a 404 is stored happily and shows
-  the placeholder. There is no periodic check and no warning at entry beyond the live
-  preview.
-- **A 1920×1080 photo is downloaded at 1920×1080.** Nothing resizes. A shop that pastes
-  the raw file link spends a counter screen's bandwidth on a picture drawn 40 px wide;
-  the Nextcloud preview link in this ADR's Context is the better habit because the
-  *host* does the resizing. Nothing enforces that habit.
+- **Nothing validates what is at the other end, and nothing checks it later.** The
+  allowlist (and the share-link rewrite of decision 8) judges the link, not the response.
+  A link to a login page, to a 404, or to a *folder* share — which was rewritten to
+  `/preview` and answers 404 — is refused by the photo dialog's probe at entry and shows
+  the placeholder if it is written into the column some other way (the import, an older
+  row). No periodic re-check, and nothing tells a shop that a photo which worked last week
+  has stopped.
+- **A link to the file itself is downloaded at its full size.** Nothing resizes. Decision
+  8 fixed the common case — a share link is rewritten to the host's own preview, so the
+  *host* does the resizing — but a shop that pastes the file's direct link (`/download`, a
+  raw `/remote.php/dav/…` URL, a photo host's original) still spends a counter screen's
+  bandwidth on a picture drawn 40 px wide, and nothing detects the difference.
 - **A shop with no file host has nowhere to put a photo.** Upload and storage remain
   unbuilt, and this ADR does not shorten that list.
 - **No hardcoded-image guard replaces the narrowed rule.** An off-site `<img>` written
@@ -161,6 +200,8 @@ photo can be added is worse than an `<img>` with `loading="lazy"`.
 - **Photos are per-browser cached only.** No HTTP cache headers are ours to set — the
   bytes come from the shop's host — so the same photo is fetched again on the next
   device.
-- **The shop logo field takes the same links, without the same dialog**, and `/display`
-  draws it with no `onError` fallback: a broken logo there leaves a broken-image glyph
-  in front of customers.
+- **The shop logo field takes the same links, without the same dialog or any
+  fallback.** `/display` now draws it through `renderableImageUrl` like every product
+  photo — so a share link is read as its preview and a refused link draws nothing at
+  all — but it has no `onError`, so a link that 404s leaves the browser's own
+  broken-image glyph in front of customers, which is a thing a product tile never does.
