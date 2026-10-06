@@ -1871,10 +1871,22 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       const pass = await runWorker(gatewayUrl);
       check('the worker runs and exits cleanly', pass.status === 0, pass.output.slice(-400));
 
+      /*
+       * Five messages, not two. ADR 0030 §3 gave the shop's own channel the two facts
+       * it used to learn late — a bill was refunded, and a bank notification was
+       * dismissed by hand — so a journey that refunds and dismisses now earns four
+       * shop messages beside the customer's one.
+       *
+       * The refund appears **twice** because the journey refunds two different bills,
+       * and the fact dedupes on (kind, order_id): the bill refunded in two steps
+       * contributes one row, the bill refunded whole contributes another. Pinned as a
+       * sorted list rather than a count so a *new* kind cannot slip in unnoticed.
+       */
       const kinds = received.map((message) => message.kind).sort();
       check(
-        'both messages left the building: the shop’s and the customer’s',
-        kinds.join(',') === 'order_ready,pre_order_placed',
+        'every message the journey earned left the building: the customer’s, and the shop’s four',
+        kinds.join(',') ===
+          'inbound_dismissed,order_ready,order_refunded,order_refunded,pre_order_placed',
         kinds,
       );
 
@@ -1911,14 +1923,14 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       })();
       check(
         'every queued message is recorded as sent',
-        statuses.length === 1 && statuses[0]?.status === 'sent' && statuses[0]?.count === '2',
+        statuses.length === 1 && statuses[0]?.status === 'sent' && statuses[0]?.count === '5',
         statuses,
       );
 
       const again = await runWorker(gatewayUrl);
       check(
         'a second pass sends nothing, so a retry cannot double-send',
-        again.status === 0 && received.length === 2,
+        again.status === 0 && received.length === 5,
         `received ${received.length}`,
       );
 
