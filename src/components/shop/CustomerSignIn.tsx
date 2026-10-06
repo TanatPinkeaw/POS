@@ -51,6 +51,18 @@ declare global {
 const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
 /**
+ * The width handed to `renderButton`, measured from the slot it will sit in.
+ *
+ * `renderButton` accepts 200–400 for a large standard button — below the floor it
+ * refuses to render, above the ceiling it overflows its own frame — so a slot
+ * narrower than the floor still requests the floor and leans on the slot's own
+ * `justify-content: center`, rather than sending Google a width that cannot work.
+ */
+export function buttonWidthFor(available: number): number {
+  return Math.max(200, Math.min(Math.floor(available), 400));
+}
+
+/**
  * The customer's two doors (ADR 0020 §3, §7).
  *
  * The counter door is phone and password — the same thing the shop enrolled the
@@ -186,6 +198,7 @@ function GoogleDoor({
       return;
     }
     let cancelled = false;
+    let observer: ResizeObserver | null = null;
 
     const script = document.createElement('script');
     script.src = GOOGLE_SCRIPT_SRC;
@@ -196,6 +209,7 @@ function GoogleDoor({
       if (cancelled || !api || !slot.current) {
         return;
       }
+      const slotElement = slot.current;
       api.initialize({
         client_id: googleClientId,
         callback: (response) => {
@@ -204,19 +218,56 @@ function GoogleDoor({
           }
         },
       });
-      api.renderButton(slot.current, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-        text: 'continue_with',
-        shape: 'rectangular',
-        width: 320,
+
+      /*
+       * Google paints its button into an iframe sized once, from the width handed
+       * to `renderButton`, and never measures the container again. A fixed 320 px
+       * overflowed the card on the right on the phone this shop supports — a
+       * 283 px slot on an iPhone 7 Plus — and sat hard left of centre on a wide
+       * one, because the iframe is placed at the slot's left edge. So the width is
+       * read from the slot itself and read again whenever the slot changes size:
+       * rotation, a foldable, a zoom. (ResizeObserver is Safari 13.1, above the
+       * 15.6 floor of ADR 0031.) `replaceChildren` first, because a second render
+       * into a slot still holding the first frame stacks two iframes.
+       */
+      const renderAtWidth = (): void => {
+        if (cancelled) {
+          return;
+        }
+        slotElement.replaceChildren();
+        api.renderButton(slotElement, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'continue_with',
+          shape: 'rectangular',
+          width: buttonWidthFor(slotElement.clientWidth),
+        });
+      };
+
+      renderAtWidth();
+
+      /*
+       * ResizeObserver fires once when observation starts, with the width the
+       * render above already used — the comparison skips that one, so the button
+       * is rendered exactly once at rest.
+       */
+      let lastWidth = buttonWidthFor(slotElement.clientWidth);
+      observer = new ResizeObserver(() => {
+        const width = buttonWidthFor(slotElement.clientWidth);
+        if (width === lastWidth) {
+          return;
+        }
+        lastWidth = width;
+        renderAtWidth();
       });
+      observer.observe(slotElement);
     };
     document.head.appendChild(script);
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
       script.remove();
     };
   }, [googleClientId, handleCredential]);
