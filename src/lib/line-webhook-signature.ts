@@ -18,14 +18,24 @@
  */
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { DomainError } from './errors';
+
 /** The signature LINE sent, as it arrived. */
 export const LINE_SIGNATURE_HEADER = 'x-line-signature';
 
-/** Raised when the signature header is missing or does not match the body. */
-export class InvalidLineSignatureError extends Error {
+/**
+ * Raised when the signature header is missing or does not match the body.
+ *
+ * A `DomainError` (401) rather than a plain error, and that is not cosmetics:
+ * `withApi` maps everything else to a 500 — "something went wrong on our side"
+ * — which is the one answer a bad signature must never produce. A request
+ * without LINE's signature is not a bug in the shop's software; it is a
+ * stranger at a door that only LINE's servers hold the key to, and the honest
+ * status for that is a refusal, the same shape the id-token doors answer with.
+ */
+export class InvalidLineSignatureError extends DomainError {
   constructor(message = 'LINE webhook signature did not verify') {
-    super(message);
-    this.name = 'InvalidLineSignatureError';
+    super(message, 'INVALID_LINE_SIGNATURE', 401);
   }
 }
 
