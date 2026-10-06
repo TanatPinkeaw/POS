@@ -58,8 +58,20 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     try {
-      // 1. The state we minted, still inside its five minutes.
-      await jwtVerify(state, authSecretKey());
+      /*
+       * 1. The state we minted, still inside its five minutes — and still a
+       * *state*, not some other token minted under the same key. The session
+       * token shares `AUTH_SECRET`, so the signature alone proves nothing about
+       * which kind this is: without pinning the purpose claim, a session token
+       * pasted into this URL verifies exactly as well as a real state, which is
+       * precisely the confusion the authorize route's own comment claims cannot
+       * happen. The claim is the check; the comment was a promise this route had
+       * not kept.
+       */
+      const { payload } = await jwtVerify(state, authSecretKey());
+      if (payload.purpose !== 'line-link') {
+        throw new Error('not a LINE link state');
+      }
     } catch {
       return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
     }
