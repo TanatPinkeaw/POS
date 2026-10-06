@@ -65,7 +65,19 @@ const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
  * button that cannot work. That also keeps a shop that never configures Google from
  * fetching anything from Google on its sign-in page.
  */
-export function CustomerSignIn({ googleClientId }: { googleClientId: string | null }) {
+export function CustomerSignIn({
+  googleClientId,
+  lineConfigured = false,
+}: {
+  googleClientId: string | null;
+  /**
+   * Whether the deployment has a LINE Login channel (ADR 0030). Default false so
+   * every existing caller renders exactly as before — the LINE door is the third
+   * door, and a deployment that never configured it must not gain a button that
+   * answers a 422.
+   */
+  lineConfigured?: boolean;
+}) {
   const router = useRouter();
 
   // Stable across renders, so the Google effect is not torn down and rebuilt on
@@ -82,9 +94,45 @@ export function CustomerSignIn({ googleClientId }: { googleClientId: string | nu
   return (
     <div className={styles.form}>
       <GoogleDoor googleClientId={googleClientId} onSignedIn={go} />
+      <LineDoor configured={lineConfigured} />
       <p className={styles.divider}>หรือ</p>
       <CounterDoor onSignedIn={go} />
     </div>
+  );
+}
+
+/* ---------------------------------------------------------------- line door */
+
+/**
+ * The LINE door (ADR 0030) — a third way in, beside Google and the counter's
+ * phone-and-password.
+ *
+ * A plain link to the authorize route rather than LINE's own widget: LINE Login
+ * is a redirect flow, not an embedded script, so this door needs no third-party
+ * JS at all — the browser walks to LINE's consent screen and comes back. Where it
+ * lands depends on the account: a LINE account already bound to a customer row is
+ * signed straight in by the API the authorize flow completes through, and an
+ * unbound one finishes a first sign-in there (phone + OTP).
+ *
+ * When the deployment has no channel, the door says so plainly rather than
+ * disappearing — the same honesty the Google door renders — because "where did
+ * the button go" is a worse question than "why is this grey".
+ */
+function LineDoor({ configured }: { configured: boolean }) {
+  return (
+    <section className={styles.door} aria-label="เข้าสู่ระบบด้วย LINE">
+      <p className={styles.doorTitle}>มีบัญชี LINE</p>
+
+      {configured ? (
+        <a className={styles.lineButton} href="/api/v1/auth/line/authorize">
+          เข้าสู่ระบบด้วย LINE
+        </a>
+      ) : (
+        <InlineNotice tone="info">
+          ร้านนี้ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย LINE — ใช้เบอร์โทรศัพท์และรหัสผ่านด้านล่างได้เลย
+        </InlineNotice>
+      )}
+    </section>
   );
 }
 

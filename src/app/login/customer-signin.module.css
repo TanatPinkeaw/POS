@@ -108,6 +108,41 @@
   width: 100%;
 }
 
+/*
+ * The LINE door's button (ADR 0030).
+ *
+ * An `<a>` styled to the design system's own primary shape rather than LINE's
+ * green pill, for the reason the brand rules already state: the shop's sign-in
+ * card is the shop's, and one foreign brand colour would out-shout everything
+ * around it. It is a real link (not a button), because the whole flow is a GET
+ * redirect — no state to submit, nothing to disable, and middle-click works.
+ */
+.lineButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: var(--ln-tap);
+  padding: 0 var(--ln-space-3);
+  border-radius: var(--ln-radius-sm);
+  border: 1px solid var(--ln-border);
+  background: var(--ln-surface);
+  color: var(--ln-text);
+  font-size: var(--ln-size-md);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lineButton:hover {
+  border-color: var(--ln-border-strong);
+  background: var(--ln-surface-2);
+}
+
+.lineButton:focus-visible {
+  box-shadow: var(--ln-ring);
+}
+
 .footer {
   font-size: var(--ln-size-xs);
   color: var(--ln-text-subtle);

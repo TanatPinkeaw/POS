@@ -19,6 +19,8 @@ import { isPublicPath } from '@/lib/roles';
 const accountPage = (): string => readFileSync('src/app/(shop)/shop/account/page.tsx', 'utf8');
 const accountPortal = (): string => readFileSync('src/components/shop/AccountPortal.tsx', 'utf8');
 const accountRoute = (): string => readFileSync('src/app/api/v1/account/line/route.ts', 'utf8');
+const loginPage = (): string => readFileSync('src/app/login/page.tsx', 'utf8');
+const signIn = (): string => readFileSync('src/components/shop/CustomerSignIn.tsx', 'utf8');
 
 describe('the LINE card on the account page', () => {
   it('is one tab of the portal, rendered from the page', () => {
@@ -48,6 +50,29 @@ describe('the LINE card on the account page', () => {
 
   it('offers withdrawal as one act that clears both facts', () => {
     expect(accountPortal()).toContain('ยกเลิกการผูกและหยุดรับการแจ้งเตือน');
+  });
+});
+
+describe("the LINE door on the front door (/login)", () => {
+  it('renders beside Google and the counter door, from a passed-in value', () => {
+    // Found on the live deployment: the API doors existed and answered, but the
+    // sign-in screen never gained the button — a customer meeting the shop on
+    // LINE had no third door to walk through. The page passes the channel id's
+    // presence down as a value, the same argument as the Google door's.
+    expect(loginPage()).toContain('lineConfigured={readLineChannelId() !== null}');
+    expect(signIn()).toContain('<LineDoor');
+    expect(signIn()).toContain('/api/v1/auth/line/authorize');
+  });
+
+  it('renders as a plain redirect link, not an embedded widget', () => {
+    // LINE Login is a redirect flow: no third-party script belongs on this
+    // screen for it, unlike the Google door which loads Identity Services.
+    expect(signIn()).toContain('href="/api/v1/auth/line/authorize"');
+    expect(signIn()).not.toContain('https://access.line.me');
+  });
+
+  it('says plainly when the deployment has no channel, rather than hiding the door', () => {
+    expect(signIn()).toContain('ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย LINE');
   });
 });
 

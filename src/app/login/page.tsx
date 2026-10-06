@@ -9,6 +9,7 @@ import { PrivacyScrim } from '@/components/shop/PrivacyScrim';
 import { PrivacyNoticeBody } from '@/app/privacy/PrivacyNoticeBody';
 import { getSessionUser } from '@/lib/auth';
 import { readGoogleClientId } from '@/lib/google-id-token';
+import { readLineChannelId } from '@/lib/line-id-token';
 import { prisma } from '@/lib/db';
 import { homePathForRole } from '@/lib/roles';
 import { hasShop, loadShop } from '@/lib/shop';
@@ -49,9 +50,11 @@ const DEMO_ACCOUNTS = [
  * `/shop` redirects here, so old links and QRs keep walking. The two routes share
  * `customer-signin.module.css`; only this one renders it.
  *
- * The Google client id is read here and passed down as a *value*: the screen shows
- * both doors, and the Google one knows whether it is configured rather than loading
- * a third-party script to find out.
+ * The Google client id and the LINE channel id are read here and passed down as
+ * *values*: the screen shows every door, and each one knows whether it is
+ * configured rather than loading a third-party script or firing a request to
+ * find out. A door without its value renders as a sentence saying so — the shop
+ * sees a closed door, not a broken one.
  */
 export default async function LoginPage() {
   const session = await getSessionUser();
@@ -113,7 +116,10 @@ export default async function LoginPage() {
           <p className={styles.tagline}>{BRAND.taglineTh}</p>
         </div>
 
-        <CustomerSignIn googleClientId={readGoogleClientId()} />
+        <CustomerSignIn
+          googleClientId={readGoogleClientId()}
+          lineConfigured={readLineChannelId() !== null}
+        />
       </div>
 
       {/*
