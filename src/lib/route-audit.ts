@@ -62,7 +62,7 @@ export interface RouteSpec {
 /**
  * Every screen this application serves, and how to reach it.
  *
- * Eighteen distinct paths; the root is listed four times because it is a
+ * Twenty-six distinct paths; the root is listed four times because it is a
  * role-aware redirect and the interesting part of it is where each role lands.
  */
 export const ROUTE_WALK: readonly RouteSpec[] = [
@@ -70,7 +70,7 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/', area: 'public', session: 'admin', landsOn: '/admin/dashboard', label: 'the front door, as a manager' },
   { path: '/', area: 'public', session: 'cashier', landsOn: '/pos', label: 'the front door, as a cashier' },
   { path: '/', area: 'public', session: 'member', landsOn: '/shop/products', label: 'the front door, as a member' },
-  { path: '/login', area: 'public', session: 'none', landsOn: '/login', label: 'the sign-in screen' },
+  { path: '/login', area: 'public', session: 'none', landsOn: '/login', label: 'the front door: the customer\'s, with the staff form folded below' },
   { path: '/setup', area: 'public', session: 'none', landsOn: '/login', label: 'the wizard, on a shop that is already set up' },
   { path: '/display', area: 'public', session: 'none', landsOn: '/display', label: 'the customer display' },
   { path: '/admin/dashboard', area: 'admin', session: 'admin', landsOn: '/admin/dashboard', label: 'the manager dashboard' },
@@ -92,7 +92,12 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/pos/attendance', area: 'pos', session: 'cashier', landsOn: '/pos/attendance', label: 'attendance' },
   { path: '/pos/queue', area: 'pos', session: 'cashier', landsOn: '/pos/queue', label: 'the drink queue' },
   { path: '/pos/preorders', area: 'pos', session: 'cashier', landsOn: '/pos/preorders', label: 'the pre-order board' },
-  { path: '/shop', area: 'public', session: 'none', landsOn: '/shop', label: 'the customer sign-in, both doors' },
+  /*
+   * The door itself moved to `/login` (ADR 0029); this path is kept and walked so the
+   * audit proves on a real server that an old QR, a bookmark or a printed link still
+   * lands the customer at the door rather than at a 404.
+   */
+  { path: '/shop', area: 'public', session: 'none', landsOn: '/login', label: 'the old customer door, now a redirect to the front door' },
   { path: '/receipts', area: 'public', session: 'none', landsOn: '/receipts', label: 'the receipt a signed link opens' },
   { path: '/privacy', area: 'public', session: 'none', landsOn: '/privacy', label: 'the shop privacy notice to customers' },
   { path: '/privacy/staff', area: 'public', session: 'none', landsOn: '/privacy/staff', label: 'the shop privacy notice to staff' },

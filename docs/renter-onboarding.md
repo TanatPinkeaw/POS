@@ -116,6 +116,12 @@ email in this system; recovery is a SQL statement (see §8).
 
 ## 5. Every day
 
+**Signing in.** The shop's sign-in page is the customer's door first: customers sign in there
+with **Google** or the **phone number and password** you enrolled them with (this page is also
+what a printed QR opens — the old address `/shop` still works and sends them to the same
+place). Staff sign in on the same page: tap **พนักงานเข้างาน** at the bottom and the staff
+form opens. Demo accounts, on a freshly seeded database, are listed inside that same fold.
+
 | Task | Where | Notes |
 | --- | --- | --- |
 | Start the day | `/pos` → เปิดลิ้นชัก | Enter the float (starting cash). A sale is refused without an open drawer, because cash that belongs to no drawer cannot be reconciled. |

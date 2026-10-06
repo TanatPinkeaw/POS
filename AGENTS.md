@@ -130,7 +130,7 @@ Three authenticated areas and three public surfaces:
 | Manager | `/admin/*` | dashboard, products, audit, reports, schedules, settings, staff, customers |
 | Till | `/pos/*` | the register, the drink queue, attendance, pre-orders |
 | Customer | `/shop/*` | catalogue, orders |
-| Public | — | `/login`, `/setup` (first run), `/display` (customer screen) |
+| Public | — | `/login` (the customer's door; staff fold in behind it), `/setup` (first run), `/display` (customer screen) |
 
 ---
 

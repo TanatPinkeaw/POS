@@ -1,98 +1,14 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 
-import { BrandMark } from '@/brand/BrandMark';
-import { BRAND } from '@/brand/brand';
-import { CustomerSignIn } from '@/components/shop/CustomerSignIn';
-import { PrivacyScrim } from '@/components/shop/PrivacyScrim';
-import { PrivacyNoticeBody } from '@/app/privacy/PrivacyNoticeBody';
-import { getSessionUser } from '@/lib/auth';
-import { readGoogleClientId } from '@/lib/google-id-token';
-import { homePathForRole } from '@/lib/roles';
-import { hasShop, loadShop } from '@/lib/shop';
-import { shopDisplayName } from '@/lib/shop-view';
-
-import styles from './shop-signin.module.css';
-
-export const metadata: Metadata = { title: 'เข้าสู่ระบบลูกค้า' };
-
 /**
- * The customer's door (ADR 0020 §3).
+ * Where the customer's door used to be (ADR 0029).
  *
- * `/shop` itself is public — the one screen in the shop area a person with no
- * account reaches, because it is how they get one. A visitor who already has a
- * session is sent to their own home rather than shown a sign-in they do not need,
- * and a shop that has not been set up sends them to the wizard, so neither state is
- * a dead end.
- *
- * The Google client id is read here and passed down as a *value*: the screen shows
- * both doors, and the Google one knows whether it is configured rather than loading
- * a third-party script to find out.
+ * The door moved to `/login` — the address everything already pointed at: the
+ * domain root, the proxy's refusals, `signOut`, bookmarks and printed QRs. This
+ * path stays public in `roles.ts` and stays walked in `route-audit.ts` (`/shop`
+ * landing on `/login`), so an old QR or a bookmark is answered by the door itself
+ * rather than by a second sign-in page drifting away from it.
  */
-export default async function ShopSignInPage() {
-  const session = await getSessionUser();
-  if (session) {
-    redirect(homePathForRole(session.role));
-  }
-
-  if (!(await hasShop())) {
-    redirect('/setup');
-  }
-
-  const shop = await loadShop();
-
-  /*
-   * The same projection `/privacy` builds, read once here and handed to the scrim, so
-   * the notice rendered over the sign-in form names the same shop as the page — the
-   * controller's legal name, its trading name, its address and its phone. A notice
-   * that renders from `shop?.name` directly prints a blank line before the shop has
-   * been set up, which is the one thing a notice is required not to do.
-   */
-  const contact = {
-    name: shopDisplayName(shop),
-    legalName: shop?.legalName ?? null,
-    address: shop?.address ?? null,
-    phone: shop?.phone ?? null,
-  };
-
-  return (
-    /*
-     * Touch density, because this screen is the customer's phone and not a desk.
-     *
-     * `/shop` sits outside the `(shop)` route group — a visitor with no account has to
-     * be able to reach it, so it cannot wear the member shell — which also meant it
-     * missed the touch density that shell supplies. Without it the fields arrived at
-     * 14px with 34px targets, and iOS Safari zooms the viewport when a sub-16px field
-     * takes focus, hiding the button the customer was about to press. The density is
-     * applied here instead, so the door is sized for the thumb that reaches it.
-     */
-    <main className={styles.page} data-density="touch">
-      <div className={styles.card}>
-        <div className={styles.head}>
-          <BrandMark size={46} title={BRAND.nameTh} />
-          <p className={styles.brand}>
-            {BRAND.nameTh} · {BRAND.nameEn}
-          </p>
-          <h1 className={styles.shop}>{shopDisplayName(shop)}</h1>
-          <p className={styles.tagline}>{BRAND.taglineTh}</p>
-        </div>
-
-        <CustomerSignIn googleClientId={readGoogleClientId()} />
-      </div>
-
-      <p className={styles.footer}>
-        {BRAND.taglineEn}
-        {' · '}
-        {/*
-          The door a customer walks in through is the one place they are told what the
-          shop does with their phone number, which is the first moment a notice can be
-          read by the person it is about (ADR 0020 collects a number and a name here).
-          It opens as a scrim so reading it does not throw away a half-filled form.
-        */}
-        <PrivacyScrim shopName={shopDisplayName(shop)}>
-          <PrivacyNoticeBody contact={contact} />
-        </PrivacyScrim>
-      </p>
-    </main>
-  );
+export default function ShopSignInPage() {
+  redirect('/login');
 }

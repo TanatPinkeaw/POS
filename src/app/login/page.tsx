@@ -3,24 +3,30 @@ import { redirect } from 'next/navigation';
 
 import { BrandMark } from '@/brand/BrandMark';
 import { BRAND } from '@/brand/brand';
-import { LoginForm } from '@/components/auth/LoginForm';
+import { StaffDoorToggle } from '@/components/auth/StaffDoorToggle';
+import { CustomerSignIn } from '@/components/shop/CustomerSignIn';
+import { PrivacyScrim } from '@/components/shop/PrivacyScrim';
+import { PrivacyNoticeBody } from '@/app/privacy/PrivacyNoticeBody';
 import { getSessionUser } from '@/lib/auth';
+import { readGoogleClientId } from '@/lib/google-id-token';
 import { prisma } from '@/lib/db';
 import { homePathForRole } from '@/lib/roles';
 import { hasShop, loadShop } from '@/lib/shop';
 import { shopDisplayName } from '@/lib/shop-view';
 
-import styles from './login.module.css';
+import styles from './customer-signin.module.css';
 
 export const metadata: Metadata = { title: 'เข้าสู่ระบบ' };
 
 /**
  * Demo accounts seeded by `npm run db:seed`.
  *
- * Listed on the sign-in card on purpose: having the three roles one tap away is
- * what makes the RBAC behaviour easy to check. The block renders only while the
- * seeded manager account still exists, so it disappears on its own when a renter
- * sets the system up for real instead of having to remember to delete it.
+ * Rendered only inside the folded staff panel, never on the customer side of the
+ * page: this is the front door customers arrive at (ADR 0029), and a table of staff
+ * phone numbers printed above their heads is both noise to them and advertising to
+ * anyone who should not be here. The block still renders only while the seeded
+ * manager account exists, so it disappears on its own when a renter sets the system
+ * up for real instead of having to remember to delete it.
  */
 const DEMO_ACCOUNTS = [
   { role: 'ผู้จัดการ (Admin)', phone: '0800000001' },
@@ -29,6 +35,24 @@ const DEMO_ACCOUNTS = [
   { role: 'สมาชิก (Member)', phone: '0900000001' },
 ];
 
+/**
+ * The front door — and the front door is the customer's (ADR 0029).
+ *
+ * This page is where every path a person can be given leads: the domain root, the
+ * proxy's refusals, `signOut`, the 404's escape link, bookmarks and printed QRs.
+ * Until now it opened on a staff form, which made a customer's first screen a wall
+ * of someone else's UI; the customer's own doors (ADR 0020) lived a second URL away
+ * at `/shop`, which nothing in the app linked to. So the doors swapped places:
+ * `CustomerSignIn` renders here, and the staff form folds behind `StaffDoorToggle`
+ * below the card — reachable in one tap, but not the first thing a customer reads.
+ *
+ * `/shop` redirects here, so old links and QRs keep walking. The two routes share
+ * `customer-signin.module.css`; only this one renders it.
+ *
+ * The Google client id is read here and passed down as a *value*: the screen shows
+ * both doors, and the Google one knows whether it is configured rather than loading
+ * a third-party script to find out.
+ */
 export default async function LoginPage() {
   const session = await getSessionUser();
   if (session) {
@@ -54,24 +78,28 @@ export default async function LoginPage() {
   const seedAccountExists =
     (await prisma.users.count({ where: { phone: DEMO_ACCOUNTS[0]?.phone ?? '0800000001' } })) > 0;
 
+  const contact = {
+    name: shopDisplayName(shop),
+    legalName: shop?.legalName ?? null,
+    address: shop?.address ?? null,
+    phone: shop?.phone ?? null,
+  };
+
   return (
     /*
-     * Touch density, because the same door is the till's.
-     *
-     * This page sits outside every density scope, so it took the desk's sizes for
-     * everyone: 14px fields in 34px controls, the size at which iOS Safari zooms the
-     * viewport on focus. The people who reach it are not all at a desk — a cashier
-     * signs in on the till tablet, which is the same touch density the selling screen
-     * runs at — and there is no session yet to tell the two apart, so the larger sizes
-     * are the safe default for a screen that is typed once and then left.
+     * Touch density, because this screen is the customer's phone and the till
+     * tablet alike. It sits outside every density scope — no session yet to tell
+     * the two apart — so the larger sizes are the safe default for a screen that is
+     * typed once and then left; the sub-16px field is what makes iOS Safari zoom
+     * the viewport on focus and hide the button the customer was about to press.
      */
     <main className={styles.page} data-density="touch">
       <div className={styles.card}>
         <div className={styles.head}>
           {/*
-           * Two identities, in order: the platform, then the shop. The person
-           * signing in works at the shop — but the software they are looking at
-           * is ours, and this is the screen where that is most visible.
+           * Two identities, in order: the platform, then the shop. The customer
+           * buying here is the shop's customer — but the software they are looking
+           * at is ours, and this is the screen where that is most visible.
            */}
           <BrandMark size={46} title={BRAND.nameTh} />
           <p className={styles.brand}>
@@ -85,8 +113,16 @@ export default async function LoginPage() {
           <p className={styles.tagline}>{BRAND.taglineTh}</p>
         </div>
 
-        <LoginForm />
+        <CustomerSignIn googleClientId={readGoogleClientId()} />
+      </div>
 
+      {/*
+       * The staff door renders *below the card*, not inside it: a customer scanning
+       * the card must not have to read past anything about staff, and a member of
+       * staff still finds their own door at the bottom of the page. The demo list
+       * travels with it, inside the fold.
+       */}
+      <StaffDoorToggle>
         {seedAccountExists ? (
           <div className={styles.demo}>
             <p className={styles.demoTitle}>
@@ -102,9 +138,21 @@ export default async function LoginPage() {
             </ul>
           </div>
         ) : null}
-      </div>
+      </StaffDoorToggle>
 
-      <p className={styles.footer}>{BRAND.taglineEn}</p>
+      <p className={styles.footer}>
+        {BRAND.taglineEn}
+        {' · '}
+        {/*
+          The door a customer walks in through is the one place they are told what the
+          shop does with their phone number, which is the first moment a notice can be
+          read by the person it is about (ADR 0020 collects a number and a name here).
+          It opens as a scrim so reading it does not throw away a half-filled form.
+        */}
+        <PrivacyScrim shopName={shopDisplayName(shop)}>
+          <PrivacyNoticeBody contact={contact} />
+        </PrivacyScrim>
+      </p>
     </main>
   );
 }

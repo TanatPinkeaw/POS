@@ -7,7 +7,9 @@ import { Button, InlineNotice, TextField } from '@/components/ds';
 import { apiPost } from '@/lib/client-api';
 import { CURRENT_CUSTOMER_NOTICE_VERSION } from '@/lib/privacy-notice';
 
-import styles from '@/app/shop/shop-signin.module.css';
+// The stylesheet lives beside the front door it styles: `/login` is the only screen
+// that renders this component since the doors swapped (ADR 0029) — `/shop` is a redirect.
+import styles from '@/app/login/customer-signin.module.css';
 
 import { NoticeAcknowledge } from './NoticeAcknowledge';
 

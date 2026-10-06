@@ -382,10 +382,11 @@ order count alongside the date they joined. Closing an account stops them signin
 and leaves their orders, points and uncollected parcels exactly where they are —
 staff can still find them by the phone number they already know.
 
-### The customer's own door (`/shop`)
+### The customer's own door (`/login`)
 
-A customer reaches the portal from `/shop`, the one screen in the shop area a person
-with no account may open — it is how they get one. Two doors sit side by side:
+The front door belongs to the customer (ADR 0029): `/login` — the address the domain root,
+the proxy, `signOut` and every printed QR already point at — renders the customer's two
+doors side by side:
 
 - **Continue with Google**, for a customer who found the shop online (ADR 0020). The
   Google credential is verified in-process against Google's JWKS; on a first visit the
@@ -393,6 +394,10 @@ with no account may open — it is how they get one. Two doors sit side by side:
   that already has a customer is **refused, not linked** — a typed number proves nothing,
   and attaching it would be a takeover — so the counter's password is the way into that row.
 - **Phone and password**, for a customer the shop enrolled at the counter.
+
+The staff form folds behind one quiet button below the card (one tap, `aria-expanded`), and
+the demo accounts travel inside that fold. The old customer address `/shop` redirects here,
+so QR codes printed before the move keep working.
 
 Both rest on one value. Leave `GOOGLE_CLIENT_ID` unset and the Google door is still
 present, but says plainly that the shop has not configured it rather than showing a
@@ -915,7 +920,9 @@ goes through them.
 Deferred deliberately, and listed here rather than discovered during service:
 
 - **Customer sign-in with Google.** Decided in ADR 0020 (Google plus a phone, with the phone
-still the identity). Built end to end: `/shop` offers **both doors side by side** — continue
+still the identity). Built end to end: `/login` — the front door — offers **both doors side
+by side** (the old address `/shop` redirects there, and the staff form folds behind one
+tap below) — continue
 with Google (which takes a phone number when it is a new account, and **refuses** a number
 another customer or staff member already holds rather than linking, so a typed number can
 never take a row) and the counter's phone-and-password. A first sign-in with a free number
