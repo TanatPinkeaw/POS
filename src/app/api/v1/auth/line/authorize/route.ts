@@ -21,6 +21,7 @@ import { withApi } from '@/lib/api';
 import { getSessionUser } from '@/lib/auth';
 import { ValidationError } from '@/lib/errors';
 import { readLineChannelId } from '@/lib/line-id-token';
+import { publicBaseUrlOr } from '@/lib/public-url';
 import { authSecretKey } from '@/lib/session-token';
 
 /** Where LINE shows the customer their consent screen. */
@@ -50,9 +51,14 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
 
-    const requestUrl = new URL(request.url);
-    /** Where LINE sends the customer back — this deployment's own callback. */
-    const redirectUri = `${requestUrl.origin}/api/v1/auth/line/callback`;
+    /*
+     * Where LINE sends the customer back — the deployment's public address, not
+     * the origin the request arrived with. Behind the shop's reverse proxy the
+     * server sees `localhost:3000`, and a redirect_uri built from that is the
+     * literal bug a customer met: LINE refused to send them anywhere in the
+     * first place. `PUBLIC_BASE_URL` is where their browser actually lives.
+     */
+    const redirectUri = `${publicBaseUrlOr(request.url)}/api/v1/auth/line/callback`;
 
     const state = await new SignJWT({ purpose: 'line-link' })
       .setProtectedHeader({ alg: 'HS256' })

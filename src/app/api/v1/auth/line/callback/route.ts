@@ -29,6 +29,7 @@ import { withApi } from '@/lib/api';
 import { getSessionUser } from '@/lib/auth';
 import { readLineChannelId, verifyLineIdToken } from '@/lib/line-id-token';
 import { bindSignedInCustomer } from '@/lib/line-identity';
+import { publicBaseUrlOr } from '@/lib/public-url';
 import { authSecretKey } from '@/lib/session-token';
 
 /** Where LINE exchanges a code for tokens. */
@@ -39,32 +40,41 @@ const ACCOUNT_PAGE = '/shop/account';
 
 export async function GET(request: Request): Promise<Response> {
   return withApi(async () => {
+    /*
+     * The base every landing redirect is built on: the deployment's public
+     * address when configured, the request's own origin otherwise. The request
+     * origin behind the shop's reverse proxy is `localhost:3000` — the customer
+     * would be sent home to a host their browser cannot reach, the same failure
+     * that named this configuration.
+     */
+    const base = publicBaseUrlOr(request.url);
     const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get('code');
     const state = requestUrl.searchParams.get('state');
     const channelId = readLineChannelId();
 
     if (!channelId || !code || !state) {
-      return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=error`);
+      return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
     }
 
     try {
       // 1. The state we minted, still inside its five minutes.
       await jwtVerify(state, authSecretKey());
     } catch {
-      return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=error`);
+      return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
     }
 
     // 2. The code for the tokens — a server-to-server POST under the channel secret.
     const secret = process.env.LINE_LOGIN_CHANNEL_SECRET?.trim();
     if (!secret) {
-      return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=error`);
+      return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
     }
 
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
-      redirect_uri: `${requestUrl.origin}/api/v1/auth/line/callback`,
+      // Must match the authorize request's redirect_uri character for character.
+      redirect_uri: `${base}/api/v1/auth/line/callback`,
       client_id: channelId,
       client_secret: secret,
     });
@@ -77,11 +87,11 @@ export async function GET(request: Request): Promise<Response> {
         signal: AbortSignal.timeout(10_000),
       });
       if (!tokenResponse.ok) {
-        return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=error`);
+        return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
       }
       const tokens = (await tokenResponse.json()) as { id_token?: string };
       if (!tokens.id_token) {
-        return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=error`);
+        return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
       }
 
       // 3. The same verification the sign-in door performs.
@@ -90,14 +100,14 @@ export async function GET(request: Request): Promise<Response> {
       // 4. Bind to the session's row — the session is the takeover argument.
       const session = await getSessionUser();
       if (!session || session.role !== 'member') {
-        return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=session`);
+        return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=session`);
       }
 
       await bindSignedInCustomer({ userId: session.id, subject: identity.subject });
 
-      return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=bound`);
+      return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=bound`);
     } catch {
-      return NextResponse.redirect(`${requestUrl.origin}${ACCOUNT_PAGE}?line=error`);
+      return NextResponse.redirect(`${base}${ACCOUNT_PAGE}?line=error`);
     }
   });
 }
