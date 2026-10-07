@@ -95,6 +95,82 @@ may override for the acceptance run. The subject it returns is what lands on
 `users.line_subject`. The email in the token is stored, never trusted for linking —
 the takeover guard is the OTP, not an address somebody else may also hold.
 
+### 6. The browser flow signs in as well as binds — one door, one promise (amended)
+
+**What was decided first, and what it did.** Decision 1 built two ways in: an id-token door
+for a browser that holds one, and the OAuth redirect flow for everyone else. Only the
+redirect flow was wired to a screen, and the screen it was wired to was the account page's
+"ผูกบัญชี LINE" button. The front door's own button (`/login`) pointed at the same route, so
+it minted a **binding** state — and the callback requires a signed-in member for a binding,
+which an anonymous visitor has not got. The customer walked to LINE, consented, came back
+and was handed to `/shop/account`, which needs the session they had just failed to obtain
+and therefore bounced them to `/login`. The button promised a sign-in and delivered a loop.
+Worse, the refusal was *silent*: the account card read `?line=` and threw it away, so from
+the customer's side nothing had happened at all.
+
+**The rule now: one door, one promise.** The intent is decided by `line-door.ts` — pure, and
+tested against the loop itself — and travels *inside* the state's signature, so a customer
+cannot edit which door they are at:
+
+- **`/login` signs in**, and says so out loud (`?intent=sign-in`). It never writes a
+  binding, even when the browser happens to hold somebody's session: a shared tablet must
+  not turn one person's sign-in press into a write on another person's account.
+- **`/shop/account` binds**, also out loud (`?intent=bind`). Its press is a binding act
+  against the session that is already there, which is why it uses the same consent screen
+  and no OTP.
+- **A bare `/authorize`** (a bookmark, a printed QR, a link pasted into a chat) falls back to
+the session: no session means sign-in. That is the belt to the explicit braces — no URL a
+customer can reach loops them back to where they started.
+
+**The half that needed a new mechanism.** ADR 0030 §1 already decided that a LINE account
+nobody holds must *prove a phone* before it is attached, and answered that with an OTP. But
+the redirect flow's id token never reaches the browser — LINE sends our callback a code and
+the token comes back to the server — so the customer's own browser had no way to present the
+proof that the `link` route demanded, and a first sign-in through the front door was
+impossible in principle, not merely unbuilt. So the callback hands its verified answer back
+to the browser that completed the consent: a signed, httpOnly, `SameSite=Lax` cookie
+(`line-pending.ts`), ten minutes long, naming a **LINE subject and profile** rather than a
+session. `POST /api/v1/auth/line/link` now accepts either of two proofs — that handoff, or an
+`idToken` from the in-LINE surface — and clears the handoff when it succeeds, so it cannot
+be replayed with a different number. The order is fixed rather than either/or: an id token
+wins when the caller sent one, and the cookie is what answers a browser that has none. A
+browser can honestly hold both (a handoff from an abandoned press, an id token from a later
+one), and refusing that pair would fail a customer for something they cannot see, which is
+the rule the whole door follows — the proof must be the one that was actually verified, not
+the only one that happens to exist.
+
+**Alternatives rejected, and why.** The id token itself in a cookie: a full credential in a
+browser, when the only thing needed is "which LINE account was verified here". A pending
+identity on the server: a new table for a fact that lives for ten minutes and whose owner is
+one browser. The subject in the URL: it lands in history and referrers, which is the opposite
+of the httpOnly property that makes the cookie acceptable. And making the OTP door a
+sign-in door of its own (prove a number, get a session, then bind): that would have been a
+*new* way to become a customer, when the rule this ADR already states is that the LINE proof
+and the phone proof must both be present at the write.
+
+**What the customer sees now.** An unbound LINE account lands on `/login?line=claim` — the
+same fact the account page needs (a phone, a code, the notice) collected on the screen that
+can render it — and every other outcome lands on a page that can *say* it: `session`,
+`inactive`, `staff`, `error` on `/login`, `bound`, `taken`, `error` on the account card. The
+silent bounce is gone in both directions.
+
+**Where the id token is exchanged is now an operator's variable.** `LINE_TOKEN_URL` joins
+`LINE_JWKS_URL` for the reason that one already carries: the acceptance run points it at a
+listener it serves itself, so the whole flow — mint the state, walk the callback, exchange
+the code, verify the id token, start the session — is exercised without a live LINE. The
+trade is the same and is stated: whoever sets it moves where this server sends the shop's
+channel secret, so it is set from the same `.env` that already holds the secret.
+
+**The callback is the one door here that was missing from the limiter.** Every other
+door in this feature counts attempts (ADR 0009 policies `line_signin`, `line_link`,
+`line_webhook`), and this one earns its place more than most: past the state check it makes
+an *outbound* request to LINE on the shop's channel secret, and on the sign-in path it mints
+a session. The state is a bearer value, so "we minted it" bounds who can reach that work but
+not how often — hence ADR 0009 policy `line_callback`, twenty per quarter hour per address,
+which a customer pressing the button twice and reloading never reaches. It is charged once
+the state verifies and before the outbound request, not after a refusal, because here the
+work is the thing being counted.
+
 ## Consequences
 
 - A shop that configures both channels gets the full picture: customers sign in
@@ -105,9 +181,16 @@ the takeover guard is the OTP, not an address somebody else may also hold.
   are limited and write nothing without a credential or a signature.
 - PDPA grows again: a LINE subject is one more identifier on our hardware, riding
   the same unwritten posture as everything else (CONTEXT item 9).
-- Known limits: no rich menu, no broadcast, no template editing from the UI, and
-  the Mini App (LIFF) is the next decision, not this one — the browser flow works
-  in LINE's in-app browser today.
+- Both directions of the front door are now exercised end to end by `npm run
+  acceptance` (section 20): the authorize route mints a state, the callback is walked the
+  way LINE's redirect walks it, the code is exchanged against a token endpoint the run
+  serves, the id token is verified against a key set the run serves, and the customer ends
+  up signed in — plus the two refusals (a binding with no session, a state we did not
+  mint).
+- Known limits: no rich menu, no broadcast, no template editing from the UI. The Mini App
+  (LIFF) remains the next decision rather than this one — but the browser flow now signs a
+  customer in *and* finishes a first sign-in, so LIFF is a nicer surface rather than the
+  only way to complete one.
 - A LINE push costs nothing per message but can be refused at LINE's side; delivery
   receipts remain unread (ADR 0007's limitation, unchanged).
 

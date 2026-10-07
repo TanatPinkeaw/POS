@@ -67,12 +67,71 @@ describe("the LINE door on the front door (/login)", () => {
   it('renders as a plain redirect link, not an embedded widget', () => {
     // LINE Login is a redirect flow: no third-party script belongs on this
     // screen for it, unlike the Google door which loads Identity Services.
-    expect(signIn()).toContain('href="/api/v1/auth/line/authorize"');
+    expect(signIn()).toContain('/api/v1/auth/line/authorize?intent=sign-in');
     expect(signIn()).not.toContain('https://access.line.me');
   });
 
   it('says plainly when the deployment has no channel, rather than hiding the door', () => {
     expect(signIn()).toContain('ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย LINE');
+  });
+});
+
+describe('the sign-in half of the LINE flow', () => {
+  it('names the door it is, so the account page’s press cannot sign somebody in', () => {
+    // One press, one promise (ADR 0030 §1). The front door says `sign-in`; the account
+    // card says `bind`. Neither passes a proof of its own choosing — the intent is the
+    // only thing either URL carries.
+    expect(signIn()).toContain('intent=sign-in');
+    expect(accountPortal()).toContain('/api/v1/auth/line/authorize?intent=bind');
+  });
+
+  it('finishes a first sign-in on the front door: a phone, a code, and the notice', () => {
+    // Found in the field: this step did not exist, so an unbound LINE account could not
+    // become a customer at all — the callback refused and the customer landed back on
+    // the page they started from.
+    expect(signIn()).toContain("'/api/v1/auth/line/link'");
+    expect(signIn()).toContain("'/api/v1/auth/otp'");
+    expect(signIn()).toContain('CURRENT_CUSTOMER_NOTICE_VERSION');
+    expect(signIn()).toContain('<NoticeAcknowledge');
+  });
+
+  it('carries no LINE token in the body — the proof is the httpOnly handoff', () => {
+    // The redirect flow's id token never reaches the browser, so the request this screen
+    // sends must not pretend to hold one; the cookie the callback set is the credential.
+    const source = signIn();
+    const claimStep = source.slice(
+      source.indexOf('function LineClaimStep'),
+      source.indexOf('google door */'),
+    );
+    expect(claimStep).toContain('line/link');
+    expect(claimStep).not.toContain('idToken');
+  });
+
+  it('reads the callback’s word on the server and hands it down as a value', () => {
+    // Read on the page rather than in an effect, so the first paint is already the right
+    // screen rather than the door followed by a step sliding in underneath it.
+    expect(loginPage()).toContain('searchParams');
+    expect(loginPage()).toContain('lineResult={line ?? null}');
+  });
+
+  it('accepts either LINE proof at /link, and exactly the one presented', () => {
+    // Two ways in: an id token from the browser half, or the handoff cookie the redirect
+    // half left behind. Both re-verified at this door rather than trusted from earlier.
+    const linkRoute = readFileSync('src/app/api/v1/auth/line/link/route.ts', 'utf8');
+
+    expect(linkRoute).toContain('LINE_PENDING_COOKIE');
+    expect(linkRoute).toContain('verifyLinePendingToken');
+    expect(linkRoute).toContain('verifyLineIdToken');
+    // Spent, so it cannot be replayed with a different number from the same browser.
+    expect(linkRoute).toContain('.cookies.delete(LINE_PENDING_COOKIE)');
+  });
+
+  it('shows the account card’s own LINE outcome instead of swallowing the query', () => {
+    // The card used to read `?line=` and throw it away, so a failed binding looked like a
+    // card that simply still said "not linked".
+    expect(accountPortal()).toContain('lineAccountNotice');
+    expect(accountPortal()).toContain("case 'taken':");
+    expect(accountPortal()).toContain("case 'session':");
   });
 });
 

@@ -190,6 +190,49 @@ async function googleIdToken(
     .sign(googlePrivateKey);
 }
 
+/**
+ * A LINE token endpoint this run serves itself, and the channel it belongs to.
+ *
+ * The LINE door has two halves that leave the building: the browser's consent screen, and
+ * the server-to-server exchange of the code for an id token. The first is simulated (the
+ * callback is called with the state the authorize route minted, which is exactly what
+ * LINE's redirect does), and the second is pointed at this listener by `LINE_TOKEN_URL` —
+ * the same trade the Google key set and the OTP gateway make. A live LINE would need a
+ * human to press อนุญาต and would make this leg a test of somebody else's uptime.
+ *
+ * The stub mints the id token from the **code**, so a caller chooses which LINE account it
+ * is by choosing the code: `acceptance:U1234` is the account `U1234`.
+ */
+let lineToken: Server | null = null;
+const LINE_TEST_CHANNEL_ID = 'acceptance-line-channel';
+const LINE_TEST_CHANNEL_SECRET = 'acceptance-line-secret';
+const LINE_ISSUER = 'https://access.line.me';
+
+/** The code whose exchange answers with a given LINE account. */
+function lineCode(subject: string): string {
+  return `acceptance:${subject}`;
+}
+
+/** A LINE id token this deployment will accept, for one subject. */
+async function lineIdToken(subject: string, overrides: { fullName?: string } = {}): Promise<string> {
+  if (!googlePrivateKey) {
+    throw new Error('The acceptance signing key was never generated');
+  }
+  return new SignJWT({
+    name: overrides.fullName ?? 'ลูกค้า ไลน์',
+    email: `${subject}@line.example`,
+  })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setSubject(subject)
+    .setIssuedAt()
+    .setIssuer(LINE_ISSUER)
+    .setAudience(LINE_TEST_CHANNEL_ID)
+    .setExpirationTime('1h')
+    // The same key the Google door's tokens are signed with: what makes them LINE's is the
+    // issuer and the audience, which is the point `line-id-token.ts` makes about claims.
+    .sign(googlePrivateKey);
+}
+
 /* ------------------------------------------------------------------ the run */
 
 interface ShopDto {
@@ -331,6 +374,15 @@ interface GoogleDoorDto {
   role?: string;
   pointsBalance?: number;
   redirectTo?: string;
+}
+
+/** What finishing a first LINE sign-in answers: made, or signed back in. */
+interface LineLinkDto {
+  id: string;
+  role: string;
+  fullName: string;
+  created: boolean;
+  redirectTo: string;
 }
 
 /** What finishing a first Google sign-in answers: made, or signed back in. */
@@ -2726,6 +2778,159 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
+  /* ------------- 20. The LINE door, walked the way a browser walks it */
+  section('20. A LINE sign-in through the redirect flow, and the loop it used to be');
+  if (seedGuardUrl !== null) {
+    /*
+     * ADR 0030 §1 amended. The failure this section exists for was reported from the
+     * shop's own deployment: pressing เข้าสู่ระบบด้วย LINE on `/login` showed LINE's
+     * consent screen and then put the customer back on `/login`. The button led to the
+     * *binding* flow, which requires a signed-in member, and the refusal it produced was
+     * aimed at `/shop/account` — a page the visitor could not open — so the loop was
+     * silent from every side.
+     *
+     * So this walks what the browser walks: the front door mints a state, LINE's consent
+     * screen is simulated by calling the callback with that state (which is exactly what
+     * its redirect does), the code is exchanged at a token endpoint this run serves, the
+     * id token is verified against a key set this run serves, and the customer finishes
+     * signed in. Last, because the sections above tally the trail globally.
+     */
+    /*
+     * A browser of its own, deliberately: the shared `anonymous` jar stops being anonymous
+     * in section 16, whose Google door signs it in the moment it recognises an account. A
+     * flow that is *about* having no session has to bring one that has none.
+     */
+    const stranger = new Session(() => base);
+    /**
+     * Where a landing redirect points, as a path.
+     *
+     * Parsed rather than compared as a string, because the host half is deliberately not
+     * this scratch server: every landing is built from `PUBLIC_BASE_URL`, which on a box
+     * that has one is the shop's real address. That is the behaviour under test (a
+     * customer behind a proxy must not be sent to `localhost`), so the assertion is on the
+     * path and the query rather than on the origin.
+     */
+    const landing = (response: Response): string => {
+      const url = new URL(response.headers.get('location') ?? 'http://missing.invalid');
+      return `${url.pathname}${url.search}`;
+    };
+
+    const firstStart = await stranger.raw('/api/v1/auth/line/authorize?intent=sign-in');
+    const authorizeUrl = new URL(firstStart.headers.get('location') ?? 'http://missing.invalid');
+    const firstState = authorizeUrl.searchParams.get('state') ?? '';
+    check(
+      'the front door sends the customer to LINE with a state of our own',
+      firstStart.status === 307 && authorizeUrl.origin === LINE_ISSUER && firstState.length > 0,
+      { status: firstStart.status, to: authorizeUrl.origin },
+    );
+    check(
+      'and sends LINE a callback address this deployment is actually reachable at',
+      (authorizeUrl.searchParams.get('redirect_uri') ?? '').endsWith('/api/v1/auth/line/callback'),
+      authorizeUrl.searchParams.get('redirect_uri'),
+    );
+
+    // The LINE account nobody holds: the one case that needs a phone number, and the case
+    // the old flow turned into a loop instead of a step.
+    const newSubject = 'accept-line-new';
+    const arrival = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineCode(newSubject))}&state=${encodeURIComponent(firstState)}`,
+    );
+    check(
+      'an unknown LINE account is sent to the phone step, not back to the sign-in form',
+      arrival.status === 307 && landing(arrival) === '/login?line=claim',
+      landing(arrival),
+    );
+    const handoff = (arrival.headers.getSetCookie?.() ?? []).find((cookie) =>
+      cookie.startsWith('pos_line_pending='),
+    );
+    const handoffAttributes = (handoff ?? '').toLowerCase();
+    check(
+      'and the proved LINE identity comes back to this browser in an httpOnly handoff',
+      handoff !== undefined &&
+        handoffAttributes.includes('httponly') &&
+        handoffAttributes.includes('samesite=lax'),
+      handoff === undefined ? null : handoff.split(';').slice(1).join(';').trim(),
+    );
+
+    // The phone step, exactly as the screen performs it: a code sent to the number, then
+    // the handoff cookie beside the number and the code.
+    const linePhone = '0865550001';
+    const beforeLineOtp = otpInbox.length;
+    await stranger.call('/api/v1/auth/otp', { method: 'POST', body: { phone: linePhone } });
+    const lineOtp = otpInbox[beforeLineOtp]?.code ?? '';
+
+    const lineSession = new Session(() => base);
+    const claimed = await lineSession.request<LineLinkDto>('/api/v1/auth/line/link', {
+      method: 'POST',
+      headers: { cookie: handoff === undefined ? '' : handoff.split(';')[0]! },
+      body: {
+        phone: linePhone,
+        code: lineOtp,
+        noticeVersion: CURRENT_CUSTOMER_NOTICE_VERSION,
+      },
+    });
+    check(
+      'the phone and its code finish the sign-in LINE started',
+      claimed.status === 200 && claimed.data?.created === true && claimed.data?.role === 'member',
+      claimed.data ?? claimed.error,
+    );
+    const lineMe = await lineSession.call<{ role: string; phone: string }>('/api/v1/auth/me');
+    check(
+      'and that customer is signed in without ever typing a password',
+      lineMe.role === 'member' && lineMe.phone === linePhone,
+      lineMe,
+    );
+
+    // The same LINE account, now bound: the press that used to loop signs in.
+    const secondStart = await stranger.raw('/api/v1/auth/line/authorize');
+    const secondState =
+      new URL(secondStart.headers.get('location') ?? 'http://missing.invalid').searchParams.get(
+        'state',
+      ) ?? '';
+    const signIn = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineCode(newSubject))}&state=${encodeURIComponent(secondState)}`,
+    );
+    check(
+      'a LINE account that is bound signs straight in, on the bare link too',
+      signIn.status === 307 && landing(signIn) === '/shop/products',
+      landing(signIn),
+    );
+    check(
+      'and that arrival carries a session of its own',
+      (signIn.headers.getSetCookie?.() ?? []).some((cookie) => cookie.startsWith('pos_session=')),
+      null,
+    );
+
+    // The binding door without a session, which is the press that used to bounce: it must
+    // land on a page that can explain itself rather than on one that cannot be opened.
+    const bindStart = await stranger.raw('/api/v1/auth/line/authorize?intent=bind');
+    const bindState =
+      new URL(bindStart.headers.get('location') ?? 'http://missing.invalid').searchParams.get(
+        'state',
+      ) ?? '';
+    const bindArrival = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineCode(newSubject))}&state=${encodeURIComponent(bindState)}`,
+    );
+    check(
+      'a binding arrival with no session says so instead of bouncing silently',
+      landing(bindArrival) === '/login?line=session',
+      landing(bindArrival),
+    );
+
+    // A callback with a state we did not mint is a request somebody else started. Both
+    // halves matter: the answer names no customer, and no session comes back with it.
+    const forged = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineCode(newSubject))}&state=not-a-state`,
+    );
+    check(
+      'a callback with a state we did not mint is refused',
+      forged.status === 307 &&
+        landing(forged) === '/login?line=error' &&
+        !(forged.headers.getSetCookie?.() ?? []).some((cookie) => cookie.startsWith('pos_session=')),
+      landing(forged),
+    );
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -2837,6 +3042,41 @@ async function main(): Promise<void> {
       process.env.GOOGLE_CLIENT_ID = GOOGLE_TEST_CLIENT_ID;
       process.env.GOOGLE_JWKS_URL = `http://127.0.0.1:${jwksPort}/certs`;
 
+      /*
+       * The LINE door, pointed the same way (ADR 0030 §1). Its id tokens are verified
+       * against the same key set this run already serves, because what makes a token
+       * LINE's is its issuer and audience rather than its key, and it exchanges its code
+       * at a token endpoint that mints from the code — see `lineCode` above.
+       */
+      const lineTokenPort = await freePort(3314);
+      lineToken = createServer((request, response) => {
+        const chunks: Buffer[] = [];
+        request.on('data', (chunk: Buffer) => chunks.push(chunk));
+        request.on('end', () => {
+          const form = new URLSearchParams(Buffer.concat(chunks).toString('utf8'));
+          const code = form.get('code') ?? '';
+          if (form.get('client_secret') !== LINE_TEST_CHANNEL_SECRET || !code.startsWith('acceptance:')) {
+            response.writeHead(400, { 'content-type': 'application/json' });
+            response.end('{"error":"invalid_grant"}');
+            return;
+          }
+          void lineIdToken(code.slice('acceptance:'.length))
+            .then((idToken) => {
+              response.writeHead(200, { 'content-type': 'application/json' });
+              response.end(JSON.stringify({ access_token: 'acceptance', id_token: idToken }));
+            })
+            .catch(() => {
+              response.writeHead(500, { 'content-type': 'application/json' });
+              response.end('{"error":"server_error"}');
+            });
+        });
+      });
+      await new Promise<void>((resolve) => lineToken!.listen(lineTokenPort, '127.0.0.1', resolve));
+      process.env.LINE_LOGIN_CHANNEL_ID = LINE_TEST_CHANNEL_ID;
+      process.env.LINE_LOGIN_CHANNEL_SECRET = LINE_TEST_CHANNEL_SECRET;
+      process.env.LINE_JWKS_URL = `http://127.0.0.1:${jwksPort}/certs`;
+      process.env.LINE_TOKEN_URL = `http://127.0.0.1:${lineTokenPort}/oauth2/v2.1/token`;
+
       const port = await freePort(FIRST_PORT);
       base = `http://127.0.0.1:${port}`;
       console.log(`\n4. Serving the build on ${base}`);
@@ -2855,6 +3095,10 @@ async function main(): Promise<void> {
     if (googleJwks !== null) {
       await new Promise<void>((resolve) => googleJwks!.close(() => resolve()));
       googleJwks = null;
+    }
+    if (lineToken !== null) {
+      await new Promise<void>((resolve) => lineToken!.close(() => resolve()));
+      lineToken = null;
     }
 
     if (child !== null) {
@@ -2881,6 +3125,10 @@ async function main(): Promise<void> {
     if (googleJwks !== null) {
       await new Promise<void>((resolve) => googleJwks!.close(() => resolve()));
       googleJwks = null;
+    }
+    if (lineToken !== null) {
+      await new Promise<void>((resolve) => lineToken!.close(() => resolve()));
+      lineToken = null;
     }
     if (child !== null) {
       await stopServer(child);

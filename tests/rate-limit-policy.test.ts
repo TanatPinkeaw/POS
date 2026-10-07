@@ -146,6 +146,7 @@ describe('the policy table', () => {
       'consignment_offer',
       'line_signin',
       'line_link',
+      'line_callback',
       'line_webhook',
     ]);
 

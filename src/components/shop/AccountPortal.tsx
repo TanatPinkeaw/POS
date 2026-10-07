@@ -165,10 +165,55 @@ export interface LineBindingView {
  *     added before a push can arrive, and a customer who consented but never
  *     added the shop would otherwise be told the shop is ignoring them.
  */
+/**
+ * What the account page says about a LINE arrival (ADR 0030 §1).
+ *
+ * The card used to *read* this query and then throw it away: the effect below stripped
+ * `?line=` from the URL and re-fetched the binding, so a customer whose binding had
+ * failed saw a card that simply still said "not linked" — the refusal existed and was
+ * never shown, which is how a silent loop reads from the customer's side. `bound` is
+ * worth confirming too, because the friend condition is the half they still have to do.
+ *
+ * Pure and exported so it is tested as behaviour: each of these is the difference between
+ * a customer who knows what to do next and one who presses the button again.
+ */
+export function lineAccountNotice(
+  result: string | null,
+): { tone: 'success' | 'warning' | 'danger'; body: string } | null {
+  switch (result) {
+    case 'bound':
+      return {
+        tone: 'success',
+        body: 'ผูกบัญชี LINE เรียบร้อยแล้ว — อย่าลืมเพิ่มเพื่อนร้านใน LINE เพื่อให้ข้อความส่งถึงคุณ',
+      };
+    case 'taken':
+      return {
+        tone: 'danger',
+        body: 'บัญชี LINE นี้ถูกผูกกับบัญชีลูกค้าคนอื่นอยู่แล้ว — ถ้าเป็นบัญชีของคุณ กรุณาติดต่อร้านที่เคาน์เตอร์',
+      };
+    case 'session':
+      return {
+        tone: 'warning',
+        body: 'เซสชันหมดอายุระหว่างผูกบัญชี LINE — กรุณาเข้าสู่ระบบใหม่แล้วกดผูกบัญชี LINE อีกครั้ง',
+      };
+    case 'error':
+      return {
+        tone: 'danger',
+        body: 'ผูกบัญชี LINE ไม่สำเร็จ หรือการยืนยันหมดอายุ — กดผูกบัญชี LINE อีกครั้งได้เลย',
+      };
+    default:
+      // A code that is not ours gets no sentence: inventing one is how a message ends up
+      // describing something that did not happen.
+      return null;
+  }
+}
+
 function LinePanel({ line }: { line: LineBindingView }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** The word the callback came back with, shown rather than swallowed. */
+  const [arrival, setArrival] = useState<ReturnType<typeof lineAccountNotice>>(null);
   const [binding, setBinding] = useState(line);
 
   /*
@@ -183,9 +228,11 @@ function LinePanel({ line }: { line: LineBindingView }) {
       return;
     }
     const params = new URLSearchParams(window.location.search);
-    if (params.get('line') === null) {
+    const outcome = params.get('line');
+    if (outcome === null) {
       return;
     }
+    setArrival(lineAccountNotice(outcome));
     window.history.replaceState(null, '', '/shop/account');
     void (async () => {
       try {
@@ -231,6 +278,7 @@ function LinePanel({ line }: { line: LineBindingView }) {
     <Stack gap="md">
       <Card title="บัญชี LINE" subtitle="ที่ที่ร้านส่งแจ้งเตือนพรีออเดอร์ให้คุณ">
         <Stack gap="md">
+          {arrival ? <InlineNotice tone={arrival.tone}>{arrival.body}</InlineNotice> : null}
           {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
 
           {binding.lineSubject === null ? (
@@ -243,7 +291,14 @@ function LinePanel({ line }: { line: LineBindingView }) {
                 icon="link"
                 loading={busy}
                 onClick={() => {
-                  window.location.href = '/api/v1/auth/line/authorize';
+                  /*
+                   * `?intent=bind` said out loud, so this press means one thing even if
+                   * the session has expired by the time the customer gets back from LINE:
+                   * they are told to sign in again (`?line=session`) rather than being
+                   * signed in as somebody and dropped on a different screen. The front
+                   * door's own link says `sign-in` for the mirror-image reason.
+                   */
+                  window.location.href = '/api/v1/auth/line/authorize?intent=bind';
                 }}
               >
                 ผูกบัญชี LINE

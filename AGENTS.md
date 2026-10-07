@@ -98,6 +98,21 @@ Recorded so a session starts from the truth rather than from the last commit mes
   keeps), the collection code rides the customer's own LINE or nothing — never the
   shop's group — and the group gains the refund and dismissed-transfer facts, written
   in the same transaction as the act. `npm run line:wizard` walks the human half.
+- **The front door's LINE button signs in, and the loop it used to be is a test case**
+  (ADR 0030 §6). It linked to the *binding* flow, which requires a member session, so a
+  customer consented with LINE and came back to `/login` — and every refusal was aimed at
+  `/shop/account`, a page they could not open, so nothing ever said so. Now: one door one
+  promise, with the intent carried inside the signed state (`src/lib/line-door.ts`); a first
+  sign-in finishes on the front door through a ten-minute httpOnly handoff
+  (`src/lib/line-pending.ts`) instead of being impossible; and every outcome lands on a
+  screen that can say it. `npm run acceptance` §20 walks the whole redirect flow against a
+  token endpoint the run serves itself.
+- **The till's service worker may answer no; it may not reject** (ADR 0024 §9). Two console
+  errors on the shop's own deployment came out of that file's shape, not the phone's:
+  `caches.open()` outside every `try` (a browser without CacheStorage rejected every request
+  the worker managed, documents and chunks alike), a failed `cache.put()` throwing away a
+  response that had already arrived, and `handleRuntime` rethrowing on purpose. A document
+  is also recognised by `destination === 'document'` now, not only by `mode`.
 - **The fonts are Inter (Latin) and Mitr (Thai)**, self-hosted through `next/font`; the
   receipt drawn to a canvas follows `--font-thai` because a canvas cannot read a CSS
   variable.

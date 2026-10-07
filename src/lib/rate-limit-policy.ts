@@ -40,6 +40,7 @@ export type RateLimitPolicyName =
   | 'consignment_offer'
   | 'line_signin'
   | 'line_link'
+  | 'line_callback'
   | 'line_webhook';
 
 export interface RateLimitPolicy {
@@ -202,6 +203,16 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * `otp_send_address`, because the two doors are walked by the same screen.
    */
   line_link: { capacity: 10, windowMs: 15 * 60_000 },
+  /*
+   * The callback LINE sends the browser back to (ADR 0030 §1). Every other door here
+   * that needs no session is limited, and this one earns its place more than most: a
+   * request that gets past the state check makes an *outbound* HTTPS request to LINE on
+   * the shop's channel secret, and on the sign-in path mints a session. The state is a
+   * bearer value, so "we minted it" bounds who can reach the work but not how often —
+   * twenty back to back is a customer who pressed the button twice and reloaded, and a
+   * script cannot walk the door faster than that.
+   */
+  line_callback: { capacity: 20, windowMs: 15 * 60_000 },
   /*
    * The webhook LINE's platform posts (ADR 0030 §4). Signature-checked before
    * anything is written, so a caller without the secret gains nothing by

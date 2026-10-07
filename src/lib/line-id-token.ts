@@ -28,6 +28,24 @@ import { DomainError } from './errors';
 /** LINE publishes its signing keys here; the key set is cached and rotated by jose. */
 export const LINE_JWKS_URL = 'https://api.line.me/oauth2/v2.1/certs';
 
+/** Where this server exchanges an authorization code for an id token. */
+export const LINE_TOKEN_URL = 'https://api.line.me/oauth2/v2.1/token';
+
+/**
+ * The token endpoint the callback exchanges a code at — LINE's, unless overridden.
+ *
+ * The same three reasons the JWKS override below carries, and the same caveat: the
+ * acceptance run points it at a stub it serves itself (the round trip cannot be proved
+ * against LINE from CI, and an unproved sign-in flow is one nobody has run), an egress
+ * proxy can mirror the endpoint, and whoever sets it moves where this server sends the
+ * shop's channel secret — which is why it is an operator's variable, set from the same
+ * `.env` that already holds the secret itself.
+ */
+export function readLineTokenUrl(env: Record<string, string | undefined> = process.env): string {
+  const url = env.LINE_TOKEN_URL?.trim();
+  return url && url.length > 0 ? url : LINE_TOKEN_URL;
+}
+
 /**
  * The key set to verify against — LINE's, unless the operator overrides it.
  *

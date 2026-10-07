@@ -55,8 +55,20 @@ const DEMO_ACCOUNTS = [
  * configured rather than loading a third-party script or firing a request to
  * find out. A door without its value renders as a sentence saying so — the shop
  * sees a closed door, not a broken one.
+ *
+ * **`?line=` is read here too**, and for the same reason: it is the word the LINE
+ * callback came back with (a sign-in that needs a phone number, or a refusal this
+ * screen has to explain), and a value read on the server is a value the first paint
+ * already carries. Left to a client effect, the customer would see the door, then a
+ * different screen slide in underneath them.
  */
-export default async function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ line?: string }>;
+}) {
+  const { line } = await searchParams;
+
   const session = await getSessionUser();
   if (session) {
     redirect(homePathForRole(session.role));
@@ -119,6 +131,7 @@ export default async function LoginPage() {
         <CustomerSignIn
           googleClientId={readGoogleClientId()}
           lineConfigured={readLineChannelId() !== null}
+          lineResult={line ?? null}
         />
       </div>
 

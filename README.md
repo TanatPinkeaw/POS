@@ -209,9 +209,9 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1362 tests across 108 files: unit + integration
+npm test                # 1417 tests across 112 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 214 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders styled
 npm run browser:target  # that build still parses on the phone a customer holds
 npm run limiter:race    # two servers against one database share one limit
@@ -355,10 +355,28 @@ address (ADR 0030, below) — the code rides the customer's own LINE or nothing.
 A customer can **sign in with LINE**, bind their LINE account to this one from
 their account page, and — with one more tap — be told "สินค้าพร้อมรับ" on their own
 LINE instead of only in the app. The phone stays the identity: LINE is a *door*,
-the same way Google is (ADR 0020), and binding a LINE account to a row that may
-already hold points and history proves the phone by **OTP**, because a callback in a
+the same way Google is (ADR 0020), and binding a LINE account to a row that may already
+hold points and history proves the phone by **OTP**, because a callback in a
 stranger's browser plus a typed number is exactly the takeover ADR 0020 §4 refuses.
 Binding from an already-signed-in account page needs no OTP — the session is the proof.
+
+The front door and the account page walk the same consent screen and keep different
+promises (ADR 0030 §6). `/login` **signs in**: a LINE account already bound to a customer
+is signed straight in, and one nobody holds is asked for a phone number and an OTP before
+anything is attached — the verified LINE identity coming back to that browser in a
+short-lived httpOnly handoff, so the phone step needs no second walk through consent.
+`/shop/account` **binds**: it attaches the LINE account to the session the browser already
+holds, which is the whole proof a binding needs. A bare link — an old bookmark, a printed
+QR, one somebody pasted into a chat — falls back to whoever is signed in, and an anonymous
+visitor to it is signed in rather than looped back to the page they started on.
+
+Every outcome is said out loud. A refusal lands on `/login` with a word for it
+(`?line=session` for a binding that arrived without a session, `inactive` for a closed
+account, `staff` for a staff row, `error` for an expired or failed consent), and a binding
+that failed because the LINE account already belongs to another customer lands on the
+account card as `taken`. Before this, every one of those was a redirect to a page that
+silently ignored the word it was given — which is what a loop looks like from the
+customer's side.
 
 Consent is two facts, and a push needs both: the customer's (`line_consent_at`, with
 the version of the text they read; withdrawal clears the binding and the consent
@@ -416,7 +434,7 @@ staff can still find them by the phone number they already know.
 ### The customer's own door (`/login`)
 
 The front door belongs to the customer (ADR 0029): `/login` — the address the domain root,
-the proxy, `signOut` and every printed QR already point at — renders the customer's two
+the proxy, `signOut` and every printed QR already point at — renders the customer's three
 doors side by side:
 
 - **Continue with Google**, for a customer who found the shop online (ADR 0020). The
@@ -424,6 +442,12 @@ doors side by side:
   customer gives a phone number, and the name comes from their Google profile. A number
   that already has a customer is **refused, not linked** — a typed number proves nothing,
   and attaching it would be a takeover — so the counter's password is the way into that row.
+- **Sign in with LINE**, for a customer who met the shop in LINE (ADR 0030): an account
+  already bound signs straight in, and one nobody holds is asked for a phone number and an
+  OTP before it is attached. The door is a plain redirect to LINE's own consent screen — no
+  third-party script on this page — and it is configured by `LINE_LOGIN_CHANNEL_ID` alone.
+  A Google script that cannot load, or a LINE button that cannot paint, says so and points
+  at the door below rather than leaving an empty white space.
 - **Phone and password**, for a customer the shop enrolled at the counter.
 
 The staff form folds behind one quiet button below the card (one tap, `aria-expanded`), and
@@ -1020,8 +1044,9 @@ for the customer to scan, print or read down the phone.
   system does not capture one. SMS/webhook reaches the customer's phone today.
   See ADR 0007 decision 3 — **built since, in the shape it left open** (ADR 0030): a
   customer can sign in with LINE, bind their own account by OTP, and receive their
-  collection code on their own LINE; the shop's group keeps facts about orders. What
-  is still not built is the LIFF surface and broadcast.
+  collection code on their own LINE; the shop's group keeps facts about orders. Sign-in
+  works in any browser through LINE's redirect flow, so what is still not built is the
+  LIFF surface (a nicer in-LINE surface, not the only way in — ADR 0030 §6) and broadcast.
 - **The hosted rental.** A shop signing itself up with Google and getting its own
   space on a box we run, instead of a shop installing this on its own machine. The
   direction is decided and written down (ADR 0016) and the order of work is

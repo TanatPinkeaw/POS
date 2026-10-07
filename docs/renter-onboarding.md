@@ -281,6 +281,13 @@ optional and independent of everything above:
   own in-app browser, and **Google refuses to sign anyone in there** — that is
   Google's rule, not ours. Tell them to tap **เข้าสู่ระบบด้วย LINE** (which works
   inside LINE), or to open the page in Safari/Chrome and use the Google button.
+  The LINE button **signs a customer in**: an account already linked opens their
+  account straight away, and one that is not yet linked is asked for the phone
+  number and a code before anything is attached. If LINE sends them back to the
+  sign-in page, the page says which of these happened and what to do — the
+  confirmation expired (press the button again), the account is closed or is a
+  staff account (a counter conversation), or that LINE account already belongs to
+  another customer. Only the first two are things the customer can fix alone.
 - **Bind from the account page.** A customer already signed in opens
   `/shop/account` → **LINE** → ผูกบัญชี LINE, which walks them through LINE's own
   consent screen and back. No code needed — they are already signed in.

@@ -82,17 +82,26 @@ export const lineSignInSchema = z.object({
 });
 
 /**
- * The second half of a first LINE sign-in: the token, the number, and the code
- * that proves the number is held.
+ * The second half of a first LINE sign-in: the number and the code that proves it,
+ * beside whichever proof of the LINE account this caller holds.
  *
- * Both halves travel together for the same reason the Google pair does — the token
- * is re-verified rather than held in a half-signed-up state on the server. The code
- * is what makes this door a *binding* rather than a typed-number signup (ADR 0030
- * §1): attaching a second door to a row that may already hold points and history
- * is the act a typed number cannot be trusted for.
+ * The code is what makes this door a *binding* rather than a typed-number signup
+ * (ADR 0030 §1): attaching a second door to a row that may already hold points and
+ * history is the act a typed number cannot be trusted for.
+ *
+ * The LINE proof arrives one of two ways, and the route demands exactly one of them:
+ *
+ *   * **`idToken`** — a browser that holds one, which is the LIFF surface the door was
+ *     first written for.
+ *   * **The handoff cookie** the redirect flow leaves behind (`line-pending.ts`), for
+ *     the browser that walked LINE's consent screens and came back through the server,
+ *     where the id token never reaches the page.
+ *
+ * Both are re-verified at this door rather than trusted from an earlier step, which is
+ * the rule the Google pair states: nothing is held half-signed-up on the server.
  */
 export const lineLinkSchema = z.object({
-  idToken: z.string().trim().min(1, 'A LINE credential is required'),
+  idToken: z.string().trim().min(1, 'A LINE credential is required').optional(),
   phone: z.string().trim().max(20),
   code: z.string().trim().max(10),
   fullName: z.string().trim().min(1).max(100).optional(),
