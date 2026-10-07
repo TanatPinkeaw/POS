@@ -101,6 +101,19 @@ Recorded so a session starts from the truth rather than from the last commit mes
 - **The fonts are Inter (Latin) and Mitr (Thai)**, self-hosted through `next/font`; the
   receipt drawn to a canvas follows `--font-thai` because a canvas cannot read a CSS
   variable.
+- **A security audit found and closed the token-kind confusion** (commit `1d9f507`):
+  every token family under the one `AUTH_SECRET` now carries and verifies its own
+  audience (`pos-session` for sessions, `pickup-handover` for codes, `receipt-download`
+  for links), because the audit demonstrated a same-key pickup-shaped token with a
+  role field verifying as an admin session when only the issuer was checked. The
+  pickup PIN moved from `Math.random` to `randomInt`, the rule `otp.ts` and
+  `display-devices.ts` already stated for their own codes — three credential paths,
+  one rule. The regression lives in `tests/session-token-audience.test.ts`.
+  Deploying this invalidates sessions minted before it lands: every user logs in
+  again once, deliberately — a backwards-compatible half-check would have kept the
+  gap the audit found. `payment-intents`' reference is the one `Math.random` left
+  standing, judged in the audit: it is a human-read reference printed on a QR, not a
+  credential — the confirm route is staff-gated, so predicting it gains nothing.
 - **`npm run server:check` exists because the expensive failure was not in the code.** A
   server left over from before a rebuild serves HTML whose asset files no longer exist,
   which on screen reads exactly like a bug in the change just made, and cost more than one
@@ -126,7 +139,11 @@ Recorded so a session starts from the truth rather than from the last commit mes
   outage/replay flow are now tested** by `scripts/offline-browser.ts`; Playwright is
   an explicitly approved dev-only dependency, not a fake database. Hardware power
   loss, browser eviction and physical printer behavior remain unmeasured. "Green"
-  means *correct as far as the tests reach*, not shop field use.
+  means *correct as far as the tests reach*, not shop field use. The restore drill
+  has also run end to end on this dev box (Windows, PostgreSQL client found via
+  `PG_BIN` in `.env`), but the drill's "over the shop's own database" path is still
+  only rehearsed here — CI holds no PostgreSQL superuser until its first run proves
+  otherwise.
 
 ---
 

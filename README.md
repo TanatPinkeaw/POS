@@ -209,7 +209,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1358 tests across 107 files: unit + integration
+npm test                # 1362 tests across 108 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders styled
@@ -448,9 +448,13 @@ down a phone — so both are offered rather than one being chosen for the custom
 The QR is a signed token (`src/lib/pickup-token.ts`), not a stored secret. It names
 exactly one order, it expires when the hold does, and its own audience means a
 signed-in member's session cannot be presented as a pickup code (asserted in
-`tests/pickup-token.test.ts`). Nothing is written to the database to make the code
-work, so a shop that rotates its signing secret invalidates codes on the shelf —
-reprint them rather than leaving a customer holding a dead one.
+`tests/pickup-token.test.ts`) — and, since both families share one signing key,
+the session carries its own audience (`pos-session`) so the mistake cannot run the
+other way either (`tests/session-token-audience.test.ts`). Nothing is written to
+the database to make the code work, so a shop that rotates its signing secret
+invalidates codes on the shelf — reprint them rather than leaving a customer
+holding a dead one. The PIN is drawn from the crypto generator (`randomInt`),
+the same rule the OTP and pairing codes follow: it is a credential too.
 
 The till has one box at the counter, and the *shape* of what arrives decides where
 it goes: three dot-separated segments is a scanned code, four digits is a PIN,
