@@ -335,9 +335,14 @@ sudo systemctl start pos
 ```
 
 Honest state of this: the dump is written by a command with tests around its
-configuration parsing, but **the restore is a recipe by hand and nothing in the repo
-rehearses it** — no script, no check, no CI job. Treat the drill above as part of the
-install, not as documentation.
+configuration parsing, and **the restore is now rehearsed by a machine** —
+`npm run restore:drill` builds the demo shop in a scratch schema, takes the dump with
+`pg_dump` and restores it with `psql --set ON_ERROR_STOP=1 --file`, counting every
+table row-for-row and the two gapless counters byte-for-byte. It runs as part of
+`npm run verify:all`, so the recipe cannot rot unnoticed. What the drill cannot
+rehearse is the half that involves the shop's own hardware: the drill's PostgreSQL is
+the development box's, the restored shop is never *served* to a till, and the moment
+where someone must find last night's file at 02:30 is still a human's.
 
 ---
 
@@ -407,8 +412,9 @@ sequence is a minute or two on a mini-PC, most of it `npm ci`.
   and the units above are the path that is maintained.
 - **Monitoring and alerting.** A failed unit is only visible to somebody who runs
   `systemctl status`, or to whatever the host already does with the journal.
-- **A rehearsed restore.** §7 is a recipe. The repo has no drill, and that is a real
-  gap rather than a stylistic one.
+- **Serving the restored shop.** The drill in §7 proves the dump comes back as rows;
+  nothing here rehearses pointing a till at the restored database and taking sales
+  on it.
 - **Hardening the box.** Firewall, SSH keys, unattended upgrades, and who else can log
   in are the host's business; this document assumes a machine only you can reach, which
   is also the assumption Tailscale Serve in §4 keeps.

@@ -134,6 +134,13 @@ jobs:
       # Real browser/IndexedDB, never a memory or fake database adapter.
       - run: npx playwright install --with-deps chromium
       - run: npm run offline:browser -- --skip-build
+
+      # The restore recipe of docs/homelab-deploy.md §7, performed by a machine:
+      # demo shop → pg_dump → psql restore → count. No build, no server; the clients
+      # are installed with the server image, which is why the drill belongs here
+      # rather than anywhere without a PostgreSQL service.
+      - run: npm run restore:drill
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:

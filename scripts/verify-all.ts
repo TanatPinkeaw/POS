@@ -20,6 +20,10 @@
  *      with every button dead, and every other gate here reports it green.
  *   5. `limiter:race` — two servers, one database, one limit (ADR 0012).
  *   6. `offline:browser` — actual Chromium storage and cashier outage/replay journey.
+ *   7. `restore:drill` — §7 of docs/homelab-deploy.md performed by a machine: seed,
+ *      pg_dump, psql restore, count. It needs the database but no server and no
+ *      build, so it sits last: the one gate that answers "would the backup save us",
+ *      which no test of running code can answer.
  *
  * Steps 3–6 reuse step 2's build with `--skip-build`, deliberately. A release
  * check should be checking *one* artefact: rebuilding between gates would mean the
@@ -95,6 +99,10 @@ const steps: Step[] = [
     label: 'offline browser (Chromium, IndexedDB, cash replay and drawer close)',
     command: `npm run offline:browser --${reuseBuild}${keepFlag}`,
   },
+  {
+    label: 'restore drill (the §7 recipe: seed, pg_dump, psql restore, count)',
+    command: 'npm run restore:drill',
+  },
 ];
 
 /** `1m 04s` rather than `64`, because a sweep is measured in minutes. */
@@ -110,8 +118,8 @@ console.log('POS — every gate, in order');
 console.log('==========================');
 console.log(
   skipBuild
-    ? '\n6 steps. No build: every step reuses the existing `.next`.'
-    : '\n6 steps. The build is made once, by the journey, and the later gates reuse it.',
+    ? '\n7 steps. No build: every step reuses the existing `.next`.'
+    : '\n7 steps. The build is made once, by the journey, and the later gates reuse it.',
 );
 
 const results: Result[] = [];

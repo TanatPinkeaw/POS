@@ -113,8 +113,9 @@ Three decisions are worth knowing before changing anything here:
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run line:wizard` | Walks the human half of the LINE feature (ADR 0030): the two channels to create in LINE's console, the values to paste, the callback/webhook URLs to register. `-- --verify` reports which doors the current `.env` opens. |
 | `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
-| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser` against the one build the journey makes. Stops at first failure; matches CI. |
+| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser`, `restore:drill` against the one build the journey makes. Stops at first failure; matches CI. |
 | `npm run offline:browser` | Real Chromium/IndexedDB offline cash, replay/reconnect, loan release and recovery on a test-only scratch schema. Install Chromium with `npx playwright install chromium`; `-- --skip-build` reuses the production build. |
+| `npm run restore:drill` | Rehearses the restore recipe in `docs/homelab-deploy.md` §7 against a scratch schema: migrate + seed the demo shop, `pg_dump` with the backup's own command and compressor, then `psql --set ON_ERROR_STOP=1 --file` into a namespace that was empty a moment before, and count every table row-for-row — plus the two gapless counters byte-for-byte (ADR 0002). Needs the PostgreSQL client binaries (`pg_dump`, `psql`); `PG_BIN` in `.env` names the directory when the Windows installer left them off `PATH`. `-- --keep`, `-- --verbose`. | `TEST_DATABASE_URL` + pg client |
 
 The migration is **finished**: every route is on the design system
 and the vendored theme is gone — no Bootstrap classes, no Bootstrap JavaScript, no
@@ -215,6 +216,7 @@ npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders
 npm run browser:target  # that build still parses on the phone a customer holds
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
+npm run restore:drill   # the homelab-deploy §7 restore recipe, rehearsed by a machine
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
 npm run otp:gateway     # prints an OTP instead of texting it (local dev)

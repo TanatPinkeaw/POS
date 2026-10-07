@@ -118,16 +118,15 @@ Recorded so a session starts from the truth rather than from the last commit mes
   LINE addresses for customers, multiple branches, a second register, **storing** a
   product image (a photo is a link now — ADR 0014), RTL, object storage, and a
   reconciliation over a date range rather than a day.
-- **Not yet proven, and this is the honest half.** No shop has run this. There is no
-  field pilot; Chromium now exercises the offline flow in CI, but the
-  restore in `docs/homelab-deploy.md` §7 is a recipe that no script, check or CI job
-  rehearses, nothing has ever loaded `deploy/systemd/` — those units were reviewed by
-  reading, never by `systemd-analyze verify` or a real boot — there is no
-  experience of real data volume in reports or analytics. **Actual IndexedDB and
-  the cashier outage/replay flow are now tested** by `scripts/offline-browser.ts`;
-  Playwright is an explicitly approved dev-only dependency, not a fake database.
-  Hardware power loss, browser eviction and physical printer behavior remain
-  unmeasured. "Green" means *correct as far as the tests reach*, not shop field use.
+- **Not yet proven, and this is the honest half.** No shop has run this. There is no field pilot; Chromium now exercises the offline flow in CI, the restore
+  recipe is rehearsed by `scripts/restore-drill.ts` (in `verify:all`), but nothing
+  has ever loaded `deploy/systemd/` — those units were reviewed by reading, never
+  by `systemd-analyze verify` or a real boot — and there is no experience of real
+  data volume in reports or analytics. **Actual IndexedDB and the cashier
+  outage/replay flow are now tested** by `scripts/offline-browser.ts`; Playwright is
+  an explicitly approved dev-only dependency, not a fake database. Hardware power
+  loss, browser eviction and physical printer behavior remain unmeasured. "Green"
+  means *correct as far as the tests reach*, not shop field use.
 
 ---
 
@@ -516,25 +515,19 @@ versions type-check and both refuse the request; only one is readable at a count
 
 Open threads, roughly in the order worth doing:
 
-1. **A restore that a machine rehearses.** §7 of `docs/homelab-deploy.md` is a recipe
-   performed by hand, and nothing runs it — so the one procedure a shop needs to have
-   worked before it needs it is the one with no measurement behind it. Restoring last
-   night's dump into a scratch schema and counting the rows would move it off the
-   *Where it stands* gap list, and belongs in `verify:all` beside the other gates that
-   start a server.
-2. **A reconciliation over a range.** The dashboard reconciles today — confirmed
+1. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-3. **LINE beyond the door (ADR 0030 built the door).** Sign-in, binding, consent and
+2. **LINE beyond the door (ADR 0030 built the door).** Sign-in, binding, consent and
    the customer's own "order ready" push are built; the webhook tracks the friend
    condition. Still open: a **LIFF surface** (the in-LINE browser works against the
    ordinary pages today, so LIFF is a UI decision, not a schema one), **broadcast**
    (a consent question first — what a shop may push to everyone who said yes is a
    policy, not a feature), and replying to customer messages (the Official
    Account's own auto-response covers it for now).
-4. **A `/design` reference route** that renders every primitive with its tokens,
+3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
-5. **A command that prints where this checkout stands** — branch, how much of it is
+4. **A command that prints where this checkout stands** — branch, how much of it is
    unpushed, and the last gate's numbers — so the round after this one starts from a
    measurement instead of a remembered one. `npm run server:check` answered the
    *adjacent* question (is the process on this port serving this checkout's build);

@@ -34,6 +34,7 @@
     "line:wizard": "tsx scripts/line-wizard.ts",
     "otp:gateway": "tsx scripts/otp-gateway.ts",
     "backup": "tsx scripts/backup.ts",
+    "restore:drill": "tsx scripts/restore-drill.ts",
     "brand:palette": "tsx scripts/brand-palette.ts",
     "brand:icons": "tsx scripts/build-icons.ts",
     "verify": "npm run typecheck && npm run ui:audit && npm run doc:audit && npm run brand:palette -- --check && npm test",
