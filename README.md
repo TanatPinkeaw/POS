@@ -846,6 +846,17 @@ who already had the storefront open is told `ร้านนี้ยังไ�
 watching a basket do nothing; the storefront drops the basket, the steppers and the button
 together, and the pre-order board stays reachable for orders already placed — see ADR 0028.
 
+**The storefront's tile is the till's tile, two up on a phone.** Photo across the top at
+the tile's own width, the name under it, then price, stock and the stepper — because a
+customer choosing from a catalogue is doing what an operator does across the counter:
+recognising goods rather than reading Thai names down a list (ADR 0014). A 48px photograph
+beside the name made the picture a badge and left the middle of a wide tile empty. Two
+tiles fit from 410px of viewport, which is measured rather than chosen: two 44px stepper
+buttons and the count between them need 120px of a tile, and below that the buttons alone
+are most of it — at 375px two tiles would be 106px inside, with 88px of them buttons. One
+per row made every 4:3 photo a 260px banner and left the basket thirty screens down the
+page, which is the distance the bar below exists to take away.
+
 **The basket is one tap away on a phone.** `SplitPane` stacks into one column below its
 breakpoint and the storefront stacks content first, which is right until you count the
 scrolling: the basket is the only control that places a pre-order, and it sat after every

@@ -209,13 +209,29 @@ export function ShopCatalog({
 
                   return (
                     <div className={styles.tile} key={product.id} data-sold-out={soldOut}>
-                      <div className={styles.head}>
-                        <Thumb url={product.imageUrl} size="md" />
-                        <span className={styles.name}>{product.name}</span>
-                        <Money amount={product.salePrice} />
-                      </div>
+                      {/*
+                       * The photo takes the tile's whole width and the name sits under it —
+                       * the till's tile, because this is the same sale seen from the other
+                       * side of it. At 48px tucked beside the name the picture told the
+                       * customer nothing and left the tile's middle empty; at the tile's own
+                       * width it is what makes one product recognisable from the next
+                       * without reading Thai names down a list (ADR 0014).
+                       */}
+                      <Thumb url={product.imageUrl} size="fill" />
 
-                      <div className={styles.foot}>
+                      <span className={styles.name}>{product.name}</span>
+
+                      {/* The till's price weight: between two tiles this figure is what is
+                       * actually being compared. */}
+                      <Money amount={product.salePrice} size="lg" />
+
+                      {/*
+                       * The chip is wrapped rather than a direct child: the column stretches
+                       * its children to the tile's width, and a chip stretched that far is a
+                       * full-width bar wearing a chip's radius. This is the row that has to
+                       * stay a chip, because it is where the shop says "หมด".
+                       */}
+                      <div className={styles.stock}>
                         <Pill
                           tone={
                             soldOut
@@ -227,8 +243,9 @@ export function ShopCatalog({
                         >
                           {soldOut ? 'สินค้าหมด' : `ขายได้ ${product.availableQty}`}
                         </Pill>
+                      </div>
 
-                        {acceptsPreorders ? (
+                      {acceptsPreorders ? (
                           /*
                            * The plus/minus pair is not decoration: it is the only way a
                            * quantity gets into the basket on the right. Without the basket
@@ -236,36 +253,35 @@ export function ShopCatalog({
                            * read as a broken page rather than as a shop that takes no
                            * pre-orders.
                            */
-                          <span className={styles.stepper}>
-                            {/*
-                             * `ln-tap` on both: these two are tapped over and
-                             * over by a thumb, so they hold the touch minimum
-                             * whatever the area's density is.
-                             */}
-                            <button
-                              type="button"
-                              className={`${styles.stepperButton} ln-tap`}
-                              aria-label={`ลดจำนวน ${product.name}`}
-                              disabled={soldOut || quantity <= 0}
-                              onClick={() => setQuantity(product.id, quantity - 1)}
-                            >
-                              −
-                            </button>
-                            <span className={styles.stepperValue} aria-live="polite">
-                              {quantity}
-                            </span>
-                            <button
-                              type="button"
-                              className={`${styles.stepperButton} ln-tap`}
-                              aria-label={`เพิ่มจำนวน ${product.name}`}
-                              disabled={soldOut || quantity >= product.availableQty}
-                              onClick={() => setQuantity(product.id, quantity + 1)}
-                            >
-                              +
-                            </button>
+                        <span className={styles.stepper}>
+                          {/*
+                           * `ln-tap` on both: these two are tapped over and
+                           * over by a thumb, so they hold the touch minimum
+                           * whatever the area's density is.
+                           */}
+                          <button
+                            type="button"
+                            className={`${styles.stepperButton} ln-tap`}
+                            aria-label={`ลดจำนวน ${product.name}`}
+                            disabled={soldOut || quantity <= 0}
+                            onClick={() => setQuantity(product.id, quantity - 1)}
+                          >
+                            −
+                          </button>
+                          <span className={styles.stepperValue} aria-live="polite">
+                            {quantity}
                           </span>
-                        ) : null}
-                      </div>
+                          <button
+                            type="button"
+                            className={`${styles.stepperButton} ln-tap`}
+                            aria-label={`เพิ่มจำนวน ${product.name}`}
+                            disabled={soldOut || quantity >= product.availableQty}
+                            onClick={() => setQuantity(product.id, quantity + 1)}
+                          >
+                            +
+                          </button>
+                        </span>
+                      ) : null}
                     </div>
                   );
                 })}

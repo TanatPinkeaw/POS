@@ -1,25 +1,22 @@
 /*
  * The storefront's own tile set.
  *
- * Not `Till.module.css`, although the tokens and the shape are deliberately the
- * same: the till's tile is a tap-to-add target for an operator standing at a
- * counter, and this one carries a quantity stepper, because a customer decides
- * how many they want *before* reserving rather than adding one and correcting it
- * in a bill. Two interactions, one vocabulary — the customer and the operator see
- * the same tiles on either side of the same sale.
+ * The shape is `Till.module.css`'s tile on purpose: photo across the top, name under
+ * it, price and stock below. This used to put a 48px photo beside the name instead,
+ * which left the middle of the tile empty and made the picture decoration — and a
+ * customer choosing from a catalogue is doing the same thing an operator does at the
+ * counter, which is recognising goods rather than reading Thai names (ADR 0014).
+ * What differs is the interaction: this tile carries a quantity stepper, because a
+ * customer decides how many they want *before* reserving rather than adding one and
+ * correcting it in a bill.
+ *
+ * The grid is sized so a phone gets **two tiles per row**, which is why its numbers
+ * are not the till's. At one per row the till's 4:3 photo is a 260px banner for every
+ * product, and a shop with thirty items is thirty screens of scrolling to the basket —
+ * the problem the follow-along bar exists to take away, put back by the layout.
  */
 
-.head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--ln-space-2);
-}
-
 .name {
-  /* Grows between the photo and the price, so a long Thai name wraps inside the
-   * tile instead of pushing the price off the row. */
-  flex: 1;
   min-width: 0;
   font-weight: 600;
   /* Thai product names are long and unbreakable; two lines is the budget. */
@@ -27,12 +24,47 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  /* Both lines are reserved whether the name needs them or not, so the price, the chip
+   * and the stepper of the tiles beside each other line up. */
+  min-height: calc(2 * var(--ln-leading) * 1em);
+}
+
+/*
+ * The stock chip keeps its own width. A chip stretched to the tile's width by the
+ * column's `align-items: stretch` is a full-width bar wearing a chip's radius — and
+ * this is the row that has to stay a chip, because it is where the shop says "หมด".
+ */
+.stock {
+  display: flex;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  /*
+   * One tile per row on the narrowest phones, two from 410px, and as many as fit from
+   * 768px — a breakpoint the shell already uses — upwards.
+   *
+   * 410 is measured rather than chosen. Two 44px stepper buttons, the count between
+   * them and its two gaps need 120px inside a tile; a 414px viewport leaves 316px for
+   * this grid (page padding 48, the card's border and padding 50), so two tiles are
+   * 152px across with 126px inside. Two columns therefore need 402px of viewport, and
+   * 375px cannot hold them at all: two tiles would have 106px inside each while the
+   * buttons alone are 88. The shop's own phone is 414px, which is two up.
+   */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--ln-space-3);
+}
+
+@media (min-width: 410px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  }
 }
 
 .tile {
@@ -45,23 +77,24 @@
   background: var(--ln-surface);
 }
 
-.tile[data-sold-out='true'] .name,
-.tile[data-sold-out='true'] .head {
+.tile[data-sold-out='true'] .name {
   color: var(--ln-text-subtle);
 }
 
-.foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--ln-space-2);
-  margin-top: auto;
-}
-
+/*
+ * The stepper spans the tile with its two buttons at the ends, so the pair a customer
+ * taps over and over sits at the edges of the card rather than bunched in its middle —
+ * at this width a thumb reaches either one without looking. It is pinned to the foot
+ * so that tiles with one-line names still line their steppers up with the two-line
+ * tiles beside them.
+ */
 .stepper {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--ln-space-1);
+  width: 100%;
+  margin-top: auto;
 }
 
 /* Sized from the control token, so the same pair of buttons is thumb-sized on the
@@ -92,7 +125,10 @@
 }
 
 .stepperValue {
-  min-width: 2.25rem;
+  /* A box for two digits. At 2.25rem it did not fit a two-up tile beside the two 44px
+   * buttons, and the buttons are the half that cannot shrink: 44px is the touch floor
+   * `tests/contrast.test.ts` holds the density to. */
+  min-width: 1.5rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
