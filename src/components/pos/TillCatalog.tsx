@@ -118,7 +118,12 @@ export function TillCatalog({
                   title={`${product.name} · ${product.categoryName ?? 'ไม่ระบุหมวดหมู่'}`}
                 >
                   <span className={styles.tilePhoto}>
-                    <Thumb url={product.imageUrl} size="fill" />
+                    {/*
+                     * No photo, no identical grey box: the product's initial on the
+                     * aisle colour the tile already wears (`data-cat` above), so a
+                     * pictureless catalogue still scans by colour.
+                     */}
+                    <Thumb url={product.imageUrl} size="fill" categoryKey={product.categoryKey} name={product.name} />
                   </span>
                   <span className={styles.tileName}>{product.name}</span>
                   <span className={styles.tileFoot}>

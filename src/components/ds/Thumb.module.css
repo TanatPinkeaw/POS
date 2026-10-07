@@ -5,9 +5,18 @@
  * photo on the till's touch density and a 28 px one in the back office — the point of
  * the density tokens is that no screen has to decide this for itself (rule 4). `fill`
  * is the exception and is explained where it is declared.
+ *
+ * The placeholder's two layers are declared here rather than improvised at the call
+ * site: the aisle wash paints first and the monogram sits on it, both keyed off the
+ * same `data-cat` attribute the chip (`Value.module.css`) and the till tile's edge
+ * bar (`Till.module.css`) already use — one attribute, three components, one hue.
+ * The text colour stays the precomputed `--ln-cat-<key>` token rather than anything
+ * mixed at paint time, because a `color-mix()` is Safari 16.2 against this shop's
+ * 15.6 floor (ADR 0031) — the same reason the chip is written this way.
  */
 
 .thumb {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -50,7 +59,98 @@
   border-radius: var(--ln-radius-md);
 }
 
+/*
+ * The aisle wash: the category's own tint, across the whole frame, under whatever is
+ * drawn on top. A layer rather than a background on `.thumb` so a transparent PNG
+ * shows the aisle colour behind it instead of the recessed grey. Only ever rendered
+ * when the caller named a category — no attribute, no wash, and the old grey frame
+ * with the `image` glyph is exactly what a shop logo or a table row gets.
+ *
+ * z-index 0 with the photo above it, stated explicitly rather than left to DOM
+ * order: positioned and in-flow siblings stack by z-index in every engine, and
+ * "the browser will probably paint these in order" is how a Safari-only
+ * regression starts here (ADR 0031).
+ */
+.aisle {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--ln-cat-slate-wash);
+  border-radius: inherit;
+}
+
+.aisle[data-cat='blue'] {
+  background: var(--ln-cat-blue-wash);
+}
+.aisle[data-cat='teal'] {
+  background: var(--ln-cat-teal-wash);
+}
+.aisle[data-cat='green'] {
+  background: var(--ln-cat-green-wash);
+}
+.aisle[data-cat='amber'] {
+  background: var(--ln-cat-amber-wash);
+}
+.aisle[data-cat='orange'] {
+  background: var(--ln-cat-orange-wash);
+}
+.aisle[data-cat='red'] {
+  background: var(--ln-cat-red-wash);
+}
+.aisle[data-cat='rose'] {
+  background: var(--ln-cat-rose-wash);
+}
+.aisle[data-cat='violet'] {
+  background: var(--ln-cat-violet-wash);
+}
+
+/*
+ * The stand-in letter, on top of the wash. The same precomputed hue the chip sets
+ * its text with — asserted legible on its own tint in both schemes by
+ * `tests/contrast.test.ts`, which is what makes reusing the chip's tokens here a
+ * decision with a measurement behind it rather than a borrowed pretty colour.
+ */
+.monogram {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ln-font);
+  font-size: var(--ln-size-xl);
+  line-height: 1;
+  font-weight: 650;
+  color: var(--ln-cat-slate);
+}
+
+.monogram[data-cat='blue'] {
+  color: var(--ln-cat-blue);
+}
+.monogram[data-cat='teal'] {
+  color: var(--ln-cat-teal);
+}
+.monogram[data-cat='green'] {
+  color: var(--ln-cat-green);
+}
+.monogram[data-cat='amber'] {
+  color: var(--ln-cat-amber);
+}
+.monogram[data-cat='orange'] {
+  color: var(--ln-cat-orange);
+}
+.monogram[data-cat='red'] {
+  color: var(--ln-cat-red);
+}
+.monogram[data-cat='rose'] {
+  color: var(--ln-cat-rose);
+}
+.monogram[data-cat='violet'] {
+  color: var(--ln-cat-violet);
+}
+
 .image {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;

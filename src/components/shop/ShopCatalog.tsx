@@ -18,6 +18,7 @@ import {
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import { basketSummary } from '@/lib/basket';
+import { categoryColorKey } from '@/lib/palette';
 import { ApiError, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 
@@ -217,7 +218,13 @@ export function ShopCatalog({
                        * width it is what makes one product recognisable from the next
                        * without reading Thai names down a list (ADR 0014).
                        */}
-                      <Thumb url={product.imageUrl} size="fill" />
+                      {/*
+                       * A product with no link gets its initial on the aisle colour,
+                       * not a grey box: after the tile became a photo, the pictureless
+                       * ones are the grid's common case, and a customer picking by
+                       * colour still needs one tile to differ from the next.
+                       */}
+                      <Thumb url={product.imageUrl} size="fill" categoryKey={categoryColorKey(product.categoryId)} name={product.name} />
 
                       <span className={styles.name}>{product.name}</span>
 
