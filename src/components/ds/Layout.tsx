@@ -25,6 +25,7 @@ export function SplitPane({
   /** Fills the parent's height, for panes that scroll internally. */
   fill = false,
   label,
+  panelId,
 }: {
   /** The fixed-width pane. */
   panel: ReactNode;
@@ -36,6 +37,16 @@ export function SplitPane({
   fill?: boolean;
   /** Landmark name, announced when the panes are navigated as regions. */
   label?: string;
+  /**
+   * Makes the pane an in-page destination, for a control that jumps to it.
+   *
+   * `tabIndex={-1}` rides along, and that is the whole point rather than a detail:
+   * a fragment link scrolls the page but leaves the *focus* where it was, so a
+   * keyboard user who pressed "see the basket" would tab on from the button they
+   * pressed — past the basket, into whatever follows it. A focusable target puts
+   * them inside the region the link named.
+   */
+  panelId?: string;
 }) {
   return (
     <div
@@ -45,7 +56,13 @@ export function SplitPane({
       data-fill={fill ? 'true' : undefined}
       style={{ '--split-panel': panelWidth } as React.CSSProperties}
     >
-      <div className={styles.splitPanel} role={label ? 'region' : undefined} aria-label={label}>
+      <div
+        id={panelId}
+        tabIndex={panelId ? -1 : undefined}
+        className={styles.splitPanel}
+        role={label ? 'region' : undefined}
+        aria-label={label}
+      >
         {panel}
       </div>
       <div className={styles.splitContent}>{children}</div>

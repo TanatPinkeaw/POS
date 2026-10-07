@@ -8,6 +8,7 @@ import {
   CategoryChip,
   EmptyState,
   InlineNotice,
+  LinkButton,
   Money,
   Pill,
   SearchField,
@@ -16,6 +17,7 @@ import {
   Thumb,
 } from '@/components/ds';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
+import { basketSummary } from '@/lib/basket';
 import { ApiError, apiPost } from '@/lib/client-api';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 
@@ -120,18 +122,21 @@ export function ShopCatalog({
     return [...map.entries()];
   }, [products, filter]);
 
-  const selected = Object.entries(quantities).filter(([, quantity]) => quantity > 0);
-  const total = selected.reduce((sum, [productId, quantity]) => {
-    const product = products.find((item) => item.id === productId);
-    return sum + (product ? product.salePrice * quantity : 0);
-  }, 0);
+  /*
+   * One decision with two readers: the basket card below, and the bar that follows
+   * the customer down the catalogue. Both render from this object, so the pieces the
+   * bar counts and the money it names are the same ones the card lists — a second
+   * copy of `price × quantity` beside this one is how a customer reads two totals
+   * for one basket (`src/lib/basket.ts` is where that arithmetic lives, and why).
+   */
+  const basket = basketSummary(quantities, products);
 
   function setQuantity(productId: string, quantity: number): void {
     setQuantities((current) => ({ ...current, [productId]: Math.max(0, quantity) }));
   }
 
   const place = async (): Promise<void> => {
-    if (selected.length === 0) {
+    if (basket.lines.length === 0) {
       return;
     }
     setBusy(true);
@@ -140,7 +145,7 @@ export function ShopCatalog({
     try {
       const result = await apiPost<Placed>('/api/v1/orders', {
         type: 'preorder',
-        lines: selected.map(([productId, quantity]) => ({ productId, quantity })),
+        lines: basket.lines.map((line) => ({ productId: line.productId, quantity: line.quantity })),
       });
       setPlaced(result);
       setQuantities({});
@@ -300,32 +305,27 @@ export function ShopCatalog({
           side="end"
           panelWidth="22rem"
           label="รายการจอง"
+          panelId="basket"
           panel={
             <Card title="รายการจอง">
               <Stack gap="md">
-                {selected.length === 0 ? (
+                {basket.lines.length === 0 ? (
                   <p className="ln-muted">ยังไม่ได้เลือกสินค้า</p>
                 ) : (
                   <>
                     <ul className={styles.lines}>
-                      {selected.map(([productId, quantity]) => {
-                        const product = products.find((item) => item.id === productId);
-                        if (!product) {
-                          return null;
-                        }
-                        return (
-                          <li key={productId} className={styles.line}>
-                            <span className="ln-break">
-                              {product.name} × {quantity}
-                            </span>
-                            <Money amount={product.salePrice * quantity} />
-                          </li>
-                        );
-                      })}
+                      {basket.lines.map((line) => (
+                        <li key={line.productId} className={styles.line}>
+                          <span className="ln-break">
+                            {line.name} × {line.quantity}
+                          </span>
+                          <Money amount={line.amountThb} />
+                        </li>
+                      ))}
                     </ul>
                     <div className={styles.total}>
                       <span>รวม</span>
-                      <Money amount={total} size="lg" />
+                      <Money amount={basket.totalThb} size="lg" />
                     </div>
                   </>
                 )}
@@ -335,7 +335,7 @@ export function ShopCatalog({
                   block
                   icon="cart"
                   loading={busy}
-                  disabled={selected.length === 0}
+                  disabled={basket.lines.length === 0}
                   onClick={() => void place()}
                 >
                   จองสินค้า (พรีออเดอร์)
@@ -350,6 +350,36 @@ export function ShopCatalog({
       ) : (
         catalogue
       )}
+
+      {/*
+       * The way to the basket on a phone.
+       *
+       * Below `SplitPane`'s breakpoint the two panes become one column and the
+       * basket — the only control that actually places the order — lands *after* every
+       * product, so a shop with thirty items puts its own checkout thirty screens of
+       * scrolling away from the first tile. This is that distance in one tap, and it is
+       * also the only place a customer can see what they have spent while they keep
+       * shopping: the till gives an operator a bill beside the grid, and this is that
+       * same promise for a phone.
+       *
+       * Only when there is something to jump to. A shop that takes no pre-orders has no
+       * basket at all (ADR 0028), and a bar pointing at a pane that is not on the page
+       * would be a control that scrolls nowhere.
+       *
+       * It carries no `aria-live`: the stepper's own count is already announced, and two
+       * polite regions counting the same pieces would say every number twice.
+       */}
+      {acceptsPreorders && basket.units > 0 ? (
+        <div className={styles.bar}>
+          <span className={styles.barReadout}>
+            <span className={styles.barCount}>{basket.units} ชิ้น</span>
+            <Money amount={basket.totalThb} />
+          </span>
+          <LinkButton href="#basket" icon="cart" size="lg">
+            ดูรายการจอง
+          </LinkButton>
+        </div>
+      ) : null}
     </Stack>
   );
 }

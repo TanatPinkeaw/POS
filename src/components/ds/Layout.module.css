@@ -67,6 +67,20 @@
   min-height: 0;
 }
 
+/*
+ * A pane that is jumped to lands *below* the shell's sticky top bar instead of under
+ * it: a heading scrolled to the very top of the viewport is a heading hidden behind
+ * the bar that is stuck there. The fallback covers the screens outside the shell
+ * (`/login`, `/display`), which have no top bar and so need no offset.
+ *
+ * It is set here rather than on the screen that links to the pane, because "how far
+ * down a jump target must land" is a fact about the frame, and the frame is the only
+ * thing that knows how tall its own sticky chrome is.
+ */
+.splitPanel {
+  scroll-margin-top: calc(var(--shell-topbar, 0px) + var(--ln-space-4));
+}
+
 .stack {
   display: flex;
   flex-direction: column;

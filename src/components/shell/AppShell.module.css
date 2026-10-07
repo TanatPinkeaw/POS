@@ -29,6 +29,13 @@
 
 .frame {
   --shell-sidebar: 238px;
+  /*
+   * The top bar's height, as a variable, because it is now read from outside this
+   * file: a jump target inside a screen has to land below whatever is stuck to the
+   * top (`Layout.module.css`). A second screen writing 52 by hand would be a number
+   * that stops being true the day this one changes.
+   */
+  --shell-topbar: 52px;
 }
 
 .frameMini {
@@ -265,7 +272,7 @@
   display: flex;
   align-items: center;
   gap: var(--ln-space-3);
-  min-height: 52px;
+  min-height: var(--shell-topbar);
   padding: 0 var(--ln-space-4);
   background: var(--ln-surface);
   border-bottom: 1px solid var(--ln-border);

@@ -118,3 +118,58 @@
   border-top: 1px solid var(--ln-border);
   font-weight: 650;
 }
+
+/*
+ * The follow-along bar: the basket's distance from the catalogue, for the half of
+ * this screen's life that happens on a phone.
+ *
+ * `sticky` rather than `fixed`, for the reason the sidebar is sticky — the page keeps
+ * a normal document flow, so nothing has to reserve a spacer under the content and at
+ * the end of the page the bar simply sits in flow after the basket, which is where it
+ * stops being useful anyway. It is a floating surface rather than a strip welded to the
+ * bottom edge because the page's own padding already insets it from the screen edges;
+ * the border and shadow are the toast's language, which is the other thing this app
+ * puts over the bottom of a phone screen.
+ *
+ * Deliberately no `env(safe-area-inset-bottom)`: this deployment never sets
+ * `viewport-fit=cover`, so that inset is always 0 here — a declaration that can only
+ * ever be zero reads as a fact and is not one.
+ */
+.bar {
+  position: sticky;
+  bottom: var(--ln-space-4);
+  z-index: var(--ln-z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-2) var(--ln-space-3);
+  background: var(--ln-surface);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  box-shadow: var(--ln-shadow-lg);
+}
+
+/*
+ * 1100px is `SplitPane`'s own breakpoint (`ds/Layout.module.css`), and the number is
+ * repeated rather than derived because CSS cannot read another file's media query.
+ * Above it the two panes sit side by side, the basket is already on screen, and this
+ * bar would be a second copy of something the customer is looking at. Change one of
+ * these two and change the other.
+ */
+@media (min-width: 1100px) {
+  .bar {
+    display: none;
+  }
+}
+
+.barReadout {
+  display: flex;
+  align-items: baseline;
+  gap: var(--ln-space-2);
+  min-width: 0;
+}
+
+.barCount {
+  color: var(--ln-text-subtle);
+}

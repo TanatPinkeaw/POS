@@ -208,7 +208,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1350 tests across 106 files: unit + integration
+npm test                # 1358 tests across 107 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 204 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders styled
@@ -845,6 +845,34 @@ transaction, before the `PO-` number is spent and before stock is reserved), so 
 who already had the storefront open is told `ร้านนี้ยังไม่เปิดรับพรีออเดอร์` rather than
 watching a basket do nothing; the storefront drops the basket, the steppers and the button
 together, and the pre-order board stays reachable for orders already placed — see ADR 0028.
+
+**The basket is one tap away on a phone.** `SplitPane` stacks into one column below its
+breakpoint and the storefront stacks content first, which is right until you count the
+scrolling: the basket is the only control that places a pre-order, and it sat after every
+product in the shop, so thirty items put the checkout thirty screens away from the first
+tile. A bar now follows the customer down the catalogue with the pieces they have picked
+and what those cost, and tapping it lands on `รายการจอง` — below the stuck top bar rather
+than under it, and on the region itself, so a keyboard user's next Tab continues *inside*
+the basket instead of past it. It appears only when there is something to jump to, and
+only below the breakpoint, because above it the basket is beside the grid already — and it
+carries no `aria-live`, because the steppers already announce their own count and two
+polite regions counting the same pieces would say every number twice.
+
+Three things in it are decisions rather than details. It is an `<a>` rather than a
+`<button>`, so the jump is the browser's own: it works before the page has hydrated, and
+the destination is in the URL. It wears the quiet variant rather than the brand fill,
+because at the end of the page it sits directly under the basket's own
+`จองสินค้า (พรีออเดอร์)` — two full-weight buttons stacked, the lower one pointing at the
+spot the customer is already looking at, is worse than a link. And its numbers come from
+the same pure function the basket card reads (`src/lib/basket.ts`), which is also where an
+id whose product has left the catalogue is dropped from the count as well as the total —
+the shape this screen really does meet, because it re-reads its catalogue after a
+reservation. Not built, and written down here so the next round does not re-propose them
+blind: a sheet that slides the basket up over the catalogue (the basket would have to be
+rendered twice or moved, plus an open state to get wrong) and a checkout page of its own
+(a page whose only action is the button this bar is now one tap from). **`/pos` is not
+covered**: the till's frame is `height: 100vh` with its panes scrolling internally, so the
+same bar there is a different piece of work rather than the same one.
 
 **Sales history is a screen.** `/admin/sales` lists every completed sale, searchable by
 receipt number, customer name and Bangkok date range, and reprints a receipt from the
