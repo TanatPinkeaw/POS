@@ -6,6 +6,8 @@
  * half-applied order is impossible: if settling the payment fails, the stock
  * reservation is rolled back with it.
  */
+import { randomInt } from 'node:crypto';
+
 import { recordAudit } from './audit';
 import { bangkokDateString, bangkokParts, dateColumnFromDay } from './bangkok-time';
 /*
@@ -253,7 +255,15 @@ export async function lockOrder(
 /** A 4-digit handover PIN that no other order currently holds. */
 async function allocatePickupPin(db: Db): Promise<string> {
   for (let attempt = 0; attempt < 50; attempt += 1) {
-    const pin = String(1000 + Math.floor(Math.random() * 9000));
+    /*
+     * `randomInt` rather than `Math.random`, the same rule `otp.ts` and
+     * `display-devices.ts` state for their codes: the PIN is a credential —
+     * one of the two ways a parcel is handed over — and a predictable code is
+     * no code at all. `randomInt(1000, 10000)` is min-inclusive, max-exclusive,
+     * so the range is exactly 1000–9999 and no value can collide with a
+     * shorter or longer string shape.
+     */
+    const pin = String(randomInt(1000, 10000));
     const clash = await db.orders.findFirst({
       where: { pickup_pin: pin, status: 'ready_for_pickup' },
       select: { id: true },
