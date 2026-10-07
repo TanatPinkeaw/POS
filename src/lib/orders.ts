@@ -747,7 +747,7 @@ export async function createPosSale(input: {
           userId: input.customerId,
           delta: -settlement.pointsRedeemed,
           orderId: order.id,
-          description: `Redeemed on order ${orderNumber}`,
+          description: `ใช้คะแนนกับบิล ${orderNumber}`,
         });
       }
       if (earned > 0) {
@@ -755,7 +755,7 @@ export async function createPosSale(input: {
           userId: input.customerId,
           delta: earned,
           orderId: order.id,
-          description: `Earned on order ${orderNumber}`,
+          description: `สะสมคะแนนจากบิล ${orderNumber}`,
         });
       }
     }
@@ -1243,7 +1243,7 @@ export async function completeOrder(input: {
           userId: order.customer_id,
           delta: -settlement.pointsRedeemed,
           orderId: order.id,
-          description: `Redeemed on order ${order.order_number}`,
+          description: `ใช้คะแนนกับบิล ${order.order_number}`,
         });
       }
       if (earned > 0) {
@@ -1251,7 +1251,7 @@ export async function completeOrder(input: {
           userId: order.customer_id,
           delta: earned,
           orderId: order.id,
-          description: `Earned on order ${order.order_number}`,
+          description: `สะสมคะแนนจากบิล ${order.order_number}`,
         });
       }
     }
