@@ -38,6 +38,26 @@
  * white screen on a till in a shop mid-sale, which is the worst place for one. Bump
  * `cacheName` when the strategy itself changes; nothing else needs it.
  *
+ * **It may answer "no", and it may not reject.** A worker that rejects is a worker that
+ * logs an error and, for a navigation, hands the customer nothing at all — and this file
+ * did exactly that in the field, twice over. `caches.open()` was called outside every
+ * `try`, so a browser where CacheStorage is unavailable (private browsing, storage a
+ * policy has blocked) rejected *every* request this worker managed, documents and hashed
+ * chunks alike: a white page, and `The FetchEvent for "…/login" resulted in a network
+ * error response: the promise was rejected` in the console. And `cache.put()` failing on a
+ * response that had already arrived threw that response away, so a full cache turned into
+ * a failed read. Third, `handleRuntime` rethrew on purpose. The rule now is uniform: the
+ * cache is an optimisation that may be missing, every write into it is best-effort, and
+ * the last line of every handler is a response rather than an exception.
+ *
+ * `cacheName` did not need bumping for that, deliberately: none of it changed *what* is
+ * remembered or for how long, only what happens when remembering fails. A version bump
+ * would have thrown away a prepared till's shell to fix a bug that never touched it.
+ *
+ * The same rule reaches the hashed chunks: a `/_next/static/…` file the network cannot
+ * answer is a 503 rather than a rejected fetch, because "it fails anyway" is true of the
+ * resource and false of the worker — the rejection is what the console reports.
+ *
  * **Development does not register this** (see `OfflineShellRegistrar`), because a worker
  * that serves a cached document is the single hardest class of bug to see locally.
  *
@@ -66,6 +86,11 @@ var LN_SHELL = {
  * a page. Failing honestly is better than serving something the router cannot read — and
  * the till's own navigation stops asking for them, because an offline nav link is a plain
  * anchor and so a full document load.
+ *
+ * A document is recognised two ways, because `mode` is not the only way one arrives: a
+ * `rel=prefetch` of a page, and some in-app browsers, carry `destination: 'document'`
+ * with an ordinary mode. Treating those as `'runtime'` sent a *document* to a handler
+ * whose last line rethrew, which is one of the field errors named in the header.
  */
 function classify(request, url) {
   if (request.method !== 'GET') return 'bypass';
@@ -77,8 +102,43 @@ function classify(request, url) {
     return 'bypass';
   }
   if (url.pathname.indexOf(LN_SHELL.staticPrefix) === 0) return 'asset';
-  if (request.mode === 'navigate') return 'navigation';
+  if (request.mode === 'navigate' || request.destination === 'document') return 'navigation';
   return 'runtime';
+}
+
+/**
+ * The cache, or `null` when this browser will not give us one.
+ *
+ * CacheStorage is not always there — private browsing is the common one, and a browser
+ * with storage blocked, or a corrupted cache, behaves the same — and `caches.open` rejects
+ * when it is missing. Every handler used to call it outside its `try`, so that one
+ * rejection took the document, the hashed chunks and the images with it: a white page, and
+ * the `FetchEvent … the promise was rejected` error the shop's console recorded. A worker
+ * that cannot cache can still stand between the page and the network; it just does nothing
+ * on the way through.
+ */
+async function openCache() {
+  try {
+    return await caches.open(LN_SHELL.cacheName);
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Store something, or shrug.
+ *
+ * A write that fails must never fail the request it rode in on. This is the second of the
+ * two field failure shapes: a response that had already arrived was thrown away because the
+ * cache would not take a copy of it, so a cache that filled up turned into failed reads.
+ */
+async function remember(cache, key, response) {
+  if (!cache) return;
+  try {
+    await cache.put(key, response.clone());
+  } catch (error) {
+    // A full or unwritable cache is a cache that stops growing, not an outage.
+  }
 }
 
 /** The cache key for a document: its own path, with no query and no flight headers. */
@@ -114,10 +174,19 @@ function harvestAssets(html) {
  */
 async function rememberDocument(cache, key, response) {
   var html = await response.clone().text();
-  await cache.put(
-    key,
-    new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }),
-  );
+  /*
+   * Best-effort, like every other write here. This is called from inside the navigation's
+   * `try`, so a throw from it would send a *successful* visit down the offline path — the
+   * page in hand replaced by the one from last time, and only when the cache is full.
+   */
+  try {
+    await cache.put(
+      key,
+      new Response(html, { status: 200, headers: { 'content-type': 'text/html; charset=utf-8' } }),
+    );
+  } catch (error) {
+    return;
+  }
   var assets = harvestAssets(html);
   await Promise.all(
     assets.map(function (href) {
@@ -144,44 +213,82 @@ function offlineDocument() {
 }
 
 async function handleAsset(request) {
-  var cache = await caches.open(LN_SHELL.cacheName);
-  var cached = await cache.match(request);
-  if (cached) return cached;
-  var response = await fetch(request);
-  if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
-  return response;
+  var cache = await openCache();
+  if (cache) {
+    var cached = await cache.match(request).catch(function () { return undefined; });
+    if (cached) return cached;
+  }
+  try {
+    var response = await fetch(request);
+    /*
+     * Cached only when it is genuinely ours to keep: `response.type === 'basic'` is a
+     * same-origin response, and an opaque one cannot be inspected or re-served. The write is
+     * best-effort, so a successful fetch is never discarded because the cache refused a copy.
+     */
+    if (response.ok && response.type === 'basic') await remember(cache, request, response);
+    return response;
+  } catch (error) {
+    /*
+     * A hashed chunk with no network and no cached copy. It fails either way — the browser
+     * cannot run a script it never received — but a rejection is the console error this file
+     * was reported for, and a status is a fact: 503 says "the worker looked and could not",
+     * which is the same sentence the offline page and the runtime handler say. One rule for
+     * all three handlers, so no future reader has to know which of them may throw.
+     */
+    return unavailableResponse();
+  }
 }
 
 async function handleNavigation(request) {
-  var cache = await caches.open(LN_SHELL.cacheName);
+  var cache = await openCache();
   var url = new URL(request.url);
   var key = documentKey(request.url);
   try {
     var response = await fetch(request);
-    if (response.ok && response.type === 'basic' && isOfflineRoute(url.pathname)) {
+    if (cache && response.ok && response.type === 'basic' && isOfflineRoute(url.pathname)) {
       await rememberDocument(cache, key, response);
     }
     return response;
   } catch (error) {
-    // Offline. The four prepared screens are served from what the last visit stored; the
-    // rest are told the truth rather than sent a document from an unknown moment.
-    var stored = await cache.match(key);
+    /*
+     * Offline, or the network refused to answer. The four prepared screens are served from
+     * what the last visit stored; the rest are told the truth rather than sent a document
+     * from an unknown moment.
+     *
+     * `cache.match` is inside the `try` it needs to be: it can reject on a corrupt entry,
+     * and a rejection here is a page the customer never sees. A cache we cannot read is a
+     * cache that has nothing, and the answer for that is the offline page.
+     */
+    var stored = cache ? await cache.match(key).catch(function () { return undefined; }) : undefined;
     if (stored) return stored;
     return offlineDocument();
   }
 }
 
+/**
+ * Whatever this worker does not manage: images, the manifest, fonts.
+ *
+ * The last line is a response, never a rethrow. A rejection here is the uncaught
+ * `TypeError: Failed to fetch` the shop's console carried, and it costs the page nothing
+ * it could have used — an uncached file with no network is unavailable either way, and a
+ * 503 says so where an exception only says something went wrong.
+ */
 async function handleRuntime(request) {
-  var cache = await caches.open(LN_SHELL.cacheName);
+  var cache = await openCache();
   try {
     var response = await fetch(request);
-    if (response.ok && response.type === 'basic') await cache.put(request, response.clone());
+    if (response.ok && response.type === 'basic') await remember(cache, request, response);
     return response;
   } catch (error) {
-    var stored = await cache.match(request);
+    var stored = cache ? await cache.match(request).catch(function () { return undefined; }) : undefined;
     if (stored) return stored;
-    throw error;
+    return unavailableResponse();
   }
+}
+
+/** The answer for a file that is neither cached nor reachable: a status, not a throw. */
+function unavailableResponse() {
+  return new Response(null, { status: 503, statusText: 'Offline' });
 }
 
 self.addEventListener('install', function () {

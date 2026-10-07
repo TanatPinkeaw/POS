@@ -139,6 +139,42 @@ earlier.
 answers with a cached document is the hardest class of bug to see while working: the change
 you just made is not the page in front of you, and the fix is a cache you have to find.
 
+### 9. It may answer no; it may not reject (amended)
+
+**The failure, from the shop's own console.** Two errors on the deployment, on `/login`:
+`The FetchEvent for "https://…/login" resulted in a network error response: the promise was
+rejected` and an uncaught `TypeError: Failed to fetch` from `handleRuntime`. Neither was a
+missing feature; both came out of this file's own shape, three ways:
+
+1. **`caches.open()` was called outside every `try`.** CacheStorage is not always there —
+   private browsing is the common one, and a browser with storage blocked or a corrupt cache
+   behaves the same — and when it is missing the call rejects. Every request the worker
+   managed then rejected with it, documents, hashed chunks and images alike: a white page,
+   which is the one failure decision 1 of this ADR exists to avoid.
+2. **A `cache.put()` failure threw away a response that had already arrived.** Both handlers
+   cached conditionally *after* the fetch, so a full cache turned a successful read into a
+   failed one — and `rememberDocument`'s write sat inside the navigation's `try`, so a full
+   cache could send a *successful* visit down the offline path.
+3. **`handleRuntime` rethrew on purpose** — its last line was `throw error`.
+
+**The rule now, uniform across all three handlers:** the cache is an optimisation that may be
+absent (`openCache()` returns null and the handler passes the request through), every write
+into it is best-effort (`remember()` and `rememberDocument()` swallow their own failures), and
+the last line of every handler is a **response** rather than an exception — the offline page
+for a navigation, a 503 for a file that is neither cached nor reachable.
+
+**A document is recognised two ways.** `classify` used `request.mode === 'navigate'` alone,
+so a document that arrived with an ordinary mode — a `rel=prefetch` of a page, and some
+in-app browsers — fell through to `runtime`, whose last line rethrew. It now also treats
+`destination === 'document'` as a navigation, which is what the FetchEvent error above was.
+
+**No cache version bump, deliberately.** None of this changed *what* is remembered or for how
+long; a bump would have thrown away a prepared till's shell to fix a bug that never touched it.
+
+**How it is held.** `tests/offline-shell.test.ts` now runs the handlers, not just the rules:
+with the network gone, with `caches.open` failing, and with `cache.put` failing, the answer is
+a Response every time — and a document-shaped request is classified as a navigation.
+
 ## Consequences
 
 - A prepared till survives a reboot. Open the machine with no network and the till screen
