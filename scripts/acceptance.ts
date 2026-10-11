@@ -2797,11 +2797,13 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
      * aimed at `/shop/account` — a page the visitor could not open — so the loop was
      * silent from every side.
      *
-     * So this walks what the browser walks: the front door mints a state, LINE's consent
-     * screen is simulated by calling the callback with that state (which is exactly what
-     * its redirect does), the code is exchanged at a token endpoint this run serves, the
-     * id token is verified against a key set this run serves, and the customer finishes
-     * signed in. Last, because the sections above tally the trail globally.
+     * So this walks what the browser walks: the front door mints a state into the button's
+     * own address (ADR 0030 §1, amended again — LINE's guide to the phone failure asks for a
+     * tap that goes to the authorization URL, not one that reaches it through a redirect of
+     * ours), LINE's consent screen is simulated by calling the callback with that state, the
+     * code is exchanged at a token endpoint this run serves, the id token is verified
+     * against a key set this run serves, and the customer finishes signed in. Last, because
+     * the sections above tally the trail globally.
      */
     /*
      * A browser of its own, deliberately: the shared `anonymous` jar stops being anonymous
@@ -2823,18 +2825,46 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       return `${url.pathname}${url.search}`;
     };
 
-    const firstStart = await stranger.raw('/api/v1/auth/line/authorize?intent=sign-in');
-    const authorizeUrl = new URL(firstStart.headers.get('location') ?? 'http://missing.invalid');
+    /*
+     * The press, read out of the page the customer is looking at: the button's own `href`
+     * *is* LINE's authorization address (ADR 0030 §1, amended), so the address this run
+     * follows is parsed from the rendered HTML rather than assembled from the same parts the
+     * server uses — a URL this script built could agree with a page that never carried one.
+     */
+    const pressHref = (html: string): string | null => {
+      const match = html.match(/href="([^"]*access\.line\.me[^"]*)"/);
+      // Next escapes `&` as `&amp;` in markup, and every parameter after the first is one.
+      return match?.[1] === undefined ? null : match[1].replaceAll('&amp;', '&');
+    };
+    const frontDoor = await stranger.raw('/login');
+    const frontDoorHtml = await frontDoor.text();
+    const authorizeUrl = new URL(pressHref(frontDoorHtml) ?? 'http://missing.invalid');
     const firstState = authorizeUrl.searchParams.get('state') ?? '';
     check(
-      'the front door sends the customer to LINE with a state of our own',
-      firstStart.status === 307 && authorizeUrl.origin === LINE_ISSUER && firstState.length > 0,
-      { status: firstStart.status, to: authorizeUrl.origin },
+      'the front door’s own button goes to LINE, so the tap itself is the navigation',
+      frontDoor.status === 200 && authorizeUrl.origin === LINE_ISSUER && firstState.length > 0,
+      { status: frontDoor.status, to: authorizeUrl.origin },
     );
     check(
-      'and sends LINE a callback address this deployment is actually reachable at',
+      'and it names a callback address this deployment is actually reachable at',
       (authorizeUrl.searchParams.get('redirect_uri') ?? '').endsWith('/api/v1/auth/line/callback'),
       authorizeUrl.searchParams.get('redirect_uri'),
+    );
+    check(
+      'and asks LINE for the id token, with auto login left on for the first walk',
+      authorizeUrl.searchParams.get('scope') === 'openid profile email' &&
+        authorizeUrl.searchParams.get('disable_auto_login') === null,
+      authorizeUrl.search,
+    );
+    const secondDoor = await stranger.raw('/login');
+    const secondDoorState =
+      new URL(pressHref(await secondDoor.text()) ?? 'http://missing.invalid').searchParams.get(
+        'state',
+      ) ?? '';
+    check(
+      'and every render mints its own state, because a cached page would share one with every customer',
+      secondDoorState.length > 0 && secondDoorState !== firstState,
+      secondDoorState === firstState ? 'the same state twice' : 'distinct',
     );
 
     // The LINE account nobody holds: the one case that needs a phone number, and the case
@@ -2943,16 +2973,15 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
      * the callback arrives with a code that cannot be exchanged — and the customer who did
      * nothing wrong must end up on LINE's own login screen, not on a sentence telling them to
      * press the same button again. This leg is the one that was only ever knowable from a
-     * phone, so it is the one worth driving here.
+     * phone, so it is the one worth driving here. Its state comes from the page again, so what
+     * is under test is a press a customer made rather than an address this script asked a
+     * route for.
      */
-    const retryStart = await stranger.raw('/api/v1/auth/line/authorize?intent=sign-in');
-    const retryAuthorize = new URL(retryStart.headers.get('location') ?? 'http://missing.invalid');
-    const retryState = retryAuthorize.searchParams.get('state') ?? '';
-    check(
-      'a first press leaves auto login on, which is the smoother path when it works',
-      retryAuthorize.searchParams.has('disable_auto_login') === false,
-      retryAuthorize.searchParams.get('disable_auto_login'),
-    );
+    const retryDoor = await stranger.raw('/login');
+    const retryState =
+      new URL(pressHref(await retryDoor.text()) ?? 'http://missing.invalid').searchParams.get(
+        'state',
+      ) ?? '';
 
     const failedArrival = await stranger.raw(
       `/api/v1/auth/line/callback?code=${encodeURIComponent(lineAutoLoginFailureCode(newSubject))}&state=${encodeURIComponent(retryState)}`,
@@ -2970,7 +2999,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       'and that second walk is a fresh attempt at the same callback, still asking for an id token',
       secondWalkState.length > 0 &&
         secondWalkState !== retryState &&
-        secondWalk.searchParams.get('redirect_uri') === retryAuthorize.searchParams.get('redirect_uri') &&
+        secondWalk.searchParams.get('redirect_uri') === authorizeUrl.searchParams.get('redirect_uri') &&
         secondWalk.searchParams.get('scope') === 'openid profile email',
       {
         state: secondWalkState === retryState ? 'reused' : 'fresh',

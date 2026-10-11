@@ -188,15 +188,34 @@ export function lineLandingUrl(base: string, landing: LineLanding): string {
 /** Where LINE shows the customer their consent screen. */
 export const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize';
 
+/** The path LINE returns the customer to. One literal, because three screens spell it. */
+export const LINE_CALLBACK_PATH = '/api/v1/auth/line/callback';
+
 /**
- * The URL a press of a door is sent to — built in one place, because two callers build it.
+ * The `redirect_uri` the whole flow has to agree on.
  *
- * The authorize route sends a first attempt here; the callback sends a second one, and the
- * second address differs from the first by exactly one parameter. Two assemblies of the
- * same query is how they drift, and drift here is not cosmetic: `scope` is what makes LINE
- * return an id token at all, and `redirect_uri` has to match the authorize request
- * character for character at the token exchange, so a retry that forgot one of them would
- * be a remedy that fails for a new reason.
+ * LINE compares this character for character at the token exchange, and three places name
+ * it: the sign-in page that mints the press (through `lineStartHref`), the authorize route,
+ * and the callback — which also uses it for the retry, so the second walk asks for the same
+ * address the first one did. Built here rather than spelled out at each of the three, for
+ * the reason the address below is: a difference of one slash is an exchange that refuses for
+ * a reason nobody has seen before.
+ */
+export function lineRedirectUri(base: string): string {
+  return `${base.replace(/\/+$/, '')}${LINE_CALLBACK_PATH}`;
+}
+
+/**
+ * The URL a press of a door is sent to — built in one place, because three callers build it.
+ *
+ * The callback sends a second attempt here; the authorize route sends a first one for a
+ * caller that reached it directly; and the sign-in page puts a first one in the button's
+ * own `href`, which is now how the customer usually arrives. The second address differs
+ * from the first by exactly one parameter. Two assemblies of the same query is how they
+ * drift, and drift here is not cosmetic: `scope` is what makes LINE return an id token at
+ * all, and `redirect_uri` has to match the authorize request character for character at the
+ * token exchange, so a retry that forgot one of them would be a remedy that fails for a new
+ * reason.
  *
  * `disableAutoLogin` is LINE's own remedy for the failure this module also plans for: on a
  * phone whose auto login did not complete, LINE's documentation says to send the customer

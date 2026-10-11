@@ -61,9 +61,6 @@ const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
  */
 const GOOGLE_BUTTON_GRACE_MS = 5_000;
 
-/** The LINE authorize route, with the door it means named out loud (ADR 0030 §1). */
-const LINE_AUTHORIZE_HREF = '/api/v1/auth/line/authorize?intent=sign-in';
-
 /**
  * What the front door says about a LINE arrival that did not sign anyone in.
  *
@@ -155,21 +152,25 @@ export function buttonWidthFor(available: number): number {
  */
 export function CustomerSignIn({
   googleClientId,
-  lineConfigured = false,
+  lineHref = null,
   lineResult = null,
 }: {
   googleClientId: string | null;
   /**
-   * Whether the deployment has a LINE Login channel (ADR 0030). Default false so
-   * every existing caller renders exactly as before — the LINE door is the third
-   * door, and a deployment that never configured it must not gain a button that
-   * answers a 422.
+   * LINE's own authorization URL, minted by the page for this render (ADR 0030 §1,
+   * amended) — the door's whole address, state included.
+   *
+   * Passed in as a *value* rather than assembled here, like the Google client id beside
+   * it: this component is the client half, and a URL built in the browser cannot carry a
+   * state the server signed, nor know the address the shop is reachable at behind its
+   * proxy. `null` — no channel configured, or a page that could not name its own address —
+   * renders the sentence that says so rather than a link to nowhere.
    */
-  lineConfigured?: boolean;
+  lineHref?: string | null;
   /**
    * The `?line=` code the callback redirected with, if any.
    *
-   * Read on the server and handed down as a value, like `lineConfigured`: the screen
+   * Read on the server and handed down as a value, like `lineHref`: the screen
    * then renders the outcome in the same paint as the door, instead of a client effect
    * rewriting the page a moment later.
    */
@@ -192,7 +193,7 @@ export function CustomerSignIn({
   return (
     <div className={styles.form}>
       <GoogleDoor googleClientId={googleClientId} onSignedIn={go} />
-      <LineDoor configured={lineConfigured} result={lineResult} onSignedIn={go} />
+      <LineDoor href={lineHref} result={lineResult} onSignedIn={go} />
       <p className={styles.divider}>หรือ</p>
       <CounterDoor onSignedIn={go} />
     </div>
@@ -209,11 +210,18 @@ export function CustomerSignIn({
  * embedded script, so this door needs no third-party JS at all — the browser walks to
  * LINE's consent screen and comes back.
  *
- *   * **A LINE account that is already bound signs straight in.** The link says
- *     `?intent=sign-in`, so the callback knows which door this is and starts a session;
- *     before that, the link pointed at the *binding* flow, which needs the session the
- *     visitor has not got — consent, then straight back to this page. That is the loop
- *     this screen was reported for.
+ * **The link *is* LINE's authorization address**, handed down by the page, rather than a
+ * route of ours that answers with a redirect to it. That is not a style choice: LINE's
+ * guide to the phone failure this door already recovers from lists a JavaScript redirect
+ * to the authorization URL among the cases where the app handoff does not happen, and
+ * recommends letting the customer tap a button that goes to the authorization URL. A tap
+ * on LINE's own address is that; a tap on a route of ours followed by a `307` is not.
+ *
+ *   * **A LINE account that is already bound signs straight in.** The state the page
+ *     minted says `sign-in`, so the callback knows which door this is and starts a
+ *     session; before that, the link pointed at the *binding* flow, which needs the
+ *     session the visitor has not got — consent, then straight back to this page. That is
+ *     the loop this screen was reported for.
  *   * **A LINE account that is nobody's yet asks for a phone number**, which is the one
  *     thing LINE cannot tell us and the shop cannot skip: a LINE account arriving from a
  *     browser proves the LINE account and nothing about the number a customer's points
@@ -224,13 +232,17 @@ export function CustomerSignIn({
  * When the deployment has no channel, the door says so plainly rather than
  * disappearing — the same honesty the Google door renders — because "where did
  * the button go" is a worse question than "why is this grey".
+ *
+ * An `<a>`, not a button with a handler: a plain navigation is what a tap on a Universal
+ * Link looks like to iOS, and a `window.location` assignment is the shape LINE's guide
+ * names as the one the handoff does not survive.
  */
 function LineDoor({
-  configured,
+  href,
   result,
   onSignedIn,
 }: {
-  configured: boolean;
+  href: string | null;
   result: string | null;
   onSignedIn: (path: string) => void;
 }) {
@@ -250,7 +262,7 @@ function LineDoor({
 
       {notice ? <InlineNotice tone={notice.tone}>{notice.body}</InlineNotice> : null}
 
-      {!configured ? (
+      {href === null ? (
         <InlineNotice tone="info">
           ร้านนี้ยังไม่ได้ตั้งค่าการเข้าสู่ระบบด้วย LINE — ใช้เบอร์โทรศัพท์และรหัสผ่านด้านล่างได้เลย
         </InlineNotice>
@@ -263,7 +275,7 @@ function LineDoor({
         />
       ) : (
         <>
-          <a className={styles.lineButton} href={LINE_AUTHORIZE_HREF}>
+          <a className={styles.lineButton} href={href}>
             เข้าสู่ระบบด้วย LINE
           </a>
           <p className={styles.stepHint}>

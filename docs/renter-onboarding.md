@@ -291,8 +291,9 @@ optional and independent of everything above:
   phone-only case is handled without anyone noticing: a phone whose LINE app was
   supposed to open itself and hand the sign-in back sometimes cannot finish it, and
   the system answers that by sending the customer straight to LINE's own sign-in
-  screen once with automatic login switched off — so they type their LINE email and
-  password and are in. If the page still says the sign-in failed *after* that, it is a
+  screen once with automatic login switched off — so they sign in with LINE there
+  (or type their LINE email and password, if the browser does not offer that) and are
+  in. If the page still says the sign-in failed *after* that, it is a
   channel setting rather than the customer: `npm run line:wizard -- --verify` says
   which.
 - **Bind from the account page.** A customer already signed in opens

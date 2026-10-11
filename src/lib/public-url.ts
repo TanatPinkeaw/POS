@@ -36,3 +36,42 @@ export function publicBaseUrlOr(
 ): string {
   return readPublicBaseUrl(env) ?? new URL(requestUrl).origin;
 }
+
+/**
+ * The same address, for a *screen* rather than a route (ADR 0030 §1, amended).
+ *
+ * A server component has no `request.url` to read an origin from: it has the headers the
+ * request arrived with. The precedence is deliberately `publicBaseUrlOr`'s — configuration
+ * first, because behind the shop's tunnel the Host the process sees is `localhost:3000`, and
+ * a customer sent there cannot reach the page — and the fallback is the host the *browser*
+ * asked for, which is the same answer a route handler derives from `request.url`. The two
+ * halves of the LINE flow must name their callback address identically (LINE compares
+ * `redirect_uri` character for character at the token exchange), so the sign-in page mints
+ * its own address with this rather than deriving one of its own.
+ *
+ * Null only when the request carries no Host at all — which the framework cannot route to a
+ * page in the first place, and which the caller reads as a door the shop has not configured.
+ */
+export function publicBaseUrlForHeaders(
+  headers: Headers,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const configured = readPublicBaseUrl(env);
+  if (configured) {
+    return configured;
+  }
+
+  // A chain of proxies leaves comma-separated lists in both of these; the first value is
+  // the client's own hop, which is the address the customer's browser used.
+  const host = firstHeaderValue(headers.get('x-forwarded-host') ?? headers.get('host'));
+  if (host === null) {
+    return null;
+  }
+  return `${firstHeaderValue(headers.get('x-forwarded-proto')) ?? 'http'}://${host}`;
+}
+
+/** The client's own value out of a header a proxy may have appended its own hops to. */
+function firstHeaderValue(value: string | null): string | null {
+  const first = value?.split(',')[0]?.trim();
+  return first === undefined || first.length === 0 ? null : first;
+}

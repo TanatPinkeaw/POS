@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { BrandMark } from '@/brand/BrandMark';
@@ -10,6 +11,8 @@ import { PrivacyNoticeBody } from '@/app/privacy/PrivacyNoticeBody';
 import { getSessionUser } from '@/lib/auth';
 import { readGoogleClientId } from '@/lib/google-id-token';
 import { readLineChannelId } from '@/lib/line-id-token';
+import { lineStartHref } from '@/lib/line-start';
+import { publicBaseUrlForHeaders } from '@/lib/public-url';
 import { prisma } from '@/lib/db';
 import { homePathForRole } from '@/lib/roles';
 import { hasShop, loadShop } from '@/lib/shop';
@@ -18,6 +21,20 @@ import { shopDisplayName } from '@/lib/shop-view';
 import styles from './customer-signin.module.css';
 
 export const metadata: Metadata = { title: 'เข้าสู่ระบบ' };
+
+/**
+ * Rendered per request, and the LINE door is the reason it has to be.
+ *
+ * This screen now mints a signed state into the LINE button's own `href` (see
+ * `lineStartHref`), because a press that reaches LINE by way of a redirect of ours is the
+ * shape LINE's guide to the phone failure avoids. A cached copy of this page — Next's
+ * build-time render, or a proxy in front of the shop — would hand every customer the same
+ * state, and after its fifteen minutes every customer's press would land on
+ * "การยืนยันหมดอายุ": a sign-in screen that works for as long as the cache lives and then
+ * stops. The page reads cookies and search params already, so it is dynamic today; this says
+ * so out loud, so that a future change to those reads cannot quietly make it static.
+ */
+export const dynamic = 'force-dynamic';
 
 /**
  * Demo accounts seeded by `npm run db:seed`.
@@ -61,6 +78,14 @@ const DEMO_ACCOUNTS = [
  * screen has to explain), and a value read on the server is a value the first paint
  * already carries. Left to a client effect, the customer would see the door, then a
  * different screen slide in underneath them.
+ *
+ * **The LINE door's address is minted here as well**, which is the one door this page
+ * does more than describe. The button's `href` *is* LINE's authorization URL, with a
+ * state signed for this render — no route of ours in between, because LINE's guide to
+ * the phone failure names a redirect as what the app handoff does not survive, and
+ * recommends letting the customer tap a link that goes to the authorization URL. That
+ * is why this page cannot be cached (see `dynamic` above) and why the state's life
+ * starts at the paint rather than at the press.
  */
 export default async function LoginPage({
   searchParams,
@@ -100,6 +125,19 @@ export default async function LoginPage({
     phone: shop?.phone ?? null,
   };
 
+  /*
+   * The LINE press, assembled per render: the channel, this deployment's own public address,
+   * and a state signed for it. `null` whenever the deployment cannot answer one of those two
+   * questions — no channel at all, or a request with no Host to name itself by — and the door
+   * then says the shop has not configured LINE rather than showing a link to nowhere.
+   */
+  const lineChannelId = readLineChannelId();
+  const lineBase = lineChannelId === null ? null : publicBaseUrlForHeaders(await headers());
+  const lineHref =
+    lineChannelId !== null && lineBase !== null
+      ? await lineStartHref({ intent: 'sign-in', base: lineBase, channelId: lineChannelId })
+      : null;
+
   return (
     /*
      * Touch density, because this screen is the customer's phone and the till
@@ -130,7 +168,7 @@ export default async function LoginPage({
 
         <CustomerSignIn
           googleClientId={readGoogleClientId()}
-          lineConfigured={readLineChannelId() !== null}
+          lineHref={lineHref}
           lineResult={line ?? null}
         />
       </div>

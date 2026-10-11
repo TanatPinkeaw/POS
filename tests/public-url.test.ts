@@ -8,7 +8,7 @@
 // as the direct-deployment fallback and trailing slashes as harmless noise.
 import { describe, expect, it } from 'vitest';
 
-import { publicBaseUrlOr, readPublicBaseUrl } from '@/lib/public-url';
+import { publicBaseUrlForHeaders, publicBaseUrlOr, readPublicBaseUrl } from '@/lib/public-url';
 
 describe(`the deployment's public address`, () => {
   it('is configuration, read trimmed and without trailing slashes', () => {
@@ -40,5 +40,54 @@ describe(`the deployment's public address`, () => {
 
   it('falls back to the request origin on a direct deployment', () => {
     expect(publicBaseUrlOr('http://localhost:3000/path', {})).toBe('http://localhost:3000');
+  });
+});
+
+describe('the same address, for a page with headers instead of a request', () => {
+  // The sign-in page mints LINE's address into its button (ADR 0030 §1, amended), and a
+  // server component has no `request.url` — so the rule has to be the same one, read from
+  // what the request carried, or the page would hand LINE a `redirect_uri` the callback's
+  // own token exchange does not agree with.
+  const request = (init: Record<string, string>): Headers => new Headers(init);
+
+  it('still prefers configuration, which is what a proxy deployment needs', () => {
+    expect(
+      publicBaseUrlForHeaders(request({ host: 'localhost:3000' }), {
+        PUBLIC_BASE_URL: 'https://pos.example.com',
+      }),
+    ).toBe('https://pos.example.com');
+  });
+
+  it('falls back to the host the browser asked for', () => {
+    expect(publicBaseUrlForHeaders(request({ host: '192.168.1.20:3000' }), {})).toBe(
+      'http://192.168.1.20:3000',
+    );
+  });
+
+  it('believes the forwarded host and scheme when a proxy added them', () => {
+    expect(
+      publicBaseUrlForHeaders(
+        request({ host: 'localhost:3000', 'x-forwarded-host': 'pos.example.com', 'x-forwarded-proto': 'https' }),
+        {},
+      ),
+    ).toBe('https://pos.example.com');
+  });
+
+  it('takes the client of a chain, not the hop that appended to it', () => {
+    // A proxy that adds itself leaves `https, http` here; reading the whole header would
+    // build `https, http://host`, which is not an address at all.
+    expect(
+      publicBaseUrlForHeaders(
+        request({
+          'x-forwarded-host': 'pos.example.com, inner.local',
+          'x-forwarded-proto': 'https, http',
+        }),
+        {},
+      ),
+    ).toBe('https://pos.example.com');
+  });
+
+  it('is nothing when the request names no host at all', () => {
+    expect(publicBaseUrlForHeaders(request({}), {})).toBeNull();
   });
 });

@@ -178,6 +178,35 @@ the code, verify the id token, start the session — is exercised without a live
 trade is the same and is stated: whoever sets it moves where this server sends the shop's
 channel secret, so it is set from the same `.env` that already holds the secret.
 
+**A press of the door reaches LINE's own address, and the state is minted before it.** The
+tap used to run through `/api/v1/auth/line/authorize` — a route of ours that answers with a
+`307` to LINE. LINE's *How to handle auto login failure* names two ways the handoff does not
+happen, and one of them is **a JavaScript redirect to the authorization URL**; its workaround
+is to "let users tap a button to go to the authorization URL". A tap on a route of ours that
+then redirects is the shape that guide steers away from, so the button's `href` is now LINE's
+address itself, with the state signed while the page renders (`src/lib/line-start.ts`).
+
+Three consequences are designed for rather than discovered later. The state's life begins at
+the paint and not at the press, so `LINE_STATE_TTL_SECONDS` is fifteen minutes — the old five
+was exactly one walk, when nothing of ours ran before it — and each state carries a `jti`,
+because a JWS is deterministic over its claims and two renders inside one second used to be
+byte-identical. The page must never be cached: a build-time render, or one copy held by a
+proxy, would hand every customer the same state and then, fifteen minutes later, a dead one —
+hence `export const dynamic = 'force-dynamic'` on `/login`, which the acceptance run checks by
+minting from two renders and comparing them. And `redirect_uri` is built by one function,
+`lineRedirectUri`, for all three callers — the page, the authorize route, and the callback's
+retry — because LINE compares it character for character at the token exchange.
+
+**Alternatives rejected here.** Minting the state in the browser (the page handing the client
+the channel id and letting it assemble the URL): the state is a server signature, so a
+browser that could mint one could mint the whole flow, and the address has to be the
+deployment's public one — configuration a client cannot read. Making the link relative to
+avoid naming that base: `redirect_uri` has to be absolute, and it has to be the address the
+exchange sends. And leaving the account card's *bind* press on a route while changing this
+one: that press is a `window.location` assignment, which is the very shape the LINE guide
+names, so it is a known gap rather than a decision — the design system has no link-shaped
+`Button` for it, and a `Link` primitive is the next decision, not this one.
+
 **The phone gets a second walk, and the reason is LINE's, not a guess.** The door was
 reported working on the shop's desktop and failing on a phone, and the internet has one
 answer for that shape. LINE's *How to handle auto login failure* says that when the LINE
@@ -187,7 +216,8 @@ the code is "an invalid value, so you can't issue an access token". From this si
 one symptom, and it is not the customer's mistake, so answering it with "try again" would
 fail every time they pressed the button. LINE's own recommended reply is the second walk:
 send them back to the authorization URL with **`disable_auto_login=true`**, which shows
-LINE's email-and-password screen in the browser instead of launching the app again.
+LINE's own sign-in screen in the browser — SSO when the browser offers it, otherwise an email
+address and a password — instead of launching the app again.
 
 The remedy is bounded by a claim rather than by a counter, which is why it can be offered
 at all in a design that stores no flow state: the state now carries `retried`, minted only
@@ -241,8 +271,10 @@ work is the thing being counted.
   way LINE's redirect walks it, the code is exchanged against a token endpoint the run
   serves, the id token is verified against a key set the run serves, and the customer ends
   up signed in — plus the two refusals (a binding with no session, a state we did not
-  mint) and the phone's second walk, driven by making that stub answer `invalid_grant` the
-  way a failed auto login does.
+  mint), the phone's second walk, driven by making that stub answer `invalid_grant` the way a
+  failed auto login does, and the press itself — the address parsed out of the rendered
+  `/login` HTML rather than assembled by the script, twice over, so that a state minted per
+  render is a fact the run measures rather than asserts.
 - Known limits: no rich menu, no broadcast, no template editing from the UI. The Mini App
   (LIFF) remains the next decision rather than this one — but the browser flow now signs a
   customer in *and* finishes a first sign-in, so LIFF is a nicer surface rather than the

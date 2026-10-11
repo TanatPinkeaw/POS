@@ -59,6 +59,7 @@ import {
   buildLineAuthorizeUrl,
   lineLandingFor,
   lineLandingUrl,
+  lineRedirectUri,
   planLineArrival,
   planLineRetry,
 } from '@/lib/line-door';
@@ -122,14 +123,15 @@ export async function GET(request: Request): Promise<Response> {
       /*
        * The second walk goes straight to LINE with auto login off, and with a state that
        * says it is the second walk — so this remedy cannot mint another one. The address is
-       * `buildLineAuthorizeUrl`'s, the same one the authorize route sends, because a retry
-       * that forgot `scope=openid` would fail for a reason nobody had seen before.
+       * `buildLineAuthorizeUrl`'s, the same one the sign-in page puts in its button and the
+       * authorize route sends, because a retry that forgot `scope=openid` would fail for a
+       * reason nobody had seen before.
        */
       const retryState = await createLineState(context.intent, { retried: true });
       return NextResponse.redirect(
         buildLineAuthorizeUrl({
           channelId: context.channelId,
-          redirectUri: `${base}/api/v1/auth/line/callback`,
+          redirectUri: lineRedirectUri(base),
           state: retryState,
           disableAutoLogin: true,
         }),
@@ -201,7 +203,7 @@ export async function GET(request: Request): Promise<Response> {
       grant_type: 'authorization_code',
       code,
       // Must match the authorize request's redirect_uri character for character.
-      redirect_uri: `${base}/api/v1/auth/line/callback`,
+      redirect_uri: lineRedirectUri(base),
       client_id: channelId,
       client_secret: secret,
     });

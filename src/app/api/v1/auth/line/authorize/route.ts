@@ -21,13 +21,19 @@
  * callback sends a customer to the same address — one parameter different — when a phone's
  * auto login failed. Two copies of this query is how a retry loses `scope=openid` and
  * becomes a second failure with a new cause.
+ *
+ * This route is no longer the usual way in. The sign-in page mints the same address into its
+ * button's own `href` (`line-start.ts`), because LINE's guide to the phone failure names a
+ * redirect as the thing the app handoff does not survive. What stays here is the caller that
+ * reaches the URL directly: a bookmark, a QR, a pasted link, and this deployment's own
+ * acceptance run.
  */
 import { NextResponse } from 'next/server';
 
 import { withApi } from '@/lib/api';
 import { getSessionUser } from '@/lib/auth';
 import { ValidationError } from '@/lib/errors';
-import { buildLineAuthorizeUrl, lineIntentFor } from '@/lib/line-door';
+import { buildLineAuthorizeUrl, lineIntentFor, lineRedirectUri } from '@/lib/line-door';
 import { readLineChannelId } from '@/lib/line-id-token';
 import { createLineState } from '@/lib/line-state';
 import { publicBaseUrlOr } from '@/lib/public-url';
@@ -54,7 +60,7 @@ export async function GET(request: Request): Promise<Response> {
       hasSession: (await getSessionUser()) !== null,
     });
 
-    const redirectUri = `${publicBaseUrlOr(request.url)}/api/v1/auth/line/callback`;
+    const redirectUri = lineRedirectUri(publicBaseUrlOr(request.url));
     // Never `retried`: a press from the shop's own screen is a first attempt, and the
     // one retry a failure can earn is minted by the callback that failed.
     const state = await createLineState(intent);

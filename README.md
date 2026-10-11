@@ -378,13 +378,27 @@ account card as `taken`. Before this, every one of those was a redirect to a pag
 silently ignored the word it was given — which is what a loop looks like from the
 customer's side.
 
+**The press goes to LINE's own address, not to a route of ours.** The button's `href` *is*
+LINE's authorization URL, minted while the page is painted (`src/lib/line-start.ts`) — because
+LINE's guide to the failure below lists a **JavaScript redirect** to the authorization URL
+among the cases where the app handoff does not happen, and recommends letting the customer
+tap a button that goes there. A tap that lands on a route of ours and reaches LINE by `307`
+is the same shape one hop later. Two consequences are paid for in the design rather than
+hidden: the state's life now begins at the paint (fifteen minutes, and each render mints its
+own `jti`, since a JWS over identical claims is byte-identical), and the sign-in page must
+never be cached — a proxy holding it would hand every customer one state, and then a dead
+one. The callback's retry and the authorize route (still there for a bookmark, a QR or a
+pasted link) build their address through the same `buildLineAuthorizeUrl`, so the second walk
+cannot drift from the entrance.
+
 A sign-in that works on the shop's desktop and dies on a phone is LINE's **auto login
 failure**, and it is answered the way LINE documents it. When LINE's app handoff does not
 complete — private browsing, or an OS whose Universal Links did not fire — LINE still sends
 the customer back to the callback, with a code that cannot be exchanged for a token. That
 one failure earns exactly one more walk through LINE's screens with
-`disable_auto_login=true`, so the customer gets LINE's password screen in their own browser
-instead of a sentence telling them to try the same thing again. The ceiling rides in the
+`disable_auto_login=true`, so the customer gets LINE's own sign-in screen in their browser —
+SSO if the browser offers it, otherwise an email address and a password — instead of a
+sentence telling them to try the same thing again. The ceiling rides in the
 signed state's own `retried` claim, so a failure that is *not* that one can never loop, and
 the same claim means a callback cannot be replayed into a second free attempt. Nothing else
 is retried: a token we refuse to verify is this deployment's own configuration, and walking

@@ -57,18 +57,39 @@ describe("the LINE door on the front door (/login)", () => {
   it('renders beside Google and the counter door, from a passed-in value', () => {
     // Found on the live deployment: the API doors existed and answered, but the
     // sign-in screen never gained the button — a customer meeting the shop on
-    // LINE had no third door to walk through. The page passes the channel id's
-    // presence down as a value, the same argument as the Google door's.
-    expect(loginPage()).toContain('lineConfigured={readLineChannelId() !== null}');
+    // LINE had no third door to walk through. The page passes the address down as
+    // a value, the same argument as the Google door's, and for a second reason
+    // now: a state signed on the server cannot be minted in the browser.
+    expect(loginPage()).toContain('lineHref={lineHref}');
+    expect(loginPage()).toContain("lineStartHref({ intent: 'sign-in'");
     expect(signIn()).toContain('<LineDoor');
-    expect(signIn()).toContain('/api/v1/auth/line/authorize');
+    expect(signIn()).toContain('lineHref');
   });
 
-  it('renders as a plain redirect link, not an embedded widget', () => {
-    // LINE Login is a redirect flow: no third-party script belongs on this
-    // screen for it, unlike the Google door which loads Identity Services.
-    expect(signIn()).toContain('/api/v1/auth/line/authorize?intent=sign-in');
+  it('makes the press LINE’s own address, so the tap itself is the navigation', () => {
+    /*
+     * ADR 0030 §1, amended. LINE's guide to the phone failure names a JavaScript
+     * redirect to the authorization URL as a case the app handoff does not
+     * survive, and recommends letting the customer tap a button that goes to it;
+     * a redirect of ours is the same shape one hop later. So the door holds no
+     * route of ours and no handler — and it still spells no LINE literal, because
+     * the page is what mints the address.
+     */
+    const source = signIn();
+    const door = source.slice(source.indexOf('function LineDoor'), source.indexOf('function LineClaimStep'));
+
+    expect(door).toContain('href={href}');
+    expect(door).not.toContain('/api/v1/auth/line/authorize');
+    expect(door).not.toContain('window.location');
+    expect(door).not.toContain('https://access.line.me');
     expect(signIn()).not.toContain('https://access.line.me');
+  });
+
+  it('cannot be cached, because the address it carries is minted for that render', () => {
+    // A build-time render, or a proxy holding the page, would hand every customer
+    // one state — and after its life is up, one that is already dead. The page
+    // reads cookies and search params already; this says the consequence out loud.
+    expect(loginPage()).toContain("export const dynamic = 'force-dynamic'");
   });
 
   it('says plainly when the deployment has no channel, rather than hiding the door', () => {
@@ -78,10 +99,10 @@ describe("the LINE door on the front door (/login)", () => {
 
 describe('the sign-in half of the LINE flow', () => {
   it('names the door it is, so the account page’s press cannot sign somebody in', () => {
-    // One press, one promise (ADR 0030 §1). The front door says `sign-in`; the account
-    // card says `bind`. Neither passes a proof of its own choosing — the intent is the
-    // only thing either URL carries.
-    expect(signIn()).toContain('intent=sign-in');
+    // One press, one promise (ADR 0030 §1). The front door's state says `sign-in`, minted
+    // by the page; the account card's press says `bind`. Neither passes a proof of its own
+    // choosing — the intent is the only thing either address carries.
+    expect(loginPage()).toContain("lineStartHref({ intent: 'sign-in'");
     expect(accountPortal()).toContain('/api/v1/auth/line/authorize?intent=bind');
   });
 

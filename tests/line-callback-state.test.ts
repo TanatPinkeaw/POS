@@ -19,7 +19,12 @@ import { describe, expect, it } from 'vitest';
 
 import { DomainError } from '@/lib/errors';
 import { createSessionToken, authSecretKey } from '@/lib/session-token';
-import { createLineState, InvalidLineStateError, verifyLineState } from '@/lib/line-state';
+import {
+  createLineState,
+  InvalidLineStateError,
+  LINE_STATE_TTL_SECONDS,
+  verifyLineState,
+} from '@/lib/line-state';
 
 const callbackRoute = (): string =>
   readFileSync('src/app/api/v1/auth/line/callback/route.ts', 'utf8');
@@ -119,20 +124,33 @@ describe('the state a LINE door mints', () => {
     await expect(verifyLineState(claimless)).rejects.toBeInstanceOf(InvalidLineStateError);
   });
 
-  it('stops working after five minutes', async () => {
-    // Both timestamps absolute: `setExpirationTime('300s')` is relative to *now*, so a
+  it('stops working when its time is up', async () => {
+    // Both timestamps absolute: `setExpirationTime('900s')` is relative to *now*, so a
     // token with an hour-old `iat` and a relative expiry is still perfectly valid — the
-    // test would pass on a verifier that checked nothing.
+    // test would pass on a verifier that checked nothing. So this one reads as the flow
+    // would meet it: minted an hour ago, expired `LINE_STATE_TTL_SECONDS` later.
     const issuedAt = Math.floor(Date.now() / 1000) - 3600;
     const stale = await new SignJWT({ purpose: 'line-link' })
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt(issuedAt)
       .setIssuer('pos-realtime')
       .setAudience('line-state')
-      .setExpirationTime(issuedAt + 300)
+      .setExpirationTime(issuedAt + LINE_STATE_TTL_SECONDS)
       .sign(authSecretKey());
 
     await expect(verifyLineState(stale)).rejects.toBeInstanceOf(InvalidLineStateError);
+  });
+
+  it('lives long enough for a page to sit open and one walk through LINE', async () => {
+    /*
+     * Not a preference: the state is minted when the sign-in page is *painted* (ADR 0030 §1,
+     * amended), so its life has to cover a phone set down on that screen before the tap —
+     * plus the walk the tap starts. Ten minutes is the floor rather than the number, because
+     * what must not come back is the five-minute life that was exactly one walk when nothing
+     * of ours ran before the press.
+     */
+    expect(LINE_STATE_TTL_SECONDS).toBeGreaterThanOrEqual(600);
+    expect((await verifyLineState(await createLineState('sign-in'))).intent).toBe('sign-in');
   });
 
   it('refuses junk without pretending to know what it was', async () => {

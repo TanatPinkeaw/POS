@@ -34,8 +34,19 @@ import { authSecretKey } from './session-token';
 const STATE_ISSUER = 'pos-realtime';
 const STATE_AUDIENCE = 'line-state';
 
-/** How long a state may live: one walk through LINE's consent screens. */
-export const LINE_STATE_TTL_SECONDS = 300;
+/**
+ * How long a state may live: a page left open, then one walk through LINE's screens.
+ *
+ * It used to be five minutes, which was exactly one walk — because the state was minted at
+ * the moment the customer pressed the button. It is minted when the sign-in page is *painted*
+ * now (a press reaches LINE's own address directly, so nothing of ours runs in between), and
+ * the life has to start there: a phone set down on the sign-in screen for ten minutes and
+ * then picked up must not be a walk that ends in "การยืนยันหมดอายุ". Fifteen minutes covers a
+ * customer finding their LINE password, which is the longest part of the walk and not its
+ * shortest. The ceiling is still one walk — a state is not single-use, and the retry cannot
+ * mint another — so a longer life costs nothing but a longer-lived nonce.
+ */
+export const LINE_STATE_TTL_SECONDS = 900;
 
 /** What a verified state tells the callback: which door, and which attempt this is. */
 export interface LineState {
@@ -70,6 +81,15 @@ export async function createLineState(
 ): Promise<string> {
   return new SignJWT({ purpose: purposeForIntent(intent), retried: options.retried === true })
     .setProtectedHeader({ alg: 'HS256' })
+    /*
+     * A fresh id per state, not decoration: a JWS is deterministic over its claims, so two
+     * presses in the same second used to mint byte-identical tokens. That was harmless while
+     * the state was minted at a press — one browser, one token — but it is minted per page
+     * render now, and two strangers loading the sign-in page inside one second would be
+     * handed the same nonce; a proxy holding that page would hand it to everybody. With `jti`
+     * "one render, one state" is true, which is what lets the acceptance run assert it.
+     */
+    .setJti(crypto.randomUUID())
     .setIssuedAt()
     .setIssuer(STATE_ISSUER)
     .setAudience(STATE_AUDIENCE)

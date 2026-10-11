@@ -107,6 +107,16 @@ Recorded so a session starts from the truth rather than from the last commit mes
   (`src/lib/line-pending.ts`) instead of being impossible; and every outcome lands on a
   screen that can say it. `npm run acceptance` §20 walks the whole redirect flow against a
   token endpoint the run serves itself.
+- **A press of the LINE door is LINE's own address, minted while the page is painted**
+  (ADR 0030 §1, amended again): `src/lib/line-start.ts` signs the state at render and puts
+  it in the button's `href`, because LINE's guide to the auto-login failure names a JavaScript
+  redirect to the authorization URL as a case the app handoff does not survive. That is why
+  `/login` carries `dynamic = 'force-dynamic'` (a cached copy would hand every customer one
+  state, and then a dead one), why the state now lives fifteen minutes with a `jti` per render
+  instead of five minutes of one walk, and why `redirect_uri` is built once (`lineRedirectUri`)
+  for all three callers. The account card's *bind* press is still a `window.location` redirect
+  — the same documented shape — and is a known gap, because the design system has no
+  link-shaped Button for it to become.
 - **A sign-in that works on the desktop and fails on a phone is LINE's auto login failing**
   (ADR 0030 §6). LINE's documented shape for it: the callback still arrives, carrying a code
   no token can be issued for, because the app handoff never completed. So that one failure —
