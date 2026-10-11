@@ -378,6 +378,11 @@ account card as `taken`. Before this, every one of those was a redirect to a pag
 silently ignored the word it was given — which is what a loop looks like from the
 customer's side.
 
+LINE's web ID token is verified as **HS256 with the channel secret**; native/LIFF
+uses **ES256 with LINE's public EC keys**, never Google's RS256 format. Acceptance
+uses the web format too: its previous RSA fixture hid a verifier that refused real
+LINE consents. Live-channel sign-in still needs a human check (ADR 0030 §5).
+
 Consent is two facts, and a push needs both: the customer's (`line_consent_at`, with
 the version of the text they read; withdrawal clears the binding and the consent
 together) and the shop's — a push only reaches a **friend** of the Official Account,

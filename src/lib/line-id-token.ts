@@ -7,9 +7,10 @@
  * dependency of this repository already. Nothing is trusted for having arrived over
  * TLS.
  *
- * Where Google's module pins RS256 against Google's keys, this one pins RS256
- * against LINE's, and LINE's issuer is written one way — `https://access.line.me` —
- * rather than Google's two. The subject it returns is what lands on
+ * LINE web login signs with HS256 under the channel secret; native/LIFF uses
+ * ES256 under LINE's published EC keys. Each algorithm has its own key source:
+ * a public key can never become an HMAC secret. LINE's issuer is
+ * `https://access.line.me` rather than Google's two. The subject it returns is what lands on
  * `users.line_subject` (unique), so a returning LINE account resolves to the same
  * customer rather than a second row. The email inside the token is carried so the
  * signup can store it, and is never trusted for *linking*: the proof that a number
@@ -18,6 +19,7 @@
  */
 import {
   createRemoteJWKSet,
+  decodeProtectedHeader,
   jwtVerify,
   type JWTVerifyGetKey,
   type JWTPayload,
@@ -125,10 +127,21 @@ export async function verifyLineIdToken(
   }
 
   try {
-    const { payload } = await jwtVerify(token, options.keys ?? lineJwks(readLineJwksUrl(options.env)), {
+    const algorithm = decodeProtectedHeader(token).alg;
+    let key: Uint8Array | JWTVerifyGetKey;
+    if (algorithm === 'HS256') {
+      const secret = (options.env ?? process.env).LINE_LOGIN_CHANNEL_SECRET?.trim();
+      if (!secret) throw new InvalidLineCredentialError();
+      key = new TextEncoder().encode(secret);
+    } else if (algorithm === 'ES256') {
+      key = options.keys ?? lineJwks(readLineJwksUrl(options.env));
+    } else {
+      throw new InvalidLineCredentialError();
+    }
+    const { payload } = await jwtVerify(token, key, {
       issuer: LINE_ISSUER,
       audience: channelId,
-      algorithms: ['RS256'],
+      algorithms: [algorithm],
     });
 
     const { sub, name, email } = payload as JWTPayload & Record<string, unknown>;

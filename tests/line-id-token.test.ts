@@ -13,12 +13,12 @@ import { InvalidLineCredentialError, readLineChannelId, verifyLineIdToken } from
 const CHANNEL_ID = '2000000000-test-channel';
 const ISSUER = 'https://access.line.me';
 
-/** A locally generated RSA key pair, so verification is exercised without LINE. */
+/** A locally generated EC key pair, so verification is exercised without LINE. */
 let keys: Awaited<ReturnType<typeof createLocalJWKSet>>;
 let signKey: CryptoKey;
 
 beforeAll(async () => {
-  const pair = await generateKeyPair('RS256');
+  const pair = await generateKeyPair('ES256');
   signKey = pair.privateKey;
   keys = createLocalJWKSet({ keys: [await exportJWK(pair.publicKey)] });
 });
@@ -37,7 +37,7 @@ async function lineToken(overrides: {
     email: 'customer@example.com',
     ...overrides.claims,
   })
-    .setProtectedHeader({ alg: 'RS256' })
+    .setProtectedHeader({ alg: 'ES256' })
     .setSubject(overrides.subject ?? 'line-subject-1')
     .setIssuedAt()
     .setIssuer(overrides.issuer ?? ISSUER)
@@ -53,6 +53,22 @@ function verify(token: string): Promise<unknown> {
 }
 
 describe('a LINE id token', () => {
+  it('accepts a web-login HS256 token signed with this channel secret', async () => {
+    const secret = 'test-line-channel-secret-32-bytes';
+    const token = await new SignJWT({ name: 'ลูกค้า ไลน์' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setSubject('web-line-subject')
+      .setIssuer(ISSUER)
+      .setAudience(CHANNEL_ID)
+      .setIssuedAt()
+      .setExpirationTime('1h')
+      .sign(new TextEncoder().encode(secret));
+    await expect(verifyLineIdToken(token, {
+      channelId: CHANNEL_ID,
+      env: { LINE_LOGIN_CHANNEL_SECRET: secret },
+    })).resolves.toEqual({ subject: 'web-line-subject', displayName: 'ลูกค้า ไลน์', email: null });
+  });
+
   it('is accepted, and reports the identity it asserts', async () => {
     const identity = await verifyLineIdToken(await lineToken(), { channelId: CHANNEL_ID, keys });
 
@@ -63,6 +79,47 @@ describe('a LINE id token', () => {
     });
   });
 
+  it('refuses forged, expired, foreign-channel, foreign-issuer and subjectless web tokens', async () => {
+    const secret = 'test-line-channel-secret-32-bytes';
+    const env = { LINE_LOGIN_CHANNEL_SECRET: secret };
+    const cases = [
+      { key: 'wrong-channel-secret-32-bytes-long' },
+      { aud: 'another-channel' },
+      { iss: 'https://accounts.google.com' },
+      { exp: Math.floor(Date.now() / 1000) - 60 },
+      { sub: '' },
+      { sub: undefined },
+    ];
+    for (const { key, ...claims } of cases) {
+      const token = await new SignJWT({
+        iss: ISSUER, aud: CHANNEL_ID, sub: 'web-subject',
+        exp: Math.floor(Date.now() / 1000) + 3600, ...claims,
+      }).setProtectedHeader({ alg: 'HS256' }).sign(new TextEncoder().encode(key ?? secret));
+      await expect(verifyLineIdToken(token, { channelId: CHANNEL_ID, env }))
+        .rejects.toBeInstanceOf(InvalidLineCredentialError);
+    }
+  });
+
+  it('refuses a web token when no channel secret is configured', async () => {
+    const token = await new SignJWT({ sub: 'web-subject' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuer(ISSUER).setAudience(CHANNEL_ID).setExpirationTime('1h')
+      .sign(new TextEncoder().encode('a-channel-secret-32-bytes-for-test'));
+    await expect(verifyLineIdToken(token, { channelId: CHANNEL_ID, env: {} }))
+      .rejects.toBeInstanceOf(InvalidLineCredentialError);
+  });
+
+  it('refuses RSA tokens even with an injected matching public key', async () => {
+    const pair = await generateKeyPair('RS256');
+    const token = await new SignJWT({ sub: 'forged-subject' })
+      .setProtectedHeader({ alg: 'RS256' }).setIssuer(ISSUER)
+      .setAudience(CHANNEL_ID).setExpirationTime('1h').sign(pair.privateKey);
+    await expect(verifyLineIdToken(token, {
+      channelId: CHANNEL_ID,
+      keys: createLocalJWKSet({ keys: [await exportJWK(pair.publicKey)] }),
+    })).rejects.toBeInstanceOf(InvalidLineCredentialError);
+  });
+
   it('names the subject the same way every time, so a returning customer is the same row', async () => {
     const first = await verifyLineIdToken(await lineToken(), { channelId: CHANNEL_ID, keys });
     const second = await verifyLineIdToken(await lineToken(), { channelId: CHANNEL_ID, keys });
@@ -71,7 +128,7 @@ describe('a LINE id token', () => {
   });
 
   it('refuses a token signed by a key that is not LINE`s', async () => {
-    const stranger = await generateKeyPair('RS256');
+    const stranger = await generateKeyPair('ES256');
     const forged = await lineToken({ key: stranger.privateKey });
 
     await expect(verify(forged)).resolves.toBeInstanceOf(InvalidLineCredentialError);
@@ -95,8 +152,8 @@ describe('a LINE id token', () => {
     await expect(verify(expired)).resolves.toBeInstanceOf(InvalidLineCredentialError);
   });
 
-  it('refuses a symmetric token offered where an RSA one was expected', async () => {
-    // The algorithm confusion attack: same claim shape, HS256 instead of RS256.
+  it('refuses an HMAC token signed with a different secret despite valid claims', async () => {
+    // Algorithm dispatch is not trust: HS256 must prove knowledge of our channel secret.
     const secret = new TextEncoder().encode('a-symmetric-secret-nobody-here-minted-64');
     const confused = await new SignJWT({ name: 'ลูกค้า ไลน์' })
       .setProtectedHeader({ alg: 'HS256' })
@@ -112,7 +169,7 @@ describe('a LINE id token', () => {
 
   it('refuses a token with no subject, however valid the signature', async () => {
     const minted = await new SignJWT({ name: 'ลูกค้า ไลน์' })
-      .setProtectedHeader({ alg: 'RS256' })
+      .setProtectedHeader({ alg: 'ES256' })
       .setIssuedAt()
       .setIssuer(ISSUER)
       .setAudience(CHANNEL_ID)

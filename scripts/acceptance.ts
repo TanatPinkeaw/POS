@@ -213,24 +213,19 @@ function lineCode(subject: string): string {
   return `acceptance:${subject}`;
 }
 
-/** A LINE id token this deployment will accept, for one subject. */
+/** Match LINE's web token format, not Google's RSA format: the real callback uses HS256. */
 async function lineIdToken(subject: string, overrides: { fullName?: string } = {}): Promise<string> {
-  if (!googlePrivateKey) {
-    throw new Error('The acceptance signing key was never generated');
-  }
   return new SignJWT({
     name: overrides.fullName ?? 'ลูกค้า ไลน์',
     email: `${subject}@line.example`,
   })
-    .setProtectedHeader({ alg: 'RS256' })
+    .setProtectedHeader({ alg: 'HS256' })
     .setSubject(subject)
     .setIssuedAt()
     .setIssuer(LINE_ISSUER)
     .setAudience(LINE_TEST_CHANNEL_ID)
     .setExpirationTime('1h')
-    // The same key the Google door's tokens are signed with: what makes them LINE's is the
-    // issuer and the audience, which is the point `line-id-token.ts` makes about claims.
-    .sign(googlePrivateKey);
+    .sign(new TextEncoder().encode(LINE_TEST_CHANNEL_SECRET));
 }
 
 /* ------------------------------------------------------------------ the run */
@@ -3043,10 +3038,10 @@ async function main(): Promise<void> {
       process.env.GOOGLE_JWKS_URL = `http://127.0.0.1:${jwksPort}/certs`;
 
       /*
-       * The LINE door, pointed the same way (ADR 0030 §1). Its id tokens are verified
-       * against the same key set this run already serves, because what makes a token
-       * LINE's is its issuer and audience rather than its key, and it exchanges its code
-       * at a token endpoint that mints from the code — see `lineCode` above.
+       * The LINE web door (ADR 0030 §1) exchanges its code at a local endpoint, but
+       * verifies HS256 under the configured channel secret exactly like production.
+       * Sharing Google's RSA fixture used to hide a verifier that rejected every
+       * real LINE web token. The code still selects the subject — see `lineCode` above.
        */
       const lineTokenPort = await freePort(3314);
       lineToken = createServer((request, response) => {
@@ -3074,7 +3069,7 @@ async function main(): Promise<void> {
       await new Promise<void>((resolve) => lineToken!.listen(lineTokenPort, '127.0.0.1', resolve));
       process.env.LINE_LOGIN_CHANNEL_ID = LINE_TEST_CHANNEL_ID;
       process.env.LINE_LOGIN_CHANNEL_SECRET = LINE_TEST_CHANNEL_SECRET;
-      process.env.LINE_JWKS_URL = `http://127.0.0.1:${jwksPort}/certs`;
+      // No LINE JWKS override: the web flow uses its channel secret, never Google's keys.
       process.env.LINE_TOKEN_URL = `http://127.0.0.1:${lineTokenPort}/oauth2/v2.1/token`;
 
       const port = await freePort(FIRST_PORT);

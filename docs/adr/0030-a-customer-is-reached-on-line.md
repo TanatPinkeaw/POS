@@ -86,14 +86,31 @@ would be ceremony. Rate-limited per address (ADR 0009 policy
 `line_webhook`), because an unauthenticated door that writes rows is a row-filler's
 door otherwise.
 
-### 5. The verifier is in-process, against LINE's JWKS
+### 5. The verifier is in-process, with a separate key source for each LINE algorithm (amended)
 
-`line-id-token.ts` verifies the LINE Login id token the same way
-`google-id-token.ts` verifies Google's: `jose`, pinned algorithm (RS256), this
-deployment's channel id as audience, LINE's issuers, and a JWKS URL the operator
-may override for the acceptance run. The subject it returns is what lands on
-`users.line_subject`. The email in the token is stored, never trusted for linking —
-the takeover guard is the OTP, not an address somebody else may also hold.
+`line-id-token.ts` uses `jose`, the deployment's channel id as audience and
+`https://access.line.me` as issuer, but LINE's tokens are **not Google's RSA tokens**.
+[LINE's ID-token documentation](https://developers.line.biz/en/docs/line-login/verify-id-token/)
+specifies **HS256 for web login**, signed with the LINE Login channel secret, and
+**ES256 for native/SDK/LIFF**, verified against LINE's EC JWKS. The unverified header
+selects only between these two fixed verification paths: HS256 always uses the
+configured secret and ES256 always uses the key set. No public key can be used as an
+HMAC secret, and every other algorithm (including RS256) is refused. Both paths
+verify signature, expiry, issuer and audience before returning a nonempty subject.
+
+The original verifier pinned RS256 and the acceptance stub reused Google's RSA key,
+so both agreed on a format LINE never sends: the suite was green while a real web
+consent was rejected and returned to `/login?line=error`. The acceptance token endpoint
+now mints HS256 with its own test channel secret, so the whole callback and phone
+handoff exercise the actual web format. Unit tests cover ES256 and both algorithms'
+forgery/refusal paths. This proves format compatibility, not a live-channel sign-in.
+
+LINE's server-side verification endpoint was the alternative; local verification
+retains the existing in-process interface and avoids another outbound call after the
+code exchange. The trade is maintaining LINE's algorithm/key-source contract here.
+`LINE_JWKS_URL` still permits an operator override for the ES256 path only.
+The subject lands on `users.line_subject`; email is stored, never trusted for linking
+— the takeover guard is the OTP, not an address somebody else may also hold.
 
 ### 6. The browser flow signs in as well as binds — one door, one promise (amended)
 
