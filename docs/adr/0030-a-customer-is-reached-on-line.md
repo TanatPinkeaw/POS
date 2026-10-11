@@ -178,6 +178,44 @@ the code, verify the id token, start the session — is exercised without a live
 trade is the same and is stated: whoever sets it moves where this server sends the shop's
 channel secret, so it is set from the same `.env` that already holds the secret.
 
+**The phone gets a second walk, and the reason is LINE's, not a guess.** The door was
+reported working on the shop's desktop and failing on a phone, and the internet has one
+answer for that shape. LINE's *How to handle auto login failure* says that when the LINE
+app's auto login does not complete — private browsing, or an OS whose Universal Links did
+not fire — the browser is still sent to the callback, **with `code` and `state`**, and that
+the code is "an invalid value, so you can't issue an access token". From this side that is
+one symptom, and it is not the customer's mistake, so answering it with "try again" would
+fail every time they pressed the button. LINE's own recommended reply is the second walk:
+send them back to the authorization URL with **`disable_auto_login=true`**, which shows
+LINE's email-and-password screen in the browser instead of launching the app again.
+
+The remedy is bounded by a claim rather than by a counter, which is why it can be offered
+at all in a design that stores no flow state: the state now carries `retried`, minted only
+by the callback, and `planLineRetry` refuses a second retry however the arrival failed. A
+state that predates the claim reads as a first attempt, which is the safe direction — the
+claim only ever withholds a retry. Two deliberate exceptions keep it from being a loop
+dressed as a remedy: a token signed under this channel that does not verify is
+configuration (a rotated secret, a clock) and walking the same screens mints the same
+refusal, and `error=access_denied` is a customer pressing cancel on LINE's own screen —
+asking again without being asked is not a remedy. Every other failure lands on
+`/login?line=error` exactly as before.
+
+**Alternatives rejected.** Disabling auto login on the *first* press: the app handoff is the
+smoother path when it works, and LINE recommends the parameter as the recovery, not as the
+entrance. An error screen with a "press the button again" sentence, which LINE also offers:
+it asks a customer who did nothing wrong to do the work twice, and it is the failure this
+door already refused once when it stopped bouncing to a page that ignored `?line=`. And
+routing the retry back through `/api/v1/auth/line/authorize` with a flag: one more redirect
+before LINE on the device that already failed a redirect, when the callback can build the
+same address from `buildLineAuthorizeUrl` — the one assembly both callers share, because a
+retry that forgot `scope=openid` would fail for a reason nobody had seen before.
+
+**The failure now says where it died.** Every refusal in the callback writes one English
+line naming the stage — `state`, `no-state`, `no-channel`, `line-error`, `incomplete`,
+`code-exchange`, `credential` — beside the customer's own redirect. Without it a failure
+that only happens on a phone is invisible from the server, and "it doesn't work on my phone"
+is answered by reading LINE's documentation rather than this deployment's log.
+
 **The callback is the one door here that was missing from the limiter.** Every other
 door in this feature counts attempts (ADR 0009 policies `line_signin`, `line_link`,
 `line_webhook`), and this one earns its place more than most: past the state check it makes
@@ -203,7 +241,8 @@ work is the thing being counted.
   way LINE's redirect walks it, the code is exchanged against a token endpoint the run
   serves, the id token is verified against a key set the run serves, and the customer ends
   up signed in — plus the two refusals (a binding with no session, a state we did not
-  mint).
+  mint) and the phone's second walk, driven by making that stub answer `invalid_grant` the
+  way a failed auto login does.
 - Known limits: no rich menu, no broadcast, no template editing from the UI. The Mini App
   (LIFF) remains the next decision rather than this one — but the browser flow now signs a
   customer in *and* finishes a first sign-in, so LIFF is a nicer surface rather than the

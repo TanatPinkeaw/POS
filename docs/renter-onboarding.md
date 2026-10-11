@@ -287,7 +287,14 @@ optional and independent of everything above:
   sign-in page, the page says which of these happened and what to do — the
   confirmation expired (press the button again), the account is closed or is a
   staff account (a counter conversation), or that LINE account already belongs to
-  another customer. Only the first two are things the customer can fix alone.
+  another customer. Only the first two are things the customer can fix alone. One
+  phone-only case is handled without anyone noticing: a phone whose LINE app was
+  supposed to open itself and hand the sign-in back sometimes cannot finish it, and
+  the system answers that by sending the customer straight to LINE's own sign-in
+  screen once with automatic login switched off — so they type their LINE email and
+  password and are in. If the page still says the sign-in failed *after* that, it is a
+  channel setting rather than the customer: `npm run line:wizard -- --verify` says
+  which.
 - **Bind from the account page.** A customer already signed in opens
   `/shop/account` → **LINE** → ผูกบัญชี LINE, which walks them through LINE's own
   consent screen and back. No code needed — they are already signed in.

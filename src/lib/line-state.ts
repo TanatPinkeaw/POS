@@ -16,6 +16,14 @@
  * other writes a binding onto the session that is already there. Without it, a state
  * minted for the account page could be replayed at the front door (or the reverse) and the
  * callback would happily do the other thing — the exact confusion a `state` exists to stop.
+ *
+ * The fourth claim is `retried`, and it is a *ceiling* rather than a fact about the
+ * customer: it says this walk through LINE's screens is already the second one. LINE's
+ * documented remedy for a phone whose auto login failed is to send the customer back to
+ * the authorization URL with auto login switched off — which is one more callback that can
+ * fail in exactly the same way, so the remedy needs a bound, and a bound that travels in
+ * the signature rather than in a counter this deployment would have to store. Without it a
+ * phone that fails twice would loop instead of reading the front door's sentence.
  */
 import { SignJWT, jwtVerify } from 'jose';
 
@@ -29,6 +37,14 @@ const STATE_AUDIENCE = 'line-state';
 /** How long a state may live: one walk through LINE's consent screens. */
 export const LINE_STATE_TTL_SECONDS = 300;
 
+/** What a verified state tells the callback: which door, and which attempt this is. */
+export interface LineState {
+  /** Which door minted it — the front door signs in, the account page binds. */
+  intent: LineIntent;
+  /** Whether this arrival is already the second walk (see `planLineRetry`). */
+  retried: boolean;
+}
+
 /**
  * Raised when a returned state is absent, tampered with, expired, or not a state at all.
  *
@@ -41,9 +57,18 @@ export class InvalidLineStateError extends DomainError {
   }
 }
 
-/** Signs a state that means one thing: sign this customer in, or bind this session. */
-export async function createLineState(intent: LineIntent): Promise<string> {
-  return new SignJWT({ purpose: purposeForIntent(intent) })
+/**
+ * Signs a state that means one thing: sign this customer in, or bind this session.
+ *
+ * `retried` is minted only by the callback, on the one walk that follows a failed
+ * arrival — the authorize route never sets it, so a press from the shop's own screen is
+ * always a first attempt and always keeps its one retry in hand.
+ */
+export async function createLineState(
+  intent: LineIntent,
+  options: { retried?: boolean } = {},
+): Promise<string> {
+  return new SignJWT({ purpose: purposeForIntent(intent), retried: options.retried === true })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setIssuer(STATE_ISSUER)
@@ -59,8 +84,13 @@ export async function createLineState(intent: LineIntent): Promise<string> {
  * junk, and that is deliberate twice over: they are all "start again" to the person
  * holding the browser, and telling them apart would only help somebody probing what this
  * deployment accepts.
+ *
+ * A state with no `retried` claim reads as a first attempt. That is not a hole: the claim
+ * only ever *removes* a retry, so a state that omits it — one minted by a build from
+ * before the claim existed, or by anybody else who holds the shared key — gets the same
+ * single retry a fresh press gets, and no more than one walk can follow it.
  */
-export async function verifyLineState(token: string): Promise<LineIntent> {
+export async function verifyLineState(token: string): Promise<LineState> {
   try {
     const { payload } = await jwtVerify(token, authSecretKey(), {
       issuer: STATE_ISSUER,
@@ -71,7 +101,7 @@ export async function verifyLineState(token: string): Promise<LineIntent> {
     if (intent === null) {
       throw new InvalidLineStateError();
     }
-    return intent;
+    return { intent, retried: payload.retried === true };
   } catch (error) {
     if (error instanceof InvalidLineStateError) {
       throw error;

@@ -33,14 +33,37 @@
  *   * **Nothing half-created.** An unproved subject writes no row and no pending identity
  *     on the server: the handoff lives in the customer's own browser, so a caller who walks
  *     away leaves nothing behind.
+ *
+ * The third shape is the one a phone forced: **a failure earns one more walk through
+ * LINE's screens**, with auto login switched off. A sign-in that works on the shop's
+ * desktop and dies on a phone is LINE's documented auto-login failure — private browsing,
+ * or an OS whose Universal Links did not fire — where LINE still calls this callback, with
+ * a code that "is an invalid value, so you can't issue an access token", and a remedy that
+ * is the second walk rather than "please try again" for the rest of time. It is bounded by
+ * the `retried` claim in the state, so a failure that is *not* that can never loop.
+ *
+ * Every refusal also leaves a line in the log. That is not decoration: the whole point of
+ * the failure above is that it does not happen on a desktop at all, so a report of "it
+ * doesn't work on my phone" arrives with nothing on the server to read, and the stage —
+ * `code-exchange`, `line-error`, `credential`, `state` — is the difference between a
+ * remedy and another guess.
  */
 import { NextResponse } from 'next/server';
 
 import { withApi } from '@/lib/api';
 import { getSessionUser, startSession } from '@/lib/auth';
 import { ConflictError } from '@/lib/errors';
-import { type LineIntent, lineLandingFor, lineLandingUrl, planLineArrival } from '@/lib/line-door';
 import {
+  type LineArrivalFailure,
+  type LineIntent,
+  buildLineAuthorizeUrl,
+  lineLandingFor,
+  lineLandingUrl,
+  planLineArrival,
+  planLineRetry,
+} from '@/lib/line-door';
+import {
+  InvalidLineCredentialError,
   type LineIdentity,
   readLineChannelId,
   readLineTokenUrl,
@@ -52,7 +75,7 @@ import {
   createLinePendingToken,
   linePendingCookieOptions,
 } from '@/lib/line-pending';
-import { verifyLineState } from '@/lib/line-state';
+import { createLineState, verifyLineState } from '@/lib/line-state';
 import { publicBaseUrlOr } from '@/lib/public-url';
 import { chargeRateLimit } from '@/lib/rate-limit';
 
@@ -71,9 +94,55 @@ export async function GET(request: Request): Promise<Response> {
     const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get('code');
     const state = requestUrl.searchParams.get('state');
-    const channelId = readLineChannelId();
+    /*
+     * LINE sends its own errors to this callback with the state beside them — including the
+     * refusal a customer makes by pressing cancel, which is not a failure to retry.
+     */
+    const lineError = requestUrl.searchParams.get('error');
 
-    if (!channelId || !code || !state) {
+    /*
+     * The one place a failure leaves by, so no branch can forget the log line or the
+     * retry. The redirect is the customer's answer; the line in the log is the operator's,
+     * and it is the only thing that can turn "it doesn't work on my phone" into a stage.
+     */
+    const refused = async (
+      failure: LineArrivalFailure,
+      context: { intent: LineIntent; retried: boolean; channelId: string },
+    ): Promise<Response> => {
+      console.warn(
+        `[line] callback refused at ${failure}${
+          lineError === null ? '' : ` (${lineError})`
+        }${context.retried ? ' on the retry' : ''}`,
+      );
+
+      if (planLineRetry({ failure, lineError, retried: context.retried }) === 'fail') {
+        return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
+      }
+
+      /*
+       * The second walk goes straight to LINE with auto login off, and with a state that
+       * says it is the second walk — so this remedy cannot mint another one. The address is
+       * `buildLineAuthorizeUrl`'s, the same one the authorize route sends, because a retry
+       * that forgot `scope=openid` would fail for a reason nobody had seen before.
+       */
+      const retryState = await createLineState(context.intent, { retried: true });
+      return NextResponse.redirect(
+        buildLineAuthorizeUrl({
+          channelId: context.channelId,
+          redirectUri: `${base}/api/v1/auth/line/callback`,
+          state: retryState,
+          disableAutoLogin: true,
+        }),
+      );
+    };
+
+    const channelId = readLineChannelId();
+    if (!channelId || !state) {
+      // Nothing to retry with: LINE has not answered yet, or this deployment has no channel
+      // to ask at all. A second walk would be a second dead end.
+      console.warn(
+        `[line] callback refused at ${channelId === null ? 'no-channel' : 'no-state'}`,
+      );
       return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
     }
 
@@ -84,9 +153,15 @@ export async function GET(request: Request): Promise<Response> {
      *    the purpose together, and a token of any other family is refused by it.
      */
     let intent: LineIntent;
+    let retried: boolean;
     try {
-      intent = await verifyLineState(state);
+      const arrival = await verifyLineState(state);
+      intent = arrival.intent;
+      retried = arrival.retried;
     } catch {
+      // A callback with no state of ours is not a failed sign-in to retry: it is a request
+      // somebody else started, and walking them to LINE would be doing them a favour.
+      console.warn('[line] callback refused at state');
       return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
     }
 
@@ -98,12 +173,30 @@ export async function GET(request: Request): Promise<Response> {
      */
     await chargeRateLimit(request, 'line_callback');
 
-    const secret = process.env.LINE_LOGIN_CHANNEL_SECRET?.trim();
-    if (!secret) {
-      return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
+    const retryable = { intent, retried, channelId };
+
+    if (lineError !== null) {
+      return refused('line-error', retryable);
     }
 
-    // 3. The code for the tokens — a server-to-server POST under the channel secret.
+    if (!code) {
+      return refused('incomplete', retryable);
+    }
+
+    const secret = process.env.LINE_LOGIN_CHANNEL_SECRET?.trim();
+    if (!secret) {
+      return refused('incomplete', retryable);
+    }
+
+    /*
+     * 3. The code for the tokens — a server-to-server POST under the channel secret.
+     *
+     * The two ways this can fail are told apart here rather than collapsed, because only
+     * one of them is worth a retry: an exchange that did not produce a token is what a
+     * phone's failed auto login looks like from this side, while a token we could not
+     * verify is this deployment's own configuration being wrong, and the same screens would
+     * only mint the same refusal.
+     */
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       code,
@@ -113,7 +206,8 @@ export async function GET(request: Request): Promise<Response> {
       client_secret: secret,
     });
 
-    let identity: LineIdentity;
+    let identity: LineIdentity | null = null;
+    let failure: 'code-exchange' | 'credential' | null = null;
     try {
       const tokenResponse = await fetch(readLineTokenUrl(), {
         method: 'POST',
@@ -121,17 +215,25 @@ export async function GET(request: Request): Promise<Response> {
         body: body.toString(),
         signal: AbortSignal.timeout(10_000),
       });
-      if (!tokenResponse.ok) {
-        return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
+      const tokens = tokenResponse.ok
+        ? ((await tokenResponse.json()) as { id_token?: string })
+        : null;
+      if (tokens?.id_token) {
+        // The same verification the sign-in door performs.
+        identity = await verifyLineIdToken(tokens.id_token);
+      } else {
+        failure = 'code-exchange';
       }
-      const tokens = (await tokenResponse.json()) as { id_token?: string };
-      if (!tokens.id_token) {
-        return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
-      }
+    } catch (error) {
+      failure = error instanceof InvalidLineCredentialError ? 'credential' : 'code-exchange';
+    }
 
-      // The same verification the sign-in door performs.
-      identity = await verifyLineIdToken(tokens.id_token);
-    } catch {
+    if (failure !== null) {
+      return refused(failure, retryable);
+    }
+    if (identity === null) {
+      // Unreachable — every path through the block above that ends without an identity sets
+      // a failure beside it — and a redirect rather than a crash if that stops being true.
       return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
     }
 

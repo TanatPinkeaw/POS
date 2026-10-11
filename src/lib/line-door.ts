@@ -184,3 +184,103 @@ export function lineLandingUrl(base: string, landing: LineLanding): string {
   const path = landing.page === 'account' ? '/shop/account' : '/login';
   return `${base.replace(/\/+$/, '')}${path}?line=${landing.result}`;
 }
+
+/** Where LINE shows the customer their consent screen. */
+export const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize';
+
+/**
+ * The URL a press of a door is sent to — built in one place, because two callers build it.
+ *
+ * The authorize route sends a first attempt here; the callback sends a second one, and the
+ * second address differs from the first by exactly one parameter. Two assemblies of the
+ * same query is how they drift, and drift here is not cosmetic: `scope` is what makes LINE
+ * return an id token at all, and `redirect_uri` has to match the authorize request
+ * character for character at the token exchange, so a retry that forgot one of them would
+ * be a remedy that fails for a new reason.
+ *
+ * `disableAutoLogin` is LINE's own remedy for the failure this module also plans for: on a
+ * phone whose auto login did not complete, LINE's documentation says to send the customer
+ * back here with auto login switched off, so LINE shows the email-and-password screen in
+ * the browser instead of trying to launch its app again. Off for a first attempt, because
+ * the app handoff is the smoother path when it works; on for the single retry.
+ */
+export function buildLineAuthorizeUrl(input: {
+  channelId: string;
+  redirectUri: string;
+  state: string;
+  disableAutoLogin: boolean;
+}): string {
+  const url = new URL(LINE_AUTHORIZE_URL);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('client_id', input.channelId);
+  url.searchParams.set('redirect_uri', input.redirectUri);
+  url.searchParams.set('state', input.state);
+  // The id token is what this system verifies; the profile names the customer.
+  url.searchParams.set('scope', 'openid profile email');
+  // `code` keeps the customer in the browser flow rather than LINE's app.
+  url.searchParams.set('prompt', 'consent');
+  if (input.disableAutoLogin) {
+    url.searchParams.set('disable_auto_login', 'true');
+  }
+  return url.toString();
+}
+
+/**
+ * How an arrival from LINE failed, in the four ways this deployment can tell apart.
+ *
+ * The vocabulary is the *stage* the flow died at, because that is what decides whether
+ * another walk through LINE's screens could plausibly end differently.
+ */
+export type LineArrivalFailure =
+  /** LINE answered the callback with an error of its own (`?error=…`). */
+  | 'line-error'
+  /** A code arrived and did not become an id token (LINE answered `invalid_grant`). */
+  | 'code-exchange'
+  /** An id token arrived and did not verify — the same channel, a token we refuse. */
+  | 'credential'
+  /** No code, or a deployment with no channel id and secret to ask LINE with. */
+  | 'incomplete';
+
+/**
+ * Whether a failed arrival earns one more walk through LINE's screens, auto login off.
+ *
+ * This is the shape of a phone-only failure, and it is documented rather than guessed at.
+ * LINE's "How to handle auto login failure" says that when the LINE app's auto login fails
+ * — private browsing, or an OS whose Universal Links did not fire — the browser is still
+ * sent to the callback, **with `code` and `state`**, and that the code is "an invalid value,
+ * so you can't issue an access token". Read from this side that is one symptom: the
+ * exchange fails and the customer, who did nothing wrong, would otherwise be handed
+ * "please try again" for a failure that will happen every time. LINE's own recommended
+ * reply is the second walk this returns, and it is the *only* reason a retry exists —
+ * nothing else here is fixed by walking LINE's consent screens again.
+ *
+ * Four cases, each one a decision:
+ *
+ *   * **`incomplete`** never retries. LINE has not answered yet, so there is nothing to
+ *     answer differently, and a deployment missing its channel id would otherwise walk the
+ *     customer through a second dead end.
+ *   * **`credential`** never retries. A token signed by our own channel that this server
+ *     refuses is a configuration problem (a rotated channel secret, a clock); walking the
+ *     same screens again mints the same refusal.
+ *   * **`line-error`** retries once, *except* when the error is `access_denied` — that is
+ *     the customer pressing cancel on LINE's own screen, and asking again without being
+ *     asked is not a remedy, it is a loop.
+ *   * **`code-exchange`** retries once: the documented signature of the failure above.
+ *
+ * `retried` is the ceiling. It comes from the signed state, so a retry can never mint
+ * another retry, and the worst a hostile callback can do is spend its own one.
+ */
+export function planLineRetry(input: {
+  failure: LineArrivalFailure;
+  /** LINE's `?error=` value, when it sent one. */
+  lineError?: string | null;
+  retried: boolean;
+}): 'retry' | 'fail' {
+  if (input.retried || input.failure === 'incomplete' || input.failure === 'credential') {
+    return 'fail';
+  }
+  if (input.failure === 'line-error' && input.lineError === 'access_denied') {
+    return 'fail';
+  }
+  return 'retry';
+}

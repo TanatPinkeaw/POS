@@ -107,6 +107,15 @@ Recorded so a session starts from the truth rather than from the last commit mes
   (`src/lib/line-pending.ts`) instead of being impossible; and every outcome lands on a
   screen that can say it. `npm run acceptance` §20 walks the whole redirect flow against a
   token endpoint the run serves itself.
+- **A sign-in that works on the desktop and fails on a phone is LINE's auto login failing**
+  (ADR 0030 §6). LINE's documented shape for it: the callback still arrives, carrying a code
+  no token can be issued for, because the app handoff never completed. So that one failure —
+  and only that one — earns a second walk through LINE's screens with `disable_auto_login=true`,
+  bounded by a `retried` claim in the signed state rather than a counter this deployment would
+  have to store; a refused token and a customer's own `access_denied` never retry. Every
+  callback refusal also logs the stage it died at (`code-exchange`, `line-error`, `credential`,
+  `state`, `no-state`, `no-channel`), because that failure is invisible on a desktop and the
+  log line is the only way "it doesn't work on my phone" becomes a diagnosis.
 - **The till's service worker may answer no; it may not reject** (ADR 0024 §9). Two console
   errors on the shop's own deployment came out of that file's shape, not the phone's:
   `caches.open()` outside every `try` (a browser without CacheStorage rejected every request

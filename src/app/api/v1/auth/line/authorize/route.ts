@@ -16,19 +16,21 @@
  * `localhost:3000`, and a `redirect_uri` built from that is the literal failure a customer
  * met once already — LINE refused to send them anywhere. `PUBLIC_BASE_URL` is where their
  * browser actually lives.
+ *
+ * The address itself is assembled by `buildLineAuthorizeUrl` rather than here, because the
+ * callback sends a customer to the same address — one parameter different — when a phone's
+ * auto login failed. Two copies of this query is how a retry loses `scope=openid` and
+ * becomes a second failure with a new cause.
  */
 import { NextResponse } from 'next/server';
 
 import { withApi } from '@/lib/api';
 import { getSessionUser } from '@/lib/auth';
 import { ValidationError } from '@/lib/errors';
-import { lineIntentFor } from '@/lib/line-door';
+import { buildLineAuthorizeUrl, lineIntentFor } from '@/lib/line-door';
 import { readLineChannelId } from '@/lib/line-id-token';
 import { createLineState } from '@/lib/line-state';
 import { publicBaseUrlOr } from '@/lib/public-url';
-
-/** Where LINE shows the customer their consent screen. */
-const LINE_AUTHORIZE_URL = 'https://access.line.me/oauth2/v2.1/authorize';
 
 export async function GET(request: Request): Promise<Response> {
   return withApi(async () => {
@@ -53,18 +55,12 @@ export async function GET(request: Request): Promise<Response> {
     });
 
     const redirectUri = `${publicBaseUrlOr(request.url)}/api/v1/auth/line/callback`;
+    // Never `retried`: a press from the shop's own screen is a first attempt, and the
+    // one retry a failure can earn is minted by the callback that failed.
     const state = await createLineState(intent);
 
-    const authorizeUrl = new URL(LINE_AUTHORIZE_URL);
-    authorizeUrl.searchParams.set('response_type', 'code');
-    authorizeUrl.searchParams.set('client_id', channelId);
-    authorizeUrl.searchParams.set('redirect_uri', redirectUri);
-    authorizeUrl.searchParams.set('state', state);
-    // The id token is what this system verifies; the profile names the customer.
-    authorizeUrl.searchParams.set('scope', 'openid profile email');
-    // `code` keeps the customer in the browser flow rather than LINE's app.
-    authorizeUrl.searchParams.set('prompt', 'consent');
-
-    return NextResponse.redirect(authorizeUrl.toString());
+    return NextResponse.redirect(
+      buildLineAuthorizeUrl({ channelId, redirectUri, state, disableAutoLogin: false }),
+    );
   });
 }

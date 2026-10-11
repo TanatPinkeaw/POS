@@ -13,12 +13,15 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  LINE_AUTHORIZE_URL,
   LINE_LINK_PURPOSE,
   LINE_SIGNIN_PURPOSE,
+  buildLineAuthorizeUrl,
   intentForPurpose,
   lineIntentFor,
   lineLandingUrl,
   planLineArrival,
+  planLineRetry,
   purposeForIntent,
 } from '@/lib/line-door';
 
@@ -147,5 +150,95 @@ describe('where a landing redirect points', () => {
     expect(lineLandingUrl('https://shop.test', { page: 'login', result: 'session' })).toBe(
       'https://shop.test/login?line=session',
     );
+  });
+});
+
+describe('the address a press of the door is sent to', () => {
+  const FIRST_WALK = {
+    channelId: '2001234567',
+    redirectUri: 'https://pos.test/api/v1/auth/line/callback',
+    state: 'a-state',
+    disableAutoLogin: false,
+  };
+
+  it('asks LINE for an id token about the customer, not only a profile', () => {
+    // `scope=openid` is what makes LINE return an id token at all, so a retry that lost it
+    // would fail for a reason no one had seen before.
+    const url = new URL(buildLineAuthorizeUrl(FIRST_WALK));
+
+    expect(url.origin + url.pathname).toBe(LINE_AUTHORIZE_URL);
+    expect(url.searchParams.get('response_type')).toBe('code');
+    expect(url.searchParams.get('scope')).toBe('openid profile email');
+    expect(url.searchParams.get('client_id')).toBe('2001234567');
+    expect(url.searchParams.get('state')).toBe('a-state');
+  });
+
+  it('names the callback address LINE must return the customer to', () => {
+    const url = new URL(buildLineAuthorizeUrl(FIRST_WALK));
+
+    expect(url.searchParams.get('redirect_uri')).toBe(FIRST_WALK.redirectUri);
+  });
+
+  it('leaves auto login on for a first press, which is the smoother path', () => {
+    const url = new URL(buildLineAuthorizeUrl(FIRST_WALK));
+
+    expect(url.searchParams.has('disable_auto_login')).toBe(false);
+  });
+
+  it('turns it off for the one retry, and changes nothing else', () => {
+    // LINE's own remedy for a phone whose auto login failed. The two addresses differing by
+    // exactly one parameter is the whole reason both callers share this function.
+    const first = new URL(buildLineAuthorizeUrl(FIRST_WALK));
+    const second = new URL(
+      buildLineAuthorizeUrl({ ...FIRST_WALK, state: 'a-second-state', disableAutoLogin: true }),
+    );
+
+    expect(second.searchParams.get('disable_auto_login')).toBe('true');
+    const differing = [...new Set([...first.searchParams.keys(), ...second.searchParams.keys()])]
+      .filter((key) => first.searchParams.getAll(key).join() !== second.searchParams.getAll(key).join())
+      .sort();
+    expect(differing).toEqual(['disable_auto_login', 'state']);
+  });
+});
+
+describe('whether a failed arrival earns a second walk', () => {
+  it('retries the one failure LINE documents a remedy for', () => {
+    // The phone failure: LINE still calls the callback, with a code that "is an invalid
+    // value, so you can't issue an access token".
+    expect(planLineRetry({ failure: 'code-exchange', retried: false })).toBe('retry');
+  });
+
+  it('retries once and only once, so the remedy cannot become a loop', () => {
+    // The ceiling rides in the signed state, which is what makes it unforgeable.
+    expect(planLineRetry({ failure: 'code-exchange', retried: true })).toBe('fail');
+    expect(planLineRetry({ failure: 'line-error', lineError: 'server_error', retried: true })).toBe(
+      'fail',
+    );
+  });
+
+  it('asks LINE again after LINE said something went wrong on its side', () => {
+    expect(planLineRetry({ failure: 'line-error', lineError: 'server_error', retried: false })).toBe(
+      'retry',
+    );
+  });
+
+  it('takes the customer at their word when they pressed cancel', () => {
+    // `access_denied` is a person declining, not a flow that broke: walking them back to
+    // the consent screen they just left is a loop dressed as a remedy.
+    expect(planLineRetry({ failure: 'line-error', lineError: 'access_denied', retried: false })).toBe(
+      'fail',
+    );
+  });
+
+  it('does not walk the same screens again for a token it already refused', () => {
+    // A token signed under our own channel that does not verify is this deployment's
+    // configuration — a rotated secret, a clock — and the second walk mints the same token.
+    expect(planLineRetry({ failure: 'credential', retried: false })).toBe('fail');
+  });
+
+  it('does not retry before LINE has been asked anything', () => {
+    // No code, or no channel and secret to ask with: there is no answer to answer
+    // differently, and the customer would only walk a second dead end.
+    expect(planLineRetry({ failure: 'incomplete', retried: false })).toBe('fail');
   });
 });

@@ -39,8 +39,45 @@ async function sessionShapedToken(): Promise<string> {
 
 describe('the state a LINE door mints', () => {
   it('round-trips the intent it was minted for', async () => {
-    expect(await verifyLineState(await createLineState('bind'))).toBe('bind');
-    expect(await verifyLineState(await createLineState('sign-in'))).toBe('sign-in');
+    expect(await verifyLineState(await createLineState('bind'))).toEqual({
+      intent: 'bind',
+      retried: false,
+    });
+    expect(await verifyLineState(await createLineState('sign-in'))).toEqual({
+      intent: 'sign-in',
+      retried: false,
+    });
+  });
+
+  it('reads a press from the shop’s own screen as a first attempt', async () => {
+    // The retry ceiling only exists because this is false: a state that said "retried" on
+    // a first press would deny every customer the one remedy LINE documents.
+    expect((await verifyLineState(await createLineState('sign-in'))).retried).toBe(false);
+  });
+
+  it('carries the second walk as a fact a caller cannot edit', async () => {
+    expect(await verifyLineState(await createLineState('sign-in', { retried: true }))).toEqual({
+      intent: 'sign-in',
+      retried: true,
+    });
+  });
+
+  it('treats a state with no retried claim as a first attempt', async () => {
+    /*
+     * Every state minted before this claim existed has no `retried` key, and one may still
+     * be in a customer's browser mid-flow when this build lands. Reading absent as false is
+     * the safe direction: the claim only ever withholds a retry, so an old state gets what
+     * a fresh press gets — one second walk, never two.
+     */
+    const older = await new SignJWT({ purpose: 'line-signin' })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setIssuedAt()
+      .setIssuer('pos-realtime')
+      .setAudience('line-state')
+      .setExpirationTime('300s')
+      .sign(authSecretKey());
+
+    expect(await verifyLineState(older)).toEqual({ intent: 'sign-in', retried: false });
   });
 
   it('keeps the two doors apart, so neither state can be replayed at the other', async () => {

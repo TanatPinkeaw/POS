@@ -378,6 +378,21 @@ account card as `taken`. Before this, every one of those was a redirect to a pag
 silently ignored the word it was given — which is what a loop looks like from the
 customer's side.
 
+A sign-in that works on the shop's desktop and dies on a phone is LINE's **auto login
+failure**, and it is answered the way LINE documents it. When LINE's app handoff does not
+complete — private browsing, or an OS whose Universal Links did not fire — LINE still sends
+the customer back to the callback, with a code that cannot be exchanged for a token. That
+one failure earns exactly one more walk through LINE's screens with
+`disable_auto_login=true`, so the customer gets LINE's password screen in their own browser
+instead of a sentence telling them to try the same thing again. The ceiling rides in the
+signed state's own `retried` claim, so a failure that is *not* that one can never loop, and
+the same claim means a callback cannot be replayed into a second free attempt. Nothing else
+is retried: a token we refuse to verify is this deployment's own configuration, and walking
+LINE's consent screens again would mint the same refusal. Each refusal also writes one line
+to the log naming the stage it died at — `state`, `no-state`, `line-error`, `incomplete`,
+`code-exchange`, `credential` — because a failure that happens only on a phone leaves
+nothing else on the server to read.
+
 LINE's web ID token is verified as **HS256 with the channel secret**; native/LIFF
 uses **ES256 with LINE's public EC keys**, never Google's RS256 format. Acceptance
 uses the web format too: its previous RSA fixture hid a verifier that refused real

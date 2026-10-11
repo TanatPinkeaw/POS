@@ -213,6 +213,19 @@ function lineCode(subject: string): string {
   return `acceptance:${subject}`;
 }
 
+/**
+ * The code LINE hands back when a phone's auto login failed, and the stub's way of being
+ * that phone: LINE's documentation says the callback still arrives, carrying a code that
+ * "is an invalid value, so you can't issue an access token". The exchange must fail for the
+ * retry below to be the thing under test.
+ */
+const LINE_AUTO_LOGIN_FAILURE_PREFIX = 'acceptance:auto-login-fail:';
+
+/** The code whose exchange refuses the way a failed auto login refuses. */
+function lineAutoLoginFailureCode(subject: string): string {
+  return `${LINE_AUTO_LOGIN_FAILURE_PREFIX}${subject}`;
+}
+
 /** Match LINE's web token format, not Google's RSA format: the real callback uses HS256. */
 async function lineIdToken(subject: string, overrides: { fullName?: string } = {}): Promise<string> {
   return new SignJWT({
@@ -2924,6 +2937,64 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
         !(forged.headers.getSetCookie?.() ?? []).some((cookie) => cookie.startsWith('pos_session=')),
       landing(forged),
     );
+
+    /*
+     * The phone failure, which no desktop ever sees: LINE's auto login does not complete, so
+     * the callback arrives with a code that cannot be exchanged — and the customer who did
+     * nothing wrong must end up on LINE's own login screen, not on a sentence telling them to
+     * press the same button again. This leg is the one that was only ever knowable from a
+     * phone, so it is the one worth driving here.
+     */
+    const retryStart = await stranger.raw('/api/v1/auth/line/authorize?intent=sign-in');
+    const retryAuthorize = new URL(retryStart.headers.get('location') ?? 'http://missing.invalid');
+    const retryState = retryAuthorize.searchParams.get('state') ?? '';
+    check(
+      'a first press leaves auto login on, which is the smoother path when it works',
+      retryAuthorize.searchParams.has('disable_auto_login') === false,
+      retryAuthorize.searchParams.get('disable_auto_login'),
+    );
+
+    const failedArrival = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineAutoLoginFailureCode(newSubject))}&state=${encodeURIComponent(retryState)}`,
+    );
+    const secondWalk = new URL(failedArrival.headers.get('location') ?? 'http://missing.invalid');
+    const secondWalkState = secondWalk.searchParams.get('state') ?? '';
+    check(
+      'a code LINE could not exchange sends the customer back to LINE with auto login off',
+      failedArrival.status === 307 &&
+        secondWalk.origin === LINE_ISSUER &&
+        secondWalk.searchParams.get('disable_auto_login') === 'true',
+      secondWalk.origin === LINE_ISSUER ? secondWalk.search : secondWalk.toString(),
+    );
+    check(
+      'and that second walk is a fresh attempt at the same callback, still asking for an id token',
+      secondWalkState.length > 0 &&
+        secondWalkState !== retryState &&
+        secondWalk.searchParams.get('redirect_uri') === retryAuthorize.searchParams.get('redirect_uri') &&
+        secondWalk.searchParams.get('scope') === 'openid profile email',
+      {
+        state: secondWalkState === retryState ? 'reused' : 'fresh',
+        redirect_uri: secondWalk.searchParams.get('redirect_uri'),
+      },
+    );
+
+    const secondAttempt = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineCode('accept-line-retry'))}&state=${encodeURIComponent(secondWalkState)}`,
+    );
+    check(
+      'and the retry carries the customer through, which is the whole point of it',
+      secondAttempt.status === 307 && landing(secondAttempt) === '/login?line=claim',
+      landing(secondAttempt),
+    );
+
+    const retriedAgain = await stranger.raw(
+      `/api/v1/auth/line/callback?code=${encodeURIComponent(lineAutoLoginFailureCode(newSubject))}&state=${encodeURIComponent(secondWalkState)}`,
+    );
+    check(
+      'but a retry that fails too lands on the front door, so the remedy cannot loop',
+      retriedAgain.status === 307 && landing(retriedAgain) === '/login?line=error',
+      landing(retriedAgain),
+    );
   }
 
   console.log(
@@ -3050,6 +3121,16 @@ async function main(): Promise<void> {
         request.on('end', () => {
           const form = new URLSearchParams(Buffer.concat(chunks).toString('utf8'));
           const code = form.get('code') ?? '';
+          /*
+           * A failed auto login, reproduced: LINE answers the callback with a code that no
+           * token can be issued for. Everything else about the request is a perfectly
+           * ordinary exchange, so the only thing that can make it succeed is a fix.
+           */
+          if (code.startsWith(LINE_AUTO_LOGIN_FAILURE_PREFIX)) {
+            response.writeHead(400, { 'content-type': 'application/json' });
+            response.end('{"error":"invalid_grant"}');
+            return;
+          }
           if (form.get('client_secret') !== LINE_TEST_CHANNEL_SECRET || !code.startsWith('acceptance:')) {
             response.writeHead(400, { 'content-type': 'application/json' });
             response.end('{"error":"invalid_grant"}');
