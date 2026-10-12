@@ -46,11 +46,19 @@ export const googleSignInSchema = z.object({
 });
 
 /**
- * The second half of a first Google sign-in: the id token and the phone.
+ * The second half of a first Google sign-in: the proof of the Google account, and the
+ * phone.
  *
- * Both halves travel together on purpose. The id token is re-verified here rather
- * than held in a half-signed-up state on the server, so there is no window in which a
- * "pending" Google identity exists without a phone to anchor it.
+ * **Either proof travels, never a half-signed-up state on the server.** A popup sign-in
+ * carries the id token and it is re-verified here; a redirect sign-in (the mode iOS gets,
+ * ADR 0020 §1 amended) has no token in the browser at all — Google POSTed it to the
+ * landing, which left a short-lived httpOnly handoff (`google-pending.ts`) instead. Both
+ * roads end in one `GoogleIdentity`, so there is no window in which a "pending" Google
+ * identity exists without a phone to anchor it, and only one rule decides what may become
+ * a customer.
+ *
+ * The proof is whichever credential is actually present, and neither is a parameter the
+ * caller chooses — the same order `line/link` states for its own two halves.
  *
  * `phone` is optional because only a *first* sign-in needs one: a Google account that
  * already resolves to a customer signs in without touching a number, so a caller that
@@ -58,7 +66,7 @@ export const googleSignInSchema = z.object({
  * `identity.ts` is what refuses, in Thai.
  */
 export const googleSignupSchema = z.object({
-  idToken: z.string().trim().min(1, 'A Google credential is required'),
+  idToken: z.string().trim().min(1, 'A Google credential is required').optional(),
   phone: z.string().trim().max(20).optional(),
   fullName: z.string().trim().min(1).max(100).optional(),
   /**

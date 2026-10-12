@@ -41,7 +41,8 @@ export type RateLimitPolicyName =
   | 'line_signin'
   | 'line_link'
   | 'line_callback'
-  | 'line_webhook';
+  | 'line_webhook'
+  | 'google_redirect';
 
 export interface RateLimitPolicy {
   /** Attempts that may be spent back to back, from an idle caller. */
@@ -221,6 +222,18 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * before the signature work runs at volume.
    */
   line_webhook: { capacity: 60, windowMs: 60_000 },
+  /*
+   * Google's redirect-mode landing (ADR 0020 §1, amended). The one door here that
+   * answers a *form* POST from another origin and mints a session on the way out: the
+   * credential inside it has to verify against Google's published keys, and a JWKS
+   * fetch plus a signature check is work worth counting. Keyed by the address alone,
+   * like the LINE callback: what is counted is the walk, and the id token itself is
+   * either genuinely Google's or refused before anything is written.
+   *
+   * Twenty back to back is a customer who pressed the button twice and reloaded a
+   * page; a script cannot walk it faster than that.
+   */
+  google_redirect: { capacity: 20, windowMs: 15 * 60_000 },
 };
 
 /** A caller's bucket, as it stands after the last decision about it. */

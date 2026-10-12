@@ -4,6 +4,12 @@
 door and left the counter on phone and password; this decision keeps the counter on phone
 and password and moves Google to the **customer**.
 
+**§1 amended (2026-10-12):** the button now asks a phone for Google's `redirect` UX mode and
+a desktop for `popup`, the credential comes back as a form POST to an endpoint of this
+deployment's own, and a first sign-in is finished from a short-lived handoff instead of from
+a token the browser holds. The amendment is written out below §1, and `docs/renter-onboarding.md`
+now names the redirect URI the operator has to register.
+
 **Context.** A shop's customer (a `member`) is enrolled today at the counter: a phone
 number and a temporary password the cashier reads out (ADRs 0010, 0011), because a shop has
 no email on file and the customer has no app. That flow works and cannot be removed — a
@@ -35,6 +41,65 @@ number and temporary password the shop enrolled them with (ADR 0011), which is t
 counter actually runs. This is the opposite of ADR 0016 §4's assignment, and it is the point
 of this ADR — the question "who has a Gmail account?" has *customer* as its answer, not
 *owner*.
+
+**Amended — the button asks a phone for a different shape than a desktop.** That door was
+built on one call, `google.accounts.id.initialize({ client_id })`, with no `ux_mode`,
+which is Google's default `popup`: the credential comes back to the page through a
+cross-origin `postMessage`. Google's supported-browsers page carries the footnote **"Due to
+ITP redirect mode is required for iOS"**
+(https://developers.google.com/identity/gsi/web/guides/supported-browsers), and on iOS
+every browser is WebKit with Safari's Intelligent Tracking Prevention in front of the
+handshake — the same fact ADR 0031 records from the build side, where it means there is no
+other browser for the customer to switch to. So the shop's own customers, the ones holding
+iPhones, were on the one mode Google documents as not for iOS.
+
+`google-door.ts` decides which mode a device is asked for, as a pure function: any
+`iPad`/`iPhone`/`iPod` token gets `redirect`, and so does an iPad in desktop mode — Safari
+on an iPad reports `MacIntel` and is only distinguishable by having more than one touch
+point. Everything else keeps Google's default. Missing signals read as *not* iOS, because a
+wrong answer in that direction is the behaviour the deployment already had and a wrong
+answer the other way sends a desktop through a mode it does not need. A deployment that
+cannot name its own public address (`publicBaseUrlOr`) falls back to popup rather than
+sending a phone to a POST nobody answers — a degraded door, not a broken one.
+
+**Redirect mode's cost is paid deliberately: the browser never sees the credential.**
+Google POSTs `credential` and `g_csrf_token` to `login_uri`, and the integration guide is
+explicit that a JavaScript callback is impossible because "users have already been
+redirected away from your web page"
+(https://developers.google.com/identity/gsi/web/guides/integrate). A page route cannot
+receive a POST here, so the address is an endpoint — `POST /api/v1/auth/google/redirect` —
+and `login_uri` is one literal built in one place (`googleRedirectLoginUri`), because the
+button, the route and the operator's console registration all have to name the same string
+as a string. The route checks that the body is the form Google sends, compares
+`g_csrf_token` with the cookie of that name (Google's own documented double submit),
+verifies the id token against Google's JWKS exactly as the popup path does, plans the
+arrival with `planGoogleArrival`, and answers **303** — 307 preserves the method, which
+would re-POST the form to a page route that cannot take it.
+
+The one deliberate softness: when the CSRF *cookie* is absent the route logs an English
+line and proceeds. Whether a browser attaches a cookie set for this origin to a cross-site
+top-level POST is not something this deployment controls, and refusing on it would invent a
+new phone-only failure in the middle of a change whose purpose is to remove one. What stays
+unproven is a login-CSRF, not the identity: the id token still has to verify for our client
+id, and the log line is what makes that a diagnosis rather than a guess.
+
+**A first sign-in needs a second handoff.** The popup road posts the id token again with the
+phone; the redirect road has no token in the browser at all. So the landing leaves a
+ten-minute httpOnly `pos_google_pending` cookie (`google-pending.ts`) naming the Google
+subject it just verified, and `POST /api/v1/auth/signup` accepts either proof — an id token
+when the caller has one, that handoff otherwise. The handoff is the same shape
+`line-pending.ts` is, for the same reasons, down to its own JWT audience alongside the
+session's, the pickup code's and the receipt link's. It is spent on success (a second POST
+cannot re-attach the same Google account to a different number) and left alone on failure (a
+refused number is worth retrying on the same screen). One rule still decides who may become
+a customer — `identity.ts`, unchanged — and both roads end in one `GoogleIdentity`.
+
+*The alternative rejected: redirect for every device.* It is one path instead of two, and
+Google recommends it for new integrations — but the requirement Google states is *for iOS*,
+popup is the shape it calls often preferred on a desktop, and a shop whose OAuth client has
+not registered the login URI yet would then lose Google on every device at once instead of
+on the phones only. Switching the whole deployment over is one line in `googleUxModeFor`
+when that trade looks better.
 
 ### 2. The phone stays required, unique, and the identity
 
@@ -143,6 +208,23 @@ keeps the cross-role uniqueness that makes sign-in unambiguous.
   `needsPhone` for an unknown account and signs a known one in; `POST /api/v1/auth/signup`
   finishes the first sign-in. Two Google accounts cannot share a number, and the unique index is
   the backstop under the reads a race could slip between.
+- **The device split, its endpoint, and its handoff are built (2026-10-12).**
+  `google-door.ts` is the pure decision (which mode, which `login_uri`, what an arrival
+  earns, which Thai words the front door shows for `?google=`), and `google-pending.ts` is
+  the ten-minute handoff; `POST /api/v1/auth/google/redirect` carries the form POST and
+  `POST /api/v1/auth/signup` finishes a first sign-in from either proof. The landing is
+  rate-limited per address (`google_redirect`, ADR 0009) because the work behind it is a
+  JWKS fetch and, on the successful path, a minted session. Every refusal logs the stage it
+died at (`body`, `no-credential`, `csrf-missing`, `csrf-mismatch`, `no-client-id`,
+  `credential`), because the failure it replaces is invisible on a desktop: "the Google
+  button does nothing on my phone" has no other evidence, and those stage names are
+  different diagnoses. **`npm run google:door`** drives all of it in actual WebKit under
+  Playwright's iPhone profile — what the page hands Google, a real cross-origin form POST
+  landing on the route, and the customer opening `/shop/products` afterwards. What that
+  does *not* prove: WebKit is not iOS, the profile is a user agent and a viewport rather
+  than Safari 15.6, and no Google server is contacted — the runner's stub answers in
+  Google's place, so what is proven is the configuration this deployment sends and the
+  landing it serves.
 - **The two doors, and the portal, are built.** `/shop` (public, ticket 07) offers continue
   with Google and the counter's phone-and-password  side by side; a Google sign-in that is a new
   account collects a phone in place, and one that is already a customer signs straight in. `/shop/account` (member-only, under the matrix of ADR 0022) is the customer's own points

@@ -35,7 +35,7 @@ export type LineIntent = 'sign-in' | 'bind';
 /** The landing places a LINE arrival can be sent to. */
 export type LineLanding =
   | { page: 'account'; result: 'bound' | 'taken' | 'error' }
-  | { page: 'login'; result: 'claim' | 'session' | 'inactive' | 'staff' | 'error' };
+  | { page: 'login'; result: 'claim' | 'session' | 'inactive' | 'staff' | 'error' | 'expired' };
 
 /** Why an arrival was refused, in the vocabulary the landing URL speaks. */
 export type LineRefusalReason = 'inactive' | 'staff' | 'binding-needs-session';
@@ -172,17 +172,41 @@ export function lineLandingFor(
   }
 }
 
+/** The front door, on the deployment's own public address. */
+function loginPageUrl(base: string): string {
+  return `${base.replace(/\/+$/, '')}/login`;
+}
+
 /**
- * A landing URL on the deployment's own public address.
+ * The front door with **nothing said**.
  *
- * Built from a passed-in base rather than from `request.url`, for the reason
- * `public-url.ts` records: behind the shop's reverse proxy the request's origin is
- * `localhost:3000`, and a customer redirected there is a customer who cannot reach
- * the page the refusal is written on.
+ * This is the landing for a request that was not an arrival: `GET` at the callback address
+ * with no `code`, no `state` and no error of LINE's. Nobody started a sign-in, so there is
+ * no outcome to report — and an outcome invented here is a sentence about a walk nobody
+ * took. It used to answer `?line=error`, which the front door reads as "เข้าสู่ระบบด้วย LINE
+ * ไม่สำเร็จ": the operator opening the callback address to see that it is alive was told
+ * their own sign-in had failed, and so was anybody who clicked a landing URL back out of
+ * their history. Found on the shop's own deployment, from the operator doing exactly that.
+ *
+ * Built from a passed-in base rather than from `request.url`, for the reason `public-url.ts`
+ * records: behind the shop's reverse proxy the request's origin is `localhost:3000`, and a
+ * customer redirected there is a customer who cannot reach the page.
+ */
+export function loginLandingUrl(base: string): string {
+  return loginPageUrl(base);
+}
+
+/**
+ * A landing URL on the deployment's own public address, carrying the word.
+ *
+ * One function for both pages, because the words and the addresses are decided together:
+ * `lineLandingFor` says which page an outcome is answered on, and this says what the
+ * address looks like. `null` is not a value here — see `loginLandingUrl` for the landing
+ * that says nothing at all.
  */
 export function lineLandingUrl(base: string, landing: LineLanding): string {
-  const path = landing.page === 'account' ? '/shop/account' : '/login';
-  return `${base.replace(/\/+$/, '')}${path}?line=${landing.result}`;
+  const page = landing.page === 'account' ? '/shop/account' : '/login';
+  return `${base.replace(/\/+$/, '')}${page}?line=${landing.result}`;
 }
 
 /** Where LINE shows the customer their consent screen. */

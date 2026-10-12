@@ -20,6 +20,7 @@ import {
   intentForPurpose,
   lineIntentFor,
   lineLandingUrl,
+  loginLandingUrl,
   planLineArrival,
   planLineRetry,
   purposeForIntent,
@@ -150,6 +151,26 @@ describe('where a landing redirect points', () => {
     expect(lineLandingUrl('https://shop.test', { page: 'login', result: 'session' })).toBe(
       'https://shop.test/login?line=session',
     );
+  });
+
+  it('has a separate word for a confirmation that can simply be repeated', () => {
+    // The state is missing, tampered with, or past its fifteen minutes. LINE did not fail
+    // and the customer can press again, which is a different sentence from "the sign-in
+    // failed" — and the difference is why `expired` exists beside `error`.
+    expect(lineLandingUrl('https://shop.test', { page: 'login', result: 'expired' })).toBe(
+      'https://shop.test/login?line=expired',
+    );
+  });
+
+  it('can say nothing at all, for a request that never started a sign-in', () => {
+    /*
+     * Found on the shop's own deployment: opening the callback address to check it answered
+     * redirected to `?line=error`, and the front door read that as "เข้าสู่ระบบด้วย LINE
+     * ไม่สำเร็จ" — a sentence about a walk nobody took. The landing for that request carries
+     * no word, and a trailing slash on the configured base must not produce a double one.
+     */
+    expect(loginLandingUrl('https://shop.test')).toBe('https://shop.test/login');
+    expect(loginLandingUrl('https://shop.test/')).toBe('https://shop.test/login');
   });
 });
 

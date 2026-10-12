@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button, InlineNotice, TextField } from '@/components/ds';
 import { apiPost } from '@/lib/client-api';
+import { type GoogleUxMode, googleInitializeConfig, googleUxModeFor } from '@/lib/google-door';
 import { CURRENT_CUSTOMER_NOTICE_VERSION } from '@/lib/privacy-notice';
 
 // The stylesheet lives beside the front door it styles: `/login` is the only screen
@@ -37,6 +38,13 @@ interface GoogleIdApi {
   initialize(config: {
     client_id: string;
     callback: (response: GoogleCredentialResponse) => void;
+    /**
+     * Google's two UX modes, only one of which this deployment may use on a phone — see
+     * `google-door.ts`. Both belong on `initialize`, not on `renderButton`, which is where
+     * Google's JavaScript API reference puts them.
+     */
+    ux_mode?: GoogleUxMode;
+    login_uri?: string;
   }): void;
   renderButton(element: HTMLElement, options: Record<string, unknown>): void;
 }
@@ -94,14 +102,84 @@ export function lineDoorNotice(
         tone: 'danger',
         body: 'บัญชีนี้เป็นบัญชีของพนักงานหรือผู้ดูแล ไม่ใช่บัญชีลูกค้า — ใช้เบอร์โทรศัพท์และรหัสผ่านเข้าสู่ระบบแทน LINE',
       };
+    case 'expired':
+      /*
+       * The state we minted is missing, or past its fifteen minutes: a tab left open while the
+       * customer phoned somebody, a URL that lost its query, a landing re-opened from history.
+       * Nothing is wrong with LINE and nothing is wrong with the customer, so this is the one
+       * sentence that is true — start again — and it is a warning rather than a danger.
+       */
+      return {
+        tone: 'warning',
+        body: 'การยืนยันกับ LINE ไม่สมบูรณ์หรือหมดอายุแล้ว — กดปุ่มเข้าสู่ระบบด้วย LINE อีกครั้งเพื่อเริ่มใหม่',
+      };
     case 'error':
       return {
         tone: 'danger',
-        body: 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ หรือการยืนยันหมดอายุ — กดปุ่ม LINE อีกครั้งได้เลย',
+        body: 'เข้าสู่ระบบด้วย LINE ไม่สำเร็จ — กดปุ่ม LINE อีกครั้งได้เลย',
       };
     default:
       return null;
   }
+}
+
+/**
+ * What the front door says about a Google arrival that did not sign anyone in.
+ *
+ * The `?google=` codes are the redirect landing's (`google-door.ts`), and only two of them
+ * are sentences: `new` is the *step* this screen renders (below), and a code nobody minted
+ * gets no notice at all — inventing a sentence for an unknown code is how a screen ends up
+ * lying about what happened. `lineDoorNotice` states the same rule for LINE, and the two
+ * are kept apart on purpose, so one door's words can never be printed over the other's
+ * failure.
+ */
+export function googleDoorNotice(
+  result: string | null | undefined,
+): { tone: 'danger'; body: string } | null {
+  switch (result) {
+    case 'inactive':
+      return { tone: 'danger', body: 'บัญชีนี้ถูกปิดการใช้งานแล้ว — กรุณาติดต่อร้านที่เคาน์เตอร์' };
+    case 'error':
+      return {
+        tone: 'danger',
+        body: 'เข้าสู่ระบบด้วย Google ไม่สำเร็จ หรือการยืนยันหมดอายุ — กดปุ่ม Google อีกครั้งได้เลย',
+      };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Which of the front door's arrival codes the address may keep.
+ *
+ * A code that renders a **step** is addressable and has to survive a reload: `claim` puts the
+ * phone-and-OTP form on screen from the first paint and `new` does the same for Google, and the
+ * proof each leans on (an httpOnly handoff) is in the browser either way — a customer who
+ * reloads mid-flow must not be sent back to the button.
+ *
+ * A code that renders a **sentence** is momentary: it reports a walk that has already ended.
+ * Left in the address it is re-read by every re-open — the back button, a bookmark, a link
+ * pasted into a chat, the shop's operator checking that the page answers — and each of those
+ * reads a failure that is over. So the address is rewritten once the sentence has been painted.
+ *
+ * One rule for both doors, and it is derived rather than listed: the two notice functions say
+ * which codes carry a sentence, which is also why `claim` and `new` fall out of this empty by
+ * themselves. The shop's own report is why this exists — the landing the callback had just
+ * redirected to was re-opened and printed "เข้าสู่ระบบด้วย LINE ไม่สำเร็จ" about a sign-in that
+ * was not attempted.
+ */
+export function momentaryCodes(input: {
+  line?: string | null;
+  google?: string | null;
+}): string[] {
+  const stale: string[] = [];
+  if (lineDoorNotice(input.line) !== null) {
+    stale.push('line');
+  }
+  if (googleDoorNotice(input.google) !== null) {
+    stale.push('google');
+  }
+  return stale;
 }
 
 /**
@@ -152,10 +230,29 @@ export function buttonWidthFor(available: number): number {
  */
 export function CustomerSignIn({
   googleClientId,
+  googleLoginUri = null,
+  googleResult = null,
   lineHref = null,
   lineResult = null,
 }: {
   googleClientId: string | null;
+  /**
+   * The address Google POSTs the credential to in redirect mode, built by the page from the
+   * deployment's own public address (`google-door.ts`).
+   *
+   * `null` when the shop has no client id, or when the request could not name its own
+   * address — and the Google door then stays on Google's popup default rather than pointing
+   * a phone at a POST nobody answers. A degraded door, not a broken one.
+   */
+  googleLoginUri?: string | null;
+  /**
+   * The `?google=` code the redirect landing came back with, if any.
+   *
+   * Read on the server and handed down as a value, for the reason `lineResult` is: `new`
+   * means the phone step must render in the first paint. Left to a client effect, the
+   * customer would see the door, and then watch a different screen slide in beneath them.
+   */
+  googleResult?: string | null;
   /**
    * LINE's own authorization URL, minted by the page for this render (ADR 0030 §1,
    * amended) — the door's whole address, state included.
@@ -190,9 +287,32 @@ export function CustomerSignIn({
     window.location.assign(path);
   }, []);
 
+  /*
+   * A sentence that has been read is spent, so it comes out of the address — see
+   * `momentaryCodes` for the rule and for why a step stays. `replaceState` rather than a
+   * navigation: the page that is on screen is the page that was asked for, and the router
+   * (Next 16 keeps the App Router in step with the history API) is told, not reloaded.
+   */
+  useEffect(() => {
+    const spent = momentaryCodes({ line: lineResult, google: googleResult });
+    if (spent.length === 0) {
+      return;
+    }
+    const url = new URL(window.location.href);
+    for (const name of spent) {
+      url.searchParams.delete(name);
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [lineResult, googleResult]);
+
   return (
     <div className={styles.form}>
-      <GoogleDoor googleClientId={googleClientId} onSignedIn={go} />
+      <GoogleDoor
+        googleClientId={googleClientId}
+        googleLoginUri={googleLoginUri}
+        googleResult={googleResult}
+        onSignedIn={go}
+      />
       <LineDoor href={lineHref} result={lineResult} onSignedIn={go} />
       <p className={styles.divider}>หรือ</p>
       <CounterDoor onSignedIn={go} />
@@ -439,9 +559,13 @@ function LineClaimStep({
 
 function GoogleDoor({
   googleClientId,
+  googleLoginUri,
+  googleResult,
   onSignedIn,
 }: {
   googleClientId: string | null;
+  googleLoginUri: string | null;
+  googleResult: string | null;
   onSignedIn: (path: string) => void;
 }) {
   const slot = useRef<HTMLDivElement>(null);
@@ -455,8 +579,18 @@ function GoogleDoor({
    * the white box this exists to remove.
    */
   const [trouble, setTrouble] = useState<string | null>(null);
-  /** True once Google's token came back for an account with no customer row yet. */
-  const [needsPhone, setNeedsPhone] = useState(false);
+  /**
+   * Whether the phone step is showing.
+   *
+   * Seeded from the redirect landing's own redirect (`?google=new`) as well as set by the
+   * popup path below, for the reason `LineDoor` seeds `claiming` from `?line=`: a customer
+   * coming back from Google's own page must see the step in the first paint. The two roads
+   * differ only in *where the proof is* — an id token in the ref below for a popup, the
+   * httpOnly handoff cookie for a redirect — and both end at the same POST.
+   */
+  const [needsPhone, setNeedsPhone] = useState(googleResult === 'new');
+  /** What the landing said, if it said anything. `new` is the step above, not a sentence. */
+  const googleNotice = googleDoorNotice(googleResult);
   const [phone, setPhone] = useState('');
   const [busy, setBusy] = useState(false);
   /** Whether the customer has confirmed reading the privacy notice. */
@@ -468,6 +602,19 @@ function GoogleDoor({
    * state would be a re-render carrying a secret for no reason.
    */
   const idToken = useRef<string | null>(null);
+
+  /**
+   * The sentence for a door that could not paint, and the line that makes it diagnosable.
+   *
+   * The customer reads the sentence; the operator gets this line, because a third-party script
+   * that never arrives is invisible on a desktop and "Google is just white" carries no stage at
+   * all. The same rule the LINE callback's refusals follow, and the same words: English in the
+   * log, Thai on the screen.
+   */
+  const troubleFor = useCallback((problem: 'script' | 'api' | 'blank') => {
+    console.warn(`[google] the door could not paint a button: ${problem}`);
+    return googleDoorFailure(problem);
+  }, []);
 
   const handleCredential = useCallback(
     async (token: string): Promise<void> => {
@@ -511,7 +658,7 @@ function GoogleDoor({
      */
     script.onerror = () => {
       if (!cancelled) {
-        setTrouble(googleDoorFailure('script'));
+        setTrouble(troubleFor('script'));
       }
     };
 
@@ -519,13 +666,28 @@ function GoogleDoor({
       const api = window.google?.accounts?.id;
       if (cancelled || !api || !slot.current) {
         if (!cancelled && !api) {
-          setTrouble(googleDoorFailure('api'));
+          setTrouble(troubleFor('api'));
         }
         return;
       }
       const slotElement = slot.current;
+      /*
+       * Which of Google's two UX modes this device is asked for — the call this screen used
+       * to make with neither, and therefore with Google's `popup` default (ADR 0020 §1,
+       * amended). A phone gets `redirect`, because Google's supported-browser page says
+       * "Due to ITP redirect mode is required for iOS" and the phones this shop's customers
+       * hold are iPhones (ADR 0031); in that mode the credential comes back as a form POST
+       * to the landing route and this `callback` is never invoked at all. Every other
+       * device keeps the popup, which is the default and the shape Google calls "often
+       * preferred" on a desktop.
+       */
+      const mode = googleUxModeFor({
+        userAgent: navigator.userAgent,
+        maxTouchPoints: navigator.maxTouchPoints,
+        platform: navigator.platform,
+      });
       api.initialize({
-        client_id: googleClientId,
+        ...googleInitializeConfig({ clientId: googleClientId, mode, loginUri: googleLoginUri }),
         callback: (response) => {
           if (response.credential) {
             void handleCredential(response.credential);
@@ -568,7 +730,7 @@ function GoogleDoor({
 
       graceTimer = setTimeout(() => {
         if (!cancelled && slotElement.children.length === 0) {
-          setTrouble(googleDoorFailure('blank'));
+          setTrouble(troubleFor('blank'));
         }
       }, GOOGLE_BUTTON_GRACE_MS);
 
@@ -598,7 +760,7 @@ function GoogleDoor({
       observer?.disconnect();
       script.remove();
     };
-  }, [googleClientId, handleCredential]);
+  }, [googleClientId, googleLoginUri, handleCredential, troubleFor]);
 
   /**
    * The first sign-in: the phone, the notice, and nothing else.
@@ -615,14 +777,20 @@ function GoogleDoor({
    * rather than parked one click away.
    */
   async function completeSignup(): Promise<void> {
-    if (idToken.current === null) {
-      return;
-    }
     setError(null);
     setBusy(true);
     try {
+      /*
+       * Which proof travels is not this screen's decision to make and not a parameter a
+       * caller chooses: a popup holds an id token and sends it; a redirect holds nothing a
+       * script can read, because Google POSTed the token to the landing, which left an
+       * httpOnly handoff cookie instead. So the payload carries the phone always and the
+       * token only when there is one, and the server is what requires *a* proof — the guard
+       * that used to stand here (`if (idToken.current === null) return`) would have made a
+       * phone's second step impossible, which is the bug this change removes.
+       */
       const result = await apiPost<SignupResponse>('/api/v1/auth/signup', {
-        idToken: idToken.current,
+        ...(idToken.current === null ? {} : { idToken: idToken.current }),
         phone: phone.trim(),
         noticeVersion: CURRENT_CUSTOMER_NOTICE_VERSION,
       });
@@ -638,6 +806,9 @@ function GoogleDoor({
     <section className={styles.door} aria-label="เข้าสู่ระบบด้วย Google">
       <p className={styles.doorTitle}>ลูกค้าใหม่ หรือมีบัญชี Google</p>
 
+      {googleNotice ? (
+        <InlineNotice tone={googleNotice.tone}>{googleNotice.body}</InlineNotice>
+      ) : null}
       {error ? <InlineNotice tone="danger">{error}</InlineNotice> : null}
       {trouble ? <InlineNotice tone="danger">{trouble}</InlineNotice> : null}
 

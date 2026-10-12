@@ -168,8 +168,8 @@ and the phone proof must both be present at the write.
 **What the customer sees now.** An unbound LINE account lands on `/login?line=claim` — the
 same fact the account page needs (a phone, a code, the notice) collected on the screen that
 can render it — and every other outcome lands on a page that can *say* it: `session`,
-`inactive`, `staff`, `error` on `/login`, `bound`, `taken`, `error` on the account card. The
-silent bounce is gone in both directions.
+`inactive`, `staff`, `expired`, `error` on `/login`, `bound`, `taken`, `error` on the account
+card. The silent bounce is gone in both directions.
 
 **Where the id token is exchanged is now an operator's variable.** `LINE_TOKEN_URL` joins
 `LINE_JWKS_URL` for the reason that one already carries: the acceptance run points it at a
@@ -240,11 +240,48 @@ before LINE on the device that already failed a redirect, when the callback can 
 same address from `buildLineAuthorizeUrl` — the one assembly both callers share, because a
 retry that forgot `scope=openid` would fail for a reason nobody had seen before.
 
+**A request that started nothing is not a failure, and a word does not outlive its walk.**
+Reported from the shop's own deployment: the operator opened the callback address to check
+that it answers, and the front door told them **"เข้าสู่ระบบด้วย LINE ไม่สำเร็จ"** — about a
+sign-in they had never begun. It was not one bug but a vocabulary with one word too few. The
+callback answered `?line=error` in three situations that are not the same thing, so the
+customer got one sentence for all of them and the only one of the three they could act on was
+invisible:
+
+- **Nothing at all on the address** (no `code`, no `state`, no error of LINE's) is a request
+  nobody's flow made. It lands on `/login` **saying nothing**, which is the honest answer to
+  "did the callback answer?". A deployment with no channel id lands the same way, because
+  `/login` already renders the sentence saying LINE is not configured there — there cannot
+  have been a button to press.
+- **A state we cannot verify** — missing beside a code, tampered with, or older than its
+  fifteen minutes — is `?line=expired`. This is the case the *state-at-paint* design makes
+  reachable: a tab open past the state's life, a URL that lost its query, a landing re-opened
+  from history. LINE did not fail and the customer did nothing wrong, so the sentence says the
+  part that is true — start again — and it is a warning, not a failure.
+- **A walk LINE itself answered badly** — an error of LINE's, an exchange that produced no id
+  token, a token this deployment refuses, a channel with no secret — stays `?line=error`.
+  Only here is "เข้าสู่ระบบด้วย LINE ไม่สำเร็จ" a true sentence.
+
+The other half is where a word lives once it has been read. A **notice** reports a walk that
+is over; left in the query string it is re-read by every re-open — the back button, a
+bookmark, a link pasted into a chat, the operator checking the page — and each of those reads
+a failure that already happened and cannot be acted on. So the front door gives its address
+back after the first paint, keeping only the codes that render a **step**: `claim` and
+`new` seed a form from the query string and must survive a reload, while `error`, `expired`,
+`inactive`, `staff`, `session` do not. One rule for both doors, derived rather than listed —
+`lineDoorNotice`/`googleDoorNotice` say which codes carry a sentence, and `momentaryCodes`
+says what that means for the address — and it is checked in a real browser, because it is the
+only gate that runs the front door's JavaScript. **Alternative rejected:** leaving every code
+in the address, on the grounds that the URL is a record of what happened. It is a record that
+replays: a landing URL in a chat is a failure notice for a customer who is not the one it
+happened to.
+
 **The failure now says where it died.** Every refusal in the callback writes one English
 line naming the stage — `state`, `no-state`, `no-channel`, `line-error`, `incomplete`,
-`code-exchange`, `credential` — beside the customer's own redirect. Without it a failure
-that only happens on a phone is invisible from the server, and "it doesn't work on my phone"
-is answered by reading LINE's documentation rather than this deployment's log.
+`code-exchange`, `credential`, and the `bare` request that was not an arrival — beside the
+customer's own redirect. Without it a failure that only happens on a phone is invisible from
+the server, and "it doesn't work on my phone" is answered by reading LINE's documentation
+rather than this deployment's log.
 
 **The callback is the one door here that was missing from the limiter.** Every other
 door in this feature counts attempts (ADR 0009 policies `line_signin`, `line_link`,

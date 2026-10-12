@@ -331,6 +331,36 @@ provider on the dashboard under *ข้อความแจ้งเตือ�
 configuration problem, not a lost order: the order itself is unaffected, and the
 customer still sees everything in the app.
 
+### 6.4 Google: letting a customer sign in with their Google account
+
+Also optional, and also on the sign-in page: **ดำเนินการต่อด้วย Google**. The
+customer approves the shop with their Google account, gives a phone number once,
+and that number is their account from then on — their points, orders and receipts.
+A number that already belongs to a customer is **refused rather than taken over**;
+that person signs in with the phone number and password you enrolled them with.
+
+What you must do once, as the shop owner:
+
+1. In https://console.cloud.google.com create an **OAuth 2.0 Client ID** of type
+   **Web application**.
+2. Give it **two** addresses, both your system's own public address (the same one
+   `PUBLIC_BASE_URL` names — see §3):
+   - under **Authorized JavaScript origins**, just the address, for example
+     `https://pos.example.com`;
+   - under **Authorized redirect URIs**, the address plus
+     `/api/v1/auth/google/redirect`, for example
+     `https://pos.example.com/api/v1/auth/google/redirect`.
+3. Put the client ID in `.env` as `GOOGLE_CLIENT_ID` and restart the app.
+
+Both entries matter, and each is for a different kind of device. A **computer**
+uses the first one. A **phone** uses the second, because Google will not hand a
+phone's browser a sign-in through the small pop-up window — Apple's browser blocks
+it — so the phone is sent to Google's own page and comes back to that address. **If
+the button works on your computer and not on your phone, that is the missing entry**
+and Google shows its own error page saying the redirect URI is not allowed; add it
+and nothing else needs changing. Leave `GOOGLE_CLIENT_ID` unset and the door stays on
+the page but says the shop has not set it up yet.
+
 ---
 
 ## 7. Backups and upgrades
@@ -377,10 +407,12 @@ that `migrate dev` would propose dropping.
 | `Could not find psql` during install | PostgreSQL is installed somewhere unusual. Add its `bin` directory to `PATH` and re-run `npm run setup`. |
 | The wizard says the system is already set up | Correct — a shop row exists. It will not re-initialise. To start over on a *throwaway* database only: `DELETE FROM shops;` then reload `/setup`. |
 | Forgot the administrator password | Reset it from the database, replacing the phone number and hash. Generate a hash, then: `UPDATE users SET password_hash = '<hash>' WHERE phone = '08xxxxxxxx';` |
+| Opening the LINE callback address in a browser lands on the sign-in page and says nothing | Correct, and not a broken sign-in. That address only answers LINE's own redirect (`§6.3`); with no code, no state and no error on it there was no sign-in to report, so it reports none. The button on `/login` is what begins one. |
 | A sale is refused with "drawer is not open" | Open the drawer first (`/pos` → เปิดลิ้นชัก). This is deliberate: cash must belong to a drawer. |
 | The till shows a bar reading **โหมดออฟไลน์**, and a sale is refused with "ต่อเน็ตก่อนขาย" | The till cannot reach its server: the shop's connection dropped, the router is down, or the machine this runs on was restarted. Check the till's own network first, then `docs/homelab-deploy.md` §4. Cash still works on a till that was **explicitly prepared** while online (§10) — that is the whole point of preparing before an outage. A till that was never prepared refuses the sale instead of failing silently, and the refusal names what is missing, because it has no catalogue or numbers on the device. |
 | Imported stock twice | Stock was added twice, as documented. Correct it with a stock adjustment (`REASON_CORRECTION`) so the audit trail explains it. |
-| Signing in works on this machine but not on a tablet | The production session cookie is `Secure`, so it is only stored over `https://` — browsers exempt `localhost`, which is why the server itself works and the tablet does not. The deployment needs a secure URL; see `docs/homelab-deploy.md` §4. |
+| Signing in works on this machine but not on a tablet | The production session cookie is `Secure`, so it is only stored over `https://` — and `localhost` is exempt unevenly: Chromium stores and sends it there, Safari/WebKit only stores it and never sends it back. That is why the server itself works and the tablet does not. The deployment needs a secure URL; see `docs/homelab-deploy.md` §4. |
+| **Google** sign-in works on the computer but not on a phone | A phone is sent to Google's own page and comes back to the redirect URI, which is a **separate entry** from the JavaScript origin (§6.4). Add the address plus `/api/v1/auth/google/redirect` under *Authorized redirect URIs* in the OAuth client. Google shows its own error page about the redirect URI when it is missing. |
 | `pg_dump: command not found` from `npm run backup` | Only the PostgreSQL client is missing: `apt install postgresql-client-17` for a 17 server (the plain package is usually a version behind, which fails differently — `aborting because of server version mismatch`). Windows gets one with the PostgreSQL installer. |
 | The app is not running after a reboot | Nothing starts it yet. `docs/homelab-deploy.md` §3 installs it as a service that comes back on its own. |
 

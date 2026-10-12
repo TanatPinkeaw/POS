@@ -106,7 +106,14 @@ Recorded so a session starts from the truth rather than from the last commit mes
   sign-in finishes on the front door through a ten-minute httpOnly handoff
   (`src/lib/line-pending.ts`) instead of being impossible; and every outcome lands on a
   screen that can say it. `npm run acceptance` §20 walks the whole redirect flow against a
-  token endpoint the run serves itself.
+  token endpoint the run serves itself. **How much it says is a vocabulary, and one word of
+  it was wrong**: the callback address opened with nothing on it — the operator checking it
+  answers — was answered `?line=error`, so the front door printed "เข้าสู่ระบบด้วย LINE
+  ไม่สำเร็จ" about a sign-in nobody had begun. Nothing on the address now lands on `/login`
+  saying nothing, an unverifiable state is `?line=expired` (start again) rather than a
+  failure, and only a walk LINE itself answered badly is `error`. A word that *is* printed is
+  momentary: `momentaryCodes` gives the address back after the first paint, keeping `claim`
+  and `new` because those two render a step a reload must land back in.
 - **A press of the LINE door is LINE's own address, minted while the page is painted**
   (ADR 0030 §1, amended again): `src/lib/line-start.ts` signs the state at render and puts
   it in the button's `href`, because LINE's guide to the auto-login failure names a JavaScript
@@ -126,6 +133,30 @@ Recorded so a session starts from the truth rather than from the last commit mes
   callback refusal also logs the stage it died at (`code-exchange`, `line-error`, `credential`,
   `state`, `no-state`, `no-channel`), because that failure is invisible on a desktop and the
   log line is the only way "it doesn't work on my phone" becomes a diagnosis.
+- **Google's button asks a phone for a different shape than a desktop** (ADR 0020 §1,
+  amended). `src/lib/google-door.ts` picks the UX mode — Google's own footnote is "Due to ITP
+  redirect mode is required for iOS", and the popup hands the credential back through a
+  cross-origin `postMessage` that Safari's tracking prevention blocks — and builds the
+  `login_uri` from `PUBLIC_BASE_URL`, so **the OAuth client needs an authorized redirect URI
+  as well as a JavaScript origin**, on the shop's public address plus
+  `/api/v1/auth/google/redirect`. That path is an endpoint (`route.ts`), not a page, because
+  Google posts a form and a page route cannot receive a POST; the landing answers **303**
+  (307 would re-POST the form), verifies the id token against Google's JWKS like the popup
+  path, and charges the rate limiter (`google_redirect`). A first sign-in has no id token in
+  the browser at all, so the landing leaves a ten-minute httpOnly `pos_google_pending`
+  handoff (`src/lib/google-pending.ts`, its own JWT audience) and `signup` accepts either
+  proof — one rule still decides who becomes a customer (`identity.ts`). Every refusal logs
+  the stage it died at (`body`, `no-credential`, `csrf-missing`, `csrf-mismatch`,
+  `no-client-id`, `credential`), because this failure is invisible on a desktop.
+  `npm run google:door` walks the whole thing in actual WebKit under an iPhone profile.
+- **A route handler cannot work out its own address** — measured, and it corrects what
+  `src/lib/public-url.ts` used to claim. `request.url`'s origin in a route handler is always
+  `http://localhost:<port>` on this custom server, whatever `Host` the browser asked for, so
+  the "derives from the request" fallback is not a supported deployment shape: landings
+  built from it point a customer at their own machine. **`PUBLIC_BASE_URL` is required, not
+  merely recommended behind a proxy.** A *screen* does derive a real address, from its
+  headers (`publicBaseUrlForHeaders`), which is why `/login` can name the deployment the
+  button must carry while a route cannot.
 - **The till's service worker may answer no; it may not reject** (ADR 0024 §9). Two console
   errors on the shop's own deployment came out of that file's shape, not the phone's:
   `caches.open()` outside every `try` (a browser without CacheStorage rejected every request
@@ -245,8 +276,9 @@ owner.
 | `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
 | `npm run build` / `npm run start` | Production build, then the same custom server. | — |
 | `npm run verify` | `typecheck` → `ui:audit` → `doc:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
-| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `limiter:race` → `offline:browser`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium |
+| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `browser:target` → `limiter:race` → `offline:browser` → `google:door` → `restore:drill`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium + WebKit |
 | `npm run offline:browser` | Actual Chromium/IndexedDB offline cash, replay/reconnect and recovery on a test-only scratch schema; `-- --skip-build` reuses the build. Install with `npx playwright install chromium`. | TEST_DATABASE_URL + Chromium |
+| `npm run google:door` | The Google sign-in door in actual WebKit under Playwright's iPhone profile: the UX mode a phone's page asks Google for, the credential coming back as a real cross-origin form POST, and the customer signed in afterwards. `-- --skip-build`, `-- --engine=chromium`, `-- --keep`. Install with `npx playwright install webkit`. | TEST_DATABASE_URL + WebKit |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
@@ -459,14 +491,15 @@ Then, for anything a person will look at:
   scratch schema, and drives the whole journey.
 
 **CI runs all of it** (`.github/workflows/verify.yml`): `verify` in one job, then
-`acceptance` + `route:audit --skip-build` + `limiter:race --skip-build` +
-`offline:browser --skip-build` in a second,
-each with a PostgreSQL 17 service. Node is pinned by `.nvmrc` and `engines.node`, so
+`acceptance` + `route:audit --skip-build` + `browser:target` + `limiter:race --skip-build` +
+`offline:browser --skip-build` + `google:door --skip-build` + `restore:drill` in a second,
+each with a PostgreSQL 17 service (the second job installs Chromium and WebKit for
+the two gates that drive a real browser). Node is pinned by `.nvmrc` and `engines.node`, so
 the version the suite runs on is the version a renter is told to install.
 
-Locally the same thing is **one command**, `npm run verify:all`: it runs those five in
-dependency order — nothing is built for the first, the journey builds once, and the
-last three walk the artefact it produced — and stops at the first failure, because every
+Locally the same thing is **one command**, `npm run verify:all`: it runs those eight in
+dependency order — nothing is built for the first, the journey builds once, and every
+gate after it walks the artefact it produced — and stops at the first failure, because every
 later gate would be measuring a commit that is already known to be broken. It is the
 release check; `verify` alone is the inner loop. The two jobs and this command are
 deliberately the same set, so CI cannot go green on something this does not run.

@@ -6,7 +6,8 @@ name: verify
 # types, the design-system audit, the colour ramp, and the unit and integration
 # suites. `journeys` is the part that only means something when the whole thing is
 # built and served — the renter's journey from an empty schema, every screen
-# rendering styled, and two servers sharing one rate-limit bucket. They are split
+# rendering styled, two servers sharing one rate-limit bucket, and the Google door
+# driven in a real WebKit as an iPhone. They are split
 # rather than chained so a failing unit test reports in a couple of minutes instead
 # of after a Next build.
 #
@@ -131,9 +132,19 @@ jobs:
       # story as the audit above, and the same reuse of the build.
       - run: npm run limiter:race -- --skip-build
 
-      # Real browser/IndexedDB, never a memory or fake database adapter.
-      - run: npx playwright install --with-deps chromium
+      # Real browser/IndexedDB, never a memory or fake database adapter. WebKit is
+      # installed beside Chromium because the Google door's own gate (below) drives
+      # the door the way an iPhone does: `redirect` UX mode, and a credential that
+      # comes back as a cross-origin form POST rather than a callback.
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run offline:browser -- --skip-build
+
+      # The Google sign-in door in actual WebKit under Playwright's iPhone profile
+      # (ADR 0020 §1, amended), against the build the journey made. What it answers is
+      # a question no other gate asks: which UX mode a phone's page hands Google, and
+      # whether the credential coming back as a form POST to this server signs the
+      # customer in. Its own scratch schema.
+      - run: npm run google:door -- --skip-build
 
       # The restore recipe of docs/homelab-deploy.md §7, performed by a machine:
       # demo shop → pg_dump → psql restore → count. No build, no server; the clients

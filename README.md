@@ -23,7 +23,7 @@ were all removed once the last screen moved across (ADR 0003).
 | Realtime | Socket.io mounted on the same HTTP server as Next |
 | UI | In-house design system (`src/design/` + `src/components/ds/`): CSS custom properties + CSS Modules |
 | Auth | bcrypt hashes + `jose`-signed JWT in an httpOnly cookie |
-| Tests | Vitest against real PostgreSQL; Playwright Chromium for actual IndexedDB and the offline cashier journey |
+| Tests | Vitest against real PostgreSQL; Playwright Chromium for actual IndexedDB and the offline cashier journey, and WebKit for the Google door on a simulated iPhone |
 
 ### Why one process
 
@@ -209,13 +209,14 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1417 tests across 112 files: unit + integration
+npm test                # 1486 tests across 115 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
-npm run acceptance      # 214 checks of the whole renter journey, from an empty schema
+npm run acceptance      # 229 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders styled
 npm run browser:target  # that build still parses on the phone a customer holds
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
+npm run google:door     # the Google door in real WebKit as an iPhone, its redirect landing, and where the front door's arrival words live (25 checks)
 npm run restore:drill   # the homelab-deploy §7 restore recipe, rehearsed by a machine
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -372,11 +373,20 @@ visitor to it is signed in rather than looped back to the page they started on.
 
 Every outcome is said out loud. A refusal lands on `/login` with a word for it
 (`?line=session` for a binding that arrived without a session, `inactive` for a closed
-account, `staff` for a staff row, `error` for an expired or failed consent), and a binding
-that failed because the LINE account already belongs to another customer lands on the
-account card as `taken`. Before this, every one of those was a redirect to a page that
-silently ignored the word it was given — which is what a loop looks like from the
-customer's side.
+account, `staff` for a staff row, `expired` for a confirmation that can simply be repeated,
+`error` for a sign-in LINE itself refused), and a binding that failed because the LINE
+account already belongs to another customer lands on the account card as `taken`. Before
+this, every one of those was a redirect to a page that silently ignored the word it was
+given — which is what a loop looks like from the customer's side.
+
+**And nothing is said about a sign-in nobody started.** The callback address opened with no
+`code`, no `state` and no error of LINE's on it — the operator checking that it answers, a
+link checker, a landing re-opened out of history — lands on the front door in silence; it
+used to be answered with `?line=error`, so the shop's own operator was told their sign-in had
+failed without ever having begun one. A word that *is* printed is momentary: it comes out of
+the address once the page has painted it, so a re-open cannot replay a failure that is over,
+while `claim`/`new` — the two codes that render a step — keep theirs, because a customer who
+reloads mid-flow must land back in the step rather than at the button.
 
 **The press goes to LINE's own address, not to a route of ours.** The button's `href` *is*
 LINE's authorization URL, minted while the page is painted (`src/lib/line-start.ts`) — because
@@ -476,6 +486,12 @@ doors side by side:
   customer gives a phone number, and the name comes from their Google profile. A number
   that already has a customer is **refused, not linked** — a typed number proves nothing,
   and attaching it would be a takeover — so the counter's password is the way into that row.
+  The door asks a **phone** for Google's `redirect` UX mode and a desktop for the default
+  `popup`: the popup hands the credential back through a cross-origin `postMessage`, which
+  Safari's tracking prevention blocks — and on iOS every browser is Safari's engine, so
+  there is nothing for the customer to switch to (ADR 0031 records the same fact from the
+  build side). The mode is Google's own requirement, stated on its supported-browsers page
+  as *"Due to ITP redirect mode is required for iOS"* — see ADR 0020 §1.
 - **Sign in with LINE**, for a customer who met the shop in LINE (ADR 0030): an account
   already bound signs straight in, and one nobody holds is asked for a phone number and an
   OTP before it is attached. The door is a plain redirect to LINE's own consent screen — no
@@ -495,6 +511,17 @@ client** in Google Cloud Console with authorized JavaScript origin
 `http://localhost:3000` and set `GOOGLE_CLIENT_ID` in `.env`; a Google sign-in then takes
 a phone number and nothing else. (A **phone change** still proves the new number by OTP;
 `npm run otp:gateway` prints that code instead of texting it — see the command list above.)
+
+If the shop serves customers on **iOS** — which, for a real shop, means always — the same
+client needs one more entry: an **authorized redirect URI** ending in
+`/api/v1/auth/google/redirect`, on the shop's public address (for example
+`https://pos.example.com/api/v1/auth/google/redirect`). That address is what a phone's
+button hands Google as `login_uri`, Google posts the credential to it, and Google compares
+it against the registered value character for character — so a deployment that skips this
+gets Google's own `redirect_uri_mismatch` page instead of a sign-in, on phones only. A
+desktop never uses it. `PUBLIC_BASE_URL` must be set for the same reason: it is what the
+address is built from, and a route handler cannot work out its own host (see
+`src/lib/public-url.ts`).
 
 ### Collecting a pre-order (SRS §3)
 
@@ -1036,7 +1063,7 @@ goes through them.
 | `docs/adr/0027-the-shop-says-whether-it-calls.md` | The switch that turns the call number and the drink queue off for a shop that does not call its customers: one boolean rather than a shop type, obeyed by the sale so every screen corrects itself, and honoured by a prepared device. |
 | `docs/adr/0028-the-shop-says-whether-it-takes-pre-orders.md` | The switch that turns pre-orders off for a shop that prepares nothing: a second boolean rather than the other half of the queue's, refused where the order is placed so an open storefront is still answered, and why the board stays reachable for orders already placed. |
 | `docs/adr/0019-the-till-sells-offline.md` | Selling with no connection: numbers lent in blocks so a browser can issue a gapless series, the safety quantity that replaces "never oversell", the day a bill belongs to, the replay that makes a device's queue idempotent — and the invariants that move out of the database, including the two stock constraints the shortage case needed relaxed. |
-| `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. |
+| `docs/adr/0020-a-customer-signs-in-with-google.md` | Customer identity: Google plus a phone, a taken number refused rather than linked, and the phone staying the key — amends ADR 0016 §4. §1 amended: a phone gets Google's `redirect` UX mode and a desktop keeps `popup`, the credential comes back as a form POST to `/api/v1/auth/google/redirect`, and a first sign-in is finished from a ten-minute handoff cookie. |
 | `docs/adr/0029-the-front-door-belongs-to-the-customer.md` | The one sign-in URL a person can be given: `/login` is the customer's door — Google, LINE, or phone and password — with the staff form folded behind one button, and `/shop` a redirect to it, so the domain root and every printed QR code land on the same screen. |
 | `docs/adr/0030-a-customer-is-reached-on-line.md` | The LINE door and LINE notifications: binding a LINE account to a customer by OTP, consent as two facts (the customer's timestamp and the friend list the webhook keeps), the collection code riding the customer's own LINE or nothing, and the shop's group gaining the refund and dismissed-transfer facts — opens ADR 0007 decision 3 the way it asked to be opened. |
 | `docs/adr/0031-the-build-picks-the-phone.md` | The build targets the phone a customer is holding: why Next 16's own baseline (Safari 16.4) shipped a page that rendered with every button dead on iOS 15, the measurement that found it, the gate that keeps it found, the translucent-colour layer that had to be written down as values for it, and runtime APIs as the one thing no syntax check can see. |

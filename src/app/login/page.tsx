@@ -9,6 +9,7 @@ import { CustomerSignIn } from '@/components/shop/CustomerSignIn';
 import { PrivacyScrim } from '@/components/shop/PrivacyScrim';
 import { PrivacyNoticeBody } from '@/app/privacy/PrivacyNoticeBody';
 import { getSessionUser } from '@/lib/auth';
+import { googleRedirectLoginUri } from '@/lib/google-door';
 import { readGoogleClientId } from '@/lib/google-id-token';
 import { readLineChannelId } from '@/lib/line-id-token';
 import { lineStartHref } from '@/lib/line-start';
@@ -79,6 +80,15 @@ const DEMO_ACCOUNTS = [
  * already carries. Left to a client effect, the customer would see the door, then a
  * different screen slide in underneath them.
  *
+ * **`?google=` is read here for the same reason, and the Google door has one more thing
+ * minted at render time.** A phone gets Google's `redirect` UX mode, whose credential comes
+ * back as a form POST to a route this page has to name in the button (`google-door.ts`);
+ * that address is built here from the same public base the LINE door uses, so the two
+ * cannot name the deployment two different ways. The `?google=` code that landing redirects
+ * with says whether a verified Google account is waiting for a phone number — a step, not a
+ * message — and a step that arrived in a client effect would let the customer see the door,
+ * press it, and watch the screen change underneath them.
+ *
  * **The LINE door's address is minted here as well**, which is the one door this page
  * does more than describe. The button's `href` *is* LINE's authorization URL, with a
  * state signed for this render — no route of ours in between, because LINE's guide to
@@ -90,9 +100,9 @@ const DEMO_ACCOUNTS = [
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ line?: string }>;
+  searchParams: Promise<{ line?: string; google?: string }>;
 }) {
-  const { line } = await searchParams;
+  const { line, google } = await searchParams;
 
   const session = await getSessionUser();
   if (session) {
@@ -132,11 +142,23 @@ export default async function LoginPage({
    * then says the shop has not configured LINE rather than showing a link to nowhere.
    */
   const lineChannelId = readLineChannelId();
-  const lineBase = lineChannelId === null ? null : publicBaseUrlForHeaders(await headers());
+  const googleClientId = readGoogleClientId();
+  /*
+   * One reading of the address this deployment is reachable at, shared by the two doors
+   * that hand the customer to somebody else's server: the LINE callback is compared
+   * character for character by LINE, and `login_uri` is compared the same way by Google. Two
+   * readings is how they drift, and a drift here is a refusal on *their* screen rather than
+   * on ours. `null` is a request that cannot name itself — see `publicBaseUrlForHeaders` —
+   * and each door answers that by saying the shop has not configured it, never by inventing
+   * a host.
+   */
+  const publicBase = publicBaseUrlForHeaders(await headers());
   const lineHref =
-    lineChannelId !== null && lineBase !== null
-      ? await lineStartHref({ intent: 'sign-in', base: lineBase, channelId: lineChannelId })
+    lineChannelId !== null && publicBase !== null
+      ? await lineStartHref({ intent: 'sign-in', base: publicBase, channelId: lineChannelId })
       : null;
+  const googleLoginUri =
+    googleClientId !== null && publicBase !== null ? googleRedirectLoginUri(publicBase) : null;
 
   return (
     /*
@@ -167,7 +189,9 @@ export default async function LoginPage({
         </div>
 
         <CustomerSignIn
-          googleClientId={readGoogleClientId()}
+          googleClientId={googleClientId}
+          googleLoginUri={googleLoginUri}
+          googleResult={google ?? null}
           lineHref={lineHref}
           lineResult={line ?? null}
         />

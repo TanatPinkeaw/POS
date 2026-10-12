@@ -10,9 +10,18 @@
  *
  * So the address is configuration, not derivation: `PUBLIC_BASE_URL` states
  * where the shop's browser actually lands, and the two LINE doors use it.
- * Unset, the fallback derives from the request — which works on a direct
- * deployment and is wrong behind a proxy, which is why the `.env.example` line
- * for it says to set it on any deployment behind one.
+ *
+ * **A route handler cannot derive it, on any deployment** — which is a correction to what
+ * this file used to say. The fallback below was described as "works on a direct
+ * deployment"; measured on this checkout's own custom server, `request.url`'s origin in a
+ * route handler is always `http://localhost:<port>`, whatever `Host` the browser asked for
+ * (a request carrying `Host: example.test` is answered with a landing on `localhost`).
+ * `localhost` is the *customer's* own machine, so an unconfigured deployment sends them to
+ * a page that is not there — the same failure the proxy case produces, by a different
+ * route. **`PUBLIC_BASE_URL` is therefore required, not merely recommended behind a
+ * proxy**, and `.env.example` says so. The fallback stays because a *screen* derives a
+ * real address from its headers (`publicBaseUrlForHeaders` below) and some callers have no
+ * configuration to read; it is a last resort, not a supported deployment.
  *
  * The value is trusted here the way `NOTIFY_WEBHOOK_URL` already is: both name
  * an external address the operator owns, and only the operator writes `.env`.
@@ -29,7 +38,14 @@ export function readPublicBaseUrl(
   return url.replace(/\/+$/, '');
 }
 
-/** The base to build an external URL from, falling back to the request's own. */
+/**
+ * The base to build an external URL from, falling back to the request's own origin.
+ *
+ * The fallback is `localhost:<port>` in practice rather than the host the customer asked
+ * for — see the module comment. It is kept for callers that have no configured value and
+ * can live with a partly-broken link (a link in an email body, say), never as a way to
+ * serve a customer behind a deployment nobody configured.
+ */
 export function publicBaseUrlOr(
   requestUrl: string,
   env: Record<string, string | undefined> = process.env,

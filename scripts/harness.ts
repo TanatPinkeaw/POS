@@ -299,6 +299,36 @@ export class Session {
     await this.call('/api/v1/auth/login', { method: 'POST', body: credentials });
   }
 
+  /**
+   * Sends a form-encoded POST and hands back the response itself.
+   *
+   * `request` speaks the JSON envelope and `raw` is a GET; this exists for the one door
+   * that answers a *form* — Google's redirect-mode landing — where what has to be asserted
+   * is a 303, a `Set-Cookie` and the absence of a session, not a parsed body. It
+   * deliberately does **not** absorb the jar's cookie, because whether a session was set is
+   * one of the questions the caller is asking.
+   *
+   * `headers` comes last so a caller can override the cookie: the CSRF check is driven by
+   * pretending to be a caller whose `g_csrf_token` cookie disagrees with the value in the
+   * body, and no real browser would do that for us.
+   */
+  postUrlEncoded(
+    path: string,
+    fields: Record<string, string>,
+    headers: Record<string, string> = {},
+  ): Promise<Response> {
+    return fetch(`${this.base()}${path}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        ...(this.cookie ? { cookie: this.cookie } : {}),
+        ...headers,
+      },
+      body: new URLSearchParams(fields).toString(),
+      redirect: 'manual',
+    });
+  }
+
   raw(path: string): Promise<Response> {
     return fetch(`${this.base()}${path}`, {
       headers: this.cookie ? { cookie: this.cookie } : {},

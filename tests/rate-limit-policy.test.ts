@@ -148,6 +148,9 @@ describe('the policy table', () => {
       'line_link',
       'line_callback',
       'line_webhook',
+      // Google's redirect landing: a form POST from another origin that mints a session on
+      // the way out, so it is counted like the LINE callback beside it (ADR 0020 §1).
+      'google_redirect',
     ]);
 
     for (const [name, policy] of Object.entries(RATE_LIMIT_POLICIES)) {

@@ -42,11 +42,23 @@
  * is the second walk rather than "please try again" for the rest of time. It is bounded by
  * the `retried` claim in the state, so a failure that is *not* that can never loop.
  *
+ * **A request that never started a sign-in is not a failed one**, and this route says so
+ * three ways rather than one. `code`, `state` and `error` all absent is a URL nobody minted
+ * — the operator checking the address is alive, a link checker, somebody re-opening a
+ * landing out of their history — and it lands on the front door in silence. A state we
+ * cannot verify, or cannot see at all beside a code, is `?line=expired`: the customer's tab
+ * was open past the state's fifteen minutes, or a URL lost its query, and the one thing that
+ * is true is "start again", not "the sign-in failed". Only a walk that LINE itself answered
+ * badly — an error of LINE's, an exchange that produced no id token, a token we refuse — is
+ * `?line=error`. The first version answered all three with `error`, so the shop's operator
+ * clicking the callback address to check it read "เข้าสู่ระบบด้วย LINE ไม่สำเร็จ" about a
+ * sign-in they had never begun, and reported it as a bug in the sign-in.
+ *
  * Every refusal also leaves a line in the log. That is not decoration: the whole point of
  * the failure above is that it does not happen on a desktop at all, so a report of "it
  * doesn't work on my phone" arrives with nothing on the server to read, and the stage —
- * `code-exchange`, `line-error`, `credential`, `state` — is the difference between a
- * remedy and another guess.
+ * `code-exchange`, `line-error`, `credential`, `state`, `no-state`, `no-channel`, `bare` —
+ * is the difference between a remedy and another guess.
  */
 import { NextResponse } from 'next/server';
 
@@ -60,6 +72,7 @@ import {
   lineLandingFor,
   lineLandingUrl,
   lineRedirectUri,
+  loginLandingUrl,
   planLineArrival,
   planLineRetry,
 } from '@/lib/line-door';
@@ -82,6 +95,16 @@ import { chargeRateLimit } from '@/lib/rate-limit';
 
 /** The one landing every failure here shares: the front door, which can explain itself. */
 const FAILURE_LANDING = { page: 'login', result: 'error' } as const;
+
+/**
+ * The landing for a walk that cannot be verified but can be repeated.
+ *
+ * A state that is missing, tampered with, or older than its fifteen minutes is not LINE
+ * failing and not the customer doing anything wrong: the press can be made again and will
+ * work. "การยืนยันหมดอายุ" and "เข้าสู่ระบบไม่สำเร็จ" send a customer to two different places,
+ * which is why they are two words.
+ */
+const EXPIRED_LANDING = { page: 'login', result: 'expired' } as const;
 
 export async function GET(request: Request): Promise<Response> {
   return withApi(async () => {
@@ -139,13 +162,29 @@ export async function GET(request: Request): Promise<Response> {
     };
 
     const channelId = readLineChannelId();
+    /*
+     * Nothing at all on the address is **not** a failed sign-in: it is a request nobody
+     * started. The operator opening this URL to check that the deployment answers, a link
+     * checker, a landing URL re-opened out of history — all of them used to be told the
+     * sign-in had failed, which is a sentence about a walk nobody took. Silence is the honest
+     * answer, and `bare` in the log is the operator's half of it.
+     */
+    if (code === null && state === null && lineError === null) {
+      console.warn('[line] callback reached with no code, state or error on it');
+      return NextResponse.redirect(loginLandingUrl(base));
+    }
+
     if (!channelId || !state) {
-      // Nothing to retry with: LINE has not answered yet, or this deployment has no channel
-      // to ask at all. A second walk would be a second dead end.
-      console.warn(
-        `[line] callback refused at ${channelId === null ? 'no-channel' : 'no-state'}`,
+      /*
+       * No channel at all: this deployment cannot have shown a button (`/login` renders the
+       * sentence saying so, which is where the customer should be), and a second walk would
+       * be a second dead end. No state beside an arrival: a walk nobody can verify, and one
+       * the customer can simply repeat.
+       */
+      console.warn(`[line] callback refused at ${channelId === null ? 'no-channel' : 'no-state'}`);
+      return NextResponse.redirect(
+        channelId === null ? loginLandingUrl(base) : lineLandingUrl(base, EXPIRED_LANDING),
       );
-      return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
     }
 
     /*
@@ -161,10 +200,12 @@ export async function GET(request: Request): Promise<Response> {
       intent = arrival.intent;
       retried = arrival.retried;
     } catch {
-      // A callback with no state of ours is not a failed sign-in to retry: it is a request
-      // somebody else started, and walking them to LINE would be doing them a favour.
+      // A callback whose state we cannot verify is a walk that cannot be checked: either it
+      // is somebody else's request — where walking them to LINE would be doing them a favour
+      // — or it is ours and older than fifteen minutes. Both are answered by starting again,
+      // which is the `expired` word rather than the failure one.
       console.warn('[line] callback refused at state');
-      return NextResponse.redirect(lineLandingUrl(base, FAILURE_LANDING));
+      return NextResponse.redirect(lineLandingUrl(base, EXPIRED_LANDING));
     }
 
     /*

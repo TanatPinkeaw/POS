@@ -38,7 +38,7 @@ import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
 
-import { exportJWK, generateKeyPair, SignJWT } from 'jose';
+import { SignJWT } from 'jose';
 
 import { roundThb } from '../src/lib/money';
 import { looksLikePickupToken } from '../src/lib/pickup-scan';
@@ -57,6 +57,7 @@ import {
   stopServer,
   waitForServer,
 } from './harness';
+import { GOOGLE_STUB_CLIENT_ID, startGoogleStub, type GoogleStub } from './google-stub';
 
 /* ------------------------------------------------------------------ config */
 
@@ -164,30 +165,18 @@ const otpInbox: { to?: string; code?: string; text?: string; kind?: string }[] =
  * key it generated, so the whole sign-in path is exercised without a live Google — the
  * same trade the notification and OTP gateways make.
  */
-let googleJwks: Server | null = null;
-let googlePrivateKey: CryptoKey | null = null;
-const GOOGLE_TEST_CLIENT_ID = 'acceptance.apps.googleusercontent.com';
+let googleStub: GoogleStub | null = null;
+const GOOGLE_TEST_CLIENT_ID = GOOGLE_STUB_CLIENT_ID;
 
 /** A Google id token this deployment will accept, for one subject. */
 async function googleIdToken(
   subject: string,
   overrides: { fullName?: string; email?: string } = {},
 ): Promise<string> {
-  if (!googlePrivateKey) {
-    throw new Error('The acceptance Google signing key was never generated');
+  if (!googleStub) {
+    throw new Error('The acceptance Google key set was never started');
   }
-  return new SignJWT({
-    email: overrides.email ?? `${subject}@example.com`,
-    email_verified: true,
-    name: overrides.fullName ?? 'ลูกค้า กูเกิล',
-  })
-    .setProtectedHeader({ alg: 'RS256' })
-    .setSubject(subject)
-    .setIssuedAt()
-    .setIssuer('https://accounts.google.com')
-    .setAudience(GOOGLE_TEST_CLIENT_ID)
-    .setExpirationTime('1h')
-    .sign(googlePrivateKey);
+  return googleStub.mintIdToken(subject, overrides);
 }
 
 /**
@@ -488,6 +477,37 @@ async function setPointsBalance(url: string, userId: string, points: number): Pr
       userId,
       points,
     ]);
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Where a redirect sent the browser, as a path with its query.
+ *
+ * Parsed rather than compared as a string, and the origin is deliberately not compared: a
+ * landing is built from `PUBLIC_BASE_URL`, which on a box that has one is the shop's real
+ * address rather than this scratch server. The path and the query are what the behaviour
+ * under test is.
+ */
+function landingPath(response: Response): string {
+  const url = new URL(response.headers.get('location') ?? 'http://missing.invalid');
+  return `${url.pathname}${url.search}`;
+}
+
+/** One `Set-Cookie` line by name, or null — the raw line, so its flags can be asserted. */
+function setCookieNamed(response: Response, name: string): string | null {
+  return (
+    (response.headers.getSetCookie?.() ?? []).find((line) => line.startsWith(`${name}=`)) ?? null
+  );
+}
+
+/** Turns one account off, which is what a closed account looks like to every door. */
+async function deactivateUser(url: string, userId: string): Promise<void> {
+  const client = await scratchClient(url);
+  try {
+    await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+    await client.query('UPDATE "users" SET "is_active" = false WHERE "id" = $1', [userId]);
   } finally {
     await client.end();
   }
@@ -2433,6 +2453,122 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
       staffAttempt.status === 409,
       staffAttempt.status,
     );
+
+    /*
+     * (e) The **redirect landing**, which is the shape a phone gets (ADR 0020 §1, amended).
+     *     Google POSTs the credential to this route as a *form*, so nothing here is JSON and
+     *     the answer is a 303 — a redirect to a screen that can say what happened. For an
+     *     account nobody holds that screen is the phone step, and the proof of the Google
+     *     account travels beside it in an httpOnly cookie, because in this shape the browser
+     *     never holds an id token at all.
+     */
+    const redirectPhone = new Session(() => base);
+    const redirectSubject = 'accept-google-redirect';
+    const arrival = await redirectPhone.postUrlEncoded('/api/v1/auth/google/redirect', {
+      credential: await googleIdToken(redirectSubject),
+      g_csrf_token: 'csrf-value-from-the-run',
+    });
+    check(
+      'the redirect landing sends an unknown Google account to the phone step, not to a session',
+      arrival.status === 303 && landingPath(arrival) === '/login?google=new',
+      `${arrival.status} ${landingPath(arrival)}`,
+    );
+    const handoff = setCookieNamed(arrival, 'pos_google_pending');
+    check(
+      'and leaves the proof in an httpOnly cookie rather than minting a session',
+      handoff !== null &&
+        /HttpOnly/i.test(handoff) &&
+        setCookieNamed(arrival, 'pos_session') === null,
+      handoff,
+    );
+
+    /*
+     * The handoff is carried by hand, and that is the harness's shape rather than a
+     * shortcut: a `Session` jar records only `pos_session` (see `harness.ts`), and
+     * `postUrlEncoded` deliberately does not absorb what a landing set — whether a session
+     * was minted is one of the questions it is asked. So the cookie is taken off the landing's
+     * own `Set-Cookie` line and sent exactly as a browser would send it: the value, on the
+     * request, with no id token anywhere in the body.
+     */
+    const handoffCookie = (setCookieNamed(arrival, 'pos_google_pending') ?? '').split(';')[0] ?? '';
+    const finished = await redirectPhone.call<GoogleSignupDto>('/api/v1/auth/signup', {
+      method: 'POST',
+      headers: { cookie: handoffCookie },
+      body: { phone: '0862220003', noticeVersion: CURRENT_CUSTOMER_NOTICE_VERSION },
+    });
+    check(
+      'the phone step then completes from the handoff alone, with no id token in the payload',
+      finished.created === true && finished.role === 'member',
+      finished,
+    );
+    const redirectMe = await redirectPhone.call<{ role: string }>('/api/v1/auth/me');
+    check(
+      'and that customer is signed in, on the cookie the handoff became',
+      redirectMe.role === 'member',
+      redirectMe.role,
+    );
+
+    // The same Google account again: the row exists now, so the landing signs it in and asks
+    // for nothing — the half of this flow a returning customer walks.
+    const returning = new Session(() => base);
+    const known = await returning.postUrlEncoded('/api/v1/auth/google/redirect', {
+      credential: await googleIdToken(redirectSubject),
+      g_csrf_token: 'another-csrf-value',
+    });
+    check(
+      'and a second landing with the same account signs straight in, with no phone',
+      known.status === 303 &&
+        landingPath(known) === '/shop/products' &&
+        setCookieNamed(known, 'pos_session') !== null,
+      `${known.status} ${landingPath(known)}`,
+    );
+
+    // A closed account is refused before any session exists.
+    await deactivateUser(seedGuardUrl, finished.id);
+    const closed = await new Session(() => base).postUrlEncoded('/api/v1/auth/google/redirect', {
+      credential: await googleIdToken(redirectSubject),
+      g_csrf_token: 'a-third-csrf-value',
+    });
+    check(
+      'a landing for a closed account is refused before a session is minted',
+      closed.status === 303 &&
+        landingPath(closed) === '/login?google=inactive' &&
+        setCookieNamed(closed, 'pos_session') === null,
+      `${closed.status} ${landingPath(closed)}`,
+    );
+
+    /*
+     * And two requests that never came from Google's own page. The first carries no
+     * credential at all; the second carries one whose `g_csrf_token` disagrees with the cookie
+     * Google's button sets on this origin — the double-submit a hand-assembled POST cannot
+     * satisfy, and the reason it is worth an acceptance leg rather than a comment.
+     */
+    const noCredential = await new Session(() => base).postUrlEncoded(
+      '/api/v1/auth/google/redirect',
+      { g_csrf_token: 'csrf-value-from-the-run' },
+    );
+    check(
+      'a landing with no credential is refused, and mints nothing',
+      noCredential.status === 303 &&
+        landingPath(noCredential) === '/login?google=error' &&
+        setCookieNamed(noCredential, 'pos_session') === null,
+      `${noCredential.status} ${landingPath(noCredential)}`,
+    );
+    const mismatched = await new Session(() => base).postUrlEncoded(
+      '/api/v1/auth/google/redirect',
+      {
+        credential: await googleIdToken('accept-google-csrf'),
+        g_csrf_token: 'the-value-in-the-body',
+      },
+      { cookie: 'g_csrf_token=the-value-in-the-cookie' },
+    );
+    check(
+      'and a landing whose CSRF value disagrees with its cookie is refused too',
+      mismatched.status === 303 &&
+        landingPath(mismatched) === '/login?google=error' &&
+        setCookieNamed(mismatched, 'pos_session') === null,
+      `${mismatched.status} ${landingPath(mismatched)}`,
+    );
   }
 
   /* --------------------- 17. A customer moves their number, and proves it */
@@ -2811,20 +2947,6 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
      * flow that is *about* having no session has to bring one that has none.
      */
     const stranger = new Session(() => base);
-    /**
-     * Where a landing redirect points, as a path.
-     *
-     * Parsed rather than compared as a string, because the host half is deliberately not
-     * this scratch server: every landing is built from `PUBLIC_BASE_URL`, which on a box
-     * that has one is the shop's real address. That is the behaviour under test (a
-     * customer behind a proxy must not be sent to `localhost`), so the assertion is on the
-     * path and the query rather than on the origin.
-     */
-    const landing = (response: Response): string => {
-      const url = new URL(response.headers.get('location') ?? 'http://missing.invalid');
-      return `${url.pathname}${url.search}`;
-    };
-
     /*
      * The press, read out of the page the customer is looking at: the button's own `href`
      * *is* LINE's authorization address (ADR 0030 §1, amended), so the address this run
@@ -2875,8 +2997,8 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
     check(
       'an unknown LINE account is sent to the phone step, not back to the sign-in form',
-      arrival.status === 307 && landing(arrival) === '/login?line=claim',
-      landing(arrival),
+      arrival.status === 307 && landingPath(arrival) === '/login?line=claim',
+      landingPath(arrival),
     );
     const handoff = (arrival.headers.getSetCookie?.() ?? []).find((cookie) =>
       cookie.startsWith('pos_line_pending='),
@@ -2930,8 +3052,8 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
     check(
       'a LINE account that is bound signs straight in, on the bare link too',
-      signIn.status === 307 && landing(signIn) === '/shop/products',
-      landing(signIn),
+      signIn.status === 307 && landingPath(signIn) === '/shop/products',
+      landingPath(signIn),
     );
     check(
       'and that arrival carries a session of its own',
@@ -2951,21 +3073,36 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
     check(
       'a binding arrival with no session says so instead of bouncing silently',
-      landing(bindArrival) === '/login?line=session',
-      landing(bindArrival),
+      landingPath(bindArrival) === '/login?line=session',
+      landingPath(bindArrival),
     );
 
     // A callback with a state we did not mint is a request somebody else started. Both
-    // halves matter: the answer names no customer, and no session comes back with it.
+    // halves matter: the answer names no customer, and no session comes back with it — and
+    // the word it is answered with is the *repeatable* one rather than the failure one, since
+    // nothing LINE did went wrong and the customer can simply press again.
     const forged = await stranger.raw(
       `/api/v1/auth/line/callback?code=${encodeURIComponent(lineCode(newSubject))}&state=not-a-state`,
     );
     check(
-      'a callback with a state we did not mint is refused',
+      'a callback with a state we did not mint is refused as a confirmation to repeat',
       forged.status === 307 &&
-        landing(forged) === '/login?line=error' &&
+        landingPath(forged) === '/login?line=expired' &&
         !(forged.headers.getSetCookie?.() ?? []).some((cookie) => cookie.startsWith('pos_session=')),
-      landing(forged),
+      landingPath(forged),
+    );
+
+    /*
+     * The half the shop's operator reported, from opening the callback address to check that
+     * it answers: with no `code`, no `state` and no error of LINE's, nothing started, so there
+     * is nothing to report. This used to answer `/login?line=error`, and the front door read
+     * that as "เข้าสู่ระบบด้วย LINE ไม่สำเร็จ" — a sentence about a walk nobody took.
+     */
+    const bare = await stranger.raw('/api/v1/auth/line/callback');
+    check(
+      'the callback opened with nothing on it reports no failure, because none happened',
+      bare.status === 307 && landingPath(bare) === '/login',
+      landingPath(bare),
     );
 
     /*
@@ -3012,8 +3149,8 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
     check(
       'and the retry carries the customer through, which is the whole point of it',
-      secondAttempt.status === 307 && landing(secondAttempt) === '/login?line=claim',
-      landing(secondAttempt),
+      secondAttempt.status === 307 && landingPath(secondAttempt) === '/login?line=claim',
+      landingPath(secondAttempt),
     );
 
     const retriedAgain = await stranger.raw(
@@ -3021,8 +3158,8 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
     check(
       'but a retry that fails too lands on the front door, so the remedy cannot loop',
-      retriedAgain.status === 307 && landing(retriedAgain) === '/login?line=error',
-      landing(retriedAgain),
+      retriedAgain.status === 307 && landingPath(retriedAgain) === '/login?line=error',
+      landingPath(retriedAgain),
     );
   }
 
@@ -3125,17 +3262,9 @@ async function main(): Promise<void> {
       process.env.OTP_WEBHOOK_URL = `http://127.0.0.1:${otpPort}/otp`;
 
       // The Google door, pointed at a JWKS this run serves, before the app boots.
-      const jwksPort = await freePort(3313);
-      const pair = await generateKeyPair('RS256');
-      googlePrivateKey = pair.privateKey;
-      const publicJwk = await exportJWK(pair.publicKey);
-      googleJwks = createServer((_request, response) => {
-        response.writeHead(200, { 'content-type': 'application/json' });
-        response.end(JSON.stringify({ keys: [publicJwk] }));
-      });
-      await new Promise<void>((resolve) => googleJwks!.listen(jwksPort, '127.0.0.1', resolve));
-      process.env.GOOGLE_CLIENT_ID = GOOGLE_TEST_CLIENT_ID;
-      process.env.GOOGLE_JWKS_URL = `http://127.0.0.1:${jwksPort}/certs`;
+      googleStub = await startGoogleStub(GOOGLE_TEST_CLIENT_ID);
+      process.env.GOOGLE_CLIENT_ID = googleStub.clientId;
+      process.env.GOOGLE_JWKS_URL = googleStub.jwksUrl;
 
       /*
        * The LINE web door (ADR 0030 §1) exchanges its code at a local endpoint, but
@@ -3197,9 +3326,9 @@ async function main(): Promise<void> {
       await new Promise<void>((resolve) => otpGateway!.close(() => resolve()));
       otpGateway = null;
     }
-    if (googleJwks !== null) {
-      await new Promise<void>((resolve) => googleJwks!.close(() => resolve()));
-      googleJwks = null;
+    if (googleStub !== null) {
+      await googleStub.close();
+      googleStub = null;
     }
     if (lineToken !== null) {
       await new Promise<void>((resolve) => lineToken!.close(() => resolve()));
@@ -3227,9 +3356,9 @@ async function main(): Promise<void> {
       await new Promise<void>((resolve) => otpGateway!.close(() => resolve()));
       otpGateway = null;
     }
-    if (googleJwks !== null) {
-      await new Promise<void>((resolve) => googleJwks!.close(() => resolve()));
-      googleJwks = null;
+    if (googleStub !== null) {
+      await googleStub.close();
+      googleStub = null;
     }
     if (lineToken !== null) {
       await new Promise<void>((resolve) => lineToken!.close(() => resolve()));
