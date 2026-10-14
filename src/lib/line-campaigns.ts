@@ -264,9 +264,11 @@ export async function dueCampaignBatches(limit = 20, db: Db = prisma): Promise<D
     /*
      * A campaign's batches in their own order, oldest campaign first: sending batch 3 of a
      * campaign before batch 1 is not wrong (each is an independent request to 500 people) but
-     * it makes a shop's own history read backwards, and `id` alone is a random uuid ordering.
+     * it makes a shop's own history read backwards. The campaign's own `created_at` is what
+     * says "oldest" — `campaign_id` would be a random uuid ordering, and the batch's `id` the
+     * same, so the only column that means the age of a campaign is the one on the campaign.
      */
-    orderBy: [{ campaign_id: 'asc' }, { batch_index: 'asc' }],
+    orderBy: [{ campaign: { created_at: 'asc' } }, { batch_index: 'asc' }],
     take: limit,
     select: {
       id: true,

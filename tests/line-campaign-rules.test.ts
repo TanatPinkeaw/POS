@@ -6,12 +6,15 @@
 // a stub in LINE's place: the numbers the composer shows come from LINE's own two endpoints,
 // and the interesting cases (a 429, an unreadable body, no token at all, no limit) are
 // failures, not happy paths.
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it } from 'vitest';
 
 import {
   MAX_RECIPIENTS_PER_REQUEST,
   campaignAffordable,
   campaignAuditPreview,
+  campaignBatchCount,
   campaignCostMessages,
   campaignStatusFromBatches,
   eligibleCampaignRecipients,
@@ -101,6 +104,29 @@ describe('how the list splits into requests', () => {
   it('keeps the order it was given, so a stored batch matches a recomputed one', () => {
     const batches = planCampaignBatches(['Uc', 'Ua', 'Ub'], 2);
     expect(batches).toEqual([['Uc', 'Ua'], ['Ub']]);
+  });
+
+  it('counts those requests without splitting anything, for the screen that previews it', () => {
+    // The composer says "จะส่งเป็น 3 ชุด" before anything is written, and that number has to
+    // be the split's own length rather than a second `ceil` written next to it.
+    expect(campaignBatchCount(0)).toBe(0);
+    expect(campaignBatchCount(500)).toBe(1);
+    expect(campaignBatchCount(501)).toBe(2);
+    expect(campaignBatchCount(1250)).toBe(3);
+  });
+
+  it('names the token it needs, not the outbox channel, where it says what is missing', () => {
+    // The composer refuses a send with a sentence an admin acts on, and the variable that
+    // sentence names has to be the one a campaign actually needs (ADR 0032 §6):
+    // `NOTIFY_LINE_TOKEN`. `NOTIFY_CHANNEL` decides where the *shop's own* alerts go, so
+    // naming it here would send an admin to the wrong line of `.env`.
+    const console = readFileSync('src/components/admin/LineConsole.tsx', 'utf8');
+    const blocked = console.slice(
+      console.indexOf('const blockedReason'),
+      console.indexOf('async function send'),
+    );
+    expect(blocked).toContain('NOTIFY_LINE_TOKEN');
+    expect(blocked).not.toContain('NOTIFY_CHANNEL');
   });
 });
 

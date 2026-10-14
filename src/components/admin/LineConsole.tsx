@@ -41,7 +41,7 @@ import {
 } from '@/components/ds';
 import { apiPost } from '@/lib/client-api';
 import { probeImageUrl } from '@/lib/image-url';
-import { campaignAffordable, planCampaignBatches } from '@/lib/line-campaign-rules';
+import { campaignAffordable, campaignBatchCount } from '@/lib/line-campaign-rules';
 import { linePromoBlockSentence, type LinePromoBlock } from '@/lib/line-promo-consent';
 import type { LineQuota } from '@/lib/line-quota';
 
@@ -136,13 +136,14 @@ export function LineConsole({
   );
 
   const cost = recipients;
-  const batches = useMemo(() => planCampaignBatches(Array.from({ length: cost })).length, [cost]);
+  // The composer's own preview of the split, from the same pure function the planner uses.
+  const batches = useMemo(() => campaignBatchCount(cost), [cost]);
   const affordable = campaignAffordable(quota?.remaining ?? null, cost);
   const canSend = lineConfigured && cost > 0 && body.trim().length > 0 && affordable;
 
   /** Why the send button is disabled, said rather than left to be inferred (rule 3). */
   const blockedReason = !lineConfigured
-    ? 'ร้านนี้ยังไม่ได้ตั้งค่าช่องทาง LINE — ตั้งค่า NOTIFY_CHANNEL=line พร้อมโทเคนของช่องทางก่อน'
+    ? 'ร้านนี้ยังไม่ได้ตั้งค่าโทเคนของ LINE — ใส่ NOTIFY_LINE_TOKEN (โทเคนของช่องทาง Messaging API) ก่อนจึงจะส่งโปรโมชันได้'
     : cost === 0
       ? 'ยังไม่มีลูกค้าที่รับโปรโมชันได้ — ต้องผูกบัญชี LINE เพิ่มเพื่อนร้าน และกดยินยอมรับโปรโมชัน'
       : !affordable

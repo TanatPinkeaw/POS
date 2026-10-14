@@ -100,6 +100,22 @@ export function planCampaignBatches(
 }
 
 /**
+ * How many requests a send will be, which is the number the composer shows.
+ *
+ * Derived from the same split rather than from `Math.ceil` written a second time: the screen
+ * says "3 ชุด", the planner makes 3 batches, and the difference between the two would be a
+ * number a shop was told and a number LINE received. `planCampaignBatches` stays the one
+ * place that decides where the boundaries fall; this is only its length.
+ */
+export function campaignBatchCount(
+  recipients: number,
+  maxPerRequest: number = MAX_RECIPIENTS_PER_REQUEST,
+): number {
+  return planCampaignBatches(new Array<string>(Math.max(0, Math.trunc(recipients))), maxPerRequest)
+    .length;
+}
+
+/**
  * What a send costs, in LINE messages.
  *
  * One message **per recipient**, not per request: LINE counts multicast per recipient, which
