@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { Button, InlineNotice, TextField } from '@/components/ds';
+import { Button, InlineNotice, TextField, ToggleField } from '@/components/ds';
 import { apiPost } from '@/lib/client-api';
 import { type GoogleUxMode, googleInitializeConfig, googleUxModeFor } from '@/lib/google-door';
 import { CURRENT_CUSTOMER_NOTICE_VERSION } from '@/lib/privacy-notice';
@@ -416,21 +416,46 @@ function LineDoor({
  * be the takeover ADR 0020 §4 refuses. The code goes to the number being anchored to and
  * is consumed by `bindLineToCustomer` before anything is written.
  *
- * The LINE side of the proof is not in this form at all — it is in the httpOnly handoff
- * cookie the callback left behind, which is why there is no token in this payload and why
- * a browser that lost the cookie is told to start again rather than being let through.
+ * **The LINE half of the proof arrives in one of two shapes, and this form does not choose
+ * between them.** From the redirect flow it is the httpOnly handoff cookie the callback left
+ * behind, and this payload carries no token at all. From the in-LINE entry (`/line`, ADR 0032)
+ * it is the id token the LIFF SDK handed the page, passed in as `idToken` — the route prefers
+ * an id token when the caller sent one and falls back to the cookie, which is why a browser
+ * holding both is fine. The OTP is demanded either way: it proves the *number*, and a LINE
+ * account can be attached to the wrong person without it.
+ *
+ * Exported because the in-LINE entry renders this same step: one form, one rule, whether the
+ * customer is reading it in LINE's browser or in the front door's `?line=claim` step.
  */
-function LineClaimStep({
+export function LineClaimStep({
   onSignedIn,
+  idToken,
   onRestart,
 }: {
   onSignedIn: (path: string) => void;
+  /**
+   * The id token this browser was given by the LIFF SDK, when it has one.
+   *
+   * A prop rather than a read inside the form, because only the entry knows how it obtained
+   * the token and the front door's own claim step has none — which is exactly the pair of
+   * shapes `provedLineIdentity` was written to accept.
+   */
+  idToken?: string | null;
   onRestart: () => void;
 }) {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
+  /**
+   * The second consent, off until the customer turns it on (ADR 0032 §5).
+   *
+   * Unchecked by default, and sent as its **own request** after the sign-in succeeds rather
+   * than inside the binding call: a first LINE sign-in attaches a second door to a row that
+   * may already hold points and history, and nothing about that act is agreement to be sent
+   * promotions. One request cannot be two acts, so this one makes a second.
+   */
+  const [promoOptIn, setPromoOptIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -455,10 +480,27 @@ function LineClaimStep({
     setSaving(true);
     try {
       const result = await apiPost<SignupResponse>('/api/v1/auth/line/link', {
+        // Only when the entry holds one: an empty string would be a *sent* id token that
+        // verifies against nothing, which the route would answer as LINE's failure rather
+        // than as the handoff cookie it could have used.
+        ...(idToken ? { idToken } : {}),
         phone: phone.trim(),
         code: code.trim(),
         noticeVersion: CURRENT_CUSTOMER_NOTICE_VERSION,
       });
+      /*
+       * The promotion choice, now that a session exists. A failure here does **not** block
+       * the sign-in: the customer is already through the door, and the preference can be set
+       * again on their account's LINE card — whereas a sign-in refused over an optional
+       * marketing toggle would be a customer locked out by a checkbox.
+       */
+      if (promoOptIn) {
+        try {
+          await apiPost('/api/v1/account/line', { promoConsent: true });
+        } catch {
+          // Deliberately silent: the account page is where this can be seen and retried.
+        }
+      }
       onSignedIn(result.redirectTo);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'ผูกบัญชี LINE ไม่สำเร็จ');
@@ -523,6 +565,20 @@ function LineClaimStep({
       )}
 
       <NoticeAcknowledge acknowledged={acknowledged} onChange={setAcknowledged} />
+
+      {/*
+        The second consent, offered where the customer is already reading about their
+        account (ADR 0032 §5) and never as part of the acknowledge above: that one is what
+        the shop must have before it may contact them at all, this one is a different
+        purpose that a customer may simply not want.
+      */}
+      <ToggleField
+        id="linePromoOptIn"
+        label="ยินยอมรับโปรโมชันจากร้านทาง LINE"
+        checked={promoOptIn}
+        onChange={setPromoOptIn}
+        help="ไม่บังคับ — เลือกได้ตลอดเวลาในหน้าบัญชีของฉัน และไม่เลือกก็ยังได้รับแจ้งเตือนออเดอร์ตามปกติ"
+      />
 
       <Button
         variant="primary"

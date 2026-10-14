@@ -34,7 +34,8 @@ export type AuditAction =
   | 'consignment_submission_approved'
   | 'consignment_submission_rejected'
   | 'line_bound'
-  | 'line_unbound';
+  | 'line_unbound'
+  | 'line_campaign_sent';
 
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'void_order',
@@ -60,6 +61,7 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'consignment_submission_rejected',
   'line_bound',
   'line_unbound',
+  'line_campaign_sent',
 ];
 
 /**
@@ -93,6 +95,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   consignment_submission_rejected: 'ปฏิเสธคำขอฝากขาย',
   line_bound: 'ผูกบัญชี LINE',
   line_unbound: 'ยกเลิกบัญชี LINE',
+  line_campaign_sent: 'ส่งโปรโมชันทาง LINE',
 };
 
 /**
@@ -162,6 +165,12 @@ export const AUDIT_ACTION_TONES: Record<AuditAction, AuditTone> = {
   // may sign in as this customer" changed — but nothing moved and nobody got in.
   line_bound: 'info',
   line_unbound: 'info',
+  /*
+   * The one act here that reaches every customer at once and cannot be taken back, so it is
+   * read the way money leaving is read: who sent it, to how many. Not `warning` — nothing is
+   * wrong with a campaign — but never buried among the bookkeeping either.
+   */
+  line_campaign_sent: 'danger',
 };
 
 /**

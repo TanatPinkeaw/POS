@@ -16,7 +16,6 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model credit_notes
  * *
  *  * The document that reverses a paid sale — a full-amount credit note.
- *  *
  *  * Its own table rather than a flag on `orders`, because it is a *document*: it
  *  * has its own number from its own series, its own tax figures as issued, its own
  *  * reason, and two people named on it. A sale's total is a fact about the sale;
@@ -24,7 +23,6 @@ import type * as Prisma from "../internal/prismaNamespace"
  *  * customer, and the two must be able to disagree later — which is exactly what
  *  * a partial refund would require, and why the figures are copied here rather
  *  * than read back through the order.
- *  *
  *  * `order_id` is UNIQUE. That is the double-refund guard that survives everything
  *  * else: `canTransition` stops the API path, and this index stops a race, a
  *  * retried request, and a future code path that forgets to ask.
@@ -1966,7 +1964,8 @@ export type $credit_notesPayload<ExtArgs extends runtime.Types.Extensions.Intern
     issuer: Prisma.$usersPayload<ExtArgs>
     approver: Prisma.$usersPayload<ExtArgs> | null
     /**
-     * * The money legs of this document. At least one for any way of paying out.
+     * *
+     *    * The money legs of this document. At least one for any way of paying out.
      */
     payments: Prisma.$paymentsPayload<ExtArgs>[]
     /**
@@ -1980,11 +1979,13 @@ export type $credit_notesPayload<ExtArgs extends runtime.Types.Extensions.Intern
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     /**
-     * * `CN-2026-000001`, from the shop's own gapless series.
+     * *
+     *    * `CN-2026-000001`, from the shop's own gapless series.
      */
     document_number: string
     /**
-     * * The sale being reversed. One receipt may carry several notes.
+     * *
+     *    * The sale being reversed. One receipt may carry several notes.
      */
     order_id: string
     /**
@@ -2010,6 +2011,9 @@ export type $credit_notesPayload<ExtArgs extends runtime.Types.Extensions.Intern
      *    * identically forever — and so a later partial refund, which would carry
      *    * *different* figures, is not a schema change.
      * /**
+     *    * /**
+     *    * /**
+     *    * /**
      *    * What this note's lines were charged, before the discount it accounts for.
      *    * A full reversal copies the sale's subtotal; a partial one is the pro-rata share
      *    * of the lines coming back. Stored rather than summed from the items so that the

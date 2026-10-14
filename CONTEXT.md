@@ -34,6 +34,8 @@ of the identifier.
 | **ส่วนแบ่ง** | The consignor's **share** of a consigned sale — a percentage of the net, excluding VAT. | `products.consignor_share_percent` (ADR 0023) |
 | **ยอดค้างจ่าย** | The **payable** the shop owes a consignor: accrued by sales, reversed by refunds and payouts. | `consignor_payables` (ADR 0023) |
 | **ใบเสร็จอิเล็กทรอนิกส์** | The **electronic receipt**: the slip drawn as an image from the order, offered to the customer for the last month. | generated, not stored (ADR 0021) |
+| **ข้อความจากลูกค้า** | A customer's own message to the shop on LINE — kept, so a conversation the shop already had is not invisible to it. | `line_messages` (ADR 0032) |
+| **โปรโมชัน / แคมเปญ** | A **campaign**: one message the shop sends to the customers who consented to promotions *and* added it as a friend. Sent once, and the screen says what it costs. | `line_campaigns`, `line_campaign_batches` (ADR 0032) |
 
 ## The words the code uses that a shop does not
 
@@ -71,6 +73,30 @@ of the identifier.
   is the shop's half of it — LINE delivers a push only to friends of the Official
   Account, so `line_friends` is what the webhook keeps and the planner reads beside
   the consent. Say which of the four; "LINE ของลูกค้า" alone has said all of them.
+- **LIFF** — LINE Front-end Framework: an app registered **inside** the LINE Login
+  channel whose endpoint URL is a route of this deployment. The **in-LINE entry** is
+  `/line`, and it is a **door, not an identity** (ADR 0032 §1): the customer arrives
+  holding a LINE account, the entry turns that into the same session every other screen
+  uses, and the phone is still proved by OTP. Never an account, never a second identity
+  — and when `LINE_LIFF_ID` is unset there is no entry at all.
+- **Promo consent** — the **second** consent, and not the first (ADR 0032 §5).
+  `line_consent_at` means "tell me my order is ready"; promotion consent
+  (`line_promo_consent_at` / `line_promo_withdrawn_at`, latest wins) is a separate
+  purpose, offered as its own act and never bundled into binding. Say *which* consent:
+  "ยินยอม" alone has now said two things.
+- **Campaign** — one message the shop sends to its own consented, friended customers
+  (ADR 0032 §6–7). Written and audited first, sent afterwards by the worker in batches of
+  at most 500 through multicast, **at most once per batch**, by an admin only. Distinct from
+  a **notification**, which is one fact for one recipient: a campaign is the one act here
+  that reaches everybody at once and cannot be taken back.
+- **Message log** — the customers' own messages, recorded by the webhook on LINE's own
+  message id so a redelivery is a no-op, and text-only: any other kind is stored as its
+  kind and no bytes (ADR 0032 §3). Read on the customer's card at `/admin/members` and, as
+  a fact, in the shop's own group.
+- **Burst window** — the ten minutes in which one customer's several messages are **one**
+  fact for the shop rather than five (ADR 0032 §4). A duration, not a calendar boundary, so
+  two shops on two clocks agree; enforced by a unique `(kind, dedupe_key)` rather than by a
+  read. A **group push costs one message per member**, which is why the window exists.
 
 ## What this session has settled so far
 

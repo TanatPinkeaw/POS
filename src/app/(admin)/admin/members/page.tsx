@@ -1,6 +1,7 @@
 import { MembersManager, type MemberRow } from '@/components/admin/MembersManager';
 import { PageHeader, Stack } from '@/components/ds';
 import { bangkokDateString } from '@/lib/bangkok-time';
+import { messageCountsForUsers } from '@/lib/line-messages';
 import { listMembers } from '@/lib/members';
 import { requireShellUser } from '@/lib/shell';
 
@@ -19,6 +20,13 @@ export default async function AdminMembersPage() {
 
   const members = await listMembers();
 
+  /*
+   * One grouped query for the whole list rather than one per row, and only a count — the
+   * messages themselves are behind a button (ADR 0032 §8). A shop with no LINE customers
+   * gets an empty map and pays one query that finds nothing.
+   */
+  const messageCounts = await messageCountsForUsers(members.map((member) => member.id));
+
   const initialMembers: MemberRow[] = members.map((member) => ({
     id: member.id,
     fullName: member.fullName,
@@ -30,6 +38,7 @@ export default async function AdminMembersPage() {
     // Formatted here rather than in the component so the browser's own time zone
     // cannot turn "joined on the 1st" into the 31st of the month before.
     joinedOn: bangkokDateString(new Date(member.joinedAt)),
+    lineMessageCount: messageCounts.get(member.id) ?? 0,
   }));
 
   return (

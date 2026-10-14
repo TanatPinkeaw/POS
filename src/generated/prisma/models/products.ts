@@ -1916,7 +1916,6 @@ export type $productsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
      * *
      *    * How much of this product the till may **not** sell while it is offline
      *    * (ADR 0019, the weakened promise).
-     *    *
      *    * Online, "never oversell" is one conditional `UPDATE` (`inventory.ts`). Offline it
      *    * cannot be, because the tally is a snapshot of what the shelf held when the device
      *    * last synced. So a shop sets a reserve per product and the device stops selling it

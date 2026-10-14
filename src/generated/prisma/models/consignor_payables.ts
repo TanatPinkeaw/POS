@@ -16,14 +16,12 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model consignor_payables
  * *
  *  * What the shop owes each consignor (ADR 0023 §2).
- *  *
  *  * An append-only ledger the way `point_transactions` is — a credit when consigned
  *  * goods sell, a debit when a refund claws the share back or a payout hands it over,
  *  * and the balance is the *sum* rather than a column that can drift away from the rows.
  *  * `amount_thb` is signed, so the arithmetic is one addition and the migration's CHECK
  *  * refuses a row whose sign disagrees with its kind (a sale that debits, a payout that
  *  * credits).
- *  *
  *  * The money path itself is untouched: the sale is the shop's own (its receipt, its
  *  * series, its VAT, ADR 0023 §3), and this ledger records only the debt that sale
  *  * created. That is what keeps the share from becoming a second inventory and a second
@@ -1344,15 +1342,18 @@ export type $consignor_payablesPayload<ExtArgs extends runtime.Types.Extensions.
     consignor_user_id: string
     kind: $Enums.consignor_payable_kind
     /**
-     * * Signed: a sale credits, a refund and a payout debit.
+     * *
+     *    * Signed: a sale credits, a refund and a payout debit.
      */
     amount_thb: runtime.Decimal
     /**
-     * * The sale or refund this movement came from; null on a payout.
+     * *
+     *    * The sale or refund this movement came from; null on a payout.
      */
     order_id: string | null
     /**
-     * * The line that sold, so a refund can name exactly what went back.
+     * *
+     *    * The line that sold, so a refund can name exactly what went back.
      */
     order_item_id: bigint | null
     product_id: string | null

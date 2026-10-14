@@ -57,25 +57,23 @@ export type shops = Prisma.shopsModel
  * Model number_blocks
  * *
  *  * A range of the shop's numbers lent to a device (ADR 0019).
- *  *
  *  * A browser cannot bump `receipt_running_number` inside the sale's transaction, so a
  *  * device that may lose its connection is handed a range in advance and issues from it
  *  * itself. This row is that loan: which series, which numbers, who it went to, and how
  *  * far it got.
- *  *
  *  * Four properties are deliberate, and three of them are the database's rather than a
  *  * convention's:
  *  * * `day` is set on the call-number series and null on the receipt series — a CHECK
- *  *   says so. Call numbers restart every Bangkok day; the tax series does not.
+ *  * says so. Call numbers restart every Bangkok day; the tax series does not.
  *  * * **At most one open block per series (per day)** is a partial unique index, so two
- *  *   devices racing to borrow the same day's numbers cannot both win.
+ *  * devices racing to borrow the same day's numbers cannot both win.
  *  * * `reported_at` and `cancelled_at` exclude each other, and a cancelled block may not
- *  *   have been used. A block with usage is *reported* (how far it got); a block nobody
- *  *   touched is *cancelled* (all of it comes back). Stating both in CHECKs is what stops
- *  *   a later screen from inventing a third state.
+ *  * have been used. A block with usage is *reported* (how far it got); a block nobody
+ *  * touched is *cancelled* (all of it comes back). Stating both in CHECKs is what stops
+ *  * a later screen from inventing a third state.
  *  * * `last_used_number` is advanced by every bill the device issues, whether it reached
- *  *   the server at the time or is replaying later — which is what makes the freeze in
- *  *   `allocateReceiptNumber` correct rather than merely cautious.
+ *  * the server at the time or is replaying later — which is what makes the freeze in
+ *  * `allocateReceiptNumber` correct rather than merely cautious.
  */
 export type number_blocks = Prisma.number_blocksModel
 /**
@@ -87,13 +85,11 @@ export type users = Prisma.usersModel
  * Model line_friends
  * *
  *  * Whether this customer is a friend of the shop's Official Account.
- *  *
  *  * A LINE push is only delivered to friends: an unfollowed user's push is refused
  *  * with a 200, so planning a message for one would burn the outbox's whole retry
  *  * schedule against a door nobody is behind. The webhook's `follow` event writes a
  *  * row here, `unfollow` clears it, and the customer planner reads it beside the
  *  * consent it sits beside (ADR 0030 §2).
- *  *
  *  * Keyed by the subject rather than the user id so an unbound customer (one still
  *  * walking the first sign-in) can be followed before they finish binding, and the
  *  * row is here waiting when they do. Deliberately a standalone table with no
@@ -151,29 +147,24 @@ export type audit_logs = Prisma.audit_logsModel
  * Model notice_acknowledgements
  * *
  *  * That a customer was shown the privacy notice, and which text they saw.
- *  *
  *  * The Act requires the shop to *inform* its customers what it does with their data, and
  *  * this is the record that it did. It sits next to `audit_logs` because it is the same
  *  * kind of thing — an immutable line a shop may later have to produce — with two
  *  * differences that are deliberate.
- *  *
  *  * **Its actor is the customer, not staff.** `audit_logs` records what a person *did*
  *  * inside the system; this records something that happened *to* them. So there is no
  *  * `authorized_by`, and the nullable `actor_user_id` of `audit_logs` is not a model here:
  *  * a customer is always present.
- *  *
  *  * **It does not cascade.** Every other table pointing at a person cascades, because
  *  * losing the person should lose their rows. This one is RESTRICT, because the record
  *  * that somebody was informed has to outlive the account it is about — and it can,
  *  * because it holds an id, a version and a date, and nothing else about them. That is
  *  * the honest answer to a deletion request that reaches this far: the proof outlives the
  *  * profile, the profile does not outlive itself.
- *  *
  *  * **Append-only, like `audit_logs`.** The notice will be edited — its retention periods
  *  * follow the shop's configuration — and a record that the next signup overwrites is not
  *  * evidence. A customer who acknowledged September's text keeps that row after the
  *  * notice is revised, so the shop can still say what they were shown on the day.
- *  *
  *  * `notice_version` is the effective date of the text (`src/lib/privacy-notice.ts`), not
  *  * a counter, so it is a fact about the document rather than about how many times the
  *  * repository has edited it — two shops running the same build can disagree about the
@@ -184,19 +175,16 @@ export type notice_acknowledgements = Prisma.notice_acknowledgementsModel
  * Model rate_limit_buckets
  * *
  *  * One rate limiter bucket, shared by every process (ADR 0012).
- *  *
  *  * The limiter's memory used to be a `Map` in the process, which was defensible for
  *  * one listener and became two limiters the moment there were two — each half as
  *  * strict as the configuration says, and both forgotten by a restart. A row per
  *  * bucket is the smallest thing that fixes both, and this deployment already has the
  *  * database.
- *  *
  *  * The key is the same string the policy layer composes (`policy|address` or
  *  * `policy|address|scope`), so the row a caller is counted in is the row the pure
  *  * decision reasons about. `tokens` is fractional on purpose: refill is continuous,
  *  * so a bucket genuinely holds 3.4 attempts. `updated_at` is written with the
  *  * *database's* clock, which is the only clock several processes agree on.
- *  *
  *  * No index beyond the primary key: the table is one row per caller who has been
  *  * limited lately, and the sweep deletes by `updated_at` on a table small enough to
  *  * scan. The column is wider than `MAX_BUCKET_KEY_LENGTH` so that cap can be raised
@@ -240,7 +228,6 @@ export type payments = Prisma.paymentsModel
  * Model credit_notes
  * *
  *  * The document that reverses a paid sale — a full-amount credit note.
- *  *
  *  * Its own table rather than a flag on `orders`, because it is a *document*: it
  *  * has its own number from its own series, its own tax figures as issued, its own
  *  * reason, and two people named on it. A sale's total is a fact about the sale;
@@ -248,7 +235,6 @@ export type payments = Prisma.paymentsModel
  *  * customer, and the two must be able to disagree later — which is exactly what
  *  * a partial refund would require, and why the figures are copied here rather
  *  * than read back through the order.
- *  *
  *  * `order_id` is UNIQUE. That is the double-refund guard that survives everything
  *  * else: `canTransition` stops the API path, and this index stops a race, a
  *  * retried request, and a future code path that forgets to ask.
@@ -285,48 +271,42 @@ export type payment_intents = Prisma.payment_intentsModel
  * Model inbound_payments
  * *
  *  * Money the bank said arrived, whether or not we can say which bill it paid.
- *  *
  *  * This table exists because the alternative is silence. A notification that names
  *  * no QR, or an amount nobody is waiting for, is still money in the shop's account:
  *  * dropping it would leave the shop with a bank balance it cannot explain, and
  *  * guessing at a bill would put somebody else's payment on a customer's receipt.
  *  * So it is recorded, with the reason it was refused, and shown to an owner.
- *  *
  *  * Two columns carry the whole design:
- *  *
- *  *   * `external_id` is the bank's own identifier for the message (a mail's
- *  *     Message-ID), unique per `source`. A bridge that retries must not record the
- *  *     same transfer twice, and the database is what guarantees it rather than the
- *  *     bridge's bookkeeping.
- *  *   * `received_at` is the *bank's* instant. Payability is measured against it,
- *  *     never against the moment the bridge got round to posting, so a notification
- *  *     delayed in a mailbox is still judged by when the money actually moved.
+ *  * * `external_id` is the bank's own identifier for the message (a mail's
+ *  * Message-ID), unique per `source`. A bridge that retries must not record the
+ *  * same transfer twice, and the database is what guarantees it rather than the
+ *  * bridge's bookkeeping.
+ *  * * `received_at` is the *bank's* instant. Payability is measured against it,
+ *  * never against the moment the bridge got round to posting, so a notification
+ *  * delayed in a mailbox is still judged by when the money actually moved.
  */
 export type inbound_payments = Prisma.inbound_paymentsModel
 /**
  * Model notifications
  * *
  *  * A message that should go out, written in the same transaction that made it true.
- *  *
  *  * The order matters and is the whole point of the table. `markOrderReady` commits
  *  * the order and this row together, so a process that dies between the commit and
  *  * the send loses nothing: the fact is on disk before anything tries to deliver it,
  *  * and the worker picks it up on its next pass. Announcing after the fact with a
  *  * `fetch` in the request path — which is what most systems do first — turns a
  *  * dropped connection into a customer who is never told their parcel is waiting.
- *  *
  *  * Three details carry the design:
- *  *
- *  *   * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
- *  *     about one order, so a route that is retried, a worker that runs twice, and a
- *  *     double click all produce one message.
- *  *   * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
- *  *     itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
- *  *     `next_attempt_at` forward *before* it tries, so a worker killed mid-send
- *  *     leaves a row that comes back rather than one stuck in flight forever.
- *  *   * `body` is the message as it will be sent, not a template name. Rendered
- *  *     once, when the fact was fresh, so an edit to the wording tomorrow cannot
- *  *     rewrite what a customer was told yesterday.
+ *  * * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
+ *  * about one order, so a route that is retried, a worker that runs twice, and a
+ *  * double click all produce one message.
+ *  * * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
+ *  * itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
+ *  * `next_attempt_at` forward *before* it tries, so a worker killed mid-send
+ *  * leaves a row that comes back rather than one stuck in flight forever.
+ *  * * `body` is the message as it will be sent, not a template name. Rendered
+ *  * once, when the fact was fresh, so an edit to the wording tomorrow cannot
+ *  * rewrite what a customer was told yesterday.
  */
 export type notifications = Prisma.notificationsModel
 /**
@@ -350,14 +330,12 @@ export type display_devices = Prisma.display_devicesModel
  * Model consignor_payables
  * *
  *  * What the shop owes each consignor (ADR 0023 §2).
- *  *
  *  * An append-only ledger the way `point_transactions` is — a credit when consigned
  *  * goods sell, a debit when a refund claws the share back or a payout hands it over,
  *  * and the balance is the *sum* rather than a column that can drift away from the rows.
  *  * `amount_thb` is signed, so the arithmetic is one addition and the migration's CHECK
  *  * refuses a row whose sign disagrees with its kind (a sale that debits, a payout that
  *  * credits).
- *  *
  *  * The money path itself is untouched: the sale is the shop's own (its receipt, its
  *  * series, its VAT, ADR 0023 §3), and this ledger records only the debt that sale
  *  * created. That is what keeps the share from becoming a second inventory and a second
@@ -368,13 +346,11 @@ export type consignor_payables = Prisma.consignor_payablesModel
  * Model consignor_payouts
  * *
  *  * A settlement of what the shop owed a consignor (ADR 0023 §6).
- *  *
  *  * The second money-out document in this system, and deliberately a document rather
  *  * than a flag on the ledger: the ledger says "this much is owed", and a payout says
  *  * "that debt was settled like this, on this day, by this person". The ledger's payout
  *  * row points here (`consignor_payables.payout_id`), so the arithmetic and the paper
  *  * behind it can never be separated.
- *  *
  *  * `method` is the same enum a refund uses, and the same rule applies: `cash` comes out
  *  * of an open drawer and carries its `shift_id`; `promptpay` is a transfer the admin
  *  * already made in the shop's own app and touches no drawer, so it carries none. The
@@ -390,11 +366,9 @@ export type consignment_submissions = Prisma.consignment_submissionsModel
  * Model consignment_documents
  * *
  *  * A photo or a document the member attached, kept as a link (ADR 0014 extended).
- *  *
  *  * The bytes stay where the member put them — a Drive folder, their phone's share
  *  * sheet — because this deployment holds no files and could not back up or vouch for
  *  * one. Holding the link and saying so is the same trade a product photo makes.
- *  *
  *  * `product_id` is null while the submission waits and is filled in on approval, so one
  *  * row serves both the inbox an owner reads and the record the member reads afterwards.
  *  * Two tables would mean copying the links at approval and then keeping the copies
@@ -406,3 +380,46 @@ export type consignment_documents = Prisma.consignment_documentsModel
  * 
  */
 export type point_transactions = Prisma.point_transactionsModel
+/**
+ * Model line_messages
+ * *
+ *  * One message a customer sent the shop's Official Account (ADR 0032).
+ *  * Written by the webhook, keyed on LINE's own `message.id` so a redelivered event is a
+ *  * no-op — the same trick `inbound_payments` uses with the bank's `Message-ID`. `text` is
+ *  * present if and only if the type is `text` (a CHECK says so): a photo or a sticker is
+ *  * recorded as the kind of thing it was and nothing more, because this deployment holds no
+ *  * files and could not back up a customer's picture if it kept one.
+ */
+export type line_messages = Prisma.line_messagesModel
+/**
+ * Model line_campaigns
+ * *
+ *  * One campaign: a message the shop decided to send to its own customers (ADR 0032 §6).
+ *  * The row is written, and its batches are planned, **before anything is sent** — the same
+ *  * shape the outbox takes and for the same reason: what the shop decided and what actually
+ *  * went out are two facts, and a send that only exists in a log line cannot answer "who got
+ *  * this promotion" afterwards.
+ *  * `recipient_count` is this deployment's own count of eligible customers, never a number
+ *  * from LINE: there is no live friend-count API (only a date-based insight endpoint whose
+ *  * eligibility could not be confirmed), so the composer's number is a count of our own rows
+ *  * and the ADR says why.
+ *  * `quota_remaining_at_send` records what LINE said the month had left when the shop pressed
+ *  * send. It is **a record, not the authority**: LINE's own documentation warns a send can be
+ *  * refused with the monthly-limit error while the console still shows messages remaining, so
+ *  * the refusal on a batch is what a later reader trusts.
+ */
+export type line_campaigns = Prisma.line_campaignsModel
+/**
+ * Model line_campaign_batches
+ * *
+ *  * One batch of a campaign — the unit that succeeds or fails, because it is the unit LINE
+ *  * accepts (ADR 0032 §6, §7).
+ *  * `recipient_ids` is `text[]`: LINE's multicast takes a list of user ids, at most 500 per
+ *  * request, so the batch *is* that list. Stored rather than recomputed, because the eligible
+ *  * set moves — a customer who withdraws tomorrow must not change what was sent yesterday.
+ *  * **At most once** (ADR 0032 §7): LINE's multicast takes no idempotency key, so a retry
+ *  * cannot be told apart from a fresh send, and a promotion delivered twice to five hundred
+ *  * people is worse than one that needs an admin to press again. A batch is therefore sent
+ *  * from `pending` exactly once, and a failure is recorded and left for a person.
+ */
+export type line_campaign_batches = Prisma.line_campaign_batchesModel

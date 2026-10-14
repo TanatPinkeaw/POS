@@ -1072,7 +1072,8 @@ export type $paymentsPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     shift_id: number | null
     method: $Enums.payment_method
     /**
-     * * Always positive; `direction` carries the sign.
+     * *
+     *    * Always positive; `direction` carries the sign.
      */
     amount: runtime.Decimal
     direction: $Enums.payment_direction

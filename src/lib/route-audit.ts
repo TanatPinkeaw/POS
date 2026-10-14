@@ -62,7 +62,7 @@ export interface RouteSpec {
 /**
  * Every screen this application serves, and how to reach it.
  *
- * Twenty-six distinct paths; the root is listed four times because it is a
+ * Twenty-eight distinct paths; the root is listed four times because it is a
  * role-aware redirect and the interesting part of it is where each role lands.
  */
 export const ROUTE_WALK: readonly RouteSpec[] = [
@@ -73,10 +73,18 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/login', area: 'public', session: 'none', landsOn: '/login', label: 'the front door: the customer\'s, with the staff form folded below' },
   { path: '/setup', area: 'public', session: 'none', landsOn: '/login', label: 'the wizard, on a shop that is already set up' },
   { path: '/display', area: 'public', session: 'none', landsOn: '/display', label: 'the customer display' },
+  /*
+   * The in-LINE entry (ADR 0032 §1). Walked signed out, because that is the only way a
+   * customer reaches it: a session is what the page exists to hand them, and one that
+   * already exists is redirected to the screen it earns — which is why the landing is
+   * pinned to `/line` and not left to whatever a cookie jar happened to hold.
+   */
+  { path: '/line', area: 'public', session: 'none', landsOn: '/line', label: 'the in-LINE entry' },
   { path: '/admin/dashboard', area: 'admin', session: 'admin', landsOn: '/admin/dashboard', label: 'the manager dashboard' },
   { path: '/admin/products', area: 'admin', session: 'admin', landsOn: '/admin/products', label: 'the catalogue' },
   { path: '/admin/consignors', area: 'admin', session: 'admin', landsOn: '/admin/consignors', label: 'the consignors' },
   { path: '/admin/members', area: 'admin', session: 'admin', landsOn: '/admin/members', label: 'the customers' },
+  { path: '/admin/line', area: 'admin', session: 'admin', landsOn: '/admin/line', label: 'the LINE screen' },
   { path: '/admin/audit', area: 'admin', session: 'admin', landsOn: '/admin/audit', label: 'the audit trail' },
   /*
    * `cashier` rather than `admin`: the page matrix opens sales history to an

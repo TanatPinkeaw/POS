@@ -129,6 +129,25 @@ export const lineUnbindSchema = z.object({});
 export const lineConsentSchema = z.object({});
 
 /**
+ * Writing a campaign (ADR 0032 §6).
+ *
+ * **No length ceiling is asserted here**, and that is deliberate rather than an omission: the
+ * facts this feature was built on could not confirm LINE's own text-message limit from a
+ * primary source, so no number is written into this repository. A message LINE considers too
+ * long is refused with LINE's own words on the batch — visible, and not invented here. What is
+ * enforced is that there is a message at all: an empty campaign is a send that spends the
+ * month's allowance on nothing.
+ *
+ * The image is a **link**, not bytes (ADR 0014): the route reads it through
+ * `renderableImageUrl`, the same reader a product photo and the shop logo go through, and
+ * leaves it null when nothing usable was given.
+ */
+export const campaignSchema = z.object({
+  body: z.string().trim().min(1, 'Write the message first'),
+  imageUrl: z.string().trim().max(500).nullish(),
+});
+
+/**
  * A customer moving their own number to a new one (ADR 0020 §5).
  *
  * The new number and the code that proves it travel together, so there is no window

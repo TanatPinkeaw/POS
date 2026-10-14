@@ -16,22 +16,19 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model inbound_payments
  * *
  *  * Money the bank said arrived, whether or not we can say which bill it paid.
- *  *
  *  * This table exists because the alternative is silence. A notification that names
  *  * no QR, or an amount nobody is waiting for, is still money in the shop's account:
  *  * dropping it would leave the shop with a bank balance it cannot explain, and
  *  * guessing at a bill would put somebody else's payment on a customer's receipt.
  *  * So it is recorded, with the reason it was refused, and shown to an owner.
- *  *
  *  * Two columns carry the whole design:
- *  *
- *  *   * `external_id` is the bank's own identifier for the message (a mail's
- *  *     Message-ID), unique per `source`. A bridge that retries must not record the
- *  *     same transfer twice, and the database is what guarantees it rather than the
- *  *     bridge's bookkeeping.
- *  *   * `received_at` is the *bank's* instant. Payability is measured against it,
- *  *     never against the moment the bridge got round to posting, so a notification
- *  *     delayed in a mailbox is still judged by when the money actually moved.
+ *  * * `external_id` is the bank's own identifier for the message (a mail's
+ *  * Message-ID), unique per `source`. A bridge that retries must not record the
+ *  * same transfer twice, and the database is what guarantees it rather than the
+ *  * bridge's bookkeeping.
+ *  * * `received_at` is the *bank's* instant. Payability is measured against it,
+ *  * never against the moment the bridge got round to posting, so a notification
+ *  * delayed in a mailbox is still judged by when the money actually moved.
  */
 export type inbound_paymentsModel = runtime.Types.Result.DefaultSelection<Prisma.$inbound_paymentsPayload>
 
@@ -1006,17 +1003,20 @@ export type $inbound_paymentsPayload<ExtArgs extends runtime.Types.Extensions.In
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: bigint
     /**
-     * * Null only when the notification held no readable amount — see the CHECK.
+     * *
+     *    * Null only when the notification held no readable amount — see the CHECK.
      */
     amount: runtime.Decimal | null
     received_at: Date
     /**
-     * * Who told us: `bank-bridge`, `webhook`, or whatever a shop names theirs.
+     * *
+     *    * Who told us: `bank-bridge`, `webhook`, or whatever a shop names theirs.
      */
     source: string
     external_id: string | null
     /**
-     * * The notification itself, kept so a disputed payment can be re-read.
+     * *
+     *    * The notification itself, kept so a disputed payment can be re-read.
      */
     raw_text: string
     status: $Enums.inbound_payment_status

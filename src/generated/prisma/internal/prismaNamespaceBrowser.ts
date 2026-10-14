@@ -78,7 +78,10 @@ export const ModelName = {
   consignor_payouts: 'consignor_payouts',
   consignment_submissions: 'consignment_submissions',
   consignment_documents: 'consignment_documents',
-  point_transactions: 'point_transactions'
+  point_transactions: 'point_transactions',
+  line_messages: 'line_messages',
+  line_campaigns: 'line_campaigns',
+  line_campaign_batches: 'line_campaign_batches'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -153,6 +156,9 @@ export const UsersScalarFieldEnum = {
   line_subject: 'line_subject',
   line_consent_at: 'line_consent_at',
   line_consent_version: 'line_consent_version',
+  line_promo_consent_at: 'line_promo_consent_at',
+  line_promo_withdrawn_at: 'line_promo_withdrawn_at',
+  line_promo_consent_version: 'line_promo_consent_version',
   phone: 'phone',
   password_hash: 'password_hash',
   full_name: 'full_name',
@@ -462,6 +468,7 @@ export const NotificationsScalarFieldEnum = {
   next_attempt_at: 'next_attempt_at',
   last_error: 'last_error',
   order_id: 'order_id',
+  dedupe_key: 'dedupe_key',
   created_at: 'created_at',
   sent_at: 'sent_at'
 } as const
@@ -559,6 +566,47 @@ export const Point_transactionsScalarFieldEnum = {
 } as const
 
 export type Point_transactionsScalarFieldEnum = (typeof Point_transactionsScalarFieldEnum)[keyof typeof Point_transactionsScalarFieldEnum]
+
+
+export const Line_messagesScalarFieldEnum = {
+  id: 'id',
+  line_message_id: 'line_message_id',
+  line_subject: 'line_subject',
+  user_id: 'user_id',
+  message_type: 'message_type',
+  text: 'text',
+  received_at: 'received_at'
+} as const
+
+export type Line_messagesScalarFieldEnum = (typeof Line_messagesScalarFieldEnum)[keyof typeof Line_messagesScalarFieldEnum]
+
+
+export const Line_campaignsScalarFieldEnum = {
+  id: 'id',
+  body: 'body',
+  image_url: 'image_url',
+  sent_by_user_id: 'sent_by_user_id',
+  created_at: 'created_at',
+  status: 'status',
+  recipient_count: 'recipient_count',
+  quota_remaining_at_send: 'quota_remaining_at_send',
+  failure_reason: 'failure_reason'
+} as const
+
+export type Line_campaignsScalarFieldEnum = (typeof Line_campaignsScalarFieldEnum)[keyof typeof Line_campaignsScalarFieldEnum]
+
+
+export const Line_campaign_batchesScalarFieldEnum = {
+  id: 'id',
+  campaign_id: 'campaign_id',
+  batch_index: 'batch_index',
+  recipient_ids: 'recipient_ids',
+  status: 'status',
+  attempted_at: 'attempted_at',
+  error: 'error'
+} as const
+
+export type Line_campaign_batchesScalarFieldEnum = (typeof Line_campaign_batchesScalarFieldEnum)[keyof typeof Line_campaign_batchesScalarFieldEnum]
 
 
 export const SortOrder = {

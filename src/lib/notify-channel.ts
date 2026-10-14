@@ -17,6 +17,7 @@
  * gateway was never configured properly. Nothing here decides whether to retry —
  * that is the outbox's schedule.
  */
+import { lineApiBaseUrl } from './line-quota';
 import type { QueuedNotification } from './notify-outbox';
 
 /** Raised when a message could not be handed to the channel. */
@@ -47,6 +48,24 @@ interface ChannelConfig {
   webhookSecret: string | null;
 }
 
+/**
+ * The shop's own channel access token, whatever the outbox's channel setting is.
+ *
+ * Deliberately its own reader rather than a field of `readChannelConfig`, because the two
+ * questions are different and a shop can answer them differently: `NOTIFY_CHANNEL` decides
+ * where *the shop's own alerts* go (a LINE group, an SMS gateway, nowhere at all), while
+ * `NOTIFY_LINE_TOKEN` is what lets this deployment talk to LINE at all — which is what a
+ * **campaign** needs, since a promotion goes to customers' LINE rather than to the shop's
+ * group (ADR 0032 §6). A shop whose alerts go to a webhook can still send promotions on LINE,
+ * and one that has turned its own alerts off can too.
+ */
+export function readLineChannelToken(
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const token = env.NOTIFY_LINE_TOKEN?.trim();
+  return token ? token : null;
+}
+
 /** Reads the transport's configuration, or null when no channel is configured. */
 export function readChannelConfig(
   env: Record<string, string | undefined> = process.env,
@@ -56,7 +75,7 @@ export function readChannelConfig(
     return {
       channel: 'line',
       webhookUrl: null,
-      lineToken: env.NOTIFY_LINE_TOKEN?.trim() ?? null,
+      lineToken: readLineChannelToken(env),
       webhookSecret: null,
     };
   }
@@ -101,8 +120,11 @@ async function deliverToLine(
     );
   }
 
+  // The base URL is `line-quota.ts`'s, so one function decides where this server sends the
+  // shop's channel token — the same recorded trade `LINE_TOKEN_URL` and `LINE_JWKS_URL` make
+  // (ADR 0030 §6), and what lets the acceptance run stand a stub in LINE's place.
   const response = await post(
-    'https://api.line.me/v2/bot/message/push',
+    `${lineApiBaseUrl()}/v2/bot/message/push`,
     { to: notification.recipient, messages: [{ type: 'text', text: notification.body }] },
     { authorization: `Bearer ${token}` },
   );
@@ -110,6 +132,67 @@ async function deliverToLine(
   if (!response.ok) {
     throw new NotificationDeliveryError(
       `LINE refused the push (${response.status}): ${await bodySnippet(response)}`,
+    );
+  }
+}
+
+/** One campaign batch: everything LINE's multicast needs, and nothing about the outbox. */
+export interface CampaignBatchDelivery {
+  recipientIds: string[];
+  body: string;
+  /** An image *link*, validated when the campaign was written (ADR 0014). */
+  imageUrl: string | null;
+}
+
+/**
+ * Sends one batch of a campaign through LINE's multicast (ADR 0032 §7).
+ *
+ * The multipart body is LINE's own shape: a `messages` array of `text` (and optionally
+ * `image`) objects, and **no recipient list in the body** — the ids are a JSON array in a
+ * `to` part, because that is what LINE's endpoint takes. At most 500 ids, which the planner
+ * and the database CHECK both enforce before this is ever called.
+ *
+ * It lives here rather than in the campaign module because this is the one file that knows
+ * how to talk to LINE, and a second one would be a second place for the token to be read
+ * wrong. It throws with LINE's own words, exactly like the push above: `429 You have reached
+ * your monthly limit.` is a sentence the shop has to be able to read, and it is recorded on
+ * the batch rather than retried — LINE's multicast takes no idempotency key, so a retry cannot
+ * be told apart from a fresh send.
+ */
+export async function deliverCampaignBatch(
+  batch: CampaignBatchDelivery,
+  env: Record<string, string | undefined> = process.env,
+): Promise<void> {
+  const token = readLineChannelToken(env);
+  if (!token) {
+    throw new NotificationDeliveryError(
+      'NOTIFY_LINE_TOKEN is not set, so a campaign cannot be sent on LINE',
+    );
+  }
+  if (batch.recipientIds.length === 0) {
+    throw new NotificationDeliveryError('The batch has no recipients, so nothing was sent');
+  }
+
+  const messages: Record<string, unknown>[] = [{ type: 'text', text: batch.body }];
+  if (batch.imageUrl !== null) {
+    messages.push({
+      type: 'image',
+      originalContentUrl: batch.imageUrl,
+      previewImageUrl: batch.imageUrl,
+    });
+  }
+
+  const form = new FormData();
+  form.append('messages', JSON.stringify(messages));
+  form.append('to', JSON.stringify(batch.recipientIds));
+
+  const response = await postForm(`${lineApiBaseUrl()}/v2/bot/message/multicast`, form, {
+    authorization: `Bearer ${token}`,
+  });
+
+  if (!response.ok) {
+    throw new NotificationDeliveryError(
+      `LINE refused the campaign (${response.status}): ${await bodySnippet(response)}`,
     );
   }
 }
@@ -135,6 +218,30 @@ async function deliverToWebhook(
     throw new NotificationDeliveryError(
       `The gateway refused it (${response.status}): ${await bodySnippet(response)}`,
     );
+  }
+}
+
+/**
+ * A multipart POST, for the two LINE endpoints that take `FormData` rather than JSON.
+ *
+ * Deliberately does **not** set `content-type`: the boundary is the runtime's to pick, and
+ * setting it by hand is how a multipart body arrives as an unparseable one.
+ */
+async function postForm(
+  url: string,
+  form: FormData,
+  headers: Record<string, string>,
+): Promise<Response> {
+  try {
+    return await fetch(url, {
+      method: 'POST',
+      headers,
+      body: form,
+      signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new NotificationDeliveryError(`Could not reach ${hostOf(url)}: ${reason}`);
   }
 }
 

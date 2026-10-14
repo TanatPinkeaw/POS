@@ -196,6 +196,15 @@ export function isPublicPath(pathname: string): boolean {
      * still verify the token; being reachable is not being authorised.
      */
     pathname === '/receipts' ||
+    /*
+     * The in-LINE entry (ADR 0032 §1): the address a LIFF app points at, and the address a
+     * link in the shop's own chat carries. A customer reaching it has no session — creating
+     * one is what the page is for — so guarding it would send them to the login screen they
+     * cannot satisfy, which is the loop ADR 0030 §6 exists to have stopped. What protects it
+     * is not this list: the id token must be genuinely LINE's, verified in process against
+     * this deployment's own channel, and the account it names must be a customer here.
+     */
+    pathname === '/line' ||
     pathname.startsWith('/uploads/')
   );
 }

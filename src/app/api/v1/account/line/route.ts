@@ -18,6 +18,11 @@
  *     notification but kept the binding, or whose consent predates the current
  *     text, says yes again. Binding is required: consent without an address is
  *     dead weight.
+ *   * **`{ promoConsent: true | false }` — the second consent (ADR 0032 §5).** A
+ *     promotion is a different purpose from "your order is ready", so it is its own
+ *     act with its own wording and its own version, and it is never a side effect of
+ *     binding: a fresh binding leaves the promotion timestamps null. Withdrawing it
+ *     touches neither the binding nor the order notifications.
  *
  * `GET` on the same door is the card's own read — the callback redirects land on
  * the account page, which re-fetches this to show the binding as it now is.
@@ -29,9 +34,11 @@ import {
   bindSignedInCustomer,
   lineBindingForUser,
   setLineNotificationConsent,
+  setLinePromotionConsent,
   unbindLineFromCustomer,
 } from '@/lib/line-identity';
 import { LINE_CONSENT_VERSION } from '@/lib/line-notify';
+import { LINE_PROMO_CONSENT_VERSION } from '@/lib/line-promo-consent';
 import { chargeRateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
 
@@ -41,10 +48,14 @@ const accountLineSchema = z
     idToken: z.string().trim().min(1).optional(),
     unlink: z.literal(true).optional(),
     consentOnly: z.literal(true).optional(),
+    /** `false` is a real answer here — it is the withdrawal — so it is not `true`-only. */
+    promoConsent: z.boolean().optional(),
   })
-  .refine((body) => !!(body.idToken || body.unlink || body.consentOnly), {
-    message: 'one of idToken, unlink, consentOnly is required',
-  });
+  .refine(
+    (body) =>
+      !!(body.idToken || body.unlink || body.consentOnly) || body.promoConsent !== undefined,
+    { message: 'one of idToken, unlink, consentOnly, promoConsent is required' },
+  );
 
 export async function GET(): Promise<Response> {
   return withApi(async () => {
@@ -63,6 +74,20 @@ export async function POST(request: Request): Promise<Response> {
     if (body.unlink) {
       await unbindLineFromCustomer(session.id);
       return { lineSubject: null, consentAt: null, consentVersion: null };
+    }
+
+    if (body.promoConsent !== undefined && !body.idToken && !body.unlink && !body.consentOnly) {
+      const result = await setLinePromotionConsent({
+        userId: session.id,
+        consent: body.promoConsent,
+        consentVersion: LINE_PROMO_CONSENT_VERSION,
+      });
+      return {
+        promoState: result.state,
+        promoConsentAt: result.consentAt,
+        promoWithdrawnAt: result.withdrawnAt,
+        promoConsentVersion: LINE_PROMO_CONSENT_VERSION,
+      };
     }
 
     if (body.consentOnly) {

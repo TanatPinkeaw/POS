@@ -424,7 +424,10 @@ export const ModelName = {
   consignor_payouts: 'consignor_payouts',
   consignment_submissions: 'consignment_submissions',
   consignment_documents: 'consignment_documents',
-  point_transactions: 'point_transactions'
+  point_transactions: 'point_transactions',
+  line_messages: 'line_messages',
+  line_campaigns: 'line_campaigns',
+  line_campaign_batches: 'line_campaign_batches'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -440,7 +443,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "shops" | "number_blocks" | "users" | "line_friends" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "consignment_submissions" | "consignment_documents" | "point_transactions"
+    modelProps: "shops" | "number_blocks" | "users" | "line_friends" | "categories" | "products" | "stock_logs" | "work_schedules" | "time_logs" | "cash_shifts" | "audit_logs" | "notice_acknowledgements" | "rate_limit_buckets" | "otp_challenges" | "orders" | "order_items" | "payments" | "credit_notes" | "credit_note_items" | "payment_intents" | "inbound_payments" | "notifications" | "display_devices" | "consignor_payables" | "consignor_payouts" | "consignment_submissions" | "consignment_documents" | "point_transactions" | "line_messages" | "line_campaigns" | "line_campaign_batches"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2516,6 +2519,228 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    line_messages: {
+      payload: Prisma.$line_messagesPayload<ExtArgs>
+      fields: Prisma.line_messagesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.line_messagesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.line_messagesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>
+        }
+        findFirst: {
+          args: Prisma.line_messagesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.line_messagesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>
+        }
+        findMany: {
+          args: Prisma.line_messagesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>[]
+        }
+        create: {
+          args: Prisma.line_messagesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>
+        }
+        createMany: {
+          args: Prisma.line_messagesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.line_messagesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>[]
+        }
+        delete: {
+          args: Prisma.line_messagesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>
+        }
+        update: {
+          args: Prisma.line_messagesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>
+        }
+        deleteMany: {
+          args: Prisma.line_messagesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.line_messagesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.line_messagesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>[]
+        }
+        upsert: {
+          args: Prisma.line_messagesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_messagesPayload>
+        }
+        aggregate: {
+          args: Prisma.Line_messagesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLine_messages>
+        }
+        groupBy: {
+          args: Prisma.line_messagesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_messagesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.line_messagesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_messagesCountAggregateOutputType> | number
+        }
+      }
+    }
+    line_campaigns: {
+      payload: Prisma.$line_campaignsPayload<ExtArgs>
+      fields: Prisma.line_campaignsFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.line_campaignsFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.line_campaignsFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>
+        }
+        findFirst: {
+          args: Prisma.line_campaignsFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.line_campaignsFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>
+        }
+        findMany: {
+          args: Prisma.line_campaignsFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>[]
+        }
+        create: {
+          args: Prisma.line_campaignsCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>
+        }
+        createMany: {
+          args: Prisma.line_campaignsCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.line_campaignsCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>[]
+        }
+        delete: {
+          args: Prisma.line_campaignsDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>
+        }
+        update: {
+          args: Prisma.line_campaignsUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>
+        }
+        deleteMany: {
+          args: Prisma.line_campaignsDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.line_campaignsUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.line_campaignsUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>[]
+        }
+        upsert: {
+          args: Prisma.line_campaignsUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaignsPayload>
+        }
+        aggregate: {
+          args: Prisma.Line_campaignsAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLine_campaigns>
+        }
+        groupBy: {
+          args: Prisma.line_campaignsGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_campaignsGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.line_campaignsCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_campaignsCountAggregateOutputType> | number
+        }
+      }
+    }
+    line_campaign_batches: {
+      payload: Prisma.$line_campaign_batchesPayload<ExtArgs>
+      fields: Prisma.line_campaign_batchesFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.line_campaign_batchesFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.line_campaign_batchesFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>
+        }
+        findFirst: {
+          args: Prisma.line_campaign_batchesFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.line_campaign_batchesFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>
+        }
+        findMany: {
+          args: Prisma.line_campaign_batchesFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>[]
+        }
+        create: {
+          args: Prisma.line_campaign_batchesCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>
+        }
+        createMany: {
+          args: Prisma.line_campaign_batchesCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.line_campaign_batchesCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>[]
+        }
+        delete: {
+          args: Prisma.line_campaign_batchesDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>
+        }
+        update: {
+          args: Prisma.line_campaign_batchesUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>
+        }
+        deleteMany: {
+          args: Prisma.line_campaign_batchesDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.line_campaign_batchesUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.line_campaign_batchesUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>[]
+        }
+        upsert: {
+          args: Prisma.line_campaign_batchesUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$line_campaign_batchesPayload>
+        }
+        aggregate: {
+          args: Prisma.Line_campaign_batchesAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLine_campaign_batches>
+        }
+        groupBy: {
+          args: Prisma.line_campaign_batchesGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_campaign_batchesGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.line_campaign_batchesCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.Line_campaign_batchesCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2611,6 +2836,9 @@ export const UsersScalarFieldEnum = {
   line_subject: 'line_subject',
   line_consent_at: 'line_consent_at',
   line_consent_version: 'line_consent_version',
+  line_promo_consent_at: 'line_promo_consent_at',
+  line_promo_withdrawn_at: 'line_promo_withdrawn_at',
+  line_promo_consent_version: 'line_promo_consent_version',
   phone: 'phone',
   password_hash: 'password_hash',
   full_name: 'full_name',
@@ -2920,6 +3148,7 @@ export const NotificationsScalarFieldEnum = {
   next_attempt_at: 'next_attempt_at',
   last_error: 'last_error',
   order_id: 'order_id',
+  dedupe_key: 'dedupe_key',
   created_at: 'created_at',
   sent_at: 'sent_at'
 } as const
@@ -3017,6 +3246,47 @@ export const Point_transactionsScalarFieldEnum = {
 } as const
 
 export type Point_transactionsScalarFieldEnum = (typeof Point_transactionsScalarFieldEnum)[keyof typeof Point_transactionsScalarFieldEnum]
+
+
+export const Line_messagesScalarFieldEnum = {
+  id: 'id',
+  line_message_id: 'line_message_id',
+  line_subject: 'line_subject',
+  user_id: 'user_id',
+  message_type: 'message_type',
+  text: 'text',
+  received_at: 'received_at'
+} as const
+
+export type Line_messagesScalarFieldEnum = (typeof Line_messagesScalarFieldEnum)[keyof typeof Line_messagesScalarFieldEnum]
+
+
+export const Line_campaignsScalarFieldEnum = {
+  id: 'id',
+  body: 'body',
+  image_url: 'image_url',
+  sent_by_user_id: 'sent_by_user_id',
+  created_at: 'created_at',
+  status: 'status',
+  recipient_count: 'recipient_count',
+  quota_remaining_at_send: 'quota_remaining_at_send',
+  failure_reason: 'failure_reason'
+} as const
+
+export type Line_campaignsScalarFieldEnum = (typeof Line_campaignsScalarFieldEnum)[keyof typeof Line_campaignsScalarFieldEnum]
+
+
+export const Line_campaign_batchesScalarFieldEnum = {
+  id: 'id',
+  campaign_id: 'campaign_id',
+  batch_index: 'batch_index',
+  recipient_ids: 'recipient_ids',
+  status: 'status',
+  attempted_at: 'attempted_at',
+  error: 'error'
+} as const
+
+export type Line_campaign_batchesScalarFieldEnum = (typeof Line_campaign_batchesScalarFieldEnum)[keyof typeof Line_campaign_batchesScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -3629,6 +3899,9 @@ export type GlobalOmitConfig = {
   consignment_submissions?: Prisma.consignment_submissionsOmit
   consignment_documents?: Prisma.consignment_documentsOmit
   point_transactions?: Prisma.point_transactionsOmit
+  line_messages?: Prisma.line_messagesOmit
+  line_campaigns?: Prisma.line_campaignsOmit
+  line_campaign_batches?: Prisma.line_campaign_batchesOmit
 }
 
 /* Types for Logging */

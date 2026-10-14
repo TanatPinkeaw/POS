@@ -3245,12 +3245,10 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     /**
      * *
      *    * When this pre-order stops waiting for staff confirmation (SRS §3 Phase 1).
-     *    *
      *    * Stored rather than derived from `created_at` plus the shop's timeout setting,
      *    * because the deadline was being computed twice — once by the sweeper and once
      *    * by the board — and changing the setting silently re-dated the orders already
      *    * in the queue. One stored instant is read by both.
-     *    *
      *    * Null on a walk-in sale (no Phase 1) and on rows that predate the column.
      */
     confirm_deadline: Date | null
@@ -3290,7 +3288,6 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     /**
      * *
      *    * The device's own identity for a bill it closed with no connection (ADR 0019).
-     *    *
      *    * A UUID the till generated, unique here — which is what makes the replay idempotent:
      *    * a retry after a timeout, or the same batch sent twice, writes one order because the
      *    * second insert is refused by this index. Null on every bill the server witnessed,
@@ -3302,12 +3299,10 @@ export type $ordersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
      *    * The instant the sale happened for the books — the day every day-bucketed read
      *    * files it under, and the reason `created_at` is no longer asked (ADR 0019
      *    * decision 4; the rule is `src/lib/sale-instant.ts`).
-     *    *
      *    * For an ordinary sale this is the server's now, the same instant `completed_at`
      *    * gets. For a replayed offline bill it is the **device's** instant, which is why the
      *    * two columns exist separately: a walk-in sale completed at 21:00 and synced at 08:12
      *    * is yesterday's takings, and `created_at`/`completed_at` would file it today.
-     *    *
      *    * A pre-order that is still pending carries the creation instant here and nothing reads
      *    * it — every day bucket also filters on a terminal status, because a sale that has not
      *    * happened yet has no sale instant. `completeOrder` sets it at handover, which is when

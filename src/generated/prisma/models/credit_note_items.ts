@@ -733,7 +733,8 @@ export type $credit_note_itemsPayload<ExtArgs extends runtime.Types.Extensions.I
     quantity: number
     unit_price: runtime.Decimal
     /**
-     * * `unit_price × quantity`, to the satang — checked by the database.
+     * *
+     *    * `unit_price × quantity`, to the satang — checked by the database.
      */
     line_total: runtime.Decimal
   }, ExtArgs["result"]["credit_note_items"]>

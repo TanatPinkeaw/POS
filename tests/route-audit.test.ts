@@ -238,8 +238,10 @@ describe('auditing one page', () => {
 });
 
 describe('the route walk', () => {
-  it('covers twenty-five distinct paths across the four areas', () => {
-    expect(routePaths()).toHaveLength(25);
+  it('covers twenty-seven distinct paths across the four areas', () => {
+    // Twenty-five until ADR 0032 added the in-LINE entry (`/line`) and the shop's campaign
+    // screen (`/admin/line`).
+    expect(routePaths()).toHaveLength(27);
     expect(new Set(ROUTE_WALK.map((entry) => entry.area))).toEqual(
       new Set(['public', 'admin', 'pos', 'shop']),
     );

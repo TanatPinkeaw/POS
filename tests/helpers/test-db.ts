@@ -64,6 +64,22 @@ const TABLES_IN_DELETE_ORDER = [
   // Written *in* the same transactions as orders, so a leftover row would make the
   // next test's dedupe assertion pass for the wrong reason.
   'notifications',
+  // The messages a customer sent the shop's Official Account (ADR 0032). Listed before
+  // `users` because a row names the customer it resolved to, and — the reason that matters —
+  // because the dedupe under test is the unique LINE message id: a leftover row would make
+  // the next test's "the same event twice is one row" assertion pass for free.
+  'line_messages',
+  // Campaigns and their batches (ADR 0032 §6–7). Batches first: they point at the campaign,
+  // and — the reason it matters — a campaign's batches are the *work* a run picks up, so a
+  // leftover pending batch would have the next test sending (or asserting about) a message a
+  // previous test wrote. Both are listed even though the FK cascades, because a table left
+  // out of this list fails loudly rather than silently, and this one is a send.
+  'line_campaign_batches',
+  'line_campaigns',
+  // The friend half of the consent pair (ADR 0030 §2). Keyed by LINE subject with no foreign
+  // key, so nothing else sweeps it: a leftover row would make the next test's campaign
+  // audience or ready-message eligibility pass for free.
+  'line_friends',
   'order_items',
   'orders',
   'stock_logs',

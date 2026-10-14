@@ -16,26 +16,23 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model notifications
  * *
  *  * A message that should go out, written in the same transaction that made it true.
- *  *
  *  * The order matters and is the whole point of the table. `markOrderReady` commits
  *  * the order and this row together, so a process that dies between the commit and
  *  * the send loses nothing: the fact is on disk before anything tries to deliver it,
  *  * and the worker picks it up on its next pass. Announcing after the fact with a
  *  * `fetch` in the request path — which is what most systems do first — turns a
  *  * dropped connection into a customer who is never told their parcel is waiting.
- *  *
  *  * Three details carry the design:
- *  *
- *  *   * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
- *  *     about one order, so a route that is retried, a worker that runs twice, and a
- *  *     double click all produce one message.
- *  *   * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
- *  *     itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
- *  *     `next_attempt_at` forward *before* it tries, so a worker killed mid-send
- *  *     leaves a row that comes back rather than one stuck in flight forever.
- *  *   * `body` is the message as it will be sent, not a template name. Rendered
- *  *     once, when the fact was fresh, so an edit to the wording tomorrow cannot
- *  *     rewrite what a customer was told yesterday.
+ *  * * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
+ *  * about one order, so a route that is retried, a worker that runs twice, and a
+ *  * double click all produce one message.
+ *  * * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
+ *  * itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
+ *  * `next_attempt_at` forward *before* it tries, so a worker killed mid-send
+ *  * leaves a row that comes back rather than one stuck in flight forever.
+ *  * * `body` is the message as it will be sent, not a template name. Rendered
+ *  * once, when the fact was fresh, so an edit to the wording tomorrow cannot
+ *  * rewrite what a customer was told yesterday.
  */
 export type notificationsModel = runtime.Types.Result.DefaultSelection<Prisma.$notificationsPayload>
 
@@ -68,6 +65,7 @@ export type NotificationsMinAggregateOutputType = {
   next_attempt_at: Date | null
   last_error: string | null
   order_id: string | null
+  dedupe_key: string | null
   created_at: Date | null
   sent_at: Date | null
 }
@@ -83,6 +81,7 @@ export type NotificationsMaxAggregateOutputType = {
   next_attempt_at: Date | null
   last_error: string | null
   order_id: string | null
+  dedupe_key: string | null
   created_at: Date | null
   sent_at: Date | null
 }
@@ -98,6 +97,7 @@ export type NotificationsCountAggregateOutputType = {
   next_attempt_at: number
   last_error: number
   order_id: number
+  dedupe_key: number
   created_at: number
   sent_at: number
   _all: number
@@ -125,6 +125,7 @@ export type NotificationsMinAggregateInputType = {
   next_attempt_at?: true
   last_error?: true
   order_id?: true
+  dedupe_key?: true
   created_at?: true
   sent_at?: true
 }
@@ -140,6 +141,7 @@ export type NotificationsMaxAggregateInputType = {
   next_attempt_at?: true
   last_error?: true
   order_id?: true
+  dedupe_key?: true
   created_at?: true
   sent_at?: true
 }
@@ -155,6 +157,7 @@ export type NotificationsCountAggregateInputType = {
   next_attempt_at?: true
   last_error?: true
   order_id?: true
+  dedupe_key?: true
   created_at?: true
   sent_at?: true
   _all?: true
@@ -257,6 +260,7 @@ export type NotificationsGroupByOutputType = {
   next_attempt_at: Date
   last_error: string | null
   order_id: string | null
+  dedupe_key: string | null
   created_at: Date
   sent_at: Date | null
   _count: NotificationsCountAggregateOutputType | null
@@ -295,6 +299,7 @@ export type notificationsWhereInput = {
   next_attempt_at?: Prisma.DateTimeFilter<"notifications"> | Date | string
   last_error?: Prisma.StringNullableFilter<"notifications"> | string | null
   order_id?: Prisma.UuidNullableFilter<"notifications"> | string | null
+  dedupe_key?: Prisma.StringNullableFilter<"notifications"> | string | null
   created_at?: Prisma.DateTimeFilter<"notifications"> | Date | string
   sent_at?: Prisma.DateTimeNullableFilter<"notifications"> | Date | string | null
   order?: Prisma.XOR<Prisma.OrdersNullableScalarRelationFilter, Prisma.ordersWhereInput> | null
@@ -311,6 +316,7 @@ export type notificationsOrderByWithRelationInput = {
   next_attempt_at?: Prisma.SortOrder
   last_error?: Prisma.SortOrderInput | Prisma.SortOrder
   order_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  dedupe_key?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   sent_at?: Prisma.SortOrderInput | Prisma.SortOrder
   order?: Prisma.ordersOrderByWithRelationInput
@@ -319,6 +325,7 @@ export type notificationsOrderByWithRelationInput = {
 export type notificationsWhereUniqueInput = Prisma.AtLeast<{
   id?: bigint | number
   kind_order_id?: Prisma.notificationsKindOrder_idCompoundUniqueInput
+  kind_dedupe_key?: Prisma.notificationsKindDedupe_keyCompoundUniqueInput
   AND?: Prisma.notificationsWhereInput | Prisma.notificationsWhereInput[]
   OR?: Prisma.notificationsWhereInput[]
   NOT?: Prisma.notificationsWhereInput | Prisma.notificationsWhereInput[]
@@ -331,10 +338,11 @@ export type notificationsWhereUniqueInput = Prisma.AtLeast<{
   next_attempt_at?: Prisma.DateTimeFilter<"notifications"> | Date | string
   last_error?: Prisma.StringNullableFilter<"notifications"> | string | null
   order_id?: Prisma.UuidNullableFilter<"notifications"> | string | null
+  dedupe_key?: Prisma.StringNullableFilter<"notifications"> | string | null
   created_at?: Prisma.DateTimeFilter<"notifications"> | Date | string
   sent_at?: Prisma.DateTimeNullableFilter<"notifications"> | Date | string | null
   order?: Prisma.XOR<Prisma.OrdersNullableScalarRelationFilter, Prisma.ordersWhereInput> | null
-}, "id" | "kind_order_id">
+}, "id" | "kind_order_id" | "kind_dedupe_key">
 
 export type notificationsOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -347,6 +355,7 @@ export type notificationsOrderByWithAggregationInput = {
   next_attempt_at?: Prisma.SortOrder
   last_error?: Prisma.SortOrderInput | Prisma.SortOrder
   order_id?: Prisma.SortOrderInput | Prisma.SortOrder
+  dedupe_key?: Prisma.SortOrderInput | Prisma.SortOrder
   created_at?: Prisma.SortOrder
   sent_at?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.notificationsCountOrderByAggregateInput
@@ -370,6 +379,7 @@ export type notificationsScalarWhereWithAggregatesInput = {
   next_attempt_at?: Prisma.DateTimeWithAggregatesFilter<"notifications"> | Date | string
   last_error?: Prisma.StringNullableWithAggregatesFilter<"notifications"> | string | null
   order_id?: Prisma.UuidNullableWithAggregatesFilter<"notifications"> | string | null
+  dedupe_key?: Prisma.StringNullableWithAggregatesFilter<"notifications"> | string | null
   created_at?: Prisma.DateTimeWithAggregatesFilter<"notifications"> | Date | string
   sent_at?: Prisma.DateTimeNullableWithAggregatesFilter<"notifications"> | Date | string | null
 }
@@ -384,6 +394,7 @@ export type notificationsCreateInput = {
   attempts?: number
   next_attempt_at?: Date | string
   last_error?: string | null
+  dedupe_key?: string | null
   created_at?: Date | string
   sent_at?: Date | string | null
   order?: Prisma.ordersCreateNestedOneWithoutNotificationsInput
@@ -400,6 +411,7 @@ export type notificationsUncheckedCreateInput = {
   next_attempt_at?: Date | string
   last_error?: string | null
   order_id?: string | null
+  dedupe_key?: string | null
   created_at?: Date | string
   sent_at?: Date | string | null
 }
@@ -414,6 +426,7 @@ export type notificationsUpdateInput = {
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   order?: Prisma.ordersUpdateOneWithoutNotificationsNestedInput
@@ -430,6 +443,7 @@ export type notificationsUncheckedUpdateInput = {
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -445,6 +459,7 @@ export type notificationsCreateManyInput = {
   next_attempt_at?: Date | string
   last_error?: string | null
   order_id?: string | null
+  dedupe_key?: string | null
   created_at?: Date | string
   sent_at?: Date | string | null
 }
@@ -459,6 +474,7 @@ export type notificationsUpdateManyMutationInput = {
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -474,6 +490,7 @@ export type notificationsUncheckedUpdateManyInput = {
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   order_id?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -493,6 +510,11 @@ export type notificationsKindOrder_idCompoundUniqueInput = {
   order_id: string
 }
 
+export type notificationsKindDedupe_keyCompoundUniqueInput = {
+  kind: string
+  dedupe_key: string
+}
+
 export type notificationsCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   kind?: Prisma.SortOrder
@@ -504,6 +526,7 @@ export type notificationsCountOrderByAggregateInput = {
   next_attempt_at?: Prisma.SortOrder
   last_error?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  dedupe_key?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   sent_at?: Prisma.SortOrder
 }
@@ -524,6 +547,7 @@ export type notificationsMaxOrderByAggregateInput = {
   next_attempt_at?: Prisma.SortOrder
   last_error?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  dedupe_key?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   sent_at?: Prisma.SortOrder
 }
@@ -539,6 +563,7 @@ export type notificationsMinOrderByAggregateInput = {
   next_attempt_at?: Prisma.SortOrder
   last_error?: Prisma.SortOrder
   order_id?: Prisma.SortOrder
+  dedupe_key?: Prisma.SortOrder
   created_at?: Prisma.SortOrder
   sent_at?: Prisma.SortOrder
 }
@@ -608,6 +633,7 @@ export type notificationsCreateWithoutOrderInput = {
   attempts?: number
   next_attempt_at?: Date | string
   last_error?: string | null
+  dedupe_key?: string | null
   created_at?: Date | string
   sent_at?: Date | string | null
 }
@@ -622,6 +648,7 @@ export type notificationsUncheckedCreateWithoutOrderInput = {
   attempts?: number
   next_attempt_at?: Date | string
   last_error?: string | null
+  dedupe_key?: string | null
   created_at?: Date | string
   sent_at?: Date | string | null
 }
@@ -666,6 +693,7 @@ export type notificationsScalarWhereInput = {
   next_attempt_at?: Prisma.DateTimeFilter<"notifications"> | Date | string
   last_error?: Prisma.StringNullableFilter<"notifications"> | string | null
   order_id?: Prisma.UuidNullableFilter<"notifications"> | string | null
+  dedupe_key?: Prisma.StringNullableFilter<"notifications"> | string | null
   created_at?: Prisma.DateTimeFilter<"notifications"> | Date | string
   sent_at?: Prisma.DateTimeNullableFilter<"notifications"> | Date | string | null
 }
@@ -680,6 +708,7 @@ export type notificationsCreateManyOrderInput = {
   attempts?: number
   next_attempt_at?: Date | string
   last_error?: string | null
+  dedupe_key?: string | null
   created_at?: Date | string
   sent_at?: Date | string | null
 }
@@ -694,6 +723,7 @@ export type notificationsUpdateWithoutOrderInput = {
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -708,6 +738,7 @@ export type notificationsUncheckedUpdateWithoutOrderInput = {
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -722,6 +753,7 @@ export type notificationsUncheckedUpdateManyWithoutOrderInput = {
   attempts?: Prisma.IntFieldUpdateOperationsInput | number
   next_attempt_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   last_error?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dedupe_key?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
 }
@@ -739,6 +771,7 @@ export type notificationsSelect<ExtArgs extends runtime.Types.Extensions.Interna
   next_attempt_at?: boolean
   last_error?: boolean
   order_id?: boolean
+  dedupe_key?: boolean
   created_at?: boolean
   sent_at?: boolean
   order?: boolean | Prisma.notifications$orderArgs<ExtArgs>
@@ -755,6 +788,7 @@ export type notificationsSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   next_attempt_at?: boolean
   last_error?: boolean
   order_id?: boolean
+  dedupe_key?: boolean
   created_at?: boolean
   sent_at?: boolean
   order?: boolean | Prisma.notifications$orderArgs<ExtArgs>
@@ -771,6 +805,7 @@ export type notificationsSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   next_attempt_at?: boolean
   last_error?: boolean
   order_id?: boolean
+  dedupe_key?: boolean
   created_at?: boolean
   sent_at?: boolean
   order?: boolean | Prisma.notifications$orderArgs<ExtArgs>
@@ -787,11 +822,12 @@ export type notificationsSelectScalar = {
   next_attempt_at?: boolean
   last_error?: boolean
   order_id?: boolean
+  dedupe_key?: boolean
   created_at?: boolean
   sent_at?: boolean
 }
 
-export type notificationsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "kind" | "channel" | "recipient" | "body" | "status" | "attempts" | "next_attempt_at" | "last_error" | "order_id" | "created_at" | "sent_at", ExtArgs["result"]["notifications"]>
+export type notificationsOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "kind" | "channel" | "recipient" | "body" | "status" | "attempts" | "next_attempt_at" | "last_error" | "order_id" | "dedupe_key" | "created_at" | "sent_at", ExtArgs["result"]["notifications"]>
 export type notificationsInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.notifications$orderArgs<ExtArgs>
 }
@@ -812,7 +848,8 @@ export type $notificationsPayload<ExtArgs extends runtime.Types.Extensions.Inter
     kind: string
     channel: $Enums.notification_channel
     /**
-     * * A phone number for a gateway, a group id for LINE.
+     * *
+     *    * A phone number for a gateway, a group id for LINE.
      */
     recipient: string
     body: string
@@ -828,6 +865,18 @@ export type $notificationsPayload<ExtArgs extends runtime.Types.Extensions.Inter
      *    * announcement is not blocked by this constraint.
      */
     order_id: string | null
+    /**
+     * *
+     *    * What makes *this kind* of fact unique when an order is not what it names (ADR 0032 §4).
+     *    * The rule for a message that belongs to no order used to be `(kind, recipient)` — once
+     *    * ever, which is right for "a transfer was dismissed" and wrong for "this customer wrote
+     *    * to us", where the shop should hear once per burst rather than once in the shop's life.
+     *    * A row that carries its own key is deduped on `(kind, dedupe_key)`, and the key is built
+     *    * with the window in it, so the window is enforced by an index rather than by a read two
+     *    * workers could both win. Nulls stay distinct, so every row written before this column
+     *    * existed is untouched by the constraint.
+     */
+    dedupe_key: string | null
     created_at: Date
     sent_at: Date | null
   }, ExtArgs["result"]["notifications"]>
@@ -1264,6 +1313,7 @@ export interface notificationsFieldRefs {
   readonly next_attempt_at: Prisma.FieldRef<"notifications", 'DateTime'>
   readonly last_error: Prisma.FieldRef<"notifications", 'String'>
   readonly order_id: Prisma.FieldRef<"notifications", 'String'>
+  readonly dedupe_key: Prisma.FieldRef<"notifications", 'String'>
   readonly created_at: Prisma.FieldRef<"notifications", 'DateTime'>
   readonly sent_at: Prisma.FieldRef<"notifications", 'DateTime'>
 }

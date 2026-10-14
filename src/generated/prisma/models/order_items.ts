@@ -990,11 +990,13 @@ export type $order_itemsPayload<ExtArgs extends runtime.Types.Extensions.Interna
     order: Prisma.$ordersPayload<ExtArgs>
     product: Prisma.$productsPayload<ExtArgs>
     /**
-     * * The credit-note lines that took this one back, wholly or in part.
+     * *
+     *    * The credit-note lines that took this one back, wholly or in part.
      */
     refunded_on: Prisma.$credit_note_itemsPayload<ExtArgs>[]
     /**
-     * * The consignor shares this line's sale and any refund of it produced.
+     * *
+     *    * The consignor shares this line's sale and any refund of it produced.
      */
     consignor_payables: Prisma.$consignor_payablesPayload<ExtArgs>[]
   }

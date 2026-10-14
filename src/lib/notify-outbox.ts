@@ -64,18 +64,26 @@ export async function enqueueNotification(
   }
 
   /*
-   * The dedupe is the unique index's own logic, made explicit: a message about an
-   * order is one fact per order (`@@unique([kind, order_id])`), and a message
-   * about something else — a bank transfer dismissed by hand — is one fact per
-   * *thing it names*, which is what the recipient column carries when the order
-   * is null. Postgres treats nulls as distinct in a unique index, so the two
-   * shapes never interfere; the read here just mirrors whichever applies so a
-   * retried request gets the same row back rather than a refusal.
+   * The dedupe is the unique index's own logic, made explicit, and there are now three
+   * shapes rather than two — read in the order that decides which applies:
+   *
+   *   * a plan that carries its own key is one fact per key (`@@unique([kind, dedupe_key])`),
+   *     which is what lets a fact that *should* repeat about one subject — a customer
+   *     writing to the shop — repeat once per window instead of once ever (ADR 0032 §4);
+   *   * a message about an order is one fact per order (`@@unique([kind, order_id])`);
+   *   * anything else is one fact per *thing it names*, which is what the recipient column
+   *     carries when the order is null.
+   *
+   * Postgres treats nulls as distinct in a unique index, so the three never interfere; this
+   * read just mirrors whichever the plan named, so a retried request gets the same row back
+   * rather than a refusal.
    */
   const existing = await db.notifications.findFirst({
-    where: plan.orderId === null
-      ? { kind: plan.kind, recipient: plan.recipient }
-      : { kind: plan.kind, order_id: plan.orderId },
+    where: plan.dedupeKey
+      ? { kind: plan.kind, dedupe_key: plan.dedupeKey }
+      : plan.orderId === null
+        ? { kind: plan.kind, recipient: plan.recipient }
+        : { kind: plan.kind, order_id: plan.orderId },
     select: { id: true },
   });
   if (existing) {
@@ -89,6 +97,7 @@ export async function enqueueNotification(
       recipient: plan.recipient,
       body: plan.text,
       order_id: plan.orderId,
+      dedupe_key: plan.dedupeKey ?? null,
     },
     select: { id: true },
   });

@@ -163,6 +163,7 @@ export const audit_action = {
   member_updated: 'member_updated',
   offline_sale_synced: 'offline_sale_synced',
   consignment_set: 'consignment_set',
+  line_campaign_sent: 'line_campaign_sent',
   consignment_withdrawn: 'consignment_withdrawn',
   consignment_paid: 'consignment_paid',
   consignment_offer_submitted: 'consignment_offer_submitted',

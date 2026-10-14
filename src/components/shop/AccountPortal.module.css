@@ -70,6 +70,29 @@
   font-size: var(--ln-size-lg);
 }
 
+/*
+ * The second consent, set apart from the binding it sits under (ADR 0032 §5).
+ *
+ * A block with its own border and heading rather than one more row of the card, because
+ * the two consents on this card are two different promises: a customer skimming must not
+ * read "promotions" as part of what they just agreed to about their own orders. Colour
+ * comes from a semantic token, never a raw step of the ramp (rule 5).
+ */
+.promoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ln-space-3);
+  padding: var(--ln-space-4);
+  background: var(--ln-surface-2);
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+}
+
+.promoTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
 /* ------------------------------------------------ the consignment offer form */
 
 /*

@@ -43,6 +43,9 @@ export type UsersMinAggregateOutputType = {
   line_subject: string | null
   line_consent_at: Date | null
   line_consent_version: string | null
+  line_promo_consent_at: Date | null
+  line_promo_withdrawn_at: Date | null
+  line_promo_consent_version: string | null
   phone: string | null
   password_hash: string | null
   full_name: string | null
@@ -63,6 +66,9 @@ export type UsersMaxAggregateOutputType = {
   line_subject: string | null
   line_consent_at: Date | null
   line_consent_version: string | null
+  line_promo_consent_at: Date | null
+  line_promo_withdrawn_at: Date | null
+  line_promo_consent_version: string | null
   phone: string | null
   password_hash: string | null
   full_name: string | null
@@ -83,6 +89,9 @@ export type UsersCountAggregateOutputType = {
   line_subject: number
   line_consent_at: number
   line_consent_version: number
+  line_promo_consent_at: number
+  line_promo_withdrawn_at: number
+  line_promo_consent_version: number
   phone: number
   password_hash: number
   full_name: number
@@ -115,6 +124,9 @@ export type UsersMinAggregateInputType = {
   line_subject?: true
   line_consent_at?: true
   line_consent_version?: true
+  line_promo_consent_at?: true
+  line_promo_withdrawn_at?: true
+  line_promo_consent_version?: true
   phone?: true
   password_hash?: true
   full_name?: true
@@ -135,6 +147,9 @@ export type UsersMaxAggregateInputType = {
   line_subject?: true
   line_consent_at?: true
   line_consent_version?: true
+  line_promo_consent_at?: true
+  line_promo_withdrawn_at?: true
+  line_promo_consent_version?: true
   phone?: true
   password_hash?: true
   full_name?: true
@@ -155,6 +170,9 @@ export type UsersCountAggregateInputType = {
   line_subject?: true
   line_consent_at?: true
   line_consent_version?: true
+  line_promo_consent_at?: true
+  line_promo_withdrawn_at?: true
+  line_promo_consent_version?: true
   phone?: true
   password_hash?: true
   full_name?: true
@@ -262,6 +280,9 @@ export type UsersGroupByOutputType = {
   line_subject: string | null
   line_consent_at: Date | null
   line_consent_version: string | null
+  line_promo_consent_at: Date | null
+  line_promo_withdrawn_at: Date | null
+  line_promo_consent_version: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -305,6 +326,9 @@ export type usersWhereInput = {
   line_subject?: Prisma.StringNullableFilter<"users"> | string | null
   line_consent_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
   line_consent_version?: Prisma.StringNullableFilter<"users"> | string | null
+  line_promo_consent_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
+  line_promo_withdrawn_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
+  line_promo_consent_version?: Prisma.StringNullableFilter<"users"> | string | null
   phone?: Prisma.StringFilter<"users"> | string
   password_hash?: Prisma.StringFilter<"users"> | string
   full_name?: Prisma.StringFilter<"users"> | string
@@ -340,6 +364,8 @@ export type usersWhereInput = {
   consignor_payables?: Prisma.Consignor_payablesListRelationFilter
   consignor_payouts?: Prisma.Consignor_payoutsListRelationFilter
   consignor_payouts_created?: Prisma.Consignor_payoutsListRelationFilter
+  line_messages?: Prisma.Line_messagesListRelationFilter
+  line_campaigns_sent?: Prisma.Line_campaignsListRelationFilter
   consignment_submissions_as_consignor?: Prisma.Consignment_submissionsListRelationFilter
   consignment_submissions_decided?: Prisma.Consignment_submissionsListRelationFilter
 }
@@ -351,6 +377,9 @@ export type usersOrderByWithRelationInput = {
   line_subject?: Prisma.SortOrderInput | Prisma.SortOrder
   line_consent_at?: Prisma.SortOrderInput | Prisma.SortOrder
   line_consent_version?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_promo_consent_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_promo_withdrawn_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_promo_consent_version?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -386,6 +415,8 @@ export type usersOrderByWithRelationInput = {
   consignor_payables?: Prisma.consignor_payablesOrderByRelationAggregateInput
   consignor_payouts?: Prisma.consignor_payoutsOrderByRelationAggregateInput
   consignor_payouts_created?: Prisma.consignor_payoutsOrderByRelationAggregateInput
+  line_messages?: Prisma.line_messagesOrderByRelationAggregateInput
+  line_campaigns_sent?: Prisma.line_campaignsOrderByRelationAggregateInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsOrderByRelationAggregateInput
   consignment_submissions_decided?: Prisma.consignment_submissionsOrderByRelationAggregateInput
 }
@@ -401,6 +432,9 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.usersWhereInput | Prisma.usersWhereInput[]
   line_consent_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
   line_consent_version?: Prisma.StringNullableFilter<"users"> | string | null
+  line_promo_consent_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
+  line_promo_withdrawn_at?: Prisma.DateTimeNullableFilter<"users"> | Date | string | null
+  line_promo_consent_version?: Prisma.StringNullableFilter<"users"> | string | null
   password_hash?: Prisma.StringFilter<"users"> | string
   full_name?: Prisma.StringFilter<"users"> | string
   role?: Prisma.Enumuser_roleFilter<"users"> | $Enums.user_role
@@ -435,6 +469,8 @@ export type usersWhereUniqueInput = Prisma.AtLeast<{
   consignor_payables?: Prisma.Consignor_payablesListRelationFilter
   consignor_payouts?: Prisma.Consignor_payoutsListRelationFilter
   consignor_payouts_created?: Prisma.Consignor_payoutsListRelationFilter
+  line_messages?: Prisma.Line_messagesListRelationFilter
+  line_campaigns_sent?: Prisma.Line_campaignsListRelationFilter
   consignment_submissions_as_consignor?: Prisma.Consignment_submissionsListRelationFilter
   consignment_submissions_decided?: Prisma.Consignment_submissionsListRelationFilter
 }, "id" | "email" | "google_subject" | "line_subject" | "phone">
@@ -446,6 +482,9 @@ export type usersOrderByWithAggregationInput = {
   line_subject?: Prisma.SortOrderInput | Prisma.SortOrder
   line_consent_at?: Prisma.SortOrderInput | Prisma.SortOrder
   line_consent_version?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_promo_consent_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_promo_withdrawn_at?: Prisma.SortOrderInput | Prisma.SortOrder
+  line_promo_consent_version?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -474,6 +513,9 @@ export type usersScalarWhereWithAggregatesInput = {
   line_subject?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   line_consent_at?: Prisma.DateTimeNullableWithAggregatesFilter<"users"> | Date | string | null
   line_consent_version?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
+  line_promo_consent_at?: Prisma.DateTimeNullableWithAggregatesFilter<"users"> | Date | string | null
+  line_promo_withdrawn_at?: Prisma.DateTimeNullableWithAggregatesFilter<"users"> | Date | string | null
+  line_promo_consent_version?: Prisma.StringNullableWithAggregatesFilter<"users"> | string | null
   phone?: Prisma.StringWithAggregatesFilter<"users"> | string
   password_hash?: Prisma.StringWithAggregatesFilter<"users"> | string
   full_name?: Prisma.StringWithAggregatesFilter<"users"> | string
@@ -494,6 +536,9 @@ export type usersCreateInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -529,6 +574,8 @@ export type usersCreateInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -540,6 +587,9 @@ export type usersUncheckedCreateInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -575,6 +625,8 @@ export type usersUncheckedCreateInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -586,6 +638,9 @@ export type usersUpdateInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -621,6 +676,8 @@ export type usersUpdateInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -632,6 +689,9 @@ export type usersUncheckedUpdateInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -667,6 +727,8 @@ export type usersUncheckedUpdateInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -678,6 +740,9 @@ export type usersCreateManyInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -698,6 +763,9 @@ export type usersUpdateManyMutationInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -718,6 +786,9 @@ export type usersUncheckedUpdateManyInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -748,6 +819,9 @@ export type usersCountOrderByAggregateInput = {
   line_subject?: Prisma.SortOrder
   line_consent_at?: Prisma.SortOrder
   line_consent_version?: Prisma.SortOrder
+  line_promo_consent_at?: Prisma.SortOrder
+  line_promo_withdrawn_at?: Prisma.SortOrder
+  line_promo_consent_version?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -773,6 +847,9 @@ export type usersMaxOrderByAggregateInput = {
   line_subject?: Prisma.SortOrder
   line_consent_at?: Prisma.SortOrder
   line_consent_version?: Prisma.SortOrder
+  line_promo_consent_at?: Prisma.SortOrder
+  line_promo_withdrawn_at?: Prisma.SortOrder
+  line_promo_consent_version?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -793,6 +870,9 @@ export type usersMinOrderByAggregateInput = {
   line_subject?: Prisma.SortOrder
   line_consent_at?: Prisma.SortOrder
   line_consent_version?: Prisma.SortOrder
+  line_promo_consent_at?: Prisma.SortOrder
+  line_promo_withdrawn_at?: Prisma.SortOrder
+  line_promo_consent_version?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   password_hash?: Prisma.SortOrder
   full_name?: Prisma.SortOrder
@@ -1203,6 +1283,38 @@ export type usersUpdateOneRequiredWithoutPoint_transactionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutPoint_transactionsInput, Prisma.usersUpdateWithoutPoint_transactionsInput>, Prisma.usersUncheckedUpdateWithoutPoint_transactionsInput>
 }
 
+export type usersCreateNestedOneWithoutLine_messagesInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutLine_messagesInput, Prisma.usersUncheckedCreateWithoutLine_messagesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutLine_messagesInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutLine_messagesNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutLine_messagesInput, Prisma.usersUncheckedCreateWithoutLine_messagesInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutLine_messagesInput
+  upsert?: Prisma.usersUpsertWithoutLine_messagesInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutLine_messagesInput, Prisma.usersUpdateWithoutLine_messagesInput>, Prisma.usersUncheckedUpdateWithoutLine_messagesInput>
+}
+
+export type usersCreateNestedOneWithoutLine_campaigns_sentInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutLine_campaigns_sentInput, Prisma.usersUncheckedCreateWithoutLine_campaigns_sentInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutLine_campaigns_sentInput
+  connect?: Prisma.usersWhereUniqueInput
+}
+
+export type usersUpdateOneWithoutLine_campaigns_sentNestedInput = {
+  create?: Prisma.XOR<Prisma.usersCreateWithoutLine_campaigns_sentInput, Prisma.usersUncheckedCreateWithoutLine_campaigns_sentInput>
+  connectOrCreate?: Prisma.usersCreateOrConnectWithoutLine_campaigns_sentInput
+  upsert?: Prisma.usersUpsertWithoutLine_campaigns_sentInput
+  disconnect?: Prisma.usersWhereInput | boolean
+  delete?: Prisma.usersWhereInput | boolean
+  connect?: Prisma.usersWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.usersUpdateToOneWithWhereWithoutLine_campaigns_sentInput, Prisma.usersUpdateWithoutLine_campaigns_sentInput>, Prisma.usersUncheckedUpdateWithoutLine_campaigns_sentInput>
+}
+
 export type usersCreateWithoutNumber_blocksInput = {
   id?: string
   email?: string | null
@@ -1210,6 +1322,9 @@ export type usersCreateWithoutNumber_blocksInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1244,6 +1359,8 @@ export type usersCreateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -1255,6 +1372,9 @@ export type usersUncheckedCreateWithoutNumber_blocksInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1289,6 +1409,8 @@ export type usersUncheckedCreateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -1305,6 +1427,9 @@ export type usersCreateWithoutBlocks_closedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1339,6 +1464,8 @@ export type usersCreateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -1350,6 +1477,9 @@ export type usersUncheckedCreateWithoutBlocks_closedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1384,6 +1514,8 @@ export type usersUncheckedCreateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -1411,6 +1543,9 @@ export type usersUpdateWithoutNumber_blocksInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1445,6 +1580,8 @@ export type usersUpdateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -1456,6 +1593,9 @@ export type usersUncheckedUpdateWithoutNumber_blocksInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1490,6 +1630,8 @@ export type usersUncheckedUpdateWithoutNumber_blocksInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -1512,6 +1654,9 @@ export type usersUpdateWithoutBlocks_closedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1546,6 +1691,8 @@ export type usersUpdateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -1557,6 +1704,9 @@ export type usersUncheckedUpdateWithoutBlocks_closedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1591,6 +1741,8 @@ export type usersUncheckedUpdateWithoutBlocks_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -1602,6 +1754,9 @@ export type usersCreateWithoutConsigned_productsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1636,6 +1791,8 @@ export type usersCreateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -1647,6 +1804,9 @@ export type usersUncheckedCreateWithoutConsigned_productsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1681,6 +1841,8 @@ export type usersUncheckedCreateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -1708,6 +1870,9 @@ export type usersUpdateWithoutConsigned_productsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1742,6 +1907,8 @@ export type usersUpdateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -1753,6 +1920,9 @@ export type usersUncheckedUpdateWithoutConsigned_productsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1787,6 +1957,8 @@ export type usersUncheckedUpdateWithoutConsigned_productsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -1798,6 +1970,9 @@ export type usersCreateWithoutStock_logsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1832,6 +2007,8 @@ export type usersCreateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -1843,6 +2020,9 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -1877,6 +2057,8 @@ export type usersUncheckedCreateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -1904,6 +2086,9 @@ export type usersUpdateWithoutStock_logsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1938,6 +2123,8 @@ export type usersUpdateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -1949,6 +2136,9 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -1983,6 +2173,8 @@ export type usersUncheckedUpdateWithoutStock_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -1994,6 +2186,9 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2028,6 +2223,8 @@ export type usersCreateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -2039,6 +2236,9 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2073,6 +2273,8 @@ export type usersUncheckedCreateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -2089,6 +2291,9 @@ export type usersCreateWithoutSchedules_authoredInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2123,6 +2328,8 @@ export type usersCreateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -2134,6 +2341,9 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2168,6 +2378,8 @@ export type usersUncheckedCreateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -2195,6 +2407,9 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2229,6 +2444,8 @@ export type usersUpdateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -2240,6 +2457,9 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2274,6 +2494,8 @@ export type usersUncheckedUpdateWithoutSchedule_shiftsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -2296,6 +2518,9 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2330,6 +2555,8 @@ export type usersUpdateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -2341,6 +2568,9 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2375,6 +2605,8 @@ export type usersUncheckedUpdateWithoutSchedules_authoredInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -2386,6 +2618,9 @@ export type usersCreateWithoutTime_logsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2420,6 +2655,8 @@ export type usersCreateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -2431,6 +2668,9 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2465,6 +2705,8 @@ export type usersUncheckedCreateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -2492,6 +2734,9 @@ export type usersUpdateWithoutTime_logsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2526,6 +2771,8 @@ export type usersUpdateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -2537,6 +2784,9 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2571,6 +2821,8 @@ export type usersUncheckedUpdateWithoutTime_logsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -2582,6 +2834,9 @@ export type usersCreateWithoutShifts_openedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2616,6 +2871,8 @@ export type usersCreateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -2627,6 +2884,9 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2661,6 +2921,8 @@ export type usersUncheckedCreateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -2677,6 +2939,9 @@ export type usersCreateWithoutShifts_closedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2711,6 +2976,8 @@ export type usersCreateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -2722,6 +2989,9 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -2756,6 +3026,8 @@ export type usersUncheckedCreateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -2783,6 +3055,9 @@ export type usersUpdateWithoutShifts_openedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2817,6 +3092,8 @@ export type usersUpdateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -2828,6 +3105,9 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2862,6 +3142,8 @@ export type usersUncheckedUpdateWithoutShifts_openedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -2884,6 +3166,9 @@ export type usersUpdateWithoutShifts_closedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2918,6 +3203,8 @@ export type usersUpdateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -2929,6 +3216,9 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -2963,6 +3253,8 @@ export type usersUncheckedUpdateWithoutShifts_closedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -2974,6 +3266,9 @@ export type usersCreateWithoutAudit_logs_actedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3008,6 +3303,8 @@ export type usersCreateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -3019,6 +3316,9 @@ export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3053,6 +3353,8 @@ export type usersUncheckedCreateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -3069,6 +3371,9 @@ export type usersCreateWithoutAudit_logs_approvedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3103,6 +3408,8 @@ export type usersCreateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -3114,6 +3421,9 @@ export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3148,6 +3458,8 @@ export type usersUncheckedCreateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -3175,6 +3487,9 @@ export type usersUpdateWithoutAudit_logs_actedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3209,6 +3524,8 @@ export type usersUpdateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -3220,6 +3537,9 @@ export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3254,6 +3574,8 @@ export type usersUncheckedUpdateWithoutAudit_logs_actedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -3276,6 +3598,9 @@ export type usersUpdateWithoutAudit_logs_approvedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3310,6 +3635,8 @@ export type usersUpdateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -3321,6 +3648,9 @@ export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3355,6 +3685,8 @@ export type usersUncheckedUpdateWithoutAudit_logs_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -3366,6 +3698,9 @@ export type usersCreateWithoutNotice_acknowledgementsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3400,6 +3735,8 @@ export type usersCreateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -3411,6 +3748,9 @@ export type usersUncheckedCreateWithoutNotice_acknowledgementsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3445,6 +3785,8 @@ export type usersUncheckedCreateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -3472,6 +3814,9 @@ export type usersUpdateWithoutNotice_acknowledgementsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3506,6 +3851,8 @@ export type usersUpdateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -3517,6 +3864,9 @@ export type usersUncheckedUpdateWithoutNotice_acknowledgementsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3551,6 +3901,8 @@ export type usersUncheckedUpdateWithoutNotice_acknowledgementsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -3562,6 +3914,9 @@ export type usersCreateWithoutOrders_as_customerInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3596,6 +3951,8 @@ export type usersCreateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -3607,6 +3964,9 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3641,6 +4001,8 @@ export type usersUncheckedCreateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -3657,6 +4019,9 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3691,6 +4056,8 @@ export type usersCreateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -3702,6 +4069,9 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3736,6 +4106,8 @@ export type usersUncheckedCreateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -3763,6 +4135,9 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3797,6 +4172,8 @@ export type usersUpdateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -3808,6 +4185,9 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3842,6 +4222,8 @@ export type usersUncheckedUpdateWithoutOrders_as_customerInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -3864,6 +4246,9 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3898,6 +4283,8 @@ export type usersUpdateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -3909,6 +4296,9 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -3943,6 +4333,8 @@ export type usersUncheckedUpdateWithoutOrders_as_cashierInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -3954,6 +4346,9 @@ export type usersCreateWithoutCredit_notes_issuedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -3988,6 +4383,8 @@ export type usersCreateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -3999,6 +4396,9 @@ export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4033,6 +4433,8 @@ export type usersUncheckedCreateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -4049,6 +4451,9 @@ export type usersCreateWithoutCredit_notes_approvedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4083,6 +4488,8 @@ export type usersCreateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -4094,6 +4501,9 @@ export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4128,6 +4538,8 @@ export type usersUncheckedCreateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -4155,6 +4567,9 @@ export type usersUpdateWithoutCredit_notes_issuedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4189,6 +4604,8 @@ export type usersUpdateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -4200,6 +4617,9 @@ export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4234,6 +4654,8 @@ export type usersUncheckedUpdateWithoutCredit_notes_issuedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -4256,6 +4678,9 @@ export type usersUpdateWithoutCredit_notes_approvedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4290,6 +4715,8 @@ export type usersUpdateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -4301,6 +4728,9 @@ export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4335,6 +4765,8 @@ export type usersUncheckedUpdateWithoutCredit_notes_approvedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -4346,6 +4778,9 @@ export type usersCreateWithoutPayment_intentsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4380,6 +4815,8 @@ export type usersCreateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -4391,6 +4828,9 @@ export type usersUncheckedCreateWithoutPayment_intentsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4425,6 +4865,8 @@ export type usersUncheckedCreateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -4441,6 +4883,9 @@ export type usersCreateWithoutIntents_confirmedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4475,6 +4920,8 @@ export type usersCreateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -4486,6 +4933,9 @@ export type usersUncheckedCreateWithoutIntents_confirmedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4520,6 +4970,8 @@ export type usersUncheckedCreateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -4547,6 +4999,9 @@ export type usersUpdateWithoutPayment_intentsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4581,6 +5036,8 @@ export type usersUpdateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -4592,6 +5049,9 @@ export type usersUncheckedUpdateWithoutPayment_intentsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4626,6 +5086,8 @@ export type usersUncheckedUpdateWithoutPayment_intentsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -4648,6 +5110,9 @@ export type usersUpdateWithoutIntents_confirmedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4682,6 +5147,8 @@ export type usersUpdateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -4693,6 +5160,9 @@ export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4727,6 +5197,8 @@ export type usersUncheckedUpdateWithoutIntents_confirmedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -4738,6 +5210,9 @@ export type usersCreateWithoutInbound_dismissalsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4772,6 +5247,8 @@ export type usersCreateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -4783,6 +5260,9 @@ export type usersUncheckedCreateWithoutInbound_dismissalsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4817,6 +5297,8 @@ export type usersUncheckedCreateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -4844,6 +5326,9 @@ export type usersUpdateWithoutInbound_dismissalsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4878,6 +5363,8 @@ export type usersUpdateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -4889,6 +5376,9 @@ export type usersUncheckedUpdateWithoutInbound_dismissalsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -4923,6 +5413,8 @@ export type usersUncheckedUpdateWithoutInbound_dismissalsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -4934,6 +5426,9 @@ export type usersCreateWithoutDisplay_devicesInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -4968,6 +5463,8 @@ export type usersCreateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -4979,6 +5476,9 @@ export type usersUncheckedCreateWithoutDisplay_devicesInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5013,6 +5513,8 @@ export type usersUncheckedCreateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -5040,6 +5542,9 @@ export type usersUpdateWithoutDisplay_devicesInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5074,6 +5579,8 @@ export type usersUpdateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -5085,6 +5592,9 @@ export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5119,6 +5629,8 @@ export type usersUncheckedUpdateWithoutDisplay_devicesInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -5130,6 +5642,9 @@ export type usersCreateWithoutConsignor_payablesInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5164,6 +5679,8 @@ export type usersCreateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -5175,6 +5692,9 @@ export type usersUncheckedCreateWithoutConsignor_payablesInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5209,6 +5729,8 @@ export type usersUncheckedCreateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -5236,6 +5758,9 @@ export type usersUpdateWithoutConsignor_payablesInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5270,6 +5795,8 @@ export type usersUpdateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -5281,6 +5808,9 @@ export type usersUncheckedUpdateWithoutConsignor_payablesInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5315,6 +5845,8 @@ export type usersUncheckedUpdateWithoutConsignor_payablesInput = {
   consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -5326,6 +5858,9 @@ export type usersCreateWithoutConsignor_payoutsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5360,6 +5895,8 @@ export type usersCreateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -5371,6 +5908,9 @@ export type usersUncheckedCreateWithoutConsignor_payoutsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5405,6 +5945,8 @@ export type usersUncheckedCreateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -5421,6 +5963,9 @@ export type usersCreateWithoutConsignor_payouts_createdInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5455,6 +6000,8 @@ export type usersCreateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -5466,6 +6013,9 @@ export type usersUncheckedCreateWithoutConsignor_payouts_createdInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5500,6 +6050,8 @@ export type usersUncheckedCreateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -5527,6 +6079,9 @@ export type usersUpdateWithoutConsignor_payoutsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5561,6 +6116,8 @@ export type usersUpdateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -5572,6 +6129,9 @@ export type usersUncheckedUpdateWithoutConsignor_payoutsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5606,6 +6166,8 @@ export type usersUncheckedUpdateWithoutConsignor_payoutsInput = {
   consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -5628,6 +6190,9 @@ export type usersUpdateWithoutConsignor_payouts_createdInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5662,6 +6227,8 @@ export type usersUpdateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -5673,6 +6240,9 @@ export type usersUncheckedUpdateWithoutConsignor_payouts_createdInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5707,6 +6277,8 @@ export type usersUncheckedUpdateWithoutConsignor_payouts_createdInput = {
   consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -5718,6 +6290,9 @@ export type usersCreateWithoutConsignment_submissions_as_consignorInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5753,6 +6328,8 @@ export type usersCreateWithoutConsignment_submissions_as_consignorInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
 
@@ -5763,6 +6340,9 @@ export type usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5798,6 +6378,8 @@ export type usersUncheckedCreateWithoutConsignment_submissions_as_consignorInput
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
 
@@ -5813,6 +6395,9 @@ export type usersCreateWithoutConsignment_submissions_decidedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5848,6 +6433,8 @@ export type usersCreateWithoutConsignment_submissions_decidedInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
 }
 
@@ -5858,6 +6445,9 @@ export type usersUncheckedCreateWithoutConsignment_submissions_decidedInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -5893,6 +6483,8 @@ export type usersUncheckedCreateWithoutConsignment_submissions_decidedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
 }
 
@@ -5919,6 +6511,9 @@ export type usersUpdateWithoutConsignment_submissions_as_consignorInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5954,6 +6549,8 @@ export type usersUpdateWithoutConsignment_submissions_as_consignorInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
 
@@ -5964,6 +6561,9 @@ export type usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -5999,6 +6599,8 @@ export type usersUncheckedUpdateWithoutConsignment_submissions_as_consignorInput
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
 
@@ -6020,6 +6622,9 @@ export type usersUpdateWithoutConsignment_submissions_decidedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -6055,6 +6660,8 @@ export type usersUpdateWithoutConsignment_submissions_decidedInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
 }
 
@@ -6065,6 +6672,9 @@ export type usersUncheckedUpdateWithoutConsignment_submissions_decidedInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -6100,6 +6710,8 @@ export type usersUncheckedUpdateWithoutConsignment_submissions_decidedInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
 }
 
@@ -6110,6 +6722,9 @@ export type usersCreateWithoutPoint_transactionsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -6144,6 +6759,8 @@ export type usersCreateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
 }
@@ -6155,6 +6772,9 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   line_subject?: string | null
   line_consent_at?: Date | string | null
   line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
   phone: string
   password_hash: string
   full_name: string
@@ -6189,6 +6809,8 @@ export type usersUncheckedCreateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
 }
@@ -6216,6 +6838,9 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -6250,6 +6875,8 @@ export type usersUpdateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
 }
@@ -6261,6 +6888,9 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   password_hash?: Prisma.StringFieldUpdateOperationsInput | string
   full_name?: Prisma.StringFieldUpdateOperationsInput | string
@@ -6295,6 +6925,440 @@ export type usersUncheckedUpdateWithoutPoint_transactionsInput = {
   consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
   consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersCreateWithoutLine_messagesInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_campaigns_sent?: Prisma.line_campaignsCreateNestedManyWithoutSent_byInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
+}
+
+export type usersUncheckedCreateWithoutLine_messagesInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksUncheckedCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksUncheckedCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedCreateNestedManyWithoutSent_byInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
+}
+
+export type usersCreateOrConnectWithoutLine_messagesInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutLine_messagesInput, Prisma.usersUncheckedCreateWithoutLine_messagesInput>
+}
+
+export type usersUpsertWithoutLine_messagesInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutLine_messagesInput, Prisma.usersUncheckedUpdateWithoutLine_messagesInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutLine_messagesInput, Prisma.usersUncheckedCreateWithoutLine_messagesInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutLine_messagesInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutLine_messagesInput, Prisma.usersUncheckedUpdateWithoutLine_messagesInput>
+}
+
+export type usersUpdateWithoutLine_messagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUpdateManyWithoutSent_byNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersUncheckedUpdateWithoutLine_messagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUncheckedUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUncheckedUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_campaigns_sent?: Prisma.line_campaignsUncheckedUpdateManyWithoutSent_byNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersCreateWithoutLine_campaigns_sentInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesCreateNestedManyWithoutUserInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsCreateNestedManyWithoutDeciderInput
+}
+
+export type usersUncheckedCreateWithoutLine_campaigns_sentInput = {
+  id?: string
+  email?: string | null
+  google_subject?: string | null
+  line_subject?: string | null
+  line_consent_at?: Date | string | null
+  line_consent_version?: string | null
+  line_promo_consent_at?: Date | string | null
+  line_promo_withdrawn_at?: Date | string | null
+  line_promo_consent_version?: string | null
+  phone: string
+  password_hash: string
+  full_name: string
+  role?: $Enums.user_role
+  points_balance?: number
+  is_active?: boolean
+  pin_hash?: string | null
+  pin_failed_attempts?: number
+  pin_locked_until?: Date | string | null
+  created_at?: Date | string
+  updated_at?: Date | string
+  orders_as_customer?: Prisma.ordersUncheckedCreateNestedManyWithoutCustomerInput
+  orders_as_cashier?: Prisma.ordersUncheckedCreateNestedManyWithoutCashierInput
+  stock_logs?: Prisma.stock_logsUncheckedCreateNestedManyWithoutUserInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutEmployeeInput
+  schedules_authored?: Prisma.work_schedulesUncheckedCreateNestedManyWithoutAuthorInput
+  time_logs?: Prisma.time_logsUncheckedCreateNestedManyWithoutEmployeeInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutOpenerInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedCreateNestedManyWithoutCloserInput
+  point_transactions?: Prisma.point_transactionsUncheckedCreateNestedManyWithoutUserInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedCreateNestedManyWithoutActorInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedCreateNestedManyWithoutAuthorized_byInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedCreateNestedManyWithoutCustomerInput
+  payment_intents?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutCashierInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedCreateNestedManyWithoutConfirmed_byInput
+  display_devices?: Prisma.display_devicesUncheckedCreateNestedManyWithoutPaired_byInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedCreateNestedManyWithoutIssuerInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedCreateNestedManyWithoutApproverInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedCreateNestedManyWithoutDismissed_byInput
+  number_blocks?: Prisma.number_blocksUncheckedCreateNestedManyWithoutOpenerInput
+  blocks_closed?: Prisma.number_blocksUncheckedCreateNestedManyWithoutCloserInput
+  consigned_products?: Prisma.productsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutConsignorInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedCreateNestedManyWithoutCreatorInput
+  line_messages?: Prisma.line_messagesUncheckedCreateNestedManyWithoutUserInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutConsignorInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedCreateNestedManyWithoutDeciderInput
+}
+
+export type usersCreateOrConnectWithoutLine_campaigns_sentInput = {
+  where: Prisma.usersWhereUniqueInput
+  create: Prisma.XOR<Prisma.usersCreateWithoutLine_campaigns_sentInput, Prisma.usersUncheckedCreateWithoutLine_campaigns_sentInput>
+}
+
+export type usersUpsertWithoutLine_campaigns_sentInput = {
+  update: Prisma.XOR<Prisma.usersUpdateWithoutLine_campaigns_sentInput, Prisma.usersUncheckedUpdateWithoutLine_campaigns_sentInput>
+  create: Prisma.XOR<Prisma.usersCreateWithoutLine_campaigns_sentInput, Prisma.usersUncheckedCreateWithoutLine_campaigns_sentInput>
+  where?: Prisma.usersWhereInput
+}
+
+export type usersUpdateToOneWithWhereWithoutLine_campaigns_sentInput = {
+  where?: Prisma.usersWhereInput
+  data: Prisma.XOR<Prisma.usersUpdateWithoutLine_campaigns_sentInput, Prisma.usersUncheckedUpdateWithoutLine_campaigns_sentInput>
+}
+
+export type usersUpdateWithoutLine_campaigns_sentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUpdateManyWithoutUserNestedInput
+  consignment_submissions_as_consignor?: Prisma.consignment_submissionsUpdateManyWithoutConsignorNestedInput
+  consignment_submissions_decided?: Prisma.consignment_submissionsUpdateManyWithoutDeciderNestedInput
+}
+
+export type usersUncheckedUpdateWithoutLine_campaigns_sentInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  google_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_subject?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  line_promo_consent_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_withdrawn_at?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  line_promo_consent_version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.StringFieldUpdateOperationsInput | string
+  password_hash?: Prisma.StringFieldUpdateOperationsInput | string
+  full_name?: Prisma.StringFieldUpdateOperationsInput | string
+  role?: Prisma.Enumuser_roleFieldUpdateOperationsInput | $Enums.user_role
+  points_balance?: Prisma.IntFieldUpdateOperationsInput | number
+  is_active?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  pin_hash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  pin_failed_attempts?: Prisma.IntFieldUpdateOperationsInput | number
+  pin_locked_until?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  created_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updated_at?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  orders_as_customer?: Prisma.ordersUncheckedUpdateManyWithoutCustomerNestedInput
+  orders_as_cashier?: Prisma.ordersUncheckedUpdateManyWithoutCashierNestedInput
+  stock_logs?: Prisma.stock_logsUncheckedUpdateManyWithoutUserNestedInput
+  schedule_shifts?: Prisma.work_schedulesUncheckedUpdateManyWithoutEmployeeNestedInput
+  schedules_authored?: Prisma.work_schedulesUncheckedUpdateManyWithoutAuthorNestedInput
+  time_logs?: Prisma.time_logsUncheckedUpdateManyWithoutEmployeeNestedInput
+  shifts_opened?: Prisma.cash_shiftsUncheckedUpdateManyWithoutOpenerNestedInput
+  shifts_closed?: Prisma.cash_shiftsUncheckedUpdateManyWithoutCloserNestedInput
+  point_transactions?: Prisma.point_transactionsUncheckedUpdateManyWithoutUserNestedInput
+  audit_logs_acted?: Prisma.audit_logsUncheckedUpdateManyWithoutActorNestedInput
+  audit_logs_approved?: Prisma.audit_logsUncheckedUpdateManyWithoutAuthorized_byNestedInput
+  notice_acknowledgements?: Prisma.notice_acknowledgementsUncheckedUpdateManyWithoutCustomerNestedInput
+  payment_intents?: Prisma.payment_intentsUncheckedUpdateManyWithoutCashierNestedInput
+  intents_confirmed?: Prisma.payment_intentsUncheckedUpdateManyWithoutConfirmed_byNestedInput
+  display_devices?: Prisma.display_devicesUncheckedUpdateManyWithoutPaired_byNestedInput
+  credit_notes_issued?: Prisma.credit_notesUncheckedUpdateManyWithoutIssuerNestedInput
+  credit_notes_approved?: Prisma.credit_notesUncheckedUpdateManyWithoutApproverNestedInput
+  inbound_dismissals?: Prisma.inbound_paymentsUncheckedUpdateManyWithoutDismissed_byNestedInput
+  number_blocks?: Prisma.number_blocksUncheckedUpdateManyWithoutOpenerNestedInput
+  blocks_closed?: Prisma.number_blocksUncheckedUpdateManyWithoutCloserNestedInput
+  consigned_products?: Prisma.productsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payables?: Prisma.consignor_payablesUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutConsignorNestedInput
+  consignor_payouts_created?: Prisma.consignor_payoutsUncheckedUpdateManyWithoutCreatorNestedInput
+  line_messages?: Prisma.line_messagesUncheckedUpdateManyWithoutUserNestedInput
   consignment_submissions_as_consignor?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutConsignorNestedInput
   consignment_submissions_decided?: Prisma.consignment_submissionsUncheckedUpdateManyWithoutDeciderNestedInput
 }
@@ -6329,6 +7393,8 @@ export type UsersCountOutputType = {
   consignor_payables: number
   consignor_payouts: number
   consignor_payouts_created: number
+  line_messages: number
+  line_campaigns_sent: number
   consignment_submissions_as_consignor: number
   consignment_submissions_decided: number
 }
@@ -6358,6 +7424,8 @@ export type UsersCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.
   consignor_payables?: boolean | UsersCountOutputTypeCountConsignor_payablesArgs
   consignor_payouts?: boolean | UsersCountOutputTypeCountConsignor_payoutsArgs
   consignor_payouts_created?: boolean | UsersCountOutputTypeCountConsignor_payouts_createdArgs
+  line_messages?: boolean | UsersCountOutputTypeCountLine_messagesArgs
+  line_campaigns_sent?: boolean | UsersCountOutputTypeCountLine_campaigns_sentArgs
   consignment_submissions_as_consignor?: boolean | UsersCountOutputTypeCountConsignment_submissions_as_consignorArgs
   consignment_submissions_decided?: boolean | UsersCountOutputTypeCountConsignment_submissions_decidedArgs
 }
@@ -6543,6 +7611,20 @@ export type UsersCountOutputTypeCountConsignor_payouts_createdArgs<ExtArgs exten
 /**
  * UsersCountOutputType without action
  */
+export type UsersCountOutputTypeCountLine_messagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.line_messagesWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
+export type UsersCountOutputTypeCountLine_campaigns_sentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.line_campaignsWhereInput
+}
+
+/**
+ * UsersCountOutputType without action
+ */
 export type UsersCountOutputTypeCountConsignment_submissions_as_consignorArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.consignment_submissionsWhereInput
 }
@@ -6562,6 +7644,9 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   line_subject?: boolean
   line_consent_at?: boolean
   line_consent_version?: boolean
+  line_promo_consent_at?: boolean
+  line_promo_withdrawn_at?: boolean
+  line_promo_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6597,6 +7682,8 @@ export type usersSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   consignor_payables?: boolean | Prisma.users$consignor_payablesArgs<ExtArgs>
   consignor_payouts?: boolean | Prisma.users$consignor_payoutsArgs<ExtArgs>
   consignor_payouts_created?: boolean | Prisma.users$consignor_payouts_createdArgs<ExtArgs>
+  line_messages?: boolean | Prisma.users$line_messagesArgs<ExtArgs>
+  line_campaigns_sent?: boolean | Prisma.users$line_campaigns_sentArgs<ExtArgs>
   consignment_submissions_as_consignor?: boolean | Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs>
   consignment_submissions_decided?: boolean | Prisma.users$consignment_submissions_decidedArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
@@ -6609,6 +7696,9 @@ export type usersSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   line_subject?: boolean
   line_consent_at?: boolean
   line_consent_version?: boolean
+  line_promo_consent_at?: boolean
+  line_promo_withdrawn_at?: boolean
+  line_promo_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6629,6 +7719,9 @@ export type usersSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   line_subject?: boolean
   line_consent_at?: boolean
   line_consent_version?: boolean
+  line_promo_consent_at?: boolean
+  line_promo_withdrawn_at?: boolean
+  line_promo_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6649,6 +7742,9 @@ export type usersSelectScalar = {
   line_subject?: boolean
   line_consent_at?: boolean
   line_consent_version?: boolean
+  line_promo_consent_at?: boolean
+  line_promo_withdrawn_at?: boolean
+  line_promo_consent_version?: boolean
   phone?: boolean
   password_hash?: boolean
   full_name?: boolean
@@ -6662,7 +7758,7 @@ export type usersSelectScalar = {
   updated_at?: boolean
 }
 
-export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "google_subject" | "line_subject" | "line_consent_at" | "line_consent_version" | "phone" | "password_hash" | "full_name" | "role" | "points_balance" | "is_active" | "pin_hash" | "pin_failed_attempts" | "pin_locked_until" | "created_at" | "updated_at", ExtArgs["result"]["users"]>
+export type usersOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "email" | "google_subject" | "line_subject" | "line_consent_at" | "line_consent_version" | "line_promo_consent_at" | "line_promo_withdrawn_at" | "line_promo_consent_version" | "phone" | "password_hash" | "full_name" | "role" | "points_balance" | "is_active" | "pin_hash" | "pin_failed_attempts" | "pin_locked_until" | "created_at" | "updated_at", ExtArgs["result"]["users"]>
 export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   orders_as_customer?: boolean | Prisma.users$orders_as_customerArgs<ExtArgs>
   orders_as_cashier?: boolean | Prisma.users$orders_as_cashierArgs<ExtArgs>
@@ -6688,6 +7784,8 @@ export type usersInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   consignor_payables?: boolean | Prisma.users$consignor_payablesArgs<ExtArgs>
   consignor_payouts?: boolean | Prisma.users$consignor_payoutsArgs<ExtArgs>
   consignor_payouts_created?: boolean | Prisma.users$consignor_payouts_createdArgs<ExtArgs>
+  line_messages?: boolean | Prisma.users$line_messagesArgs<ExtArgs>
+  line_campaigns_sent?: boolean | Prisma.users$line_campaigns_sentArgs<ExtArgs>
   consignment_submissions_as_consignor?: boolean | Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs>
   consignment_submissions_decided?: boolean | Prisma.users$consignment_submissions_decidedArgs<ExtArgs>
   _count?: boolean | Prisma.UsersCountOutputTypeDefaultArgs<ExtArgs>
@@ -6722,6 +7820,8 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     consignor_payables: Prisma.$consignor_payablesPayload<ExtArgs>[]
     consignor_payouts: Prisma.$consignor_payoutsPayload<ExtArgs>[]
     consignor_payouts_created: Prisma.$consignor_payoutsPayload<ExtArgs>[]
+    line_messages: Prisma.$line_messagesPayload<ExtArgs>[]
+    line_campaigns_sent: Prisma.$line_campaignsPayload<ExtArgs>[]
     consignment_submissions_as_consignor: Prisma.$consignment_submissionsPayload<ExtArgs>[]
     consignment_submissions_decided: Prisma.$consignment_submissionsPayload<ExtArgs>[]
   }
@@ -6732,6 +7832,9 @@ export type $usersPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     line_subject: string | null
     line_consent_at: Date | null
     line_consent_version: string | null
+    line_promo_consent_at: Date | null
+    line_promo_withdrawn_at: Date | null
+    line_promo_consent_version: string | null
     phone: string
     password_hash: string
     full_name: string
@@ -7161,6 +8264,8 @@ export interface Prisma__usersClient<T, Null = never, ExtArgs extends runtime.Ty
   consignor_payables<T extends Prisma.users$consignor_payablesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignor_payablesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payablesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignor_payouts<T extends Prisma.users$consignor_payoutsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignor_payoutsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payoutsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignor_payouts_created<T extends Prisma.users$consignor_payouts_createdArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignor_payouts_createdArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignor_payoutsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  line_messages<T extends Prisma.users$line_messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$line_messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$line_messagesPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  line_campaigns_sent<T extends Prisma.users$line_campaigns_sentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$line_campaigns_sentArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$line_campaignsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignment_submissions_as_consignor<T extends Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignment_submissions_as_consignorArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignment_submissionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   consignment_submissions_decided<T extends Prisma.users$consignment_submissions_decidedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.users$consignment_submissions_decidedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$consignment_submissionsPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -7198,6 +8303,9 @@ export interface usersFieldRefs {
   readonly line_subject: Prisma.FieldRef<"users", 'String'>
   readonly line_consent_at: Prisma.FieldRef<"users", 'DateTime'>
   readonly line_consent_version: Prisma.FieldRef<"users", 'String'>
+  readonly line_promo_consent_at: Prisma.FieldRef<"users", 'DateTime'>
+  readonly line_promo_withdrawn_at: Prisma.FieldRef<"users", 'DateTime'>
+  readonly line_promo_consent_version: Prisma.FieldRef<"users", 'String'>
   readonly phone: Prisma.FieldRef<"users", 'String'>
   readonly password_hash: Prisma.FieldRef<"users", 'String'>
   readonly full_name: Prisma.FieldRef<"users", 'String'>
@@ -8175,6 +9283,54 @@ export type users$consignor_payouts_createdArgs<ExtArgs extends runtime.Types.Ex
   take?: number
   skip?: number
   distinct?: Prisma.Consignor_payoutsScalarFieldEnum | Prisma.Consignor_payoutsScalarFieldEnum[]
+}
+
+/**
+ * users.line_messages
+ */
+export type users$line_messagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the line_messages
+   */
+  select?: Prisma.line_messagesSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the line_messages
+   */
+  omit?: Prisma.line_messagesOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.line_messagesInclude<ExtArgs> | null
+  where?: Prisma.line_messagesWhereInput
+  orderBy?: Prisma.line_messagesOrderByWithRelationInput | Prisma.line_messagesOrderByWithRelationInput[]
+  cursor?: Prisma.line_messagesWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Line_messagesScalarFieldEnum | Prisma.Line_messagesScalarFieldEnum[]
+}
+
+/**
+ * users.line_campaigns_sent
+ */
+export type users$line_campaigns_sentArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the line_campaigns
+   */
+  select?: Prisma.line_campaignsSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the line_campaigns
+   */
+  omit?: Prisma.line_campaignsOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.line_campaignsInclude<ExtArgs> | null
+  where?: Prisma.line_campaignsWhereInput
+  orderBy?: Prisma.line_campaignsOrderByWithRelationInput | Prisma.line_campaignsOrderByWithRelationInput[]
+  cursor?: Prisma.line_campaignsWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.Line_campaignsScalarFieldEnum | Prisma.Line_campaignsScalarFieldEnum[]
 }
 
 /**

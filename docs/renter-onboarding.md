@@ -265,7 +265,13 @@ customer gets their pickup PIN and hold deadline when their parcel is packed. Se
 nothing and nothing is queued — the app keeps working exactly as it does now.
 When a bill is refunded, or a bank notification is dismissed by hand on the
 dashboard, the shop's own destination hears about that too — the two facts an
-owner otherwise learns late.
+owner otherwise learns late. A message from a customer is one more: the group is
+told **once per customer per ten minutes**, however many messages they send in that
+time (§6.3).
+
+`NOTIFY_CHANNEL` decides where the *shop's own* messages go. Sending a **promotion**
+to your customers is a different switch: it needs `NOTIFY_LINE_TOKEN`, and it works
+even if your own alerts go to a webhook or nowhere at all (§6.3).
 
 ### 6.3 LINE: signing in, binding, and being told on LINE
 
@@ -304,6 +310,46 @@ optional and independent of everything above:
   **add the shop as a friend** on LINE, or no message can arrive — that is LINE's
   rule, not ours. ยกเลิกการผูก on that card stops everything at once: no more
   messages, and the LINE account no longer opens the account.
+- **Opening the shop inside LINE.** Once you have registered an entry (step 5
+  below), the "รับของได้แล้ว" message carries a link, and tapping it opens the shop
+  **inside LINE** — the customer is already signed in, and sees the catalogue,
+  their orders and their receipts without typing anything. A customer who has never
+  used the shop this way is asked for their phone number and a code once, in that
+  same page, and then they are in. If somebody opens that link in Safari or Chrome
+  instead, it says in Thai that it only works in the LINE app and points at the
+  normal sign-in page — that is not a fault, it is the link being opened somewhere it
+  was not meant for.
+- **What your customers say back.** Anything a customer types or sends to the shop's
+  LINE is kept, with the customer it came from, and appears on their card under
+  **ลูกค้า** (`/admin/members`) beside their points and orders. Your phone's own LINE
+  app already shows you the message; this is what tells you *which customer* it was
+  and lets you look them up. A photo, a sticker or a voice note is recorded as the
+  kind of thing it was, without keeping the picture itself. Answer in LINE as you
+  always would — the shop's LINE screen is not a chat window.
+
+**Promotions.** You can send one message to all of your customers at once, from
+**โปรโมชัน LINE** (`/admin/line`). Only customers who did three things get it: bound
+their LINE, added the shop as a friend, and **agreed to receive promotions** — which
+is a separate yes from "tell me about my order", offered on the customer's own LINE
+card, and never assumed. The screen tells you how many customers that is and what the
+send costs before you press anything.
+
+That cost is the thing to keep an eye on. LINE counts every recipient as one message
+against the month's allowance — **300 messages a month on the free plan** — and so does
+a message to the shop's own group: one message per member of the group, every time. Send
+to 250 customers and you have spent 250 of your 300. The screen reads the month's
+remaining allowance from LINE and refuses a send that will not fit, but LINE itself is
+the authority: if it refuses anyway (`You have reached your monthly limit.`), that is
+what the campaign shows afterwards. Sending is admin-only, and the same screen lists
+what has been sent and what could not be sent.
+
+**When a send does not fully go out.** A campaign goes to LINE in batches of up to 500
+customers, and each batch is tried **once**. If LINE refuses one, that campaign is shown
+as **ส่งไม่ครบ (partial)** with LINE's own words beside the failed batch: some customers
+got it and some did not, and only a person can decide what to do next. Nothing is
+retried automatically, because LINE cannot tell a retry from a fresh send and a promotion
+delivered twice is worse than one that did not arrive. If you want to reach the leftovers,
+write and send a **new** campaign — the old one keeps saying what actually happened.
 
 What you must do once, as the shop owner (the wizard walks you through it):
 
@@ -320,6 +366,13 @@ What you must do once, as the shop owner (the wizard walks you through it):
    `/api/v1/auth/line/callback` and `/api/v1/line/webhook`.
 4. `npm run line:wizard` collects all of this into `.env`, and
    `npm run line:wizard -- --verify` later tells you which doors are open.
+5. For the in-LINE entry, add a **LIFF app** — in the **LINE Login** channel (not
+   the Messaging API one), under the *LIFF* tab — and set its **endpoint URL** to
+   your system's own address plus `/line`. It has to be `https://`; LINE will not
+   accept a plain-HTTP address. Copy the **LIFF ID** it gives you into
+   `LINE_LIFF_ID` (the wizard asks for it) and restart. Without it, `/line` says the
+   shop has not set the entry up and points at the normal sign-in page, and the
+   "ready" message simply carries no link.
 
 If messages stop arriving after a customer changed phones or removed the shop as a
 friend, it is almost always the friend condition: they re-add the shop as a friend

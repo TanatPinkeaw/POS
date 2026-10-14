@@ -16,13 +16,11 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model consignor_payouts
  * *
  *  * A settlement of what the shop owed a consignor (ADR 0023 §6).
- *  *
  *  * The second money-out document in this system, and deliberately a document rather
  *  * than a flag on the ledger: the ledger says "this much is owed", and a payout says
  *  * "that debt was settled like this, on this day, by this person". The ledger's payout
  *  * row points here (`consignor_payables.payout_id`), so the arithmetic and the paper
  *  * behind it can never be separated.
- *  *
  *  * `method` is the same enum a refund uses, and the same rule applies: `cash` comes out
  *  * of an open drawer and carries its `shift_id`; `promptpay` is a transfer the admin
  *  * already made in the shop's own app and touches no drawer, so it carries none. The
@@ -1070,20 +1068,24 @@ export type $consignor_payoutsPayload<ExtArgs extends runtime.Types.Extensions.I
     id: bigint
     consignor_user_id: string
     /**
-     * * `cash` out of a drawer, or `promptpay` handed over in the shop's own app.
+     * *
+     *    * `cash` out of a drawer, or `promptpay` handed over in the shop's own app.
      */
     method: $Enums.payment_method
     /**
-     * * Always positive: the money that left the shop.
+     * *
+     *    * Always positive: the money that left the shop.
      */
     amount_thb: runtime.Decimal
     /**
-     * * The drawer a cash payout came out of; null for a transfer.
+     * *
+     *    * The drawer a cash payout came out of; null for a transfer.
      */
     shift_id: number | null
     note: string | null
     /**
-     * * The admin who settled it.
+     * *
+     *    * The admin who settled it.
      */
     created_by: string
     created_at: Date

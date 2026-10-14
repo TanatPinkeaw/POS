@@ -20,6 +20,7 @@ import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
 import type { ReceiptData } from '@/components/pos/Receipt';
 import { ApiError, apiFetch, apiPatch, apiPost } from '@/lib/client-api';
 import { MAX_OFFER_DOCUMENTS, MAX_OFFER_PHOTOS } from '@/lib/consignment-rules';
+import { linePromoActionLabel, linePromoConsentSentence, linePromoConsentState } from '@/lib/line-promo-consent';
 import { formatThb } from '@/lib/money';
 import { receiptImageDataUrl } from '@/lib/receipt-image';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
@@ -144,6 +145,10 @@ export interface LineBindingView {
   lineSubject: string | null;
   consentAt: string | null;
   consentVersion: string | null;
+  /** The second consent (ADR 0032 §5) — two timestamps, because the later one wins. */
+  promoConsentAt: string | null;
+  promoWithdrawnAt: string | null;
+  promoConsentVersion: string | null;
 }
 
 /**
@@ -249,7 +254,16 @@ function LinePanel({ line }: { line: LineBindingView }) {
     setError(null);
     try {
       await apiPost('/api/v1/account/line', { unlink: true });
-      setBinding({ lineSubject: null, consentAt: null, consentVersion: null });
+      // Every LINE fact clears together, the promotion consent included: the address is what
+      // is being removed, and a consent with no address is dead weight (ADR 0032 §5).
+      setBinding({
+        lineSubject: null,
+        consentAt: null,
+        consentVersion: null,
+        promoConsentAt: null,
+        promoWithdrawnAt: null,
+        promoConsentVersion: null,
+      });
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'ยกเลิกการผูกไม่สำเร็จ');
     } finally {
@@ -265,6 +279,44 @@ function LinePanel({ line }: { line: LineBindingView }) {
       setBinding((current) => ({ ...current, consentAt: new Date().toISOString() }));
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'บันทึกการยินยอมไม่สำเร็จ');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /*
+   * The promotion consent as a *state*, not as two timestamps compared here — the later one
+   * wins, and that rule lives in one pure module (ADR 0032 §5) so the card, a campaign's
+   * eligibility and the tests all read the same answer.
+   */
+  const promoState = linePromoConsentState({
+    consentAt: binding.promoConsentAt ? new Date(binding.promoConsentAt) : null,
+    withdrawnAt: binding.promoWithdrawnAt ? new Date(binding.promoWithdrawnAt) : null,
+  });
+
+  /**
+   * Agrees to promotions, or withdraws — its own request, never a side effect of binding.
+   *
+   * Sent only when it is the whole point of the call: the route distinguishes the acts by
+   * what the body names, so a customer withdrawing a promotion cannot accidentally unbind
+   * their LINE account by pressing the wrong button.
+   */
+  async function setPromo(consent: boolean): Promise<void> {
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await apiPost<{
+        promoConsentAt: string | null;
+        promoWithdrawnAt: string | null;
+      }>('/api/v1/account/line', { promoConsent: consent });
+      setBinding((current) => ({
+        ...current,
+        promoConsentAt: result.promoConsentAt,
+        promoWithdrawnAt: result.promoWithdrawnAt,
+        promoConsentVersion: consent ? new Date().toISOString() : current.promoConsentVersion,
+      }));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'บันทึกความยินยอมไม่สำเร็จ');
     } finally {
       setBusy(false);
     }
@@ -322,6 +374,25 @@ function LinePanel({ line }: { line: LineBindingView }) {
                   ยินยอมรับการแจ้งเตือนทาง LINE
                 </Button>
               )}
+              {/*
+                The second consent, as its own control with its own wording (ADR 0032 §5).
+                It is deliberately not the same act as the notification consent above: that
+                one means "tell me my order is ready", which placing the order asked for. A
+                promotion is a different purpose, so it is offered here, withdrawn here, and
+                nothing about it moves the binding.
+              */}
+              <div className={styles.promoBlock}>
+                <p className={styles.promoTitle}>โปรโมชันและข่าวของร้าน</p>
+                <p className="ln-muted ln-text-sm">{linePromoConsentSentence(promoState)}</p>
+                <Button
+                  variant={promoState === 'consented' ? 'ghost' : 'secondary'}
+                  loading={busy}
+                  onClick={() => void setPromo(promoState !== 'consented')}
+                >
+                  {linePromoActionLabel(promoState)}
+                </Button>
+              </div>
+
               <Button variant="ghost" loading={busy} onClick={() => void unbind()}>
                 ยกเลิกการผูกและหยุดรับการแจ้งเตือน
               </Button>

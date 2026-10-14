@@ -147,6 +147,9 @@ describe('the policy table', () => {
       'line_signin',
       'line_link',
       'line_callback',
+      // Sending a promotion: the one signed-in write that spends somebody else's allowance,
+      // keyed by the admin rather than the address (ADR 0032 §7).
+      'line_campaign',
       'line_webhook',
       // Google's redirect landing: a form POST from another origin that mints a session on
       // the way out, so it is counted like the LINE callback beside it (ADR 0020 §1).

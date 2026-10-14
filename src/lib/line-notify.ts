@@ -21,6 +21,7 @@
  * read, so the tests pin the *decision* without a database.
  */
 import { bangkokTimeString } from './bangkok-time';
+import { liffEntryUrl } from './line-liff-entry';
 import type { NotificationChannel, PlannedNotification } from './notify-message';
 
 /** Version marker on the consent text; bumped when the wording changes materially. */
@@ -87,16 +88,32 @@ export function planLineCustomerReadyMessage(
     /** The hold's deadline; stated in Bangkok time, like every other clock here. */
     holdUntil: Date;
   } & LineCustomerNotifyInput,
+  /**
+   * The environment the LIFF link is read from, injectable for the same reason
+   * `readNotifyConfig` takes one: the tests drive both shapes without a `.env`.
+   */
+  env: Record<string, string | undefined> = process.env,
 ): { recipient: string; text: string; orderId: string } | null {
   if (lineCustomerNotifyBlock(input) !== null) {
     return null;
   }
+  /*
+   * The one-tap link into the app the customer is already reading this in (ADR 0032 §2).
+   *
+   * It is appended only when this deployment has a LIFF app: a shop that has not set one up
+   * gets exactly the sentence it sent before, rather than a link to `https://liff.line.me/`
+   * that opens LINE with no app in it. Nothing secret rides the link — the collection code is
+   * already in the text beside it, and the link only saves the customer from finding the
+   * shop again inside LINE.
+   */
+  const entry = liffEntryUrl(env);
   return {
     recipient: input.customerLineSubject as string,
     text:
       `ออเดอร์ ${input.orderNumber} พร้อมรับแล้ว ` +
       `รหัสรับของ ${input.pickupPin} แสดงที่หน้าออเดอร์ของคุณ ` +
-      `ร้านเก็บถึง ${bangkokTimeString(input.holdUntil)} น.`,
+      `ร้านเก็บถึง ${bangkokTimeString(input.holdUntil)} น.` +
+      (entry === null ? '' : ` เปิดดูก่อนได้ที่ ${entry}`),
     orderId: input.orderId,
   };
 }
@@ -128,6 +145,118 @@ export function planShopFactMessage(input: {
     text: `บิล ${input.orderNumber} ถูกคืนเงิน ${input.refundedThb} บาท — เหตุผล: ${input.reason}`,
     orderId: input.orderId,
   };
+}
+
+/**
+ * How long one burst of messages from one customer stays one fact (ADR 0032 §4).
+ *
+ * Ten minutes, and it is a *duration*, not a calendar boundary — which is why this does not
+ * go through `bangkok-time.ts`: a bucket that shifted with a time zone would make two shops
+ * on two clocks disagree about a window that is about how fast a person types. The number is
+ * here rather than in the outbox because it is a decision about what the shop wants to hear,
+ * not about how a queue works.
+ */
+export const CUSTOMER_MESSAGE_WINDOW_MINUTES = 10;
+
+/**
+ * The key that makes a burst one fact: the customer, and which window they wrote in.
+ *
+ * Built so the *database* enforces the window: `notifications` has a unique
+ * `(kind, dedupe_key)`, so two workers racing on the same burst collide on the index instead
+ * of on a read that both of them won. The subject is part of it, so two customers writing in
+ * the same window are two facts.
+ */
+export function customerMessageDedupeKey(subject: string, at: Date): string {
+  const windowMs = CUSTOMER_MESSAGE_WINDOW_MINUTES * 60_000;
+  return `${subject}:${Math.floor(at.getTime() / windowMs)}`;
+}
+
+/** What each kind of message is called on a card, since the shop reads Thai. */
+const MESSAGE_KIND_LABEL: Record<string, string> = {
+  text: 'ข้อความ',
+  image: 'รูปภาพ',
+  video: 'วิดีโอ',
+  audio: 'ไฟล์เสียง',
+  file: 'ไฟล์',
+  location: 'ตำแหน่ง',
+  sticker: 'สติกเกอร์',
+  other: 'ข้อความ',
+};
+
+/**
+ * One kind of message named in Thai, for the two places that show it.
+ *
+ * Exported rather than duplicated, because the group fact and the customer's card answer
+ * the same question about the same row: a sticker called a sticker in the alert and
+ * something else on the card would be two vocabularies for one fact. `other` is the
+ * fallback, which is why the set is closed here rather than at each call site.
+ */
+export function lineMessageKindLabel(kind: string): string {
+  return MESSAGE_KIND_LABEL[kind] ?? MESSAGE_KIND_LABEL.other;
+}
+
+/** A snippet short enough for one line of a phone notification, in the shop's own words. */
+const MESSAGE_SNIPPET_LENGTH = 60;
+
+/**
+ * The fact that a customer wrote to the shop, for the shop's own group.
+ *
+ * **Why the shop hears about a customer at all**, given that LINE's own Official Account app
+ * already notifies whoever holds its phone: because those two alerts answer different
+ * questions. LINE's says "somebody wrote to the shop"; this one says which customer, and a
+ * group is where the counter can see it without one person's phone. It is capped to one per
+ * window per customer — see `customerMessageDedupeKey` — because the alert arriving five
+ * times for five messages is the version of this a shop mutes.
+ *
+ * Null when the shop has configured no destination, exactly like every other shop fact: unset
+ * means nothing is queued, and an outbox with nowhere to send is a to-do list that never
+ * shortens. The message never carries the text of a reply or a code; it carries what the
+ * customer said, which the shop's own group is entitled to (ADR 0007 decision 3 keeps its one
+ * hard rule: the *collection code* never goes to the group).
+ */
+export function planCustomerMessageFact(input: {
+  channel: NotificationChannel | null;
+  staffTo: string | null;
+  subject: string;
+  /** The customer's name when this deployment holds the LINE account, else null. */
+  customerName: string | null;
+  kind: string;
+  text: string | null;
+  /** The clock the window is computed from; injectable so a test can pin a bucket. */
+  at: Date;
+}): PlannedNotification | null {
+  if (input.channel === null || input.staffTo === null) {
+    return null;
+  }
+
+  const who = input.customerName?.trim() ? input.customerName.trim() : 'ลูกค้า LINE';
+  const label = lineMessageKindLabel(input.kind);
+
+  /*
+   * A text message quotes what was said, trimmed to one line; anything else says what kind
+   * of thing arrived. A snippet rather than the whole body, because this lands on a phone as
+   * a notification — the full message is on the customer's card, and the conversation itself
+   * is in LINE.
+   */
+  const detail =
+    input.kind === 'text' && input.text !== null && input.text.trim().length > 0
+      ? `"${snippetOf(input.text)}"`
+      : `ส่ง${label}มา`;
+
+  return {
+    kind: 'customer_message',
+    channel: input.channel,
+    recipient: input.staffTo,
+    text: `${who} ส่งข้อความใน LINE ของร้าน — ${detail} ดูที่หน้าลูกค้าในระบบ`,
+    orderId: null,
+    dedupeKey: customerMessageDedupeKey(input.subject, input.at),
+  };
+}
+
+/** The first `MESSAGE_SNIPPET_LENGTH` characters, on one line, with a mark when cut. */
+function snippetOf(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  return flat.length <= MESSAGE_SNIPPET_LENGTH ? flat : `${flat.slice(0, MESSAGE_SNIPPET_LENGTH)}…`;
 }
 
 /**

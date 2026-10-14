@@ -42,6 +42,7 @@ export type RateLimitPolicyName =
   | 'line_link'
   | 'line_callback'
   | 'line_webhook'
+  | 'line_campaign'
   | 'google_redirect';
 
 export interface RateLimitPolicy {
@@ -214,6 +215,16 @@ export const RATE_LIMIT_POLICIES: Record<RateLimitPolicyName, RateLimitPolicy> =
    * script cannot walk the door faster than that.
    */
   line_callback: { capacity: 20, windowMs: 15 * 60_000 },
+  /*
+   * Sending a promotion (ADR 0032 §7). Keyed by the **account**, like `member_create` and
+   * `consignment_offer`, because two admins on the shop's one wifi are two people — and the
+   * ceiling is deliberately low, because the unit is not one request: it is one message per
+   * recipient against a monthly allowance of 300, and the act cannot be taken back. Three
+   * back to back is an admin who mistyped and rewrote, or one who sent, saw a bad number and
+   * corrected it; a fourth in a quarter hour is not a shop composing a promotion, it is a
+   * script spending somebody's allowance.
+   */
+  line_campaign: { capacity: 3, windowMs: 15 * 60_000 },
   /*
    * The webhook LINE's platform posts (ADR 0030 §4). Signature-checked before
    * anything is written, so a caller without the secret gains nothing by

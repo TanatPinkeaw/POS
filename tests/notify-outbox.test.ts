@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { ConflictError } from '@/lib/errors';
 import { MAX_ATTEMPTS } from '@/lib/notify-retry';
 import {
+  requeueNotification,
   claimNotifications,
   dueNotificationIds,
   enqueueNotification,
@@ -262,6 +263,51 @@ describe('what became of a message', () => {
     const row = await prisma.notifications.findUniqueOrThrow({ where: { id: BigInt(queued!.id) } });
     expect(row.status).toBe('sent');
     expect(row.last_error).toBeNull();
+  });
+});
+
+describe('putting a message back in the queue', () => {
+  /** A row that has given up, which is the only state requeueing is for. */
+  async function abandoned() {
+    await seedOrder();
+    const queued = await enqueueNotification(prisma, plan());
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+      await claimNotifications({
+        ids: [queued!.id],
+        now: new Date(Date.now() + attempt * 48 * 60 * 60 * 1000),
+      });
+      await markFailed(queued!.id, `attempt ${attempt} failed`);
+    }
+    return queued!.id;
+  }
+
+  it('sends an abandoned message again from a clean slate', async () => {
+    // The one repair a shop needs after fixing a URL: without it, the messages that
+    // gave up are a permanent record of a mistake that has already been corrected.
+    const id = await abandoned();
+
+    await requeueNotification(id, new Date('2026-10-14T09:00:00+07:00'));
+
+    const row = await prisma.notifications.findUniqueOrThrow({ where: { id: BigInt(id) } });
+    expect(row.status).toBe('pending');
+    // The attempt count resets, because the reason it failed is gone — a row that kept
+    // its attempts would be abandoned again by the very next failure.
+    expect(row.attempts).toBe(0);
+    expect(row.last_error).toBeNull();
+    expect(row.next_attempt_at.toISOString()).toBe('2026-10-14T02:00:00.000Z');
+
+    // And it is due, so the next pass of the worker is what delivers it.
+    expect(await dueNotificationIds(new Date('2026-10-14T02:00:01.000Z'))).toContain(id);
+  });
+
+  it('refuses a message that is not abandoned, in Thai', async () => {
+    // Pressing the button twice — or on a message that is merely waiting — must say so
+    // rather than silently doing nothing, which would look like it worked.
+    await seedOrder();
+    const queued = await enqueueNotification(prisma, plan());
+
+    await expect(requeueNotification(queued!.id)).rejects.toBeInstanceOf(ConflictError);
+    await expect(requeueNotification(queued!.id)).rejects.toThrow(/ไม่ได้ค้างเสีย/);
   });
 });
 

@@ -26,6 +26,12 @@
  * Unlinking is the customer's own act: it clears the subject and the consent
  * together, because the strongest form of "stop messaging me" is also the
  * easiest to explain to the person who asked (ADR 0030 §2).
+ *
+ * Two consents live here now, and they are deliberately separate acts (ADR 0032 §5):
+ * `line_consent_at` is "tell me about my own order", which placing an order asks for;
+ * the promotion timestamps are a different purpose, offered and withdrawn on their own
+ * control. Withdrawing a promotion touches neither the binding nor the order
+ * notifications — the separation is the point.
  */
 import { randomBytes } from 'node:crypto';
 
@@ -33,6 +39,7 @@ import { recordAudit } from './audit';
 import { prisma } from './db';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { LINE_CONSENT_VERSION } from './line-notify';
+import { linePromoConsentState, type LinePromoConsentState } from './line-promo-consent';
 import { isCurrentCustomerNotice, recordNoticeAcknowledgement } from './privacy-notice';
 import { normalisePhone } from './phone';
 import { consumeOtpChallenge } from './otp-store';
@@ -72,10 +79,22 @@ export async function lineBindingForUser(userId: string): Promise<{
   lineSubject: string | null;
   consentAt: Date | null;
   consentVersion: string | null;
+  /** The second consent (ADR 0032 §5): two timestamps, because the later one wins. */
+  promoConsentAt: Date | null;
+  promoWithdrawnAt: Date | null;
+  promoConsentVersion: string | null;
 } | null> {
   const row = await prisma.users.findUnique({
     where: { id: userId },
-    select: { line_subject: true, line_consent_at: true, line_consent_version: true, role: true },
+    select: {
+      line_subject: true,
+      line_consent_at: true,
+      line_consent_version: true,
+      line_promo_consent_at: true,
+      line_promo_withdrawn_at: true,
+      line_promo_consent_version: true,
+      role: true,
+    },
   });
   if (!row || row.role !== 'member') {
     return null;
@@ -84,6 +103,9 @@ export async function lineBindingForUser(userId: string): Promise<{
     lineSubject: row.line_subject,
     consentAt: row.line_consent_at,
     consentVersion: row.line_consent_version,
+    promoConsentAt: row.line_promo_consent_at,
+    promoWithdrawnAt: row.line_promo_withdrawn_at,
+    promoConsentVersion: row.line_promo_consent_version,
   };
 }
 
@@ -351,9 +373,22 @@ export async function unbindLineFromCustomer(userId: string): Promise<void> {
     return; // Already unbound — the request is a no-op, not an error.
   }
 
+  /*
+   * All five LINE facts clear together, including the promotion consent (ADR 0032 §5): this
+   * removes the *address*, so a consent left behind would be an agreement to be messaged on
+   * a LINE account the shop no longer holds. Withdrawing a promotion on its own is the
+   * narrower act and touches none of this.
+   */
   await prisma.users.update({
     where: { id: userId },
-    data: { line_subject: null, line_consent_at: null, line_consent_version: null },
+    data: {
+      line_subject: null,
+      line_consent_at: null,
+      line_consent_version: null,
+      line_promo_consent_at: null,
+      line_promo_withdrawn_at: null,
+      line_promo_consent_version: null,
+    },
   });
   await recordAudit({
     action: 'line_unbound',
@@ -407,4 +442,81 @@ export async function setLineNotificationConsent(input: {
   });
 
   return { consented: true, consentAt: now };
+}
+
+/**
+ * Records agreement to promotions, or the withdrawal of it (ADR 0032 §5).
+ *
+ * Three rules, and each is a decision rather than a nicety:
+ *
+ *   * **It requires a member account**, like every other LINE act — a staff row has no
+ *     promotions to be told about.
+ *   * **Agreeing requires a bound LINE account**: consent without an address is dead
+ *     weight, the same rule `setLineNotificationConsent` states. A *withdrawal* however is
+ *     allowed with no address at all, because nothing is ever demanded to stop being
+ *     reachable (ADR 0030 §2) — refusing to record somebody's "no" would be the one
+ *     asymmetry that is indefensible.
+ *   * **Nothing else moves.** Withdrawing a promotion does not touch the binding and does
+ *     not touch order notifications; that separation is the entire point of a second
+ *     consent, and a test pins it.
+ *
+ * Audited as `member_updated` with the field named and the version of the text, exactly as
+ * the notification consent is — a consent change is a smaller act than a binding.
+ */
+export async function setLinePromotionConsent(input: {
+  userId: string;
+  consent: boolean;
+  consentVersion: string;
+}): Promise<{ state: LinePromoConsentState; consentAt: Date | null; withdrawnAt: Date | null }> {
+  const row = await prisma.users.findUnique({
+    where: { id: input.userId },
+    select: {
+      line_subject: true,
+      line_promo_consent_at: true,
+      line_promo_withdrawn_at: true,
+      role: true,
+    },
+  });
+  if (!row) {
+    throw new NotFoundError('ไม่พบลูกค้าที่ระบุ', `Customer ${input.userId}`);
+  }
+  if (row.role !== 'member') {
+    throw new ConflictError('บัญชีนี้ไม่ใช่บัญชีลูกค้า', 'NOT_A_MEMBER_ACCOUNT');
+  }
+  if (input.consent && row.line_subject === null) {
+    throw new ConflictError(
+      'ยังไม่ได้ผูกบัญชี LINE — ผูกบัญชีก่อนจึงจะรับโปรโมชันได้',
+      'LINE_NOT_BOUND',
+    );
+  }
+
+  const now = new Date();
+  const version = input.consentVersion.trim();
+  await prisma.users.update({
+    where: { id: input.userId },
+    data: input.consent
+      ? { line_promo_consent_at: now, line_promo_consent_version: version }
+      : { line_promo_withdrawn_at: now },
+  });
+  await recordAudit({
+    action: 'member_updated',
+    actorUserId: input.userId,
+    targetType: 'user',
+    targetId: input.userId,
+    detail: {
+      fields: [input.consent ? 'line_promo_consent' : 'line_promo_withdrawn'],
+      consentVersion: version,
+    },
+  });
+
+  // Read back through the one rule that decides the state, rather than reporting what was
+  // just written: a withdrawal after an agreement is only meaningful with both timestamps.
+  return {
+    state: linePromoConsentState({
+      consentAt: input.consent ? now : row.line_promo_consent_at,
+      withdrawnAt: input.consent ? row.line_promo_withdrawn_at : now,
+    }),
+    consentAt: input.consent ? now : row.line_promo_consent_at,
+    withdrawnAt: input.consent ? row.line_promo_withdrawn_at : now,
+  };
 }

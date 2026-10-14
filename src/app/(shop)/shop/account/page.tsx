@@ -44,6 +44,9 @@ export default async function ShopAccountPage() {
           lineSubject: line?.lineSubject ?? null,
           consentAt: line?.consentAt ? line.consentAt.toISOString() : null,
           consentVersion: line?.consentVersion ?? null,
+          promoConsentAt: line?.promoConsentAt ? line.promoConsentAt.toISOString() : null,
+          promoWithdrawnAt: line?.promoWithdrawnAt ? line.promoWithdrawnAt.toISOString() : null,
+          promoConsentVersion: line?.promoConsentVersion ?? null,
         }}
       />
     </Stack>

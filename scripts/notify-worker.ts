@@ -11,6 +11,13 @@
  *   npm run notify:worker -- --watch    keep going, every 30 seconds
  *   npm run notify:worker -- --limit 50 how many rows one pass may claim
  *
+ * Two queues drain here, and they are different shapes: the outbox's rows (one message, one
+ * recipient, retried on a schedule) and campaigns' batches (one request to up to 500 people,
+ * tried exactly once). They also have different preconditions — `NOTIFY_CHANNEL` for the
+ * first, a LINE channel access token for the second — which is why each checks its own. The
+ * campaign half is ADR 0032 §7: see `sendCampaigns` for why a failure is recorded and never
+ * retried.
+ *
  * Exit code is 1 when a message was abandoned in this pass — the one outcome a
  * shop has to hear about, because it means the gateway it configured is not the
  * one that is answering — and 0 otherwise, including when a message merely failed
@@ -20,7 +27,19 @@
 import { loadEnv } from './harness';
 import { prisma } from '../src/lib/db';
 
-import { deliverNotification, readChannelConfig } from '../src/lib/notify-channel';
+import {
+  abandonStalledCampaignBatches,
+  claimCampaignBatch,
+  dueCampaignBatches,
+  markCampaignBatchFailed,
+  markCampaignBatchSent,
+} from '../src/lib/line-campaigns';
+import {
+  deliverCampaignBatch,
+  deliverNotification,
+  readChannelConfig,
+  readLineChannelToken,
+} from '../src/lib/notify-channel';
 import {
   claimNotifications,
   dueNotificationIds,
@@ -39,39 +58,118 @@ const limit = limitIndex === -1 ? 20 : Number(argv[limitIndex + 1] ?? '20');
 /** How long a `--watch` worker sleeps between passes when there is nothing due. */
 const IDLE_SECONDS = 30;
 
-async function pass(): Promise<{ sent: number; failed: number; abandoned: number }> {
+async function pass(): Promise<{
+  sent: number;
+  failed: number;
+  abandoned: number;
+  campaignBatches: number;
+  campaignFailures: number;
+}> {
+  /*
+   * The two queues have different preconditions and each checks its own, which is why this is
+   * not one early return. The outbox needs `NOTIFY_CHANNEL` — a shop that has not configured
+   * delivery gets its alerts in the app, and an empty queue is the expected state there. A
+   * campaign needs a LINE token, which a shop whose own alerts go to a webhook can hold just
+   * as well (ADR 0032 §6).
+   */
   const config = readChannelConfig();
-  if (config === null) {
-    /*
-     * Nothing to do, and not an error: a shop that has not configured delivery
-     * gets its alerts in the app. Its rows are only written by a shop that *has*
-     * configured one, so an empty queue here is the expected state.
-     */
-    return { sent: 0, failed: 0, abandoned: 0 };
-  }
-
-  const ids = await dueNotificationIds(new Date(), limit);
-  const claimed = await claimNotifications({ ids });
 
   let sent = 0;
   let failed = 0;
 
-  for (const notification of claimed) {
-    try {
-      await deliverNotification(notification, config);
-      await markSent(notification.id);
-      sent += 1;
-      console.log(`  ✓ ${notification.kind} → ${notification.recipient}`);
-    } catch (error) {
-      const reason = error instanceof Error ? error.message : String(error);
-      await markFailed(notification.id, reason);
-      failed += 1;
-      console.error(`  ✗ ${notification.kind} → ${notification.recipient}: ${reason}`);
+  if (config !== null) {
+    const ids = await dueNotificationIds(new Date(), limit);
+    const claimed = await claimNotifications({ ids });
+
+    for (const notification of claimed) {
+      try {
+        await deliverNotification(notification, config);
+        await markSent(notification.id);
+        sent += 1;
+        console.log(`  ✓ ${notification.kind} → ${notification.recipient}`);
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error);
+        await markFailed(notification.id, reason);
+        failed += 1;
+        console.error(`  ✗ ${notification.kind} → ${notification.recipient}: ${reason}`);
+      }
     }
   }
 
+  const campaigns = await sendCampaigns();
+
   const health = await outboxHealth();
-  return { sent, failed, abandoned: health.abandoned };
+  return {
+    sent,
+    failed,
+    abandoned: health.abandoned,
+    campaignBatches: campaigns.sent,
+    campaignFailures: campaigns.failed,
+  };
+}
+
+/**
+ * Delivers the campaign batches that have not been tried yet (ADR 0032 §7).
+ *
+ * Two things happen in this order, and the first is the one worth explaining.
+ *
+ * **Stalled batches are closed first.** A worker killed between stamping a batch and writing
+ * its outcome leaves a row that says "attempted, no answer" — and since a batch is sent at
+ * most once, nothing will ever pick it up again. `abandonStalledCampaignBatches` records that
+ * ambiguity on the row and lets the campaign settle, which is what makes the case visible
+ * instead of a campaign that reads `pending` forever.
+ *
+ * **Then the due ones go out, one request each.** LINE's multicast takes at most 500 ids and
+ * counts the message once per recipient, so a batch is exactly one request and its failure is
+ * recorded on its own row with LINE's own words. Nothing is retried: LINE offers no
+ * idempotency key, and a promotion delivered twice to five hundred people is worse than one an
+ * admin has to write again.
+ */
+async function sendCampaigns(): Promise<{ sent: number; failed: number }> {
+  const token = readLineChannelToken();
+  if (token === null) {
+    // No LINE channel token: there is nowhere for a promotion to go, and the campaigns that
+    // exist are the shop's own record of what it decided to send.
+    return { sent: 0, failed: 0 };
+  }
+
+  const stalled = await abandonStalledCampaignBatches();
+  if (stalled > 0) {
+    console.error(
+      `  ! ${stalled} campaign batch(es) had no outcome recorded — marked as unknown, not retried`,
+    );
+  }
+
+  const due = await dueCampaignBatches(limit);
+  let sent = 0;
+  let failed = 0;
+
+  for (const batch of due) {
+    /*
+     * The claim is the at-most-once gate: a second worker started at the same moment reads
+     * the same due list and loses this statement. Everything after it is one attempt.
+     */
+    if (!(await claimCampaignBatch(batch.id))) {
+      continue;
+    }
+    try {
+      await deliverCampaignBatch({
+        recipientIds: batch.recipientIds,
+        body: batch.body,
+        imageUrl: batch.imageUrl,
+      });
+      await markCampaignBatchSent(batch.id);
+      sent += 1;
+      console.log(`  ✓ campaign batch ${batch.batchIndex} → ${batch.recipientIds.length} people`);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      await markCampaignBatchFailed(batch.id, reason);
+      failed += 1;
+      console.error(`  ✗ campaign batch ${batch.batchIndex}: ${reason}`);
+    }
+  }
+
+  return { sent, failed };
 }
 
 async function main(): Promise<void> {
@@ -93,6 +191,11 @@ async function main(): Promise<void> {
       console.log(
         `\nSent ${result.sent}, failed ${result.failed}, abandoned in total ${result.abandoned}`,
       );
+      if (result.campaignBatches + result.campaignFailures > 0) {
+        console.log(
+          `Campaign batches: sent ${result.campaignBatches}, failed ${result.campaignFailures}`,
+        );
+      }
       if (result.abandoned > 0) {
         console.error(
           '\nSomething is abandoned: those messages will not be tried again. Check the gateway',
@@ -106,8 +209,10 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (result.sent + result.failed > 0) {
-      console.log(`  • pass: sent ${result.sent}, failed ${result.failed}`);
+    if (result.sent + result.failed + result.campaignBatches + result.campaignFailures > 0) {
+      console.log(
+        `  • pass: sent ${result.sent}, failed ${result.failed}, campaign batches ${result.campaignBatches}/${result.campaignBatches + result.campaignFailures}`,
+      );
     }
     await new Promise((resolve) => setTimeout(resolve, IDLE_SECONDS * 1000));
   } while (watch);

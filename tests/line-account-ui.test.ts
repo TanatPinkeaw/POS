@@ -116,16 +116,32 @@ describe('the sign-in half of the LINE flow', () => {
     expect(signIn()).toContain('<NoticeAcknowledge');
   });
 
-  it('carries no LINE token in the body — the proof is the httpOnly handoff', () => {
-    // The redirect flow's id token never reaches the browser, so the request this screen
-    // sends must not pretend to hold one; the cookie the callback set is the credential.
+  it('sends a LINE id token only when the caller holds one', () => {
+    // The redirect flow's id token never reaches the browser, so its request must not pretend
+    // to hold one; the cookie the callback set is the credential. The in-LINE entry (`/line`,
+    // ADR 0032) *does* hold one, and the same form serves both — so the token is spread
+    // conditionally, and an empty string is never sent as a proof that verifies against
+    // nothing.
     const source = signIn();
     const claimStep = source.slice(
       source.indexOf('function LineClaimStep'),
       source.indexOf('google door */'),
     );
     expect(claimStep).toContain('line/link');
-    expect(claimStep).not.toContain('idToken');
+    expect(claimStep).toContain('...(idToken ? { idToken } : {})');
+  });
+
+  it('hands the claim step a token from the in-LINE entry and never from the front door', () => {
+    // Two callers, two shapes: the front door has only the handoff cookie, the LIFF entry has
+    // the SDK's token. A front door that passed one would be a browser claiming a proof it
+    // was never given.
+    const liffEntry = readFileSync('src/components/shop/LiffEntry.tsx', 'utf8');
+    const liffCall = liffEntry.slice(liffEntry.indexOf('<LineClaimStep'));
+    expect(liffCall.slice(0, liffCall.indexOf('/>'))).toContain('idToken={idToken}');
+
+    const source = signIn();
+    const frontDoorCall = source.slice(source.lastIndexOf('<LineClaimStep'));
+    expect(frontDoorCall.slice(0, frontDoorCall.indexOf('/>'))).not.toContain('idToken');
   });
 
   it('reads the callback’s word on the server and hands it down as a value', () => {

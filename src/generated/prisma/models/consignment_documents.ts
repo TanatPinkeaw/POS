@@ -16,11 +16,9 @@ import type * as Prisma from "../internal/prismaNamespace"
  * Model consignment_documents
  * *
  *  * A photo or a document the member attached, kept as a link (ADR 0014 extended).
- *  *
  *  * The bytes stay where the member put them — a Drive folder, their phone's share
  *  * sheet — because this deployment holds no files and could not back up or vouch for
  *  * one. Holding the link and saying so is the same trade a product photo makes.
- *  *
  *  * `product_id` is null while the submission waits and is filled in on approval, so one
  *  * row serves both the inbox an owner reads and the record the member reads afterwards.
  *  * Two tables would mean copying the links at approval and then keeping the copies

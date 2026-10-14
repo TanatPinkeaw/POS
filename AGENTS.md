@@ -133,6 +133,22 @@ Recorded so a session starts from the truth rather than from the last commit mes
   callback refusal also logs the stage it died at (`code-exchange`, `line-error`, `credential`,
   `state`, `no-state`, `no-channel`), because that failure is invisible on a desktop and the
   log line is the only way "it doesn't work on my phone" becomes a diagnosis.
+- **LINE now works in both directions, and the parts that are a decision are pure**
+  (ADR 0032). `/line` is the LIFF app's endpoint URL and a **door rather than an identity**:
+  the entry's whole job is the session and, on a first sign-in, the phone and its OTP — the
+  catalogue, the orders and the receipt are the pages that already exist, because a second
+  in-LINE renderer of them is the drift this repository refuses. `line-liff-entry.ts`,
+  `line-promo-consent.ts` and `line-campaign-rules.ts` are pure, so what `/line` decides,
+  which of two consent timestamps wins, who a campaign may reach and how the list splits are
+  unit tests rather than promises. **A promotion needs a second consent**
+  (`line_promo_consent_*`, offered as its own act and never bundled into binding), the
+  audience is consented **and** friended because `/broadcast` takes no recipient list, and a
+  batch is sent **at most once** with LINE's own refusal recorded on it — a `partial`
+  campaign is a state the screen must show, not a rounding of `sent`. An inbound message is
+  one row deduped on LINE's own message id, and the shop hears about one burst per ten
+  minutes because a group push costs one message per member. **`NOTIFY_LINE_TOKEN` is not
+  `NOTIFY_CHANNEL`**: the token is what lets this deployment talk to LINE at all (what a
+  campaign needs), the channel is where the shop's *own* alerts go.
 - **Google's button asks a phone for a different shape than a desktop** (ADR 0020 §1,
   amended). `src/lib/google-door.ts` picks the UX mode — Google's own footnote is "Due to ITP
   redirect mode is required for iOS", and the popup hands the credential back through a
@@ -199,10 +215,10 @@ Recorded so a session starts from the truth rather than from the last commit mes
   test phone, the page kept its server HTML, and every control needing JavaScript was
   silently dead. `npm run browser:target` reads the built chunks and fails on it, and
   it is in `verify:all` and in CI beside the other gates that read the build.
-- **Deliberately not built**: README's *Not built yet* — overtime approval and leave,
-  LINE addresses for customers, multiple branches, a second register, **storing** a
-  product image (a photo is a link now — ADR 0014), RTL, object storage, and a
-  reconciliation over a date range rather than a day.
+- **Deliberately not built**: README's *Not built yet* — overtime approval and leave, the
+  rest of LINE (a rich menu, Flex/template editing, scheduled sends, an in-app reply box),
+  multiple branches, a second register, **storing** a product image (a photo is a link now —
+  ADR 0014), RTL, object storage, and a reconciliation over a date range rather than a day.
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no field pilot; Chromium now exercises the offline flow in CI, the restore
   recipe is rehearsed by `scripts/restore-drill.ts` (in `verify:all`), but nothing
   has ever loaded `deploy/systemd/` — those units were reviewed by reading, never
@@ -609,13 +625,14 @@ Open threads, roughly in the order worth doing:
 1. **A reconciliation over a range.** The dashboard reconciles today — confirmed
    transfers against the bills they closed, plus what is waiting — but a statement
    covering a week is still compared by hand.
-2. **LINE beyond the door (ADR 0030 built the door).** Sign-in, binding, consent and
-   the customer's own "order ready" push are built; the webhook tracks the friend
-   condition. Still open: a **LIFF surface** (the in-LINE browser works against the
-   ordinary pages today, so LIFF is a UI decision, not a schema one), **broadcast**
-   (a consent question first — what a shop may push to everyone who said yes is a
-   policy, not a feature), and replying to customer messages (the Official
-   Account's own auto-response covers it for now).
+2. **LINE beyond the door.** ADR 0030 built the door and ADR 0032 the other half:
+   `/line` as a LIFF entry, the customers' messages as rows, promotion consent and
+   campaigns to the consented. Still open: a **rich menu**, **Flex/template** editing
+   rather than text, **scheduled** sends, an **in-app reply box** (the Official Account's
+   own auto-response covers replies for now), and storing the bytes of an image a customer
+   sends. The one limit no gate here closes: **no LIFF browser exists in this repository**,
+   so the handshake itself is unmeasured — the entry's decision and the id-token route it
+   posts to are what is proven.
 3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 4. **A command that prints where this checkout stands** — branch, how much of it is
@@ -624,5 +641,5 @@ Open threads, roughly in the order worth doing:
    *adjacent* question (is the process on this port serving this checkout's build);
    this one is still reconstructed by four commands typed from memory.
 
-Known product gaps are listed at the end of `README.md` (overtime approval, the LIFF
-surface and broadcast on LINE, multiple branches, product images, RTL, object storage).
+Known product gaps are listed at the end of `README.md` (overtime approval, the rest of
+LINE, multiple branches, product images, RTL, object storage).

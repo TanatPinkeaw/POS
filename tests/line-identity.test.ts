@@ -263,6 +263,11 @@ describe('one LINE account, one customer', () => {
       lineSubject: null,
       consentAt: null,
       consentVersion: null,
+      // The second consent is a separate pair of facts on the same view (ADR 0032 §5),
+      // and a merely-bound account has neither: binding is not agreement to promotions.
+      promoConsentAt: null,
+      promoWithdrawnAt: null,
+      promoConsentVersion: null,
     });
 
     await bindSignedInCustomer({ userId: customerId, subject: SUBJECT });

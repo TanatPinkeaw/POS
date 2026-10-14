@@ -47,11 +47,24 @@ const STEPS = [
     how: 'ช่องทาง LINE Login เดียวกัน → Basic settings → Channel secret',
     optional: true,
   },
+  {
+    key: 'LINE_LIFF_ID',
+    what: 'LIFF ID สำหรับให้ลูกค้าเปิดร้านในแอป LINE (ADR 0032)',
+    how: 'ช่องทาง LINE Login เดียวกัน → แท็บ LIFF → Add — ตั้ง Endpoint URL เป็น https://<โดเมนของร้าน>/line (ต้องเป็น https) แล้วคัดลอก LIFF ID ซึ่งมีรูปแบบ 2000000000-xxxxxxxx',
+    optional: true,
+  },
 ] as const;
 
-/** Where LINE sends the customer back, and where its platform posts events. */
+/**
+ * Where LINE sends the customer back, where its platform posts events, and the address a
+ * LIFF app's endpoint URL must be (ADR 0032).
+ *
+ * The last one is printed here rather than left to the console walk because LINE compares
+ * it against the app the customer actually opens: an endpoint URL that is not this
+ * deployment's own `/line` fails inside LINE's browser, with nothing on this server to read.
+ */
 function callbackUrls(origin: string): string[] {
-  return [`${origin}/api/v1/auth/line/callback`, `${origin}/api/v1/line/webhook`];
+  return [`${origin}/api/v1/auth/line/callback`, `${origin}/api/v1/line/webhook`, `${origin}/line`];
 }
 
 async function ask(rl: ReturnType<typeof createInterface>, question: string): Promise<string> {
@@ -143,6 +156,7 @@ async function verify(): Promise<void> {
   const pushToken = env.NOTIFY_LINE_TOKEN?.trim();
   const loginId = env.LINE_LOGIN_CHANNEL_ID?.trim();
   const loginSecret = env.LINE_LOGIN_CHANNEL_SECRET?.trim();
+  const liffId = env.LINE_LIFF_ID?.trim();
 
   console.log(
     messagingSecret && pushToken
@@ -160,6 +174,36 @@ async function verify(): Promise<void> {
         ? '  ✗ ประตู LINE Login: ขาด LINE_LOGIN_CHANNEL_SECRET'
         : '  ✗ LINE Login: ยังไม่ตั้งค่า (ลูกค้ายังใช้เบอร์/Google เข้าได้ตามปกติ)',
   );
+  console.log(
+    liffId
+      ? '  ✓ ทางเข้าในแอป LINE (/line): พร้อม — ลิงก์ที่จะแนบในข้อความคือ https://liff.line.me/' + liffId
+      : '  ✗ ทางเข้าในแอป LINE (/line): ยังไม่ตั้งค่า LINE_LIFF_ID (หน้า /line จะบอกว่ายังไม่ได้ตั้งค่า และข้อความแจ้งลูกค้าจะไม่มีลิงก์)',
+  );
+
+  /*
+   * The campaign door (ADR 0032 §7), reported beside the others because it is the same
+   * channel token with a second job: a promotion counts one message per recipient against
+   * the month's allowance, and a shop that has not set the token up should learn that here
+   * rather than from a failed send.
+   */
+  console.log(
+    pushToken && messagingSecret
+      ? '  ✓ ส่งโปรโมชัน (แคมเปญ): พร้อม — ส่งได้จากเมนู “LINE และโปรโมชัน” ในหน้าผู้จัดการ'
+      : pushToken
+        ? '  ! ส่งโปรโมชันได้ แต่ยังนับผู้รับไม่ได้: ไม่มี LINE_MESSAGING_CHANNEL_SECRET จึงไม่มีใครถูกบันทึกว่าเป็นเพื่อนร้าน — รายชื่อผู้รับจะว่าง'
+        : '  ✗ ส่งโปรโมชัน (แคมเปญ): ยังไม่พร้อม — ต้องมี NOTIFY_LINE_TOKEN (ไม่เกี่ยวกับ NOTIFY_CHANNEL ซึ่งเป็นปลายทางข้อความของร้านเอง)',
+  );
+  /*
+   * A loud line for the one setting that moves where the shop's own secret goes: it is a
+   * legitimate setting (an egress proxy, or the acceptance run's stub) and an easy one to
+   * leave behind, and the symptom of a stale one is a send that simply never arrives.
+   */
+  const apiBase = env.LINE_API_BASE_URL?.trim();
+  if (apiBase) {
+    console.log(
+      `  ! LINE_API_BASE_URL ถูกตั้งไว้เป็น ${apiBase} — โทเคนของช่องทางร้านจะถูกส่งไปที่นั่น ไม่ใช่ api.line.me ของ LINE`,
+    );
+  }
 
   const url = process.env.PUBLIC_BASE_URL?.trim() ?? env.PUBLIC_BASE_URL?.trim();
   if (url) {

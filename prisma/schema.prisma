@@ -69,12 +69,10 @@ model shops {
   queue_running_day             DateTime?          @db.Date
   /**
    * Whether this shop calls its customers by a number at all (ADR 0027).
-   *
    * The call series above is not a shop type. Most of what this system sells is
    * handed over on the spot, and for those shops the number is a line on the slip
    * nobody reads and a board nobody opens -- two pieces of screen given to a job
    * the shop does not have.
-   *
    * It lives on the shop row rather than in a component because the *sale* is what
    * has to obey it. `allocateQueueNumber` reads it inside the very statement that
    * bumps the counter, so a bill rung up while it is off carries no number and no
@@ -82,30 +80,26 @@ model shops {
    * board, the customer display -- has nothing to show without being separately
    * told about it. Turning a feature off at the sale is the only way it is off
    * everywhere.
-   *
    * Defaults true, deliberately. A shop already selling through this was being
    * called by these numbers; a migration is not the moment to take that away
    * quietly, and the toggle in the settings is one tap for the shops that never
    * wanted it.
    */
-  calls_numbers                  Boolean            @default(true)
+  calls_numbers                 Boolean            @default(true)
   /**
    * Whether this shop takes pre-orders at all (ADR 0028, built on ADR 0027's pattern).
-   *
    * The second switch, and the first one earned by asking rather than by guessing: a
    * shop that sells over the counter has no reason to let a customer order now and
    * collect tomorrow, and the member-facing page would keep offering it.
-   *
    * It is read inside `placePreOrder`'s own transaction, which is the whole design.
    * Refusing in the route would leave a second way in; refusing in the customer page
    * would refuse only the button and not the order. A pre-order is money a shop has
    * promised to hold, so the refusal has to live where the promise is made.
-   *
    * Existing pre-orders keep their whole life cycle: the switch governs new ones. An
    * order already on the board has stock reserved against it and a customer waiting,
    * and a shop that closes the door does not get to strand it.
    */
-  accepts_preorders              Boolean            @default(true)
+  accepts_preorders             Boolean            @default(true)
   receipt_footer                String?
   logo_url                      String?
   /**
@@ -128,25 +122,23 @@ model shops {
 
 /**
  * A range of the shop's numbers lent to a device (ADR 0019).
- *
  * A browser cannot bump `receipt_running_number` inside the sale's transaction, so a
  * device that may lose its connection is handed a range in advance and issues from it
  * itself. This row is that loan: which series, which numbers, who it went to, and how
  * far it got.
- *
  * Four properties are deliberate, and three of them are the database's rather than a
  * convention's:
  * * `day` is set on the call-number series and null on the receipt series — a CHECK
- *   says so. Call numbers restart every Bangkok day; the tax series does not.
+ * says so. Call numbers restart every Bangkok day; the tax series does not.
  * * **At most one open block per series (per day)** is a partial unique index, so two
- *   devices racing to borrow the same day's numbers cannot both win.
+ * devices racing to borrow the same day's numbers cannot both win.
  * * `reported_at` and `cancelled_at` exclude each other, and a cancelled block may not
- *   have been used. A block with usage is *reported* (how far it got); a block nobody
- *   touched is *cancelled* (all of it comes back). Stating both in CHECKs is what stops
- *   a later screen from inventing a third state.
+ * have been used. A block with usage is *reported* (how far it got); a block nobody
+ * touched is *cancelled* (all of it comes back). Stating both in CHECKs is what stops
+ * a later screen from inventing a third state.
  * * `last_used_number` is advanced by every bill the device issues, whether it reached
- *   the server at the time or is replaying later — which is what makes the freeze in
- *   `allocateReceiptNumber` correct rather than merely cautious.
+ * the server at the time or is replaying later — which is what makes the freeze in
+ * `allocateReceiptNumber` correct rather than merely cautious.
  */
 model number_blocks {
   id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -183,9 +175,13 @@ model number_blocks {
  * statement that allocates, and a mistyped series there would freeze nothing at all.
  */
 enum number_series {
-  /** The tax-invoice series: gapless, per year, serialised on the shop row. */
+  /**
+   * The tax-invoice series: gapless, per year, serialised on the shop row.
+   */
   receipt
-  /** The call number: short, restarting every Bangkok day (ADR 0017). */
+  /**
+   * The call number: short, restarting every Bangkok day (ADR 0017).
+   */
   queue
 }
 
@@ -266,7 +262,6 @@ enum stock_movement_type {
 
 /**
  * Which way the money in a `payments` row went.
- *
  * A column rather than a negative `amount`, because
  * `chk_payments_amount_positive` is worth keeping: an amount is a magnitude, and
  * a table where "how much" and "which way" are the same field is a table where
@@ -337,7 +332,6 @@ enum payment_intent_status {
 
 /**
  * What became of a transfer the bank told us about.
- *
  * `unmatched` is not an error state and not a queue to be drained — it is money
  * in the shop's account that this system cannot attribute, which is a fact the
  * owner has to be able to see. `dismissed` is a person having looked at it and
@@ -429,6 +423,15 @@ enum audit_action {
    */
   consignment_set
   /**
+   * A campaign went to the shop's own customers (ADR 0032 §7).
+   * Its own action, because it is the one act in this system that reaches every customer at
+   * once and cannot be taken back: "who sent this, to how many, and what did it say" is the
+   * question the trail exists to answer. The detail carries the recipient count and the first
+   * words of the message rather than the whole body — a dispatch record, not a copy of the
+   * promotion.
+   */
+  line_campaign_sent
+  /**
    * The member took their unsold goods back, and the shop's liability for them ended.
    * Paired with an SRS §4.3 stock movement — the shelf really changed — while this row
    * records the decision: which consignor, and how many units left. Distinct from
@@ -488,35 +491,50 @@ enum audit_action {
 // ---------------------------------------------------------------- users
 
 model users {
-  id                  String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email               String?   @unique @db.VarChar(255)
+  id                         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                      String?   @unique @db.VarChar(255)
   // ---------------------------------------------------- a Google door (ADR 0020)
   // The subject id from a verified Google id token, so a returning customer who
   // signed in with Google is recognised as the same row. Unique, so one Google
   // account cannot attach to two customers. Null is the normal state: the counter
   // flow (ADR 0011) never sets it, and the phone remains the identity.
-  google_subject      String?   @unique @db.VarChar(255)
+  google_subject             String?   @unique @db.VarChar(255)
   // ---------------------------------------------------- a LINE door (ADR 0030)
   // The subject id from a verified LINE Login id token, in the shape the Google
   // column above established: nullable, unique, and written only by the binding act
   // (a first sign-in that consumed an OTP for the phone it is anchored to, or the
   // account page's link flow). Null is the normal state — the counter flow never
   // sets it — and one LINE account belongs to exactly one customer.
-  line_subject        String?   @unique @db.VarChar(120)
+  line_subject               String?   @unique @db.VarChar(120)
   //
   // When the customer consented to being notified on LINE, and under which version
   // of the consent text. A timestamp rather than a flag so "never asked" (null) is
   // distinct from any answer, and so the trail can name the text that was shown.
   // There is deliberately no "no" state: withdrawing clears this column and
   // `line_subject` together (ADR 0030 §2), which is the strongest form of stop.
-  line_consent_at     DateTime? @db.Timestamptz(6)
-  line_consent_version String?  @db.VarChar(40)
-  phone               String    @unique @db.VarChar(20)
-  password_hash       String    @db.VarChar(255)
-  full_name           String    @db.VarChar(100)
-  role                user_role @default(member)
-  points_balance      Int       @default(0)
-  is_active           Boolean   @default(true)
+  line_consent_at            DateTime? @db.Timestamptz(6)
+  line_consent_version       String?   @db.VarChar(40)
+  // ------------------------------------- promotion consent (ADR 0032 §5)
+  // A **second** consent, and it is deliberately not the one above. That timestamp
+  // means "tell me about my own order" — a message the customer asked for by placing
+  // it. A promotion is a different purpose, so it is a different fact, and reusing
+  // one column for both would make the sentence the account page already prints mean
+  // something broader than the customer agreed to.
+  //
+  // Two timestamps rather than a boolean, because a boolean cannot tell "never
+  // asked" from "said no" — and those need different sentences on the customer's
+  // screen: one offers the choice, the other must not offer it again. **The later
+  // timestamp wins**, so withdrawing is an act rather than a deletion, and agreeing
+  // again afterwards is one more act.
+  line_promo_consent_at      DateTime? @db.Timestamptz(6)
+  line_promo_withdrawn_at    DateTime? @db.Timestamptz(6)
+  line_promo_consent_version String?   @db.VarChar(40)
+  phone                      String    @unique @db.VarChar(20)
+  password_hash              String    @db.VarChar(255)
+  full_name                  String    @db.VarChar(100)
+  role                       user_role @default(member)
+  points_balance             Int       @default(0)
+  is_active                  Boolean   @default(true)
   // ---------------------------------------------------------- supervisor PIN
   // A 4-digit PIN that authorises the actions a cashier may not take alone
   // (void a bill, discount past the shop's own limit, open the drawer, confirm a
@@ -526,37 +544,45 @@ model users {
   //
   // Null means "this account holds no PIN", which is the normal state for
   // cashiers and for members. Only administrators may set one.
-  pin_hash            String?   @db.VarChar(255)
-  pin_failed_attempts Int       @default(0)
-  pin_locked_until    DateTime? @db.Timestamptz(6)
-  created_at          DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  pin_hash                   String?   @db.VarChar(255)
+  pin_failed_attempts        Int       @default(0)
+  pin_locked_until           DateTime? @db.Timestamptz(6)
+  created_at                 DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
-  orders_as_customer  orders[]             @relation("order_customer")
-  orders_as_cashier   orders[]             @relation("order_cashier")
-  stock_logs          stock_logs[]
-  schedule_shifts     work_schedules[]     @relation("schedule_employee")
-  schedules_authored  work_schedules[]     @relation("schedule_author")
-  time_logs           time_logs[]
-  shifts_opened       cash_shifts[]        @relation("shift_opener")
-  shifts_closed       cash_shifts[]        @relation("shift_closer")
-  point_transactions  point_transactions[]
-  audit_logs_acted    audit_logs[]         @relation("audit_actor")
-  audit_logs_approved audit_logs[]         @relation("audit_authorizer")
-  notice_acknowledgements notice_acknowledgements[]
-  payment_intents     payment_intents[]    @relation("intent_cashier")
-  intents_confirmed   payment_intents[]    @relation("intent_confirmer")
-  display_devices     display_devices[]
-  credit_notes_issued credit_notes[]       @relation("credit_note_issuer")
-  credit_notes_approved credit_notes[]     @relation("credit_note_approver")
-  inbound_dismissals  inbound_payments[]   @relation("inbound_dismisser")
-  number_blocks       number_blocks[]      @relation("number_block_opener")
-  blocks_closed       number_blocks[]      @relation("number_block_closer")
+  orders_as_customer                   orders[]                  @relation("order_customer")
+  orders_as_cashier                    orders[]                  @relation("order_cashier")
+  stock_logs                           stock_logs[]
+  schedule_shifts                      work_schedules[]          @relation("schedule_employee")
+  schedules_authored                   work_schedules[]          @relation("schedule_author")
+  time_logs                            time_logs[]
+  shifts_opened                        cash_shifts[]             @relation("shift_opener")
+  shifts_closed                        cash_shifts[]             @relation("shift_closer")
+  point_transactions                   point_transactions[]
+  audit_logs_acted                     audit_logs[]              @relation("audit_actor")
+  audit_logs_approved                  audit_logs[]              @relation("audit_authorizer")
+  notice_acknowledgements              notice_acknowledgements[]
+  payment_intents                      payment_intents[]         @relation("intent_cashier")
+  intents_confirmed                    payment_intents[]         @relation("intent_confirmer")
+  display_devices                      display_devices[]
+  credit_notes_issued                  credit_notes[]            @relation("credit_note_issuer")
+  credit_notes_approved                credit_notes[]            @relation("credit_note_approver")
+  inbound_dismissals                   inbound_payments[]        @relation("inbound_dismisser")
+  number_blocks                        number_blocks[]           @relation("number_block_opener")
+  blocks_closed                        number_blocks[]           @relation("number_block_closer")
   // ------------------------------------------------ consignment (ADR 0023)
-  consigned_products  products[]           @relation("consigned_products")
-  consignor_payables  consignor_payables[] @relation("payable_consignor")
-  consignor_payouts         consignor_payouts[] @relation("payout_consignor")
-  consignor_payouts_created consignor_payouts[] @relation("payout_creator")
+  consigned_products                   products[]                @relation("consigned_products")
+  consignor_payables                   consignor_payables[]      @relation("payable_consignor")
+  consignor_payouts                    consignor_payouts[]       @relation("payout_consignor")
+  consignor_payouts_created            consignor_payouts[]       @relation("payout_creator")
+  // The messages this customer sent the shop's Official Account (ADR 0032). SetNull rather
+  // than Cascade: deleting a customer must not erase what was asked, and the subject column
+  // still names the thread those messages belong to.
+  line_messages                        line_messages[]           @relation("line_message_customer")
+  // The campaigns this account sent (ADR 0032 §7). SetNull rather than Cascade: what the
+  // shop sent to its customers outlives the account that pressed send, and the audit row is
+  // what names the person anyway.
+  line_campaigns_sent                  line_campaigns[]          @relation("line_campaign_sender")
   // ---------------------------------------- consignment intake (ADR 0025)
   // Two relations, and the names are load-bearing: a submission names the member who
   // offered the goods and the owner who agreed the terms. Those are almost never the
@@ -569,13 +595,11 @@ model users {
 
 /**
  * Whether this customer is a friend of the shop's Official Account.
- *
  * A LINE push is only delivered to friends: an unfollowed user's push is refused
  * with a 200, so planning a message for one would burn the outbox's whole retry
  * schedule against a door nobody is behind. The webhook's `follow` event writes a
  * row here, `unfollow` clears it, and the customer planner reads it beside the
  * consent it sits beside (ADR 0030 §2).
- *
  * Keyed by the subject rather than the user id so an unbound customer (one still
  * walking the first sign-in) can be followed before they finish binding, and the
  * row is here waiting when they do. Deliberately a standalone table with no
@@ -584,8 +608,10 @@ model users {
  * be a row it cannot record.
  */
 model line_friends {
-  /** The LINE user id — the same value that lands on `users.line_subject`. */
-  line_subject String  @id @db.VarChar(120)
+  /**
+   * The LINE user id — the same value that lands on `users.line_subject`.
+   */
+  line_subject String   @id @db.VarChar(120)
   followed_at  DateTime @default(now()) @db.Timestamptz(6)
 }
 
@@ -599,19 +625,18 @@ model categories {
 }
 
 model products {
-  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  category_id  Int?
-  barcode      String?  @unique @db.VarChar(64)
-  name         String   @db.VarChar(150)
-  description  String?
-  cost_price   Decimal  @default(0) @db.Decimal(10, 2)
-  sale_price   Decimal  @default(0) @db.Decimal(10, 2)
-  stock_qty    Int      @default(0)
-  reserved_qty Int      @default(0)
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id             Int?
+  barcode                 String?  @unique @db.VarChar(64)
+  name                    String   @db.VarChar(150)
+  description             String?
+  cost_price              Decimal  @default(0) @db.Decimal(10, 2)
+  sale_price              Decimal  @default(0) @db.Decimal(10, 2)
+  stock_qty               Int      @default(0)
+  reserved_qty            Int      @default(0)
   /**
    * How much of this product the till may **not** sell while it is offline
    * (ADR 0019, the weakened promise).
-   *
    * Online, "never oversell" is one conditional `UPDATE` (`inventory.ts`). Offline it
    * cannot be, because the tally is a snapshot of what the shelf held when the device
    * last synced. So a shop sets a reserve per product and the device stops selling it
@@ -621,9 +646,9 @@ model products {
    * server's own oversell guard does not consult it, because the reserve is a device
    * rule and the online promise is unchanged.
    */
-  offline_safety_qty Int      @default(0)
-  image_url          String?
-  is_active          Boolean  @default(true)
+  offline_safety_qty      Int      @default(0)
+  image_url               String?
+  is_active               Boolean  @default(true)
   // ------------------------------------------------------- consignment (ADR 0023)
   // Goods the shop sells but does not own. A null `consignor_user_id` is the normal
   // case: the product is the shop's own stock. When it is set, the product belongs
@@ -631,26 +656,26 @@ model products {
   // net (excluding VAT) the shop owes on each sale (ADR 0023 §2, §4). The two move
   // together — a consignment with no percent, or a percent with no consignor, is a
   // state the migration refuses in the database rather than in every code path.
-  consignor_user_id       String? @db.Uuid
+  consignor_user_id       String?  @db.Uuid
   consignor_share_percent Int?
-  created_at         DateTime @default(now()) @db.Timestamptz(6)
-  updated_at         DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  updated_at              DateTime @default(now()) @updatedAt @db.Timestamptz(6)
 
   // Restrict rather than SetNull: deleting a category that still has products
   // would silently orphan them, and the database now refuses it rather than
   // relying on the API to remember to check first.
-  category    categories?   @relation(fields: [category_id], references: [id], onDelete: Restrict)
-  stock_logs  stock_logs[]
-  order_items order_items[]
+  category                categories?               @relation(fields: [category_id], references: [id], onDelete: Restrict)
+  stock_logs              stock_logs[]
+  order_items             order_items[]
   // Restrict for the same reason as the category: deleting the member who consigned
   // goods would orphan the shop's liability to them, which is money, not a label.
-  consignor          users?                @relation("consigned_products", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  consignor               users?                    @relation("consigned_products", fields: [consignor_user_id], references: [id], onDelete: Restrict)
   // A product's own paperwork from the consignment form (ADR 0025). Cascade with the
   // product, because a product with no row cannot be looked up: deleting the product is
   // deleting the thing these documents describe.
   consignment_documents   consignment_documents[]
   consignment_submissions consignment_submissions[]
-  consignor_payables consignor_payables[]
+  consignor_payables      consignor_payables[]
 
   @@index([category_id])
   @@index([is_active])
@@ -718,8 +743,8 @@ model cash_shifts {
   actual_cash   Decimal?     @db.Decimal(10, 2)
   status        shift_status @default(open)
 
-  opener          users             @relation("shift_opener", fields: [opened_by], references: [id])
-  closer          users?            @relation("shift_closer", fields: [closed_by], references: [id])
+  opener            users               @relation("shift_opener", fields: [opened_by], references: [id])
+  closer            users?              @relation("shift_closer", fields: [closed_by], references: [id])
   payments          payments[]
   audit_logs        audit_logs[]
   payment_intents   payment_intents[]
@@ -767,42 +792,43 @@ model audit_logs {
 
 /**
  * That a customer was shown the privacy notice, and which text they saw.
- *
  * The Act requires the shop to *inform* its customers what it does with their data, and
  * this is the record that it did. It sits next to `audit_logs` because it is the same
  * kind of thing — an immutable line a shop may later have to produce — with two
  * differences that are deliberate.
- *
  * **Its actor is the customer, not staff.** `audit_logs` records what a person *did*
  * inside the system; this records something that happened *to* them. So there is no
  * `authorized_by`, and the nullable `actor_user_id` of `audit_logs` is not a model here:
  * a customer is always present.
- *
  * **It does not cascade.** Every other table pointing at a person cascades, because
  * losing the person should lose their rows. This one is RESTRICT, because the record
  * that somebody was informed has to outlive the account it is about — and it can,
  * because it holds an id, a version and a date, and nothing else about them. That is
  * the honest answer to a deletion request that reaches this far: the proof outlives the
  * profile, the profile does not outlive itself.
- *
  * **Append-only, like `audit_logs`.** The notice will be edited — its retention periods
  * follow the shop's configuration — and a record that the next signup overwrites is not
  * evidence. A customer who acknowledged September's text keeps that row after the
  * notice is revised, so the shop can still say what they were shown on the day.
- *
  * `notice_version` is the effective date of the text (`src/lib/privacy-notice.ts`), not
  * a counter, so it is a fact about the document rather than about how many times the
  * repository has edited it — two shops running the same build can disagree about the
  * second and must not disagree about the first.
  */
 model notice_acknowledgements {
-  id BigInt @id @default(autoincrement())
-  customer_user_id String @db.Uuid
-  /** The effective date of the text the customer read, `YYYY-MM-DD`. */
-  notice_version   String @db.VarChar(10)
-  /** Where the notice was read. A pointer, never a copy of the text. */
-  notice_url       String @default("/privacy") @db.VarChar(120)
-  /** The shop's clock, not the browser's. */
+  id               BigInt   @id @default(autoincrement())
+  customer_user_id String   @db.Uuid
+  /**
+   * The effective date of the text the customer read, `YYYY-MM-DD`.
+   */
+  notice_version   String   @db.VarChar(10)
+  /**
+   * Where the notice was read. A pointer, never a copy of the text.
+   */
+  notice_url       String   @default("/privacy") @db.VarChar(120)
+  /**
+   * The shop's clock, not the browser's.
+   */
   acknowledged_at  DateTime @default(now()) @db.Timestamptz(6)
 
   customer users @relation(fields: [customer_user_id], references: [id], onDelete: Restrict)
@@ -816,19 +842,16 @@ model notice_acknowledgements {
 
 /**
  * One rate limiter bucket, shared by every process (ADR 0012).
- *
  * The limiter's memory used to be a `Map` in the process, which was defensible for
  * one listener and became two limiters the moment there were two — each half as
  * strict as the configuration says, and both forgotten by a restart. A row per
  * bucket is the smallest thing that fixes both, and this deployment already has the
  * database.
- *
  * The key is the same string the policy layer composes (`policy|address` or
  * `policy|address|scope`), so the row a caller is counted in is the row the pure
  * decision reasons about. `tokens` is fractional on purpose: refill is continuous,
  * so a bucket genuinely holds 3.4 attempts. `updated_at` is written with the
  * *database's* clock, which is the only clock several processes agree on.
- *
  * No index beyond the primary key: the table is one row per caller who has been
  * limited lately, and the sweep deletes by `updated_at` on a table small enough to
  * scan. The column is wider than `MAX_BUCKET_KEY_LENGTH` so that cap can be raised
@@ -867,36 +890,34 @@ model otp_challenges {
 }
 
 model orders {
-  id                String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  order_number      String       @unique @db.VarChar(30)
-  order_type        order_type   @default(pos_walkin)
-  status            order_status @default(pending)
-  customer_id       String?      @db.Uuid
-  cashier_id        String?      @db.Uuid
-  pickup_pin        String?      @db.VarChar(6)
-  pickup_expires_at DateTime?    @db.Timestamptz(6)
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_number      String            @unique @db.VarChar(30)
+  order_type        order_type        @default(pos_walkin)
+  status            order_status      @default(pending)
+  customer_id       String?           @db.Uuid
+  cashier_id        String?           @db.Uuid
+  pickup_pin        String?           @db.VarChar(6)
+  pickup_expires_at DateTime?         @db.Timestamptz(6)
   /**
    * When this pre-order stops waiting for staff confirmation (SRS §3 Phase 1).
-   *
    * Stored rather than derived from `created_at` plus the shop's timeout setting,
    * because the deadline was being computed twice — once by the sweeper and once
    * by the board — and changing the setting silently re-dated the orders already
    * in the queue. One stored instant is read by both.
-   *
    * Null on a walk-in sale (no Phase 1) and on rows that predate the column.
    */
-  confirm_deadline  DateTime?    @db.Timestamptz(6)
-  subtotal_amount   Decimal      @default(0) @db.Decimal(10, 2)
-  discount_amount   Decimal      @default(0) @db.Decimal(10, 2)
+  confirm_deadline  DateTime?         @db.Timestamptz(6)
+  subtotal_amount   Decimal           @default(0) @db.Decimal(10, 2)
+  discount_amount   Decimal           @default(0) @db.Decimal(10, 2)
   // Tax facts are *snapshotted*, never recomputed from the shop's current
   // settings: if 7% ever becomes 8%, a reprint of a 2026 receipt must still
   // show 7%, and `vat_rate_used` is what makes that possible.
-  final_amount      Decimal      @default(0) @db.Decimal(10, 2)
-  net_amount        Decimal      @default(0) @db.Decimal(10, 2)
-  vat_amount        Decimal      @default(0) @db.Decimal(10, 2)
-  vat_rate_used     Decimal?     @db.Decimal(5, 2)
-  is_vat_invoice    Boolean      @default(false)
-  receipt_number    String?      @unique @db.VarChar(30)
+  final_amount      Decimal           @default(0) @db.Decimal(10, 2)
+  net_amount        Decimal           @default(0) @db.Decimal(10, 2)
+  vat_amount        Decimal           @default(0) @db.Decimal(10, 2)
+  vat_rate_used     Decimal?          @db.Decimal(5, 2)
+  is_vat_invoice    Boolean           @default(false)
+  receipt_number    String?           @unique @db.VarChar(30)
   /**
    * The number the customer is called by (ADR 0017): 1, 2, 3 … within one Bangkok
    * day, on walk-in sales only. Null on a pre-order, whose handover already has
@@ -909,7 +930,7 @@ model orders {
    * local midnight.
    */
   queue_number      Int?
-  queue_day         DateTime?    @db.Date
+  queue_day         DateTime?         @db.Date
   /**
    * Where the goods are, for a walk-in sale (ADR 0018).
    * Set to `preparing` by `createPosSale` — the bill is paid and the drink is
@@ -917,39 +938,36 @@ model orders {
    * pre-order already uses for the same fact, is the instant this reaches `ready`.
    */
   fulfilment        fulfilment_state?
-  points_earned     Int          @default(0)
-  points_redeemed   Int          @default(0)
+  points_earned     Int               @default(0)
+  points_redeemed   Int               @default(0)
   cancel_reason     String?
   /**
    * The device's own identity for a bill it closed with no connection (ADR 0019).
-   *
    * A UUID the till generated, unique here — which is what makes the replay idempotent:
    * a retry after a timeout, or the same batch sent twice, writes one order because the
    * second insert is refused by this index. Null on every bill the server witnessed,
    * so `client_ref IS NOT NULL` is also the answer to "was this recorded offline".
    */
-  client_ref        String?      @unique
+  client_ref        String?           @unique
   /**
    * The instant the sale happened for the books — the day every day-bucketed read
    * files it under, and the reason `created_at` is no longer asked (ADR 0019
    * decision 4; the rule is `src/lib/sale-instant.ts`).
-   *
    * For an ordinary sale this is the server's now, the same instant `completed_at`
    * gets. For a replayed offline bill it is the **device's** instant, which is why the
    * two columns exist separately: a walk-in sale completed at 21:00 and synced at 08:12
    * is yesterday's takings, and `created_at`/`completed_at` would file it today.
-   *
    * A pre-order that is still pending carries the creation instant here and nothing reads
    * it — every day bucket also filters on a terminal status, because a sale that has not
    * happened yet has no sale instant. `completeOrder` sets it at handover, which is when
    * the goods and the money actually moved.
    */
-  sold_at           DateTime     @default(now()) @db.Timestamptz(6)
-  created_at        DateTime     @default(now()) @db.Timestamptz(6)
-  confirmed_at      DateTime?    @db.Timestamptz(6)
-  ready_at          DateTime?    @db.Timestamptz(6)
-  completed_at      DateTime?    @db.Timestamptz(6)
-  cancelled_at      DateTime?    @db.Timestamptz(6)
+  sold_at           DateTime          @default(now()) @db.Timestamptz(6)
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  confirmed_at      DateTime?         @db.Timestamptz(6)
+  ready_at          DateTime?         @db.Timestamptz(6)
+  completed_at      DateTime?         @db.Timestamptz(6)
+  cancelled_at      DateTime?         @db.Timestamptz(6)
 
   customer           users?               @relation("order_customer", fields: [customer_id], references: [id], onDelete: SetNull)
   cashier            users?               @relation("order_cashier", fields: [cashier_id], references: [id], onDelete: SetNull)
@@ -963,10 +981,19 @@ model orders {
    * "how much of this came back" is the sum of these rather than a column that can
    * drift away from them.
    */
-  credit_notes       credit_notes[]  @relation("credit_notes_for_order")
+  credit_notes       credit_notes[]       @relation("credit_notes_for_order")
   notifications      notifications[]
   consignor_payables consignor_payables[]
 
+  /**
+   * One bill per number per day, stated where it cannot be forgotten. The
+   * allocation already serialises on the shop row; this is the guarantee behind
+   * that serialisation, because two bills sharing a number means calling one
+   * customer to another's order — a failure that looks like a mistake by the
+   * staff rather than like a bug. Nulls are distinct in PostgreSQL, so the
+   * pre-orders that carry no number do not collide here.
+   */
+  @@unique([queue_day, queue_number])
   @@index([status])
   @@index([created_at])
   /**
@@ -977,15 +1004,6 @@ model orders {
    */
   @@index([sold_at])
   @@index([order_type, status])
-  /**
-   * One bill per number per day, stated where it cannot be forgotten. The
-   * allocation already serialises on the shop row; this is the guarantee behind
-   * that serialisation, because two bills sharing a number means calling one
-   * customer to another's order — a failure that looks like a mistake by the
-   * staff rather than like a bug. Nulls are distinct in PostgreSQL, so the
-   * pre-orders that carry no number do not collide here.
-   */
-  @@unique([queue_day, queue_number])
   /**
    * The board's query: today's bills whose goods are not handed over yet. A plain
    * index rather than a partial one — Prisma cannot express `WHERE fulfilment IS
@@ -1004,11 +1022,15 @@ model order_items {
   quantity    Int
   total_price Decimal @db.Decimal(10, 2)
 
-  order   orders   @relation(fields: [order_id], references: [id], onDelete: Cascade)
-  product products @relation(fields: [product_id], references: [id])
-  /** The credit-note lines that took this one back, wholly or in part. */
-  refunded_on credit_note_items[]
-  /** The consignor shares this line's sale and any refund of it produced. */
+  order              orders               @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product            products             @relation(fields: [product_id], references: [id])
+  /**
+   * The credit-note lines that took this one back, wholly or in part.
+   */
+  refunded_on        credit_note_items[]
+  /**
+   * The consignor shares this line's sale and any refund of it produced.
+   */
   consignor_payables consignor_payables[]
 
   @@index([order_id])
@@ -1020,7 +1042,9 @@ model payments {
   order_id        String            @db.Uuid
   shift_id        Int?
   method          payment_method
-  /** Always positive; `direction` carries the sign. */
+  /**
+   * Always positive; `direction` carries the sign.
+   */
   amount          Decimal           @db.Decimal(10, 2)
   direction       payment_direction @default(sale)
   /**
@@ -1050,7 +1074,6 @@ model payments {
 
 /**
  * The document that reverses a paid sale — a full-amount credit note.
- *
  * Its own table rather than a flag on `orders`, because it is a *document*: it
  * has its own number from its own series, its own tax figures as issued, its own
  * reason, and two people named on it. A sale's total is a fact about the sale;
@@ -1058,16 +1081,19 @@ model payments {
  * customer, and the two must be able to disagree later — which is exactly what
  * a partial refund would require, and why the figures are copied here rather
  * than read back through the order.
- *
  * `order_id` is UNIQUE. That is the double-refund guard that survives everything
  * else: `canTransition` stops the API path, and this index stops a race, a
  * retried request, and a future code path that forgets to ask.
  */
 model credit_notes {
   id                    String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  /** `CN-2026-000001`, from the shop's own gapless series. */
+  /**
+   * `CN-2026-000001`, from the shop's own gapless series.
+   */
   document_number       String         @unique @db.VarChar(30)
-  /** The sale being reversed. One receipt may carry several notes. */
+  /**
+   * The sale being reversed. One receipt may carry several notes.
+   */
   order_id              String         @db.Uuid
   /**
    * 1-based, within one sale.
@@ -1090,6 +1116,9 @@ model credit_notes {
    * *different* figures, is not a schema change.
    */
   /**
+   * /**
+   * /**
+   * /**
    * What this note's lines were charged, before the discount it accounts for.
    * A full reversal copies the sale's subtotal; a partial one is the pro-rata share
    * of the lines coming back. Stored rather than summed from the items so that the
@@ -1119,18 +1148,20 @@ model credit_notes {
   authorized_by_user_id String?        @db.Uuid
   created_at            DateTime       @default(now()) @db.Timestamptz(6)
 
-  order         orders       @relation("credit_notes_for_order", fields: [order_id], references: [id], onDelete: Restrict)
-  shift         cash_shifts? @relation(fields: [shift_id], references: [id], onDelete: Restrict)
-  issuer        users        @relation("credit_note_issuer", fields: [created_by], references: [id], onDelete: Restrict)
-  approver      users?       @relation("credit_note_approver", fields: [authorized_by_user_id], references: [id], onDelete: Restrict)
-  /** The money legs of this document. At least one for any way of paying out. */
-  payments      payments[]
+  order    orders              @relation("credit_notes_for_order", fields: [order_id], references: [id], onDelete: Restrict)
+  shift    cash_shifts?        @relation(fields: [shift_id], references: [id], onDelete: Restrict)
+  issuer   users               @relation("credit_note_issuer", fields: [created_by], references: [id], onDelete: Restrict)
+  approver users?              @relation("credit_note_approver", fields: [authorized_by_user_id], references: [id], onDelete: Restrict)
+  /**
+   * The money legs of this document. At least one for any way of paying out.
+   */
+  payments payments[]
   /**
    * The lines this note takes back, with their quantities.
    * This is what makes a partial refund a document rather than an adjustment, and
    * what a later refund reads to know how much of each line is still refundable.
    */
-  items         credit_note_items[]
+  items    credit_note_items[]
 
   @@unique([order_id, sequence])
   @@index([shift_id])
@@ -1148,7 +1179,9 @@ model credit_note_items {
   order_item_id  BigInt
   quantity       Int
   unit_price     Decimal @db.Decimal(10, 2)
-  /** `unit_price × quantity`, to the satang — checked by the database. */
+  /**
+   * `unit_price × quantity`, to the satang — checked by the database.
+   */
   line_total     Decimal @db.Decimal(10, 2)
 
   credit_note credit_notes @relation(fields: [credit_note_id], references: [id], onDelete: Cascade)
@@ -1205,58 +1238,61 @@ model payment_intents {
   confirmed_by users?      @relation("intent_confirmer", fields: [confirmed_by_user_id], references: [id], onDelete: SetNull)
   order        orders?     @relation(fields: [order_id], references: [id], onDelete: SetNull)
 
-  @@index([status, expires_at])
-  @@index([order_id])
-
   /**
    * Transfers the bank reported against this QR. The relation is what makes
    * `inbound_payments.intent_ref` a fact rather than a string that used to be a
    * reference: a row claiming to have closed a bill has to name a real one.
    */
   inbound_transfers inbound_payments[] @relation("inbound_intent")
+
+  @@index([status, expires_at])
+  @@index([order_id])
 }
 
 // ---------------------------------------------------- inbound bank transfers
 
 /**
  * Money the bank said arrived, whether or not we can say which bill it paid.
- *
  * This table exists because the alternative is silence. A notification that names
  * no QR, or an amount nobody is waiting for, is still money in the shop's account:
  * dropping it would leave the shop with a bank balance it cannot explain, and
  * guessing at a bill would put somebody else's payment on a customer's receipt.
  * So it is recorded, with the reason it was refused, and shown to an owner.
- *
  * Two columns carry the whole design:
- *
- *   * `external_id` is the bank's own identifier for the message (a mail's
- *     Message-ID), unique per `source`. A bridge that retries must not record the
- *     same transfer twice, and the database is what guarantees it rather than the
- *     bridge's bookkeeping.
- *   * `received_at` is the *bank's* instant. Payability is measured against it,
- *     never against the moment the bridge got round to posting, so a notification
- *     delayed in a mailbox is still judged by when the money actually moved.
+ * * `external_id` is the bank's own identifier for the message (a mail's
+ * Message-ID), unique per `source`. A bridge that retries must not record the
+ * same transfer twice, and the database is what guarantees it rather than the
+ * bridge's bookkeeping.
+ * * `received_at` is the *bank's* instant. Payability is measured against it,
+ * never against the moment the bridge got round to posting, so a notification
+ * delayed in a mailbox is still judged by when the money actually moved.
  */
 model inbound_payments {
-  id                    BigInt                 @id @default(autoincrement())
-  /** Null only when the notification held no readable amount — see the CHECK. */
-  amount                Decimal?               @db.Decimal(10, 2)
-  received_at           DateTime               @db.Timestamptz(6)
-  /** Who told us: `bank-bridge`, `webhook`, or whatever a shop names theirs. */
-  source                String                 @db.VarChar(40)
-  external_id           String?                @db.VarChar(200)
-  /** The notification itself, kept so a disputed payment can be re-read. */
-  raw_text              String
-  status                inbound_payment_status @default(unmatched)
-  refusal_reason        inbound_refusal_reason?
+  id                   BigInt                  @id @default(autoincrement())
+  /**
+   * Null only when the notification held no readable amount — see the CHECK.
+   */
+  amount               Decimal?                @db.Decimal(10, 2)
+  received_at          DateTime                @db.Timestamptz(6)
+  /**
+   * Who told us: `bank-bridge`, `webhook`, or whatever a shop names theirs.
+   */
+  source               String                  @db.VarChar(40)
+  external_id          String?                 @db.VarChar(200)
+  /**
+   * The notification itself, kept so a disputed payment can be re-read.
+   */
+  raw_text             String
+  status               inbound_payment_status  @default(unmatched)
+  refusal_reason       inbound_refusal_reason?
   /**
    * The QR this closed. Null for anything a person still has to deal with.
    */
-  intent_ref            String?                @db.VarChar(12)
-  dismissed_reason      String?
-  dismissed_by_user_id  String?                @db.Uuid
-  dismissed_at          DateTime?              @db.Timestamptz(6)
-  created_at            DateTime               @default(now()) @db.Timestamptz(6)
+  intent_ref           String?                 @db.VarChar(12)
+  dismissed_reason     String?
+  dismissed_by_user_id String?                 @db.Uuid
+  dismissed_at         DateTime?               @db.Timestamptz(6)
+  created_at           DateTime                @default(now()) @db.Timestamptz(6)
 
   intent       payment_intents? @relation("inbound_intent", fields: [intent_ref], references: [ref], onDelete: Restrict)
   dismissed_by users?           @relation("inbound_dismisser", fields: [dismissed_by_user_id], references: [id], onDelete: Restrict)
@@ -1275,9 +1311,13 @@ model inbound_payments {
  * paying, and every one of them is a company that can go away.
  */
 enum notification_channel {
-  /** LINE Messaging API push. Addresses a LINE user id or group id, not a phone. */
+  /**
+   * LINE Messaging API push. Addresses a LINE user id or group id, not a phone.
+   */
   line
-  /** A JSON POST to the shop's own gateway — an SMS provider, or a script. */
+  /**
+   * A JSON POST to the shop's own gateway — an SMS provider, or a script.
+   */
   webhook
 }
 
@@ -1297,37 +1337,36 @@ enum notification_status {
 
 /**
  * A message that should go out, written in the same transaction that made it true.
- *
  * The order matters and is the whole point of the table. `markOrderReady` commits
  * the order and this row together, so a process that dies between the commit and
  * the send loses nothing: the fact is on disk before anything tries to deliver it,
  * and the worker picks it up on its next pass. Announcing after the fact with a
  * `fetch` in the request path — which is what most systems do first — turns a
  * dropped connection into a customer who is never told their parcel is waiting.
- *
  * Three details carry the design:
- *
- *   * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
- *     about one order, so a route that is retried, a worker that runs twice, and a
- *     double click all produce one message.
- *   * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
- *     itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
- *     `next_attempt_at` forward *before* it tries, so a worker killed mid-send
- *     leaves a row that comes back rather than one stuck in flight forever.
- *   * `body` is the message as it will be sent, not a template name. Rendered
- *     once, when the fact was fresh, so an edit to the wording tomorrow cannot
- *     rewrite what a customer was told yesterday.
+ * * `UNIQUE (kind, order_id)` is the dedupe. "Your order is ready" is a fact
+ * about one order, so a route that is retried, a worker that runs twice, and a
+ * double click all produce one message.
+ * * `attempts` and `next_attempt_at` are the retry schedule, and the schedule
+ * itself is pure (`src/lib/notify-retry.ts`) — a worker that claims a row moves
+ * `next_attempt_at` forward *before* it tries, so a worker killed mid-send
+ * leaves a row that comes back rather than one stuck in flight forever.
+ * * `body` is the message as it will be sent, not a template name. Rendered
+ * once, when the fact was fresh, so an edit to the wording tomorrow cannot
+ * rewrite what a customer was told yesterday.
  */
 model notifications {
-  id              BigInt              @id @default(autoincrement())
-  kind            String              @db.VarChar(40)
+  id              BigInt               @id @default(autoincrement())
+  kind            String               @db.VarChar(40)
   channel         notification_channel
-  /** A phone number for a gateway, a group id for LINE. */
-  recipient       String              @db.VarChar(120)
+  /**
+   * A phone number for a gateway, a group id for LINE.
+   */
+  recipient       String               @db.VarChar(120)
   body            String
-  status          notification_status @default(pending)
-  attempts        Int                 @default(0)
-  next_attempt_at DateTime            @default(now()) @db.Timestamptz(6)
+  status          notification_status  @default(pending)
+  attempts        Int                  @default(0)
+  next_attempt_at DateTime             @default(now()) @db.Timestamptz(6)
   last_error      String?
   /**
    * The order this is about, which is also what makes it unique.
@@ -1335,14 +1374,28 @@ model notifications {
    * and the unique index treats nulls as distinct, so a future shop-wide
    * announcement is not blocked by this constraint.
    */
-  order_id        String?             @db.Uuid
-  created_at      DateTime            @default(now()) @db.Timestamptz(6)
-  sent_at         DateTime?           @db.Timestamptz(6)
+  order_id        String?              @db.Uuid
+  /**
+   * What makes *this kind* of fact unique when an order is not what it names (ADR 0032 §4).
+   * The rule for a message that belongs to no order used to be `(kind, recipient)` — once
+   * ever, which is right for "a transfer was dismissed" and wrong for "this customer wrote
+   * to us", where the shop should hear once per burst rather than once in the shop's life.
+   * A row that carries its own key is deduped on `(kind, dedupe_key)`, and the key is built
+   * with the window in it, so the window is enforced by an index rather than by a read two
+   * workers could both win. Nulls stay distinct, so every row written before this column
+   * existed is untouched by the constraint.
+   */
+  dedupe_key      String?              @db.VarChar(160)
+  created_at      DateTime             @default(now()) @db.Timestamptz(6)
+  sent_at         DateTime?            @db.Timestamptz(6)
 
   order orders? @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   @@unique([kind, order_id])
-  /** The worker's query: everything due, oldest first. */
+  @@unique([kind, dedupe_key])
+  /**
+   * The worker's query: everything due, oldest first.
+   */
   @@index([status, next_attempt_at])
 }
 
@@ -1379,26 +1432,32 @@ model display_devices {
   paired_by users? @relation(fields: [paired_by_user_id], references: [id], onDelete: SetNull)
 }
 
-/** What moved a consignor's balance (ADR 0023 §2, §5, §6). */
+/**
+ * What moved a consignor's balance (ADR 0023 §2, §5, §6).
+ */
 enum consignor_payable_kind {
-  /** A sale of consigned goods credited the consignor their share. */
+  /**
+   * A sale of consigned goods credited the consignor their share.
+   */
   sale
-  /** A refund of a consigned sale clawed the share back. */
+  /**
+   * A refund of a consigned sale clawed the share back.
+   */
   refund
-  /** A payout handed the consignor money, debiting the balance. */
+  /**
+   * A payout handed the consignor money, debiting the balance.
+   */
   payout
 }
 
 /**
  * What the shop owes each consignor (ADR 0023 §2).
- *
  * An append-only ledger the way `point_transactions` is — a credit when consigned
  * goods sell, a debit when a refund claws the share back or a payout hands it over,
  * and the balance is the *sum* rather than a column that can drift away from the rows.
  * `amount_thb` is signed, so the arithmetic is one addition and the migration's CHECK
  * refuses a row whose sign disagrees with its kind (a sale that debits, a payout that
  * credits).
- *
  * The money path itself is untouched: the sale is the shop's own (its receipt, its
  * series, its VAT, ADR 0023 §3), and this ledger records only the debt that sale
  * created. That is what keeps the share from becoming a second inventory and a second
@@ -1408,11 +1467,17 @@ model consignor_payables {
   id                BigInt                 @id @default(autoincrement())
   consignor_user_id String                 @db.Uuid
   kind              consignor_payable_kind
-  /** Signed: a sale credits, a refund and a payout debit. */
+  /**
+   * Signed: a sale credits, a refund and a payout debit.
+   */
   amount_thb        Decimal                @db.Decimal(10, 2)
-  /** The sale or refund this movement came from; null on a payout. */
+  /**
+   * The sale or refund this movement came from; null on a payout.
+   */
   order_id          String?                @db.Uuid
-  /** The line that sold, so a refund can name exactly what went back. */
+  /**
+   * The line that sold, so a refund can name exactly what went back.
+   */
   order_item_id     BigInt?
   product_id        String?                @db.Uuid
   /**
@@ -1427,10 +1492,10 @@ model consignor_payables {
 
   // Restrict rather than cascade: this is the shop's liability to a real person, and
   // deleting them must not quietly erase what they are owed.
-  consignor  users             @relation("payable_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
-  order      orders?           @relation(fields: [order_id], references: [id], onDelete: SetNull)
-  order_item order_items?      @relation(fields: [order_item_id], references: [id], onDelete: SetNull)
-  product    products?         @relation(fields: [product_id], references: [id], onDelete: SetNull)
+  consignor  users              @relation("payable_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  order      orders?            @relation(fields: [order_id], references: [id], onDelete: SetNull)
+  order_item order_items?       @relation(fields: [order_item_id], references: [id], onDelete: SetNull)
+  product    products?          @relation(fields: [product_id], references: [id], onDelete: SetNull)
   payout     consignor_payouts? @relation(fields: [payout_id], references: [id], onDelete: SetNull)
 
   @@index([consignor_user_id, created_at])
@@ -1440,13 +1505,11 @@ model consignor_payables {
 
 /**
  * A settlement of what the shop owed a consignor (ADR 0023 §6).
- *
  * The second money-out document in this system, and deliberately a document rather
  * than a flag on the ledger: the ledger says "this much is owed", and a payout says
  * "that debt was settled like this, on this day, by this person". The ledger's payout
  * row points here (`consignor_payables.payout_id`), so the arithmetic and the paper
  * behind it can never be separated.
- *
  * `method` is the same enum a refund uses, and the same rule applies: `cash` comes out
  * of an open drawer and carries its `shift_id`; `promptpay` is a transfer the admin
  * already made in the shop's own app and touches no drawer, so it carries none. The
@@ -1455,20 +1518,28 @@ model consignor_payables {
 model consignor_payouts {
   id                BigInt         @id @default(autoincrement())
   consignor_user_id String         @db.Uuid
-  /** `cash` out of a drawer, or `promptpay` handed over in the shop's own app. */
+  /**
+   * `cash` out of a drawer, or `promptpay` handed over in the shop's own app.
+   */
   method            payment_method
-  /** Always positive: the money that left the shop. */
+  /**
+   * Always positive: the money that left the shop.
+   */
   amount_thb        Decimal        @db.Decimal(12, 2)
-  /** The drawer a cash payout came out of; null for a transfer. */
+  /**
+   * The drawer a cash payout came out of; null for a transfer.
+   */
   shift_id          Int?
   note              String?        @db.VarChar(255)
-  /** The admin who settled it. */
+  /**
+   * The admin who settled it.
+   */
   created_by        String         @db.Uuid
   created_at        DateTime       @default(now()) @db.Timestamptz(6)
 
-  consignor users              @relation("payout_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
-  creator   users              @relation("payout_creator", fields: [created_by], references: [id], onDelete: Restrict)
-  shift     cash_shifts?       @relation(fields: [shift_id], references: [id], onDelete: SetNull)
+  consignor users                @relation("payout_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
+  creator   users                @relation("payout_creator", fields: [created_by], references: [id], onDelete: Restrict)
+  shift     cash_shifts?         @relation(fields: [shift_id], references: [id], onDelete: SetNull)
   payables  consignor_payables[]
 
   @@index([consignor_user_id, created_at])
@@ -1483,7 +1554,9 @@ model consignor_payouts {
 // why the status carries the decision columns rather than a second approved table
 // beside it.
 
-/** `pending` until an owner decides; the two end states carry what was decided. */
+/**
+ * `pending` until an owner decides; the two end states carry what was decided.
+ */
 enum consignment_submission_status {
   pending
   approved
@@ -1503,33 +1576,33 @@ enum consignment_document_kind {
 }
 
 model consignment_submissions {
-  id              String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                    String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   // Never null, and never a claim somebody typed: the member is signed in, so the
   // session named the person. A nullable owner here would only ever mean "the caller
   // was nobody", which the route refuses before it gets here.
-  consignor_user_id String  @db.Uuid
+  consignor_user_id     String                        @db.Uuid
   // The key the member's browser minted once for this form, UNIQUE — the same idea as
   // `orders.client_ref` (ADR 0019). A member on a phone double-taps, and goods counted
   // twice in an owner's inbox is worse than goods counted once late.
-  client_ref        String  @unique @db.Uuid
-  product_name      String  @db.VarChar(150)
+  client_ref            String                        @unique @db.Uuid
+  product_name          String                        @db.VarChar(150)
   // The price the member asked. A starting point for a conversation, not a price the
   // shop has agreed to sell at.
-  offered_price_thb Decimal @db.Decimal(10, 2)
-  quantity          Int
-  notes             String?
-  status            consignment_submission_status @default(pending)
+  offered_price_thb     Decimal                       @db.Decimal(10, 2)
+  quantity              Int
+  notes                 String?
+  status                consignment_submission_status @default(pending)
   // Set only by approval. SetNull on the way out, because an arrangement outliving a
   // deleted product is a settlement question rather than an ownership one.
-  product_id            String?   @db.Uuid
-  decided_by_user_id    String?   @db.Uuid
-  decided_at            DateTime? @db.Timestamptz(6)
+  product_id            String?                       @db.Uuid
+  decided_by_user_id    String?                       @db.Uuid
+  decided_at            DateTime?                     @db.Timestamptz(6)
   decided_share_percent Int?
   // Required when rejected, and a CHECK refuses it otherwise: a refusal the member
   // cannot read the reason for is a refusal they simply send again.
   decision_note         String?
-  submitted_at          DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at            DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  submitted_at          DateTime                      @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                      @default(now()) @updatedAt @db.Timestamptz(6)
 
   consignor users     @relation("submission_consignor", fields: [consignor_user_id], references: [id], onDelete: Restrict)
   decider   users?    @relation("submission_decider", fields: [decided_by_user_id], references: [id], onDelete: SetNull)
@@ -1544,11 +1617,9 @@ model consignment_submissions {
 
 /**
  * A photo or a document the member attached, kept as a link (ADR 0014 extended).
- *
  * The bytes stay where the member put them — a Drive folder, their phone's share
  * sheet — because this deployment holds no files and could not back up or vouch for
  * one. Holding the link and saying so is the same trade a product photo makes.
- *
  * `product_id` is null while the submission waits and is filled in on approval, so one
  * row serves both the inbox an owner reads and the record the member reads afterwards.
  * Two tables would mean copying the links at approval and then keeping the copies
@@ -1583,4 +1654,103 @@ model point_transactions {
   order orders? @relation(fields: [order_id], references: [id], onDelete: SetNull)
 
   @@index([user_id, created_at])
+}
+
+/**
+ * One message a customer sent the shop's Official Account (ADR 0032).
+ * Written by the webhook, keyed on LINE's own `message.id` so a redelivered event is a
+ * no-op — the same trick `inbound_payments` uses with the bank's `Message-ID`. `text` is
+ * present if and only if the type is `text` (a CHECK says so): a photo or a sticker is
+ * recorded as the kind of thing it was and nothing more, because this deployment holds no
+ * files and could not back up a customer's picture if it kept one.
+ */
+model line_messages {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  line_message_id String   @unique @db.VarChar(120)
+  line_subject    String   @db.VarChar(120)
+  // Null when nobody here holds that LINE account. SetNull on delete, so removing a
+  // customer never erases the record of what they asked.
+  user_id         String?  @db.Uuid
+  message_type    String   @db.VarChar(20)
+  text            String?
+  received_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  user users? @relation("line_message_customer", fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id, received_at(sort: Desc)])
+  @@index([received_at(sort: Desc)])
+}
+
+/**
+ * One campaign: a message the shop decided to send to its own customers (ADR 0032 §6).
+ * The row is written, and its batches are planned, **before anything is sent** — the same
+ * shape the outbox takes and for the same reason: what the shop decided and what actually
+ * went out are two facts, and a send that only exists in a log line cannot answer "who got
+ * this promotion" afterwards.
+ * `recipient_count` is this deployment's own count of eligible customers, never a number
+ * from LINE: there is no live friend-count API (only a date-based insight endpoint whose
+ * eligibility could not be confirmed), so the composer's number is a count of our own rows
+ * and the ADR says why.
+ * `quota_remaining_at_send` records what LINE said the month had left when the shop pressed
+ * send. It is **a record, not the authority**: LINE's own documentation warns a send can be
+ * refused with the monthly-limit error while the console still shows messages remaining, so
+ * the refusal on a batch is what a later reader trusts.
+ */
+model line_campaigns {
+  id                      String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  body                    String
+  /**
+   * An image *link*, validated on save and previewed before the send (ADR 0014): this
+   * deployment stores no files, so a picture is a URL the customer's LINE fetches.
+   */
+  image_url               String?  @db.VarChar(500)
+  /**
+   * Null when the admin who sent it has since been removed; the role is the gate, not this.
+   */
+  sent_by_user_id         String?  @db.Uuid
+  created_at              DateTime @default(now()) @db.Timestamptz(6)
+  /**
+   * -
+   */
+  status                  String   @db.VarChar(20)
+  recipient_count         Int
+  quota_remaining_at_send Int?
+  /**
+   * LINE's own words when a batch was refused, kept where the shop can read them.
+   */
+  failure_reason          String?  @db.VarChar(500)
+
+  sent_by users?                  @relation("line_campaign_sender", fields: [sent_by_user_id], references: [id], onDelete: SetNull)
+  batches line_campaign_batches[]
+
+  @@index([created_at(sort: Desc)])
+}
+
+/**
+ * One batch of a campaign — the unit that succeeds or fails, because it is the unit LINE
+ * accepts (ADR 0032 §6, §7).
+ * `recipient_ids` is `text[]`: LINE's multicast takes a list of user ids, at most 500 per
+ * request, so the batch *is* that list. Stored rather than recomputed, because the eligible
+ * set moves — a customer who withdraws tomorrow must not change what was sent yesterday.
+ * **At most once** (ADR 0032 §7): LINE's multicast takes no idempotency key, so a retry
+ * cannot be told apart from a fresh send, and a promotion delivered twice to five hundred
+ * people is worse than one that needs an admin to press again. A batch is therefore sent
+ * from `pending` exactly once, and a failure is recorded and left for a person.
+ */
+model line_campaign_batches {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  campaign_id   String    @db.Uuid
+  /**
+   * Position in the campaign, which is also how a reader puts them back in order.
+   */
+  batch_index   Int
+  recipient_ids String[]
+  status        String    @db.VarChar(20)
+  attempted_at  DateTime? @db.Timestamptz(6)
+  error         String?   @db.VarChar(500)
+
+  campaign line_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+
+  @@unique([campaign_id, batch_index])
+  @@index([status, id])
 }

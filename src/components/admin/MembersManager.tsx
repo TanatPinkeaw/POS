@@ -32,11 +32,14 @@ import {
   Overlay,
   Pill,
   SearchField,
+  Spinner,
   Stack,
   TextField,
   type Column,
 } from '@/components/ds';
-import { apiPatch, apiPost } from '@/lib/client-api';
+import { bangkokDateTimeString } from '@/lib/bangkok-time';
+import { apiFetch, apiPatch, apiPost } from '@/lib/client-api';
+import { lineMessageKindLabel } from '@/lib/line-notify';
 
 export interface MemberRow {
   id: string;
@@ -48,6 +51,22 @@ export interface MemberRow {
   orderCount: number;
   /** Bangkok calendar day, already formatted on the server. */
   joinedOn: string;
+  /**
+   * How many messages this customer has sent the shop's LINE, counted on the server.
+   *
+   * A count and not the messages: they are read through their own route when somebody
+   * opens the card, so a shop with no LINE customers pays one grouped query that finds
+   * nothing rather than five rows per customer (ADR 0032 §8).
+   */
+  lineMessageCount: number;
+}
+
+/** One message as the card reads it — the route's own shape, newest first. */
+interface LineMessageRow {
+  id: string;
+  kind: string;
+  text: string | null;
+  receivedAt: string;
 }
 
 const EMPTY_FORM = {
@@ -70,6 +89,10 @@ export function MembersManager({ initialMembers }: { initialMembers: MemberRow[]
   const [resetFor, setResetFor] = useState<MemberRow | null>(null);
   const [resetPassword, setResetPassword] = useState('');
   const [closing, setClosing] = useState<MemberRow | null>(null);
+  /** Whose LINE messages are open, and what came back for them. */
+  const [messagesFor, setMessagesFor] = useState<MemberRow | null>(null);
+  const [messages, setMessages] = useState<LineMessageRow[] | null>(null);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
 
   // Server props win on a refresh, the same contract the staff screen uses.
   useEffect(() => {
@@ -140,6 +163,27 @@ export function MembersManager({ initialMembers }: { initialMembers: MemberRow[]
     }
   }
 
+  /**
+   * Opens one customer's messages, reading them then rather than with the list.
+   *
+   * Staff answer in LINE's own Official Account app; this screen is the one place the
+   * conversation can be read beside *who the customer is* and what they have bought, which
+   * is the part LINE's app cannot show (ADR 0032 §8).
+   */
+  async function openMessages(member: MemberRow): Promise<void> {
+    setMessagesFor(member);
+    setMessages(null);
+    setMessagesError(null);
+    try {
+      const result = await apiFetch<{ messages: LineMessageRow[] }>(
+        `/api/v1/members/${member.id}/line-messages`,
+      );
+      setMessages(result.messages);
+    } catch (error) {
+      setMessagesError(error instanceof Error ? error.message : 'อ่านข้อความไม่สำเร็จ');
+    }
+  }
+
   async function patch(
     member: MemberRow,
     payload: Record<string, unknown>,
@@ -196,6 +240,29 @@ export function MembersManager({ initialMembers }: { initialMembers: MemberRow[]
       header: 'สมัครเมื่อ',
       cardLabel: 'สมัครเมื่อ',
       render: (member) => <span className="ln-num ln-muted">{member.joinedOn}</span>,
+    },
+    {
+      key: 'line',
+      header: 'ข้อความใน LINE',
+      cardLabel: 'ข้อความใน LINE',
+      /*
+       * A button only for a customer who has written: an empty cell for everybody else is
+       * cheaper to read than a disabled control on every row, and a shop that never turned
+       * LINE on sees a column of dashes rather than a feature it cannot use.
+       */
+      render: (member) =>
+        member.lineMessageCount === 0 ? (
+          <span className="ln-muted">—</span>
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            icon="chat"
+            onClick={() => void openMessages(member)}
+          >
+            {member.lineMessageCount} ข้อความ
+          </Button>
+        ),
     },
     {
       key: 'status',
@@ -474,6 +541,30 @@ export function MembersManager({ initialMembers }: { initialMembers: MemberRow[]
           value={resetPassword}
           onChange={(event) => setResetPassword(event.target.value)}
         />
+      </Overlay>
+
+      <Overlay
+        open={messagesFor !== null}
+        onClose={() => setMessagesFor(null)}
+        title={messagesFor ? `ข้อความ LINE ของ ${messagesFor.fullName}` : ''}
+        description="ลูกค้าส่งเข้ามาใน LINE ของร้าน — ตอบกลับได้จากแอป LINE Official Account ของร้าน"
+      >
+        <Stack gap="md">
+          {messagesError ? <InlineNotice tone="danger">{messagesError}</InlineNotice> : null}
+          {messages === null && messagesError === null ? <Spinner /> : null}
+          {messages !== null && messages.length === 0 ? (
+            <p className="ln-muted">ยังไม่พบข้อความที่บันทึกไว้</p>
+          ) : null}
+          {messages?.map((message) => (
+            <div key={message.id} className="ln-row">
+              <Pill tone="neutral">{lineMessageKindLabel(message.kind)}</Pill>
+              <span>{message.text ?? 'ไม่ได้เก็บเนื้อหาไว้ (ดูในแอป LINE)'}</span>
+              <span className="ln-muted ln-num">
+                {bangkokDateTimeString(new Date(message.receivedAt))}
+              </span>
+            </div>
+          ))}
+        </Stack>
       </Overlay>
 
       <ConfirmDialog

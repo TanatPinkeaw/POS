@@ -34,6 +34,7 @@
  *   npm run acceptance -- --keep            leave the scratch schema to inspect
  *   npm run acceptance -- --base-url URL    check a server that is already running
  */
+import { createHmac } from 'node:crypto';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createServer, type Server } from 'node:http';
@@ -93,6 +94,16 @@ const CASHIER = { fullName: 'มาลี เหลี่ยมนอก', phone
  * somebody the journey itself signed in.
  */
 const MEMBER = { fullName: 'สมชาย เหลี่ยมนอก', phone: '0800000302', password: 'accept-member-1' };
+
+/**
+ * The number section 17 moves that customer onto, and the way in from there on.
+ *
+ * Its own constant because the move is *the point* of section 17 (a phone is the
+ * identity, so the change is proved) and any later section that signs this customer in
+ * has to use where the journey left them. `MEMBER.phone` is the number the counter
+ * enrolled; after section 17 it belongs to nobody.
+ */
+const MEMBER_CURRENT_PHONE = '0864440002';
 
 /**
  * The supervisor PIN the run sets for itself.
@@ -193,7 +204,35 @@ async function googleIdToken(
  * is by choosing the code: `acceptance:U1234` is the account `U1234`.
  */
 let lineToken: Server | null = null;
+
+/**
+ * A LINE API this run serves itself, and what it answers (ADR 0032 §6-§7).
+ *
+ * The campaign leg has three halves that leave the building — the month's allowance, the
+ * multicast that spends it, and the 429 that LINE answers when it will not — and all three are
+ * pointed at this listener by `LINE_API_BASE_URL`, the same recorded trade `LINE_TOKEN_URL`
+ * and `LINE_JWKS_URL` already make (ADR 0030 §6). A live LINE would need a real shop's channel
+ * token, a real customer list and a real monthly allowance to spend; this proves the same
+ * thing — the shop's own process reads the quota, splits the list, sends one request per batch
+ * and records LINE's refusal — with nothing signed up for and no message sent to anybody.
+ *
+ * The knobs are here rather than in the request path so a leg can move the world between two
+ * calls: `lineApiQuotaLimit` to spend the month out, `lineApiFailFrom` to have LINE start
+ * refusing from a given multicast onwards (which is what makes a campaign `partial`).
+ */
+let lineApi: Server | null = null;
+let lineApiPort = 0;
+/** Null means LINE's own `type: 'none'` — no monthly cap at all. */
+let lineApiQuotaLimit: number | null = 10000;
+let lineApiQuotaConsumed = 3;
+/** The multicast index from which LINE answers 429; null means it accepts everything. */
+let lineApiFailFrom: number | null = null;
+/** Every multicast this run's stub received, in order. */
+const lineApiBatches: { to: string[]; text: string; image: boolean }[] = [];
+
 const LINE_TEST_CHANNEL_ID = 'acceptance-line-channel';
+/** The channel access token this run puts in `NOTIFY_LINE_TOKEN`, for the campaign leg. */
+const LINE_TEST_CHANNEL_TOKEN = 'acceptance-line-token';
 const LINE_TEST_CHANNEL_SECRET = 'acceptance-line-secret';
 const LINE_ISSUER = 'https://access.line.me';
 
@@ -2597,7 +2636,7 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     check('a phone change without a proved number is refused (422)', noProof.status === 422, noProof.status);
 
     // The new number is proved by a code *sent to it*.
-    const newPhone = '0864440002';
+    const newPhone = MEMBER_CURRENT_PHONE;
     const changeBefore = otpInbox.length;
     await anonymous.call('/api/v1/auth/otp', { method: 'POST', body: { phone: newPhone } });
     const changeCode = otpInbox[changeBefore]?.code ?? '';
@@ -3163,6 +3202,341 @@ async function runChecks(seedGuardUrl: string | null): Promise<number> {
     );
   }
 
+  /* ------------------- 21. Promotions, and the LINE entry a message carries */
+
+  section('21. A campaign that reaches customers, exactly once');
+
+  if (seedGuardUrl === null) {
+    console.log(
+      '  • skipped: the campaign leg needs the scratch schema (not available with --base-url)',
+    );
+  } else {
+    /*
+     * ADR 0032 §3–§8, end to end and over HTTP, from the two consents a customer gives to the
+     * one request LINE receives and the one it refuses. The pieces this leg exists for:
+     *
+     *   * a campaign reaches **consented friends and nobody else**, so a customer who binds
+     *     their LINE but never agrees to promotions is not merely un-ticked on a screen — they
+     *     are refused by the rule the worker would have sent by;
+     *   * sending is **admin-only**, and it happens in the worker rather than in the request;
+     *   * a batch is sent **at most once**: a 429 leaves that batch failed with LINE's own
+     *     words, the campaign `partial`, and a second pass sends nothing again.
+     *
+     * The LINE account this leg binds is its own, so nothing above is disturbed: the member
+     * who collected a pre-order in section 11 keeps the LINE account section 20 left them.
+     */
+    const lineSubject = 'accept-line-campaign';
+    const customer = new Session(() => base);
+    /*
+     * Section 17's own number, not `MEMBER.phone`: that customer moves onto a proved new
+     * number earlier in this run, and a login on the old one is a login as nobody.
+     */
+    await customer.call('/api/v1/auth/login', {
+      method: 'POST',
+      body: { identifier: MEMBER_CURRENT_PHONE, password: MEMBER.password },
+    });
+
+    /*
+     * The binding, exactly as the account card does it: the session names the row, and the id
+     * token — signed by the secret this run's own token endpoint holds — names the LINE
+     * account. This is the in-app surface `POST /api/v1/auth/line` feeds, which is what the
+     * LIFF entry posts to as well (ADR 0032 §1), so the entry's own server half is exercised
+     * here even though no LIFF browser can be.
+     */
+    const bound = await customer.call<{ lineSubject: string | null; promoConsentAt: string | null }>(
+      '/api/v1/account/line',
+      { method: 'POST', body: { idToken: await lineIdToken(lineSubject) } },
+    );
+    check(
+      'a signed-in customer binds their LINE from the account card',
+      bound.lineSubject === lineSubject,
+      bound,
+    );
+    check(
+      'and binding is not agreement to be sent promotions',
+      bound.promoConsentAt === null,
+      bound.promoConsentAt,
+    );
+
+    // The friend condition, as LINE tells the shop about it: a signed `follow` event.
+    const followBody = JSON.stringify({
+      events: [{ type: 'follow', source: { userId: lineSubject } }],
+    });
+    const followSignature = createHmac('sha256', LINE_TEST_CHANNEL_SECRET)
+      .update(followBody)
+      .digest('base64');
+    const follow = await fetch(`${base}/api/v1/line/webhook`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-line-signature': followSignature },
+      body: followBody,
+    });
+    check(
+      'the shop records the friend condition from LINE’s own webhook',
+      follow.status === 200,
+      follow.status,
+    );
+
+    /*
+     * The second consent, as its own act. Nothing about the binding above agreed to this, and
+     * the campaign below is what proves the difference: the first send is refused for having
+     * nobody to reach, and only after this call does the same send have an audience.
+     */
+    const noAudience = await admin.call<{ ok: boolean; reason?: string }>(
+      '/api/v1/admin/line/campaigns',
+      { method: 'POST', body: { body: 'ลด 50% ทั้งร้าน', imageUrl: null } },
+    );
+    check(
+      'a customer who has not agreed to promotions is not somebody a campaign reaches',
+      noAudience.ok === false && noAudience.reason === 'no_recipients',
+      noAudience,
+    );
+
+    const consent = await customer.call<{ promoConsentAt: string | null }>(
+      '/api/v1/account/line',
+      { method: 'POST', body: { promoConsent: true } },
+    );
+    check(
+      'the promotion consent is a separate act with its own timestamp',
+      consent.promoConsentAt !== null,
+      consent,
+    );
+
+    /*
+     * A cashier may not send one. The refusal is the interesting half of "admin only": a
+     * campaign spends the month's allowance on every customer at once and cannot be taken
+     * back, so this is not a thing done between two bills at the till.
+     */
+    const cashierSession = new Session(() => base);
+    await cashierSession.call('/api/v1/auth/login', {
+      method: 'POST',
+      body: { identifier: CASHIER.phone, password: CASHIER.password },
+    });
+    const cashierCampaign = await cashierSession.request('/api/v1/admin/line/campaigns', {
+      method: 'POST',
+      body: { body: 'จากแคชเชียร์', imageUrl: null },
+    });
+    check(
+      'a cashier cannot send a promotion to the whole customer list (403)',
+      cashierCampaign.status === 403,
+      cashierCampaign.status,
+    );
+
+    /** One pass of the real worker, with this run's LINE stub as the channel. */
+    const runCampaignWorker = async (): Promise<{ status: number | null; output: string }> => {
+      const child = spawn('npx tsx scripts/notify-worker.ts', {
+        shell: true,
+        env: {
+          ...process.env,
+          DATABASE_URL: seedGuardUrl,
+          // The outbox half is skipped, so this pass can only be about campaigns: the channel
+          // it would use is not configured, and `NOTIFY_LINE_TOKEN` is.
+          NOTIFY_CHANNEL: '',
+          NOTIFY_LINE_TOKEN: LINE_TEST_CHANNEL_TOKEN,
+          LINE_API_BASE_URL: `http://127.0.0.1:${lineApiPort}/`,
+        },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+
+      let output = '';
+      child.stdout?.on('data', (chunk: Buffer) => {
+        output += chunk.toString('utf8');
+      });
+      child.stderr?.on('data', (chunk: Buffer) => {
+        output += chunk.toString('utf8');
+      });
+
+      const status = await new Promise<number | null>((resolve) => {
+        child.once('close', (code) => resolve(code));
+      });
+      return { status, output };
+    };
+
+    /** The campaigns as the database holds them, oldest first. */
+    const readCampaigns = async (): Promise<
+      { status: string; recipient_count: number }[]
+    > => {
+      const client = await scratchClient(seedGuardUrl);
+      try {
+        await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+        const rows = await client.query<{ status: string; recipient_count: number }>(
+          'SELECT "status", "recipient_count" FROM "line_campaigns" ORDER BY "created_at", "id"',
+        );
+        return rows.rows;
+      } finally {
+        await client.end();
+      }
+    };
+
+    /** What LINE said when it refused a batch — the reason a shop's screen shows. */
+    const readBatchError = async (): Promise<string | null> => {
+      const client = await scratchClient(seedGuardUrl);
+      try {
+        await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+        const rows = await client.query<{ error: string | null }>(
+          `SELECT "error" FROM "line_campaign_batches" WHERE "status" = 'failed' LIMIT 1`,
+        );
+        return rows.rows[0]?.error ?? null;
+      } finally {
+        await client.end();
+      }
+    };
+
+    /**
+     * Clears this run's own campaign buckets, because this leg sends **four** campaigns in a
+     * minute and the policy allows three (ADR 0032 §7 — three back to back is an admin who
+     * mistyped and rewrote, a fourth is a script spending somebody's allowance).
+     *
+     * Said out loud rather than hidden: the *send* is what this leg is about, and the limiter
+     * has a door of its own in section 13. Deleting the row is what waiting fifteen minutes
+     * would do, in a millisecond, against this run's own scratch database.
+     */
+    const clearCampaignBuckets = async (): Promise<void> => {
+      const client = await scratchClient(seedGuardUrl);
+      try {
+        await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+        await client.query(
+          "DELETE FROM \"rate_limit_buckets\" WHERE \"bucket_key\" LIKE 'line_campaign|%'",
+        );
+      } finally {
+        await client.end();
+      }
+    };
+
+    /**
+     * More customers than one request can carry, written straight to the database.
+     *
+     * 500 of them, so the campaign above plus these is 501 recipients — which is **two**
+     * batches, and two batches is the only way to reach the state this leg is really about:
+     * one batch sent, one refused, and a campaign that a shop can see is `partial`. Inserted
+     * with SQL rather than enrolled one HTTP call at a time because the count is the point and
+     * the consent and friend rows are the same two facts each time.
+     */
+    const seedAudience = async (count: number): Promise<void> => {
+      const client = await scratchClient(seedGuardUrl);
+      try {
+        await client.query(`SET search_path TO "${SCRATCH_SCHEMA}"`);
+        await client.query(
+          `INSERT INTO "users" ("phone", "password_hash", "full_name", "role", "line_subject", "line_promo_consent_at", "line_promo_consent_version")
+             SELECT '0599' || lpad(g::text, 7, '0'), 'x', 'ลูกค้าโปรโมชัน ' || g, 'member',
+                    'accept-promo-' || g, now(), '2026-10-14'
+               FROM generate_series(1, $1) AS g`,
+          [count],
+        );
+        await client.query(
+          `INSERT INTO "line_friends" ("line_subject")
+             SELECT 'accept-promo-' || g FROM generate_series(1, $1) AS g
+           ON CONFLICT DO NOTHING`,
+          [count],
+        );
+      } finally {
+        await client.end();
+      }
+    };
+
+    const firstCampaign = await admin.call<{ ok: boolean; batches?: number }>(
+      '/api/v1/admin/line/campaigns',
+      { method: 'POST', body: { body: 'ลด 50% ทั้งร้าน เฉพาะสัปดาห์นี้', imageUrl: null } },
+    );
+    check(
+      'an admin writes a campaign, and nothing is sent inside the request',
+      firstCampaign.ok === true && firstCampaign.batches === 1 && lineApiBatches.length === 0,
+      { ...firstCampaign, multicastSoFar: lineApiBatches.length },
+    );
+
+    const firstPass = await runCampaignWorker();
+    check(
+      'the shop’s own worker runs and exits cleanly',
+      firstPass.status === 0,
+      firstPass.output.slice(-300),
+    );
+    check(
+      'and the campaign went out as one multicast, to the customers who agreed',
+      lineApiBatches.length === 1 &&
+        lineApiBatches[0]?.to.length === 1 &&
+        lineApiBatches[0]?.to[0] === lineSubject &&
+        (lineApiBatches[0]?.text ?? '').includes('ลด 50%'),
+      lineApiBatches,
+    );
+    const afterFirst = await readCampaigns();
+    check(
+      'and the shop can see that it was sent',
+      afterFirst[0]?.status === 'sent' && afterFirst[0]?.recipient_count === 1,
+      afterFirst,
+    );
+
+    /*
+     * The composer's arithmetic, exercised as a refusal: LINE says the month has nothing left,
+     * so the send is refused *before* a campaign is written, with both numbers in the sentence
+     * — which is what the screen shows. LINE's own 429 stays the authority, as the next leg
+     * proves.
+     */
+    await clearCampaignBuckets();
+    lineApiQuotaLimit = 5;
+    lineApiQuotaConsumed = 5;
+    const spent = await admin.call<{ ok: boolean; reason?: string; message?: string }>(
+      '/api/v1/admin/line/campaigns',
+      { method: 'POST', body: { body: 'ลด 50% อีกครั้ง', imageUrl: null } },
+    );
+    check(
+      'a month with no allowance left refuses the send, saying what it costs',
+      spent.ok === false && spent.reason === 'quota_short' && (spent.message ?? '').includes('1'),
+      spent,
+    );
+    check(
+      'and no campaign is written for a send that cannot be paid for',
+      (await readCampaigns()).length === 1,
+      (await readCampaigns()).length,
+    );
+    lineApiQuotaLimit = 10000;
+    lineApiQuotaConsumed = 3;
+
+    // 501 recipients: two requests, and the second one is where LINE says no.
+    await clearCampaignBuckets();
+    await seedAudience(500);
+    lineApiFailFrom = lineApiBatches.length + 1;
+
+    const bigCampaign = await admin.call<{ ok: boolean; batches?: number }>(
+      '/api/v1/admin/line/campaigns',
+      { method: 'POST', body: { body: 'โปรโมชันใหญ่', imageUrl: null } },
+    );
+    check(
+      'a campaign larger than one request is split into the batches LINE accepts',
+      bigCampaign.ok === true && bigCampaign.batches === 2,
+      bigCampaign,
+    );
+
+    const secondPass = await runCampaignWorker();
+    check('the worker sends both batches', secondPass.status === 0, secondPass.output.slice(-300));
+    check(
+      'and LINE’s refusal of the second batch is what the run records, not what it retried',
+      lineApiBatches.length === 3 &&
+        lineApiBatches[1]?.to.length === 500 &&
+        lineApiBatches[2]?.to.length === 1,
+      lineApiBatches.map((batch) => batch.to.length),
+    );
+
+    const afterSecond = await readCampaigns();
+    check(
+      'so the campaign is partial — some customers got it and some did not',
+      afterSecond[1]?.status === 'partial' && afterSecond[1]?.recipient_count === 501,
+      afterSecond[1],
+    );
+
+    const thirdPass = await runCampaignWorker();
+    check(
+      'and a second pass sends nothing again: a batch is tried at most once',
+      thirdPass.status === 0 && lineApiBatches.length === 3,
+      { batches: lineApiBatches.length, output: thirdPass.output.slice(-200) },
+    );
+    check(
+      'the failed batch keeps LINE’s own words for whoever reads the screen next',
+      ((await readBatchError()) ?? '').includes('monthly limit'),
+      await readBatchError(),
+    );
+
+    lineApiFailFrom = null;
+  }
+
   console.log(
     failed === 0
       ? `\nacceptance: ${passed} passed, 0 failed`
@@ -3311,6 +3685,75 @@ async function main(): Promise<void> {
       // No LINE JWKS override: the web flow uses its channel secret, never Google's keys.
       process.env.LINE_TOKEN_URL = `http://127.0.0.1:${lineTokenPort}/oauth2/v2.1/token`;
 
+      /*
+       * The LINE API stub, and the channel token this run configures for itself.
+       *
+       * `NOTIFY_LINE_TOKEN` and **not** `NOTIFY_CHANNEL=line`: those are two different
+       * questions (ADR 0032 §6). The token is what lets this deployment talk to LINE at all,
+       * which is what a campaign to customers needs; the channel decides where the *shop's
+       * own* alerts go, and switching it here would change what section 12's planner queues.
+       */
+      lineApiPort = await freePort(3341);
+      lineApi = createServer((request, response) => {
+        const url = new URL(request.url ?? '/', `http://127.0.0.1:${lineApiPort}`);
+        const json = (status: number, payload: unknown): void => {
+          response.writeHead(status, { 'content-type': 'application/json' });
+          response.end(JSON.stringify(payload));
+        };
+
+        if (request.method === 'GET' && url.pathname === '/v2/bot/message/quota') {
+          json(200, { type: lineApiQuotaLimit === null ? 'none' : 'limited', value: lineApiQuotaLimit ?? undefined });
+          return;
+        }
+        if (request.method === 'GET' && url.pathname === '/v2/bot/message/quota/consumption') {
+          json(200, { totalUsage: lineApiQuotaConsumed });
+          return;
+        }
+        if (request.method === 'POST' && url.pathname === '/v2/bot/message/multicast') {
+          const chunks: Buffer[] = [];
+          request.on('data', (chunk: Buffer) => chunks.push(chunk));
+          request.on('end', () => {
+            const index = lineApiBatches.length;
+            /*
+             * Read as multipart, the way LINE reads it — `to` is a JSON array part and
+             * `messages` is a JSON array part — so a request this run built wrongly is a
+             * request the stub cannot parse, rather than one it silently accepts.
+             */
+            const parsed = new Request(`http://127.0.0.1:${lineApiPort}/v2/bot/message/multicast`, {
+              method: 'POST',
+              headers: { 'content-type': request.headers['content-type'] ?? '' },
+              body: Buffer.concat(chunks),
+            });
+            void parsed
+              .formData()
+              .then((form) => {
+                const to = JSON.parse(String(form.get('to'))) as string[];
+                const messages = JSON.parse(String(form.get('messages'))) as {
+                  type: string;
+                  text?: string;
+                }[];
+                lineApiBatches.push({
+                  to,
+                  text: messages[0]?.text ?? '',
+                  image: messages.some((message) => message.type === 'image'),
+                });
+                if (lineApiFailFrom !== null && index >= lineApiFailFrom) {
+                  json(429, { message: 'You have reached your monthly limit.' });
+                  return;
+                }
+                json(200, {});
+              })
+              .catch(() => json(400, { message: 'unparseable body' }));
+          });
+          return;
+        }
+        json(404, { message: 'not a LINE endpoint' });
+      });
+      await new Promise<void>((resolve) => lineApi!.listen(lineApiPort, '127.0.0.1', resolve));
+      process.env.NOTIFY_LINE_TOKEN = LINE_TEST_CHANNEL_TOKEN;
+      process.env.LINE_API_BASE_URL = `http://127.0.0.1:${lineApiPort}/`;
+      process.env.LINE_MESSAGING_CHANNEL_SECRET = LINE_TEST_CHANNEL_SECRET;
+
       const port = await freePort(FIRST_PORT);
       base = `http://127.0.0.1:${port}`;
       console.log(`\n4. Serving the build on ${base}`);
@@ -3329,6 +3772,10 @@ async function main(): Promise<void> {
     if (googleStub !== null) {
       await googleStub.close();
       googleStub = null;
+    }
+    if (lineApi !== null) {
+      await new Promise<void>((resolve) => lineApi!.close(() => resolve()));
+      lineApi = null;
     }
     if (lineToken !== null) {
       await new Promise<void>((resolve) => lineToken!.close(() => resolve()));
@@ -3359,6 +3806,10 @@ async function main(): Promise<void> {
     if (googleStub !== null) {
       await googleStub.close();
       googleStub = null;
+    }
+    if (lineApi !== null) {
+      await new Promise<void>((resolve) => lineApi!.close(() => resolve()));
+      lineApi = null;
     }
     if (lineToken !== null) {
       await new Promise<void>((resolve) => lineToken!.close(() => resolve()));

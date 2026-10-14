@@ -1031,12 +1031,10 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     /**
      * *
      *    * Whether this shop calls its customers by a number at all (ADR 0027).
-     *    *
      *    * The call series above is not a shop type. Most of what this system sells is
      *    * handed over on the spot, and for those shops the number is a line on the slip
      *    * nobody reads and a board nobody opens -- two pieces of screen given to a job
      *    * the shop does not have.
-     *    *
      *    * It lives on the shop row rather than in a component because the *sale* is what
      *    * has to obey it. `allocateQueueNumber` reads it inside the very statement that
      *    * bumps the counter, so a bill rung up while it is off carries no number and no
@@ -1044,7 +1042,6 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
      *    * board, the customer display -- has nothing to show without being separately
      *    * told about it. Turning a feature off at the sale is the only way it is off
      *    * everywhere.
-     *    *
      *    * Defaults true, deliberately. A shop already selling through this was being
      *    * called by these numbers; a migration is not the moment to take that away
      *    * quietly, and the toggle in the settings is one tap for the shops that never
@@ -1054,16 +1051,13 @@ export type $shopsPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     /**
      * *
      *    * Whether this shop takes pre-orders at all (ADR 0028, built on ADR 0027's pattern).
-     *    *
      *    * The second switch, and the first one earned by asking rather than by guessing: a
      *    * shop that sells over the counter has no reason to let a customer order now and
      *    * collect tomorrow, and the member-facing page would keep offering it.
-     *    *
      *    * It is read inside `placePreOrder`'s own transaction, which is the whole design.
      *    * Refusing in the route would leave a second way in; refusing in the customer page
      *    * would refuse only the button and not the order. A pre-order is money a shop has
      *    * promised to hold, so the refusal has to live where the promise is made.
-     *    *
      *    * Existing pre-orders keep their whole life cycle: the switch governs new ones. An
      *    * order already on the board has stock reserved against it and a customer waiting,
      *    * and a shop that closes the door does not get to strand it.

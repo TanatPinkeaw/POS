@@ -52,6 +52,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@line/liff": "^2.31.2",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
     "bcryptjs": "^3.0.2",

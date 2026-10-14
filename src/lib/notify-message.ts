@@ -33,7 +33,13 @@ export type NotificationKind =
   | 'pre_order_placed'
   | 'order_ready'
   | 'order_refunded'
-  | 'inbound_dismissed';
+  | 'inbound_dismissed'
+  /*
+   * A customer wrote to the shop on LINE (ADR 0032 §4). The first fact in this union that
+   * may legitimately repeat about the same subject, which is why it is also the first that
+   * carries a `dedupeKey` of its own rather than deduping on the order or on the recipient.
+   */
+  | 'customer_message';
 
 export interface NotifyConfig {
   /** Null when the shop has not configured delivery; nothing is planned then. */
@@ -54,6 +60,15 @@ export interface PlannedNotification {
   channel: NotificationChannel;
   recipient: string;
   text: string;
+  /**
+   * What makes this fact unique when neither an order nor the recipient is it.
+   *
+   * Optional, and absent means "this plan does not need a key of its own": the outbox then
+   * dedupes it the way it always has, on the order it names or on `(kind, recipient)`. A
+   * plan that carries one is deduped on `(kind, dedupeKey)` — which is how a fact that is
+   * *supposed* to repeat about one subject can still be written once per window.
+   */
+  dedupeKey?: string | null;
   /**
    * The order this is about — null for a fact about something that is not an
    * order (an inbound transfer dismissed by hand, ADR 0030 §3). A null-order
