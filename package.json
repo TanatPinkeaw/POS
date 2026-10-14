@@ -45,7 +45,8 @@
     "db:setup:demo": "npm run db:setup && npm run db:seed",
     "ui:audit": "tsx scripts/ui-audit.ts",
     "doc:audit": "tsx scripts/doc-audit.ts",
-    "google:door": "tsx scripts/google-door-browser.ts"
+    "google:door": "tsx scripts/google-door-browser.ts",
+    "google:check": "tsx scripts/google-check.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

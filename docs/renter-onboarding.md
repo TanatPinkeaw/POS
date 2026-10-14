@@ -351,15 +351,23 @@ What you must do once, as the shop owner:
      `/api/v1/auth/google/redirect`, for example
      `https://pos.example.com/api/v1/auth/google/redirect`.
 3. Put the client ID in `.env` as `GOOGLE_CLIENT_ID` and restart the app.
+4. Check the entry with `npm run google:check` — it asks Google directly whether the
+   address your button sends is registered, and prints the exact line to paste if it is
+   not. After changing the console entry, wait a moment (Google says five minutes to a
+   couple of hours) and run it again.
 
 Both entries matter, and each is for a different kind of device. A **computer**
 uses the first one. A **phone** uses the second, because Google will not hand a
 phone's browser a sign-in through the small pop-up window — Apple's browser blocks
 it — so the phone is sent to Google's own page and comes back to that address. **If
 the button works on your computer and not on your phone, that is the missing entry**
-and Google shows its own error page saying the redirect URI is not allowed; add it
-and nothing else needs changing. Leave `GOOGLE_CLIENT_ID` unset and the door stays on
-the page but says the shop has not set it up yet.
+and Google shows its own error page instead — "การเข้าถึงถูกบล็อก: คำขอของแอปนี้
+ไม่ถูกต้อง" with "ข้อผิดพลาด 400: redirect_uri_mismatch" on it. Your own system sees
+nothing at all when that happens, which is why the screen the *customer* photographed
+is the only clue; `npm run google:check` is the way to ask the same question without
+waiting for one. Add the line it names and nothing else needs changing. Leave
+`GOOGLE_CLIENT_ID` unset and the door stays on the page but says the shop has not set
+it up yet.
 
 ---
 

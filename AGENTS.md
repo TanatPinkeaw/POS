@@ -149,6 +149,13 @@ Recorded so a session starts from the truth rather than from the last commit mes
   the stage it died at (`body`, `no-credential`, `csrf-missing`, `csrf-mismatch`,
   `no-client-id`, `credential`), because this failure is invisible on a desktop.
   `npm run google:door` walks the whole thing in actual WebKit under an iPhone profile.
+  The half that is *not* in this repository is measurable too: the address a phone's button
+  carries has to be registered on the OAuth client, and getting that wrong sends the
+  customer to Google's own `redirect_uri_mismatch` page without a single request reaching
+  this server — so `npm run google:check` puts the same `redirect_uri` to Google's authorize
+  endpoint and reads the answer (ADR 0020 §1), instead of letting the only evidence be a
+  customer's screenshot. It also catches the second-order version: a process still serving
+  the address from before a rebuild.
 - **A route handler cannot work out its own address** — measured, and it corrects what
   `src/lib/public-url.ts` used to claim. `request.url`'s origin in a route handler is always
   `http://localhost:<port>` on this custom server, whatever `Host` the browser asked for, so

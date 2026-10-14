@@ -225,6 +225,27 @@ died at (`body`, `no-credential`, `csrf-missing`, `csrf-mismatch`, `no-client-id
   than Safari 15.6, and no Google server is contacted — the runner's stub answers in
   Google's place, so what is proven is the configuration this deployment sends and the
   landing it serves.
+- **The registration is measured now, not only documented (2026-10-12).** The device split
+  above put the door's fate in an OAuth client's *Authorized redirect URIs* — a list that
+  lives in someone else's console, and whose one failure mode is invisible here: a customer
+  on a phone gets Google's `redirect_uri_mismatch` page, Google refuses before it sends them
+  anywhere, and the shop's own log has nothing in it at all. That is not hypothetical — it
+  is what the first customer met, and the only evidence in the world was their screenshot,
+  while the code on the deployment was already correct. So the question is asked rather than
+  assumed: `google-registration.ts` is the pure half (the request that puts the same
+  `redirect_uri` to Google's authorize endpoint, and the reading of its answer) and
+  **`npm run google:check`** is the I/O half, which also compares the configured address
+  against the one the *running* process serves and posts an empty credential to the landing
+  to prove it answers 303. Measured against the shop's own client, the two mistakes read
+  differently on this side as well: an address never registered answers
+  `redirect_uri_mismatch`, a host Google refuses outright answers `invalid_request`. What it
+  does **not** prove: an OAuth client's URI list is not readable by any API, so "registered"
+  is the *absence* of an error page, and that branch is argued from Google's own ordering
+  rather than measured here — no client in this checkout has a registered URI to point at.
+  The *origin* entry is outside it entirely; a missing one paints no button, which
+  `CustomerSignIn` already says on the screen. Registered-then-forgotten is the other
+  limit: a shop that changes `PUBLIC_BASE_URL` to a new address breaks the door until the
+  console gains it too, and only the next run of the check says so.
 - **The two doors, and the portal, are built.** `/shop` (public, ticket 07) offers continue
   with Google and the counter's phone-and-password  side by side; a Google sign-in that is a new
   account collects a phone in place, and one that is already a customer signs straight in. `/shop/account` (member-only, under the matrix of ADR 0022) is the customer's own points

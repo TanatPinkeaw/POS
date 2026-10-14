@@ -137,11 +137,18 @@ else
 fi
 
 echo
-echo "now Google's half, which only a browser can settle:"
+echo "now Google's half, which lives in someone else's console — two lists, not one:"
 echo "  Google Cloud Console → APIs & Services → Credentials → your Web client"
-echo "  → Authorized JavaScript origins, add exactly:"
+echo "  1. Authorized JavaScript origins, add exactly:"
 echo "      ${PUBLIC_URL%/}"
-echo "  no trailing slash, and the scheme and port have to be the ones the browser is on"
+echo "     no trailing slash, and the scheme and port have to be the ones the browser is on"
+echo "  2. Authorized redirect URIs, add exactly:"
+echo "      ${PUBLIC_URL%/}/api/v1/auth/google/redirect"
+echo "     this is where a phone comes back to. Without it a phone gets Google's own"
+echo "     'redirect_uri_mismatch' page and this app's log stays empty, because Google"
+echo "     refuses before it sends the customer anywhere — so the failure has no evidence"
+echo "     here at all. That list needs no browser to check: run 'npm run google:check' in"
+echo "     this checkout and it puts the address to Google and reads the answer."
 echo "then wait a few minutes for Google's cache and open ${PUBLIC_URL%/}/login"
 echo "if the button comes back greyed or Google answers 403, it is the origin list —"
 echo "the app cannot be the cause, because the check above just proved it holds the id."

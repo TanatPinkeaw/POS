@@ -108,6 +108,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run route:audit` | Builds, serves, and opens every screen it knows about (26 distinct paths, 30 walks): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run browser:target` | Reads the build the other gates made and fails if any file in it needs syntax newer than the phone a customer holds (ADR 0031). A class static block is a `SyntaxError` on a phone that stopped at iOS 15, and everything that needs JavaScript on that page is dead after it — a green `build` and a styled page say nothing about it. Makes no build of its own. |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build — a process left over from before a rebuild keeps serving HTML whose asset files no longer exist, which on screen reads exactly like a code bug. Read-only; `-- --url <base>`, `-- --verbose`. |
+| `npm run google:check` | Asks Google's own authorization endpoint whether the address the Google door hands it is registered on this deployment's OAuth client — the failure that never reaches this server, because Google refuses before the customer is sent anywhere: a phone gets Google's `redirect_uri_mismatch` page and the shop's log stays empty. Reads Google's answer rather than inferring it, names the exact console entry, compares it against the address the **running** process actually serves, and posts an empty credential to the landing to prove that address answers 303 (a request the route refuses before it spends a rate-limit bucket). Read-only; `-- --client-id`, `-- --url`, `-- --offline`. Exit 0 ready · 1 something to fix · 2 could not measure. | Network + the shop's own address |
 | `npm run limiter:race` | Starts two servers against one database and races the same cashier's session at one rate-limited door, to prove two processes share one limit rather than each getting their own. |
 | `npm run backup` | One compressed `pg_dump` of the shop's database, plus a prune of whatever is older than `--keep` days. Refuses an empty dump and a database whose name looks like a test one. `-- --list`, `-- --dir`, `-- --keep`, `-- --force`. | — |
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
@@ -209,7 +210,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1486 tests across 115 files: unit + integration
+npm test                # 1494 tests across 116 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 229 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (26 paths, 30 walks) renders, and renders styled
@@ -522,6 +523,17 @@ gets Google's own `redirect_uri_mismatch` page instead of a sign-in, on phones o
 desktop never uses it. `PUBLIC_BASE_URL` must be set for the same reason: it is what the
 address is built from, and a route handler cannot work out its own host (see
 `src/lib/public-url.ts`).
+
+That registration is the one half of this door nobody can read from here, because it lives
+in someone else's console — and when it is wrong the shop's own log stays silent, since
+Google refuses before it sends the customer anywhere. `npm run google:check` asks Google the
+question the button asks, with the same client and the same address and no account behind
+it, and reports the `redirect_uri_mismatch` answer as *not registered* with the exact line
+to paste. It measures the door instead of leaving it to be read off a customer's
+screenshot. Two things it deliberately does not settle: the *origin* entry is invisible to
+it (a missing one paints no button, and the screen says so itself), and "registered" is the
+absence of an error page rather than a reading of the list, because no API returns a
+client's authorized redirect URIs.
 
 ### Collecting a pre-order (SRS §3)
 
