@@ -171,3 +171,52 @@ describe('the customer notice', () => {
     expect(CUSTOMER).toContain('ต้องให้ร้านเป็นผู้จัดทำให้');
   });
 });
+
+/*
+ * The copy the customer reads *while signing up* — a second copy of the notice's substance,
+ * inside the flow, and the one this file used to leave unfenced.
+ *
+ * `NoticeAcknowledge`'s own comment claimed these assertions existed. They did not: everything
+ * above reads `PrivacyNoticeBody.tsx` and the staff notice only, so the paragraphs in the signup
+ * panel could state a different retention window from `/privacy` and the whole suite stayed
+ * green — which is exactly the drift the panel duplicates the text to avoid. So the fence is
+ * built here rather than described there.
+ *
+ * The stakes are the ones the panel names: these are the figures a customer acts on. The
+ * receipt window and the OTP window are the two periods a reader decides anything by.
+ */
+const SIGNUP_PANEL = renderedCopy('src/components/shop/NoticeAcknowledge.tsx');
+
+describe('the notice the signup panel tells', () => {
+  it('states the same periods the page states', () => {
+    for (const phrase of ['30 วัน', '5 นาที']) {
+      expect(SIGNUP_PANEL, `the signup panel must state "${phrase}" too`).toContain(phrase);
+    }
+  });
+
+  it('does not promise the receipt image is kept when it is not', () => {
+    expect(SIGNUP_PANEL).toContain('ข้อมูลการขายไม่ถูกลบ');
+    expect(SIGNUP_PANEL).not.toContain('จะถูกสร้างใหม่');
+  });
+
+  it('reads its effective date from the one constant, in both copies', () => {
+    /*
+     * A date typed into either file is a version that can move without the version string
+     * moving with it — the specific mistake `privacy-notice.ts` exists to make impossible, and
+     * the reason the panel may not simply print "4 ตุลาคม 2569".
+     */
+    for (const [name, source] of [
+      ['the page', CUSTOMER],
+      ['the signup panel', SIGNUP_PANEL],
+    ] as const) {
+      expect(source, `${name} must render the shared effective date`).toContain(
+        'CUSTOMER_NOTICE_EFFECTIVE_FROM',
+      );
+      expect(source, `${name} must not carry its own date literal`).not.toMatch(/มีผลตั้งแต่ \d/);
+    }
+  });
+
+  it('renders no unparsed markdown in the panel either', () => {
+    expect(SIGNUP_PANEL).not.toMatch(/\*\*/);
+  });
+});

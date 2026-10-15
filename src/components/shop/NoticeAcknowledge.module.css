@@ -1,5 +1,5 @@
 /*
- * The inline privacy notice at signup.
+ * The privacy notice at signup: a panel with the tick, and a popup that holds the reading.
  *
  * A reading panel, not a form field. It borrows the measure of the notice page — a
  * column a line of Thai can sit in — but at a size a phone can scroll with a thumb,
@@ -36,15 +36,41 @@
 }
 
 /*
- * The scroll box.
+ * The trigger, and the one line of room it needs above the tick.
  *
- * `max-height` is a product decision dressed as a layout one: the gate only means
- * something if there is an end to reach, so the box is capped rather than fitted to its
- * content. `tabIndex` is not optional here — without it a keyboard reader scrolls the
- * page around the box and can never reach the text inside it.
+ * `block` on the button inside a `block` span: the whole row is the target, which is the
+ * same reason the fields on this door take `--ln-tap`.
+ */
+.readRow {
+  display: block;
+  margin-bottom: var(--ln-space-2);
+}
+
+/*
+ * The scroll box, which is the reading area of the popup.
+ *
+ * **Both of these numbers are a product decision dressed as layout, and the height is the
+ * dangerous one.** The gate only means something if the notice stays taller than the area
+ * it is read in — `hasReachedNoticeEnd` answers "true" for a notice that fits, which is
+ * right for a short notice and wrong here, because then the tick is live at the first
+ * paint and the acknowledgement the shop keeps is a tap rather than a reading.
+ *
+ * So the cap is checked against the notice's own height at both sizes, and the *measure*
+ * is what makes that work on a desk: at the popup's full 44rem the seven paragraphs
+ * collapse to roughly a line each, and a box capped at 24rem would swallow them whole.
+ * Held to the notice page's 34rem column instead, the same text measures **852px on a
+ * phone (390×844) and 516px on a desk (1280×800)** against a cap of 382px — both read by
+ * `npm run liff:door`, which asserts the text stays more than 100px taller than the area
+ * it is read in at each size. That is nearly twice the room the inline box gave a reader
+ * (208px), with a real end still below the fold on both.
+ *
+ * `tabIndex` is not optional here — without it a keyboard reader scrolls the page around
+ * the box and can never reach the text inside it.
  */
 .box {
-  max-height: 13rem;
+  max-width: 34rem;
+  margin-inline: auto;
+  max-height: min(24rem, 50vh);
   padding: var(--ln-space-3);
   border: 1px solid var(--ln-border);
   border-radius: var(--ln-radius-sm);
@@ -76,6 +102,12 @@
   text-decoration: underline;
 }
 
+/*
+ * The status of the gate, beside the tick.
+ *
+ * No `aria-live` on this one: the reader scrolling is looking at the popup, which carries
+ * the live region, and the same sentence announced twice is worse than once.
+ */
 .hint {
   margin: var(--ln-space-2) 0 0;
   color: var(--ln-text-muted);
