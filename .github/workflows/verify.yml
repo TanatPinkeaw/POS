@@ -146,6 +146,15 @@ jobs:
       # customer in. Its own scratch schema.
       - run: npm run google:door -- --skip-build
 
+      # The in-LINE entry (ADR 0032 §1) in a real browser, with LINE's own SDK chunk
+      # answered by a stand-in this run serves: the one thing no other gate here can see
+      # is whether the component wires its decision to the SDK and what each of LINE's
+      # answers puts on screen — the phone step in this page, a first sign-in completed
+      # with a code the shop itself sent, one tap for a LINE account that already has a
+      # customer, and the honest sentence for a link opened outside LINE. Chromium,
+      # because a production session cookie is `Secure` and this run serves plain http.
+      - run: npm run liff:door -- --skip-build
+
       # The restore recipe of docs/homelab-deploy.md §7, performed by a machine:
       # demo shop → pg_dump → psql restore → count. No build, no server; the clients
       # are installed with the server image, which is why the drill belongs here

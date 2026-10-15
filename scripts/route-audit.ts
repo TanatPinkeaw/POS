@@ -32,6 +32,7 @@ import {
   ROUTE_WALK,
   auditPage,
   bodyClasses,
+  missingMarkers,
   resolveHref,
   routePaths,
   stylesheetHrefs,
@@ -243,6 +244,19 @@ async function main(): Promise<void> {
       }
       if (walked.finalPath !== expected) {
         failed.push(`${label}: landed on ${walked.finalPath}, expected ${expected}`);
+        continue;
+      }
+
+      /*
+       * The screen's own proof, for the one entry whose landing path cannot give it: a
+       * *state* of another page lands where the page lands whether or not it rendered (see
+       * `RouteSpec.renders`). Without this the walk would go on covering a step that had
+       * quietly stopped being that step — the failure mode this whole table exists for.
+       */
+      const missing = missingMarkers(spec, walked.html);
+      if (missing.length > 0) {
+        failed.push(`${label}: did not render “${missing.join('”, “')}”`);
+        console.log(`  ✗ ${spec.path}  ${spec.label}  → ${missing.length} marker(s) missing`);
         continue;
       }
 

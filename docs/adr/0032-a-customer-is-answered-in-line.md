@@ -302,6 +302,47 @@ is a link, ADR 0014), scheduled sends, an in-app reply box, and the account card
 `window.location` bind press — a known gap in ADR 0030, waiting on a link-shaped `Button`
 in the design system.
 
+### 9. The entry is proven with LINE's SDK replaced; LINE's own app handoff stays unmeasured
+
+The one thing §1 could not promise was that the component wires its decision to the SDK —
+`planLiffEntry` is pure and unit-tested, but "this page initialises LINE, reads a token and
+posts it" is four lines that only a browser can run. `npm run liff:door` runs it, and the
+shape it has to take is the interesting part.
+
+**The chunk is replaced, not the module.** `@line/liff` is imported dynamically, so the build
+ships it as its own chunk; the run finds that chunk in `.next/static/chunks` (identified by two
+strings only the SDK has), asserts it matched **exactly one** file, and answers that one request
+with a stand-in. Everything else stays real: the page, the component, `POST /api/v1/auth/line`,
+the session, the OTP gateway and the ES256 verification.
+
+**The stand-in is written in the build's chunk format, and that was measured rather than
+assumed.** The first version served an ES module — `export default { … }` — and the browser
+answered `Unexpected token 'export'`, leaving the page on "กำลังยืนยันบัญชี LINE…" forever. The
+page's own chunk shows why: the dynamic import compiles to
+`e.l("static/chunks/<hash>.js").then(() => t(2517))`, so what the loader evaluates is a
+**Turbopack chunk that registers module ids**, not a module. The stand-in therefore takes the
+file's own preamble and the module id **out of the artefact** (`e.s(["default",0,…],<id>)` is
+read from the real chunk), and refuses to run if either is missing — a hard-coded `2517` would
+work today and silently test nothing after the next build.
+
+**What it makes checkable.** An unknown LINE account gets the phone step *inside* the entry and
+is never bounced to `/login`; the privacy notice cannot be ticked before it has been read to its
+end and the tick opens when it has — read in a popup whose area is capped so there is an end to
+reach, which the run measures at a phone **and** at a desk, because a wide dialog wraps the same
+text into fewer lines and that is how a cap honest on a phone becomes a formality on a laptop; a
+first sign-in finishes there with a code the shop's own
+OTP gateway sent and lands on the catalogue with a session; the same LINE account in a fresh
+browser is one tap with no phone step; a token minted for **another channel** is refused, which
+is the control that keeps "signed in" from meaning "accepted anything with a signature"; a link
+opened outside LINE names the app and offers `/login` without ever asking for a token; an SDK
+that will not load and a shop with no `LINE_LIFF_ID` each say their own sentence in a painted
+page.
+
+**The limit that remains, named rather than implied.** The SDK is the stand-in, so LINE's own
+app handoff — the customer's LINE app opening the endpoint with a session already inside it — is
+still not exercised here, and no browser in this repository is LINE. What is left unmeasured is
+that handoff, and only it.
+
 ## Consequences
 
 - A customer can open the shop from the shop's own message inside LINE and be signed in
@@ -326,15 +367,18 @@ in the design system.
   left refuses the send **without writing a campaign**, 501 recipients split into two
   batches, LINE's 429 leaves the campaign `partial` with LINE's own words on the batch, and
   a second pass sends nothing again.
-- The entry's own decision is unit-tested (`tests/line-liff-entry.test.ts`), and the route
-  it posts to is the one section 20 already drives.
+- The entry's own decision is unit-tested (`tests/line-liff-entry.test.ts`), the route it posts
+  to is the one section 20 already drives, and the browser half — the SDK call, the phone step,
+  the notice gate, one tap and the audience control — is `npm run liff:door` (§9), in
+  `verify:all` and in CI beside the other gates that read the build.
 
 ## Known limits
 
-- **The LIFF handshake cannot be exercised from this repository.** There is no LIFF browser
-  here, so what is proven is the entry's *decision*, pure and unit-tested, plus the
-  id-token route it posts to. The handshake itself is unmeasured, and this is the sentence
-  that says so rather than a green run implying otherwise.
+- **LINE's app handoff cannot be exercised from this repository** (§9). `npm run liff:door`
+  replaces the SDK's chunk and drives everything on this side of it in a real browser, so what
+  is unmeasured is LINE's own app opening the endpoint with a session inside it — not the entry,
+  and not the id token, which the run mints with a real ES256 key and a channel the deployment
+  is configured with.
 - **LINE's image-message size and format limits are unverified**, so no number is asserted
   anywhere: `originalContentUrl`/`previewImageUrl` are validated through
   `renderableImageUrl` (a link, ADR 0014) and LINE is what refuses an unacceptable one.

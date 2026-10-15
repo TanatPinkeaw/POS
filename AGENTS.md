@@ -148,7 +148,13 @@ Recorded so a session starts from the truth rather than from the last commit mes
   one row deduped on LINE's own message id, and the shop hears about one burst per ten
   minutes because a group push costs one message per member. **`NOTIFY_LINE_TOKEN` is not
   `NOTIFY_CHANNEL`**: the token is what lets this deployment talk to LINE at all (what a
-  campaign needs), the channel is where the shop's *own* alerts go.
+  campaign needs), the channel is where the shop's *own* alerts go. That purity is not the
+  whole proof: `npm run liff:door` drives `/line` in a real browser with the chunk carrying
+  `@line/liff` answered by a stand-in written in the build's own chunk format (ADR 0032 §9) —
+  the module id read out of the artefact, a real ES256 id token against a key set this run
+  serves, and a token minted for another channel refused as the control. **A Turbopack chunk is
+  not a module**: an `export default` stub is a parse error, and the loader is
+  `e.l("static/chunks/…").then(() => t(<id>))`, so the replacement has to register that id.
 - **Google's button asks a phone for a different shape than a desktop** (ADR 0020 §1,
   amended). `src/lib/google-door.ts` picks the UX mode — Google's own footnote is "Due to ITP
   redirect mode is required for iOS", and the popup hands the credential back through a
@@ -225,8 +231,11 @@ Recorded so a session starts from the truth rather than from the last commit mes
   by `systemd-analyze verify` or a real boot — and there is no experience of real
   data volume in reports or analytics. **Actual IndexedDB and the cashier
   outage/replay flow are now tested** by `scripts/offline-browser.ts`; Playwright is
-  an explicitly approved dev-only dependency, not a fake database. Hardware power
-  loss, browser eviction and physical printer behavior remain unmeasured. "Green"
+  an explicitly approved dev-only dependency, not a fake database. **A browser now drives
+  `/line` too** (`scripts/liff-door-browser.ts`, with LINE's SDK replaced by a stand-in) —
+  so what the LIFF work still cannot claim is LINE's own app handoff, the one leg no browser
+  in this repository can be. Hardware power loss, browser eviction and physical printer behavior
+  remain unmeasured. "Green"
   means *correct as far as the tests reach*, not shop field use. The restore drill
   has also run end to end on this dev box (Windows, PostgreSQL client found via
   `PG_BIN` in `.env`), but the drill's "over the shop's own database" path is still
@@ -299,13 +308,14 @@ owner.
 | `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
 | `npm run build` / `npm run start` | Production build, then the same custom server. | — |
 | `npm run verify` | `typecheck` → `ui:audit` → `doc:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
-| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `browser:target` → `limiter:race` → `offline:browser` → `google:door` → `restore:drill`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium + WebKit |
+| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `browser:target` → `limiter:race` → `offline:browser` → `google:door` → `liff:door` → `restore:drill`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium + WebKit |
 | `npm run offline:browser` | Actual Chromium/IndexedDB offline cash, replay/reconnect and recovery on a test-only scratch schema; `-- --skip-build` reuses the build. Install with `npx playwright install chromium`. | TEST_DATABASE_URL + Chromium |
 | `npm run google:door` | The Google sign-in door in actual WebKit under Playwright's iPhone profile: the UX mode a phone's page asks Google for, the credential coming back as a real cross-origin form POST, and the customer signed in afterwards. `-- --skip-build`, `-- --engine=chromium`, `-- --keep`. Install with `npx playwright install webkit`. | TEST_DATABASE_URL + WebKit |
+| `npm run liff:door` | `/line` in a real browser with LINE's own SDK chunk answered by a stand-in (ADR 0032 §9): the phone step inside the entry, a first sign-in finished with a code the shop's own gateway sent, one tap for a bound account, a token minted for another channel refused, and the two sentences for outside LINE and for a shop with no LIFF app. `-- --skip-build`, `-- --engine=webkit`, `-- --keep`. Install with `npx playwright install chromium`. | TEST_DATABASE_URL + Chromium |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
-| `npm run route:audit` | Builds, serves, and checks that every screen renders a page whose CSS defines every class on it (26 paths, 30 requests). | Postgres |
+| `npm run route:audit` | Builds, serves, and checks that every screen renders a page whose CSS defines every class on it (27 paths, 31 requests). | Postgres |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build. `-- --url <base>`, `-- --verbose`. | A running server |
 | `npm run brand:palette` | Regenerates the colour ramp. `-- --check` fails if stale. | — |
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the app icons. `-- --preview` prints them as text. | — |
@@ -515,12 +525,12 @@ Then, for anything a person will look at:
 
 **CI runs all of it** (`.github/workflows/verify.yml`): `verify` in one job, then
 `acceptance` + `route:audit --skip-build` + `browser:target` + `limiter:race --skip-build` +
-`offline:browser --skip-build` + `google:door --skip-build` + `restore:drill` in a second,
-each with a PostgreSQL 17 service (the second job installs Chromium and WebKit for
-the two gates that drive a real browser). Node is pinned by `.nvmrc` and `engines.node`, so
-the version the suite runs on is the version a renter is told to install.
+`offline:browser --skip-build` + `google:door --skip-build` + `liff:door --skip-build` +
+`restore:drill` in a second, each with a PostgreSQL 17 service (the second job installs
+Chromium and WebKit for the gates that drive a real browser). Node is pinned by `.nvmrc` and
+`engines.node`, so the version the suite runs on is the version a renter is told to install.
 
-Locally the same thing is **one command**, `npm run verify:all`: it runs those eight in
+Locally the same thing is **one command**, `npm run verify:all`: it runs those nine in
 dependency order — nothing is built for the first, the journey builds once, and every
 gate after it walks the artefact it produced — and stops at the first failure, because every
 later gate would be measuring a commit that is already known to be broken. It is the
@@ -630,9 +640,11 @@ Open threads, roughly in the order worth doing:
    campaigns to the consented. Still open: a **rich menu**, **Flex/template** editing
    rather than text, **scheduled** sends, an **in-app reply box** (the Official Account's
    own auto-response covers replies for now), and storing the bytes of an image a customer
-   sends. The one limit no gate here closes: **no LIFF browser exists in this repository**,
-   so the handshake itself is unmeasured — the entry's decision and the id-token route it
-   posts to are what is proven.
+   sends. The LIFF handshake is driven in a real browser by `npm run liff:door` (ADR 0032
+   §9): it replaces the chunk that carries `@line/liff` with a stand-in written in the
+   build's own chunk format — the module id is read out of the artefact, never hard-coded —
+   and everything on this side of the SDK is the real thing. **LINE's own app handoff is the
+   part no gate here closes**: no browser in this repository is LINE, so the SDK is the stub.
 3. **A `/design` reference route** that renders every primitive with its tokens,
    so the library is visible in one place rather than inferred from call sites.
 4. **A command that prints where this checkout stands** — branch, how much of it is

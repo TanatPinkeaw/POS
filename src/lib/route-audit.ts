@@ -40,7 +40,11 @@ export type RouteArea = 'public' | 'admin' | 'pos' | 'shop';
 export type RouteSession = 'none' | 'admin' | 'cashier' | 'member';
 
 export interface RouteSpec {
-  /** The path requested. */
+  /**
+   * The path requested, which may carry a query when the screen is a *state* of another
+   * page — `/login?line=claim` is the front door's sign-up step. The walker fetches it as
+   * given; `landsOn` stays a bare pathname, because that is what it compares.
+   */
   path: string;
   area: RouteArea;
   session: RouteSession;
@@ -57,13 +61,26 @@ export interface RouteSpec {
    */
   landsOn: string;
   label: string;
+  /**
+   * Words the response must contain — the screen's own proof that it rendered.
+   *
+   * Most entries need nothing here, because `landsOn` already tells the screens apart: a
+   * protected page handed no session answers with a redirect the walk can see, so landing
+   * where it should *is* the proof. A screen that is a **state of another page** cannot be
+   * told apart that way — `/login?line=claim` lives on `/login`, so an app that stopped
+   * rendering the step would still land on `/login` and pass while covering nothing. That
+   * is the one failure this entire table exists to prevent, so such an entry names what it
+   * must have rendered. Checked by `missingMarkers`, which is pure and therefore tested.
+   */
+  renders?: readonly string[];
 }
 
 /**
  * Every screen this application serves, and how to reach it.
  *
- * Twenty-eight distinct paths; the root is listed four times because it is a
- * role-aware redirect and the interesting part of it is where each role lands.
+ * Twenty-seven distinct paths across thirty-one requests; the root is listed four times
+ * because it is a role-aware redirect and the interesting part of it is where each role
+ * lands, and one entry carries a query because the sign-up step is a state of `/login`.
  */
 export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/', area: 'public', session: 'none', landsOn: '/login', label: 'the front door, signed out' },
@@ -71,6 +88,32 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/', area: 'public', session: 'cashier', landsOn: '/pos', label: 'the front door, as a cashier' },
   { path: '/', area: 'public', session: 'member', landsOn: '/shop/products', label: 'the front door, as a member' },
   { path: '/login', area: 'public', session: 'none', landsOn: '/login', label: 'the front door: the customer\'s, with the staff form folded below' },
+  /*
+   * The sign-up step, walked because it is the **only** screen that renders the privacy
+   * notice a customer has to read before an account exists (`NoticeAcknowledge`). It was
+   * on no route at all until now, which meant its stylesheet could have been renamed or
+   * never imported and this audit would have reported every screen styled while the one
+   * screen the shop is legally obliged to show shipped bare — the exact failure ADR 0003
+   * left behind once already.
+   *
+   * A query is enough to reach it: `lineResult` is what decides which step renders, and the
+   * handoff cookie the LINE callback leaves behind is what a *submit* needs, not what the
+   * step needs (`line-identity.ts`). No credential is forged to read this screen — the walk
+   * asks for the state the front door itself sends a customer back to.
+   */
+  {
+    path: '/login?line=claim',
+    area: 'public',
+    session: 'none',
+    landsOn: '/login',
+    label: 'the sign-up step, where the notice is read',
+    /*
+     * The panel's own two sentences: its button and its tick. Deliberately not the notice's
+     * title, which the footer's scrim link states too — a marker that another element on the
+     * same page can satisfy would prove nothing about this step.
+     */
+    renders: ['อ่านนโยบายคุ้มครองข้อมูลส่วนบุคคล', 'ยืนยันว่าคุณได้อ่านนโยบาย'],
+  },
   { path: '/setup', area: 'public', session: 'none', landsOn: '/login', label: 'the wizard, on a shop that is already set up' },
   { path: '/display', area: 'public', session: 'none', landsOn: '/display', label: 'the customer display' },
   /*
@@ -114,9 +157,34 @@ export const ROUTE_WALK: readonly RouteSpec[] = [
   { path: '/shop/account', area: 'shop', session: 'member', landsOn: '/shop/account', label: 'the member account' },
 ];
 
-/** The distinct paths in the walk — every page this application serves. */
+/**
+ * The distinct paths in the walk — every page this application serves.
+ *
+ * The query is stripped, because a path that carries one is a *state* of a page rather than
+ * another page: `routePaths()` answers "how many screens does this application serve", the
+ * tests below compare it against the files in `src/app` in both directions, and letting a
+ * state inflate it would make that comparison about how many states the walk happens to
+ * visit.
+ */
 export function routePaths(walk: readonly RouteSpec[] = ROUTE_WALK): string[] {
-  return [...new Set(walk.map((entry) => entry.path))];
+  return [...new Set(walk.map((entry) => pagePath(entry.path)))];
+}
+
+/** A requested path without its query — what the App Router would call the page. */
+function pagePath(path: string): string {
+  const query = path.indexOf('?');
+  return query === -1 ? path : path.slice(0, query);
+}
+
+/**
+ * The proof markers a page did not render, in the order the route names them.
+ *
+ * Pure, and separate from the walk, for the same reason the class detection is: what a
+ * screen must say is a decision about a string, and the part that cannot be unit-tested is
+ * the fetching. An entry with no `renders` has nothing to prove and returns empty.
+ */
+export function missingMarkers(spec: RouteSpec, html: string): string[] {
+  return (spec.renders ?? []).filter((marker) => !html.includes(marker));
 }
 
 export type PageRule =

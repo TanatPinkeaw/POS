@@ -55,7 +55,9 @@ the session and the phone when there is not one yet.
 but the number is what is being anchored, and a person can type somebody else's. §1 of
 ADR 0030 answers that with the OTP and this ticket does not reopen it.
 
-**What cannot be proven from here, and will be said so in the ADR:** there is no LIFF
-browser in this repository, so the handshake itself is unmeasured. What is measured is
-the decision (pure, unit-tested) and the route the entry calls (already exercised by
-`npm run acceptance` §20 with a stub token endpoint).
+**What could not be proven from here, and now is — except LINE's own half:** when this
+ticket was written there was no way to run any of it, so the decision (pure, unit-tested)
+and the route the entry calls (`npm run acceptance` §20, stub token endpoint) were the
+whole proof. `npm run liff:door` closes the rest of this side of the handshake in a real
+browser, with the chunk carrying `@line/liff` answered by a stand-in written in the build's
+own chunk format (ADR 0032 §9). What stays unmeasured is LINE's app handoff, and only it.

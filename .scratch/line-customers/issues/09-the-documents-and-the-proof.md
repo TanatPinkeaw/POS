@@ -43,10 +43,15 @@ run that walks the new doors over real HTTP.
       passes with `@line/liff` bundled**: the SDK is measured against the Safari 15.6
       floor like every other chunk, and if it carries syntax the floor cannot parse, the
       answer is a pinned older SDK version — never a weakened gate.
-- [ ] The limitations are written down where they belong, in the ADR's own words: the
-      LIFF handshake cannot be exercised from this repository; LINE's image-message size
-      and format limits are unverified (so no number is asserted anywhere); the quota
-      arithmetic is a courtesy and LINE's 429 is the authority.
+- [ ] The limitations are written down where they belong, in the ADR's own words:
+      LINE's **image-message size and format limits are unverified** (so no number is
+      asserted anywhere); the quota arithmetic is a courtesy and LINE's 429 is the
+      authority. The one limitation this ticket recorded as *the handshake itself cannot be
+      exercised here* got smaller after it landed: `npm run liff:door` (ADR 0032 §9) drives
+      the entry, the phone step, the one-tap return, the refusal of a token minted for
+      another channel and both failure sentences in a real browser, with LINE's SDK chunk
+      replaced by a stand-in. **LINE's own app handoff** is what remains unmeasured, and
+      that is the sentence the ADR keeps.
 
 ## Notes
 

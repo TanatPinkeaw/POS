@@ -22,6 +22,7 @@ import {
   classNames,
   definedClasses,
   inlineStyles,
+  missingMarkers,
   offSiteReferences,
   resolveHref,
   routePaths,
@@ -245,6 +246,58 @@ describe('the route walk', () => {
     expect(new Set(ROUTE_WALK.map((entry) => entry.area))).toEqual(
       new Set(['public', 'admin', 'pos', 'shop']),
     );
+  });
+
+  it('counts a state of a page as that page, not as another screen', () => {
+    /*
+     * The sign-up step is walked as `/login?line=claim` and it is still `/login`.
+     *
+     * The number above means "screens this application serves", and the next test in this file
+     * compares it against the files in `src/app` in **both** directions — so a state counted as
+     * a page would fail there rather than here. Asserting it here keeps the reason next to the
+     * count it protects: the notice panel lives in a state, not in a page of its own.
+     */
+    expect(ROUTE_WALK.some((entry) => entry.path === '/login?line=claim')).toBe(true);
+    expect(routePaths()).toContain('/login');
+    expect(routePaths()).not.toContain('/login?line=claim');
+  });
+
+  it('proves the sign-up step rendered, because its landing path cannot', () => {
+    const step = ROUTE_WALK.find((entry) => entry.path === '/login?line=claim') as RouteSpec;
+
+    /*
+     * The step lands on `/login`, which is where the front door lands whether or not the step
+     * rendered — so `landsOn` is silent about the one screen this entry exists to cover, and
+     * the panel's own words are what have to have come back. The markers are the panel's button
+     * and its tick, deliberately not the notice's title: the footer's scrim link states that
+     * title too, so a marker another element satisfies would prove nothing about this step.
+     */
+    expect(step.landsOn).toBe('/login');
+    expect(step.renders).toEqual(['อ่านนโยบายคุ้มครองข้อมูลส่วนบุคคล', 'ยืนยันว่าคุณได้อ่านนโยบาย']);
+
+    const markers = step.renders ?? [];
+    expect(missingMarkers(step, markers.join(' · '))).toEqual([]);
+    expect(missingMarkers(step, '<button>อ่านนโยบายคุ้มครองข้อมูลส่วนบุคคล</button>')).toEqual([
+      'ยืนยันว่าคุณได้อ่านนโยบาย',
+    ]);
+    // The front door with no step on it: the scrim's link, and neither marker.
+    expect(missingMarkers(step, '<a>นโยบายคุ้มครองข้อมูลส่วนบุคคลสำหรับลูกค้า</a>')).toHaveLength(2);
+  });
+
+  it('asks nothing of the entries whose landing path already proves them', () => {
+    /*
+     * Markers are for the exception, and the exception is narrow: a redirect the walk can see
+     * already says which screen answered. Spreading markers over the ordinary entries would not
+     * strengthen anything — it would put a second copy of each screen's copy in this table,
+     * where it would quietly age. A future entry that genuinely needs one has to come and change
+     * this test, which is the conversation worth having rather than the assertion being deleted.
+     */
+    for (const entry of ROUTE_WALK) {
+      if (entry.path.includes('?')) {
+        continue;
+      }
+      expect(entry.renders, `${entry.path} is proved by where it lands`).toBeUndefined();
+    }
   });
 
   it('states where each request must land', () => {

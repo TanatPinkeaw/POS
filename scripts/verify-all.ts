@@ -25,12 +25,20 @@
  *      the defect is which UX mode a *phone's page* asks Google for, and the other
  *      half is a cross-origin form POST landing on the app's own route. It serves the
  *      build rather than making one, and it needs `npx playwright install webkit`.
- *   8. `restore:drill` — §7 of docs/homelab-deploy.md performed by a machine: seed,
+ *   8. `liff:door` — the in-LINE entry (`/line`) in a real browser, with LINE's own
+ *      SDK chunk answered by a stand-in (ADR 0032 §1). The gap it closes is the one
+ *      every other gate here leaves open: the entry's *decision* is a unit test and
+ *      its server half is in `acceptance`, but only a browser can show whether the
+ *      component wires that decision to the SDK, which stage each of LINE's answers
+ *      produces, and that a first sign-in finishes inside the entry with a code the
+ *      shop itself sent. It serves the build rather than making one, and it needs
+ *      `npx playwright install chromium`.
+ *   9. `restore:drill` — §7 of docs/homelab-deploy.md performed by a machine: seed,
  *      pg_dump, psql restore, count. It needs the database but no server and no
  *      build, so it sits last: the one gate that answers "would the backup save us",
  *      which no test of running code can answer.
  *
- * Steps 3–7 reuse step 2's build with `--skip-build`, deliberately. A release
+ * Steps 3–8 reuse step 2's build with `--skip-build`, deliberately. A release
  * check should be checking *one* artefact: rebuilding between gates would mean the
  * markup the audit walked is not the markup the journey sold through, and a build that
  * differs by nothing still costs a minute each time. `--skip-build` therefore means
@@ -109,6 +117,10 @@ const steps: Step[] = [
     command: `npm run google:door --${reuseBuild}${keepFlag}`,
   },
   {
+    label: 'liff door (Chromium, LINE\'s SDK answered by a stand-in, the entry signs in)',
+    command: `npm run liff:door --${reuseBuild}${keepFlag}`,
+  },
+  {
     label: 'restore drill (the §7 recipe: seed, pg_dump, psql restore, count)',
     command: 'npm run restore:drill',
   },
@@ -127,8 +139,8 @@ console.log('POS — every gate, in order');
 console.log('==========================');
 console.log(
   skipBuild
-    ? '\n8 steps. No build: every step reuses the existing `.next`.'
-    : '\n8 steps. The build is made once, by the journey, and the later gates reuse it.',
+    ? '\n9 steps. No build: every step reuses the existing `.next`.'
+    : '\n9 steps. The build is made once, by the journey, and the later gates reuse it.',
 );
 
 const results: Result[] = [];

@@ -105,7 +105,7 @@ Three decisions are worth knowing before changing anything here:
 | `npm run brand:icons` | Resamples `public/brand-mark.png` into the PNG/ICO app icons. `-- --preview` prints them as text. |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/` — a Bootstrap class, a `data-bs-*` attribute, a `/hope-ui/` reference. |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that no longer exists. |
-| `npm run route:audit` | Builds, serves, and opens every screen it knows about (27 distinct paths, 30 requests): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
+| `npm run route:audit` | Builds, serves, and opens every screen it knows about (27 distinct paths, 31 requests — among them the sign-up step, where the privacy notice panel lives): each must render, land where it should, and have every class on it defined by the CSS that page loads, with no script, stylesheet or font fetched from another origin — a product photo may be a link to the shop's own file host (ADR 0014). |
 | `npm run browser:target` | Reads the build the other gates made and fails if any file in it needs syntax newer than the phone a customer holds (ADR 0031). A class static block is a `SyntaxError` on a phone that stopped at iOS 15, and everything that needs JavaScript on that page is dead after it — a green `build` and a styled page say nothing about it. Makes no build of its own. |
 | `npm run server:check` | Probes a **running** server and fails if it is not serving this checkout's build — a process left over from before a rebuild keeps serving HTML whose asset files no longer exist, which on screen reads exactly like a code bug. Read-only; `-- --url <base>`, `-- --verbose`. |
 | `npm run google:check` | Asks Google's own authorization endpoint whether the address the Google door hands it is registered on this deployment's OAuth client — the failure that never reaches this server, because Google refuses before the customer is sent anywhere: a phone gets Google's `redirect_uri_mismatch` page and the shop's log stays empty. Reads Google's answer rather than inferring it, names the exact console entry, compares it against the address the **running** process actually serves, and posts an empty credential to the landing to prove that address answers 303 (a request the route refuses before it spends a rate-limit bucket). Read-only; `-- --client-id`, `-- --url`, `-- --offline`. Exit 0 ready · 1 something to fix · 2 could not measure. | Network + the shop's own address |
@@ -114,7 +114,8 @@ Three decisions are worth knowing before changing anything here:
 | `npm run bank:bridge` | Reads the shop's own bank notifications and closes the bills they pay. `-- --file <eml>` shows what it would post, without a mailbox. |
 | `npm run line:wizard` | Walks the human half of the LINE feature (ADR 0030): the two channels to create in LINE's console, the values to paste, the callback/webhook URLs to register. `-- --verify` reports which doors the current `.env` opens. |
 | `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
-| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser`, `google:door`, `restore:drill` against the one build the journey makes. Stops at first failure; matches CI. |
+| `npm run liff:door` | The in-LINE entry (`/line`) in a real browser, with LINE's own SDK chunk answered by a stand-in this run serves: an unknown LINE account gets the phone step *inside* the entry and a first sign-in finishes there with a code the shop itself sent, a LINE account already bound signs in with one tap, a token minted for another channel is refused, a link opened outside LINE says so, and an SDK that will not load or a shop with no LIFF app each have their own sentence. What it cannot drive is LINE's app handoff — no browser here is LINE. `-- --skip-build`, `-- --engine=webkit`, `-- --keep`. Install with `npx playwright install chromium`. | `TEST_DATABASE_URL` + Chromium |
+| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser`, `google:door`, `liff:door`, `restore:drill` against the one build the journey makes. Stops at first failure; matches CI. |
 | `npm run offline:browser` | Real Chromium/IndexedDB offline cash, replay/reconnect, loan release and recovery on a test-only scratch schema. Install Chromium with `npx playwright install chromium`; `-- --skip-build` reuses the production build. |
 | `npm run restore:drill` | Rehearses the restore recipe in `docs/homelab-deploy.md` §7 against a scratch schema: migrate + seed the demo shop, `pg_dump` with the backup's own command and compressor, then `psql --set ON_ERROR_STOP=1 --file` into a namespace that was empty a moment before, and count every table row-for-row — plus the two gapless counters byte-for-byte (ADR 0002). Needs the PostgreSQL client binaries (`pg_dump`, `psql`); `PG_BIN` in `.env` names the directory when the Windows installer left them off `PATH`. `-- --keep`, `-- --verbose`. | `TEST_DATABASE_URL` + pg client |
 
@@ -213,11 +214,12 @@ npm run doc:audit       # the documents still name the commands that exist
 npm test                # 1587 tests across 122 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 247 checks of the whole renter journey, from an empty schema
-npm run route:audit     # every screen (27 paths, 30 requests) renders, and renders styled
+npm run route:audit     # every screen (27 paths, 31 requests) renders, and renders styled
 npm run browser:target  # that build still parses on the phone a customer holds
 npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run google:door     # the Google door in real WebKit as an iPhone, its redirect landing, and where the front door's arrival words live (25 checks)
+npm run liff:door       # the in-LINE entry in a real browser, LINE's SDK answered by a stand-in (31 checks)
 npm run restore:drill   # the homelab-deploy §7 restore recipe, rehearsed by a machine
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -498,9 +500,17 @@ serves: binding from the account card, the friend condition arriving as a signed
 webhook, a campaign refused for having nobody to reach, the consent giving that same send an
 audience, a cashier refused (403), one multicast, no allowance left refusing the send
 without writing a campaign, 501 recipients splitting into two batches, a `429` leaving it
-`partial`, and a second pass sending nothing. **What is not proven here is the LIFF
-handshake itself** — there is no LIFF browser in this repository, so what is measured is the
-entry's own decision (pure, unit-tested) and the id-token route it posts to.
+`partial`, and a second pass sending nothing. The **LIFF handshake** is measured by a gate of
+its own, `npm run liff:door`: it finds the chunk that carries `@line/liff` in the build, asserts
+there is exactly one, and answers that request with a stand-in written in the build's own chunk
+format — so the component, the page, the routes, the session, the OTP and the id-token
+verification are all the real ones. What it shows is that the entry signs a customer in: an
+unknown LINE account gets the phone step *inside* the page (never a bounce to `/login`), a first
+sign-in finishes there with a code the shop itself sent and lands on the catalogue, the same
+LINE account in a fresh browser is one tap with no phone step, and a token minted for a
+different channel is refused — the control that keeps "signed in" from meaning "accepted
+anything with a signature". **What is still not proven is LINE's own app handoff**: there is no
+LIFF browser in this repository, so the stand-in is the SDK and not the app it lives in.
 
 ### Enrolling a customer (SRS §5)
 
@@ -1139,7 +1149,7 @@ goes through them.
 | `docs/adr/0029-the-front-door-belongs-to-the-customer.md` | The one sign-in URL a person can be given: `/login` is the customer's door — Google, LINE, or phone and password — with the staff form folded behind one button, and `/shop` a redirect to it, so the domain root and every printed QR code land on the same screen. |
 | `docs/adr/0030-a-customer-is-reached-on-line.md` | The LINE door and LINE notifications: binding a LINE account to a customer by OTP, consent as two facts (the customer's timestamp and the friend list the webhook keeps), the collection code riding the customer's own LINE or nothing, and the shop's group gaining the refund and dismissed-transfer facts — opens ADR 0007 decision 3 the way it asked to be opened. |
 | `docs/adr/0031-the-build-picks-the-phone.md` | The build targets the phone a customer is holding: why Next 16's own baseline (Safari 16.4) shipped a page that rendered with every button dead on iOS 15, the measurement that found it, the gate that keeps it found, the translucent-colour layer that had to be written down as values for it, and runtime APIs as the one thing no syntax check can see. |
-| `docs/adr/0032-a-customer-is-answered-in-line.md` | The three things ADR 0030 left open: `/line` as a LIFF entry that is a door rather than an identity, the customers' messages as rows deduped on LINE's own message id, promotion consent as a second fact with two timestamps, and campaigns as admin-only multicast in batches of 500, at most once — with the LIFF handshake named as the one thing no gate here can drive. |
+| `docs/adr/0032-a-customer-is-answered-in-line.md` | The three things ADR 0030 left open: `/line` as a LIFF entry that is a door rather than an identity, the customers' messages as rows deduped on LINE's own message id, promotion consent as a second fact with two timestamps, and campaigns as admin-only multicast in batches of 500, at most once — naming LINE's app handoff as the one part of the LIFF handshake no gate here can drive (§9 records the browser that drives the rest). |
 | `docs/adr/0021-the-electronic-receipt-is-generated.md` | The electronic receipt as an image generated from the order rather than a stored file, the last month as an access window, and a signed link for a walk-in. |
 | `docs/adr/0022-page-access-is-a-fixed-role-matrix.md` | Which pages each role may see, as a fixed deny-by-default matrix rather than a per-shop setting. |
 | `docs/adr/0025-a-member-offers-goods-on-their-own-account.md` | ฝากขายผ่านหน้าบัญชีของสมาชิก: the offer form is a panel in the member's own ฝากขาย tab, the session names the owner so there is no unmatched phone, a double tap is one offer, and only an owner turns an offer into a product with a share — the documents ride along as links. |
@@ -1179,8 +1189,9 @@ for the customer to scan, print or read down the phone.
   writing text, **scheduled sends**, an **in-app reply box** (staff answer in LINE's own
   Official Account app), and storing the bytes of an image a customer sends — a message of
   any non-text kind is recorded as its kind and nothing more (ADR 0032 §3). The LIFF
-  handshake itself is also unmeasured: no gate here can open a LIFF browser, so what is
-  proven is the entry's decision and the id-token route it posts to.
+  handshake is driven in a real browser by `npm run liff:door` with LINE's SDK replaced by a
+  stand-in, so what is still unmeasured is **LINE's app handoff** alone — the SDK is the stub,
+  and no browser in this repository is LINE.
 - **The hosted rental.** A shop signing itself up with Google and getting its own
   space on a box we run, instead of a shop installing this on its own machine. The
   direction is decided and written down (ADR 0016) and the order of work is

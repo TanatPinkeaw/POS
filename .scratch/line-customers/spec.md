@@ -122,6 +122,8 @@ already stubs LINE's token endpoint with `LINE_TOKEN_URL`.
 
 Tickets are worked blockers-first as red/green slices, then reviewed on the Standards
 and Spec axes, and the documents named in ticket 09 change in the same commits. The
-one limitation that stays open is stated where it belongs: the LIFF handshake itself
-cannot be exercised from this repository (there is no LIFF browser), so what is proven
-is the entry's own decision plus the id-token route it calls.
+one limitation that stays open is stated where it belongs: **LINE's app handoff** cannot
+be exercised from this repository (there is no LIFF browser here), so what is proven is the
+entry's own decision, the id-token route it calls, and — since `npm run liff:door` (ADR 0032
+§9) — everything on this side of the SDK, in a real browser, with the SDK's chunk answered by
+a stand-in this run serves.
