@@ -155,6 +155,19 @@ Recorded so a session starts from the truth rather than from the last commit mes
   serves, and a token minted for another channel refused as the control. **A Turbopack chunk is
   not a module**: an `export default` stub is a parse error, and the loader is
   `e.l("static/chunks/…").then(() => t(<id>))`, so the replacement has to register that id.
+- **A rich menu now sits under the shop's LINE chat, and no part of this repository knows it**
+  (ADR 0033). Three doors to the customer's own screens — `/shop/products`, `/shop/orders`,
+  `/shop/account` — and never `/pos` or `/admin`, because a rich menu is shown to every friend
+  and a gated door is one a customer can see and not open. It was made by calling the Messaging
+  API from outside this checkout (create, upload to `api-data.line.me`, set as the default for
+  all), so the live id `richmenu-0bdd3801037ec38bf01c96a13353e0db` exists in LINE and in that ADR
+  only: `/admin` cannot change it, `npm run backup` does not cover it, re-running the script
+  makes a **second** menu rather than editing the first, and nothing here would notice it going
+  away. The tap areas are the artwork's own thirds (dividers at x=832 and x=1666 of 2500) measured
+  from the pixels rather than eyeballed, and the menu's Thai strings are built in a UTF-8 file
+  because a Windows command line turns them into `?`. **The upload half is still not built**, and
+  **no person has looked at it on a phone**: what is measured is that LINE created it, holds the
+  image byte-identical at 2500×843, and answers it as the default for every user.
 - **Google's button asks a phone for a different shape than a desktop** (ADR 0020 §1,
   amended). `src/lib/google-door.ts` picks the UX mode — Google's own footnote is "Due to ITP
   redirect mode is required for iOS", and the popup hands the credential back through a
@@ -222,9 +235,10 @@ Recorded so a session starts from the truth rather than from the last commit mes
   silently dead. `npm run browser:target` reads the built chunks and fails on it, and
   it is in `verify:all` and in CI beside the other gates that read the build.
 - **Deliberately not built**: README's *Not built yet* — overtime approval and leave, the
-  rest of LINE (a rich menu, Flex/template editing, scheduled sends, an in-app reply box),
-  multiple branches, a second register, **storing** a product image (a photo is a link now —
-  ADR 0014), RTL, object storage, and a reconciliation over a date range rather than a day.
+  rest of LINE (a rich menu's **upload half**, Flex/template editing, scheduled sends, an
+  in-app reply box), multiple branches, a second register, **storing** a product image (a
+  photo is a link now — ADR 0014), RTL, object storage, and a reconciliation over a date range
+  rather than a day.
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no field pilot; Chromium now exercises the offline flow in CI, the restore
   recipe is rehearsed by `scripts/restore-drill.ts` (in `verify:all`), but nothing
   has ever loaded `deploy/systemd/` — those units were reviewed by reading, never
@@ -637,7 +651,8 @@ Open threads, roughly in the order worth doing:
    covering a week is still compared by hand.
 2. **LINE beyond the door.** ADR 0030 built the door and ADR 0032 the other half:
    `/line` as a LIFF entry, the customers' messages as rows, promotion consent and
-   campaigns to the consented. Still open: a **rich menu**, **Flex/template** editing
+   campaigns to the consented, and a hand-made **rich menu** (ADR 0033). Still open: the
+   rich menu's **upload half** (choosing an image, per-user menus), **Flex/template** editing
    rather than text, **scheduled** sends, an **in-app reply box** (the Official Account's
    own auto-response covers replies for now), and storing the bytes of an image a customer
    sends. The LIFF handshake is driven in a real browser by `npm run liff:door` (ADR 0032

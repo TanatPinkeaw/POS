@@ -211,7 +211,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1587 tests across 122 files: unit + integration
+npm test                # 1594 tests across 122 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 247 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (27 paths, 31 requests) renders, and renders styled
@@ -511,6 +511,35 @@ LINE account in a fresh browser is one tap with no phone step, and a token minte
 different channel is refused — the control that keeps "signed in" from meaning "accepted
 anything with a signature". **What is still not proven is LINE's own app handoff**: there is no
 LIFF browser in this repository, so the stand-in is the SDK and not the app it lives in.
+
+### The menu a customer opens the chat to (ADR 0033)
+
+A friend of the shop's Official Account now has three buttons under the chat — **สินค้า**,
+**ออเดอร์ของฉัน**, **บัญชีของฉัน** — going to `/shop/products`, `/shop/orders` and
+`/shop/account`: the three screens a customer returns to. They are deliberately not `/pos` or
+`/admin`, because a rich menu is shown to **every** friend and a button on it is a door anybody
+may press — `/pos` and `/admin` are gated by `requireShellUser`, so a customer could see the
+button and not open what is behind it (ADR 0033 §1).
+
+**This repository does not own that menu, and that is the decision rather than an oversight.**
+It was created by calling LINE's Messaging API three times — create the object, upload the
+image to the *other* host (`api-data.line.me`), set it as the default for everyone — from a
+script outside this checkout. So there is no row, no environment value and no screen for it:
+`/admin` cannot change it, `npm run backup` does not cover it (a menu is LINE's object, not the
+shop's database), and a rebuilt deployment starts with no menu at all. The live id is written
+down in ADR 0033 and nowhere else. The upload half — choosing an image, per-user menus — is the
+part still not built, and ADR 0032 §8 had already called that its own effort. The buttons are
+plain URLs rather than LIFF deep links because `LINE_LIFF_ID` is unset and a LIFF link would
+make the menu depend on the one leg of the handshake nothing here can drive (ADR 0032 §9);
+setting the LIFF app is the first reason to revisit it.
+
+**And no person has looked at it yet.** What is verified is what LINE itself holds: one menu
+named `เมนูลูกค้า เหลี่ยมนอก` with bar text `เมนู`, marked selected, 2500×843, with three areas
+at `0+834`, `834+833` and `1667+833` of the full 843 height, the image coming back
+byte-identical (60,321 bytes) to what was uploaded, and `GET /v2/bot/user/all/richmenu`
+answering that id for every user. That a customer tapping **สินค้า** on a real phone reaches the
+catalogue is unmeasured, and this repository cannot measure it: no browser here is the LINE
+app.
 
 ### Enrolling a customer (SRS §5)
 
@@ -1156,6 +1185,7 @@ goes through them.
 | `docs/adr/0026-the-counter-owns-its-own-rules.md` | Two rules that had been copied into a second place instead of asked for once: a staff pre-order cancel needs no supervisor (the PIN gated the *till's* void, which reverses money — a reservation is a shelf decision) but is still written to the trail with the employee named, and the Phase 1 deadline is stamped on the order rather than recomputed, so changing the timeout cannot re-date the orders already waiting. |
 | `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
 | `docs/adr/0024-a-prepared-till-launches-without-the-network.md` | The cold launch: a prepared till keeps its own shell so it opens with no connection, what the worker may and may not cache (never the API), the drawer as the one thing a device may answer from memory, and offline navigation as a document load rather than a router change. |
+| `docs/adr/0033-the-shop-has-a-rich-menu.md` | The menu a friend of the shop's Official Account opens the chat to: three plain-URI doors to the customer's own three screens and deliberately never the till or the back office, tap areas measured from the artwork's own thirds rather than guessed, one image size because LINE refuses the rest, and the decision that makes this an operator's act this deployment stores nothing about — including the honest half, that no person has yet looked at it. |
 | `docs/offline-till-spec.md` | Shipped prepared cash offline flow: durable storage, exclusive writer, borrowed numbers, ordered idempotent replay, original cashier/shift, local tickets, close/release and admin recovery; actual Chromium proof and explicit limits. |
 | `docs/roadmap.md` | The next three efforts in order — the offline till to land, customer identity with electronic receipts and the role matrix, then consigned goods — and which document changes with each. |
 | `docs/hosted-release-plan.md` | The order of work for the hosted rental: what each phase has to prove, which document changes with it, and the two blockers that are not code. |
@@ -1183,8 +1213,10 @@ counter can hand one over — the till's receipt sheet mints a fresh link and sh
 for the customer to scan, print or read down the phone.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
   is no request/approve workflow on top of it, and no leave calendar.
-- **The rest of LINE.** The door, the in-LINE entry, the customers' messages and campaigns
-  are in (ADRs 0030, 0032). What is still not built: a **rich menu** (image constraints,
+- **The rest of LINE.** The door, the in-LINE entry, the customers' messages, the campaigns
+  and a three-button **rich menu** on the Official Account are in (ADRs 0030, 0032, 0033 — the
+  menu was made by hand through the Messaging API and this deployment stores nothing about it).
+  What is still not built: the **upload and screen half of that menu** (image constraints,
   upload, per-user menus — its own effort), editing **Flex/template** messages rather than
   writing text, **scheduled sends**, an **in-app reply box** (staff answer in LINE's own
   Official Account app), and storing the bytes of an image a customer sends — a message of

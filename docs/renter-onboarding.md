@@ -374,6 +374,16 @@ What you must do once, as the shop owner (the wizard walks you through it):
    shop has not set the entry up and points at the normal sign-in page, and the
    "ready" message simply carries no link.
 
+6. Optional, and **not part of this system**: a **rich menu** — the three buttons a
+   customer sees under the chat. It is a picture plus three tap areas that you send to
+   LINE yourself through the Messaging API, and none of your screens know it exists,
+   so there is no button in the back office for it. Before you try: the image must be
+   **2500×843**, the tap areas are read off the picture itself (the drawn dividers sit
+   at x=832 and x=1666 of 2500), Thai text has to be sent from a file rather than typed
+   on a command line (Windows turns it into `?`), and **sending it again makes a second
+   menu** rather than changing the first. `docs/adr/0033-the-shop-has-a-rich-menu.md`
+   records what a live one looks like, and the id to delete if you want to start over.
+
 If messages stop arriving after a customer changed phones or removed the shop as a
 friend, it is almost always the friend condition: they re-add the shop as a friend
 and everything resumes — their consent was never withdrawn.
@@ -468,6 +478,7 @@ that `migrate dev` would propose dropping.
 | `Could not find psql` during install | PostgreSQL is installed somewhere unusual. Add its `bin` directory to `PATH` and re-run `npm run setup`. |
 | The wizard says the system is already set up | Correct — a shop row exists. It will not re-initialise. To start over on a *throwaway* database only: `DELETE FROM shops;` then reload `/setup`. |
 | Forgot the administrator password | Reset it from the database, replacing the phone number and hash. Generate a hash, then: `UPDATE users SET password_hash = '<hash>' WHERE phone = '08xxxxxxxx';` |
+| A customer sees no menu under the shop's chat | The menu is LINE's own object rather than something this app serves, so if nobody ever sent one, there is none — and there is no button in the back office that makes one (`docs/adr/0033-the-shop-has-a-rich-menu.md`). If one was sent and still does not show, ask them to close and reopen the chat: LINE caches the menu. |
 | Opening the LINE callback address in a browser lands on the sign-in page and says nothing | Correct, and not a broken sign-in. That address only answers LINE's own redirect (`§6.3`); with no code, no state and no error on it there was no sign-in to report, so it reports none. The button on `/login` is what begins one. |
 | A sale is refused with "drawer is not open" | Open the drawer first (`/pos` → เปิดลิ้นชัก). This is deliberate: cash must belong to a drawer. |
 | The till shows a bar reading **โหมดออฟไลน์**, and a sale is refused with "ต่อเน็ตก่อนขาย" | The till cannot reach its server: the shop's connection dropped, the router is down, or the machine this runs on was restarted. Check the till's own network first, then `docs/homelab-deploy.md` §4. Cash still works on a till that was **explicitly prepared** while online (§10) — that is the whole point of preparing before an outage. A till that was never prepared refuses the sale instead of failing silently, and the refusal names what is missing, because it has no catalogue or numbers on the device. |
