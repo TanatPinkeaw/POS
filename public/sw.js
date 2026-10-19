@@ -21,6 +21,12 @@
  *  3. **Routes, not windows.** A navigation is answered from the cache only for the four
  *     till screens a device prepares. Anything else gets an honest "no connection" page
  *     rather than a plausible-looking document from an unknown moment.
+ *
+ *     This file is also *scoped* to the till now: the registration asks for `/pos` rather
+ *     than the whole origin (`src/lib/offline-shell.ts`, ADR 0024 amended), so a customer
+ *     browsing the storefront is not reaching a worker about a cash drawer at all. The
+ *     route list below is the second fence, for a browser that installed the worker before
+ *     the scope narrowed and is still running it across the origin.
  *  4. **It never writes IndexedDB.** The till's money storage is `offline-db.ts`'s and
  *     this worker does not know its schema; two writers to one store is how a committed
  *     bill stops being a committed bill.

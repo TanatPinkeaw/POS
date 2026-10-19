@@ -53,6 +53,16 @@
    */
   grid-template-columns: minmax(0, 1fr);
   gap: var(--ln-space-3);
+  /*
+   * A tile is as tall as its own contents, never as tall as the tallest thing in its
+   * row. `stretch` is the grid default, and with it one tile that measured itself
+   * wrongly made every tile beside it a screen height too — the failure a customer saw
+   * on the shop's own phone: white cards with the stepper at the bottom and nothing
+   * above it. The tiles still line up, because every tile has the same children and the
+   * name reserves its two lines (`min-height` below); what changes is that a broken
+   * picture can now only break its own card.
+   */
+  align-items: start;
 }
 
 @media (min-width: 410px) {

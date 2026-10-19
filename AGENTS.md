@@ -225,6 +225,26 @@ Recorded so a session starts from the truth rather than from the last commit mes
   server left over from before a rebuild serves HTML whose asset files no longer exist,
   which on screen reads exactly like a bug in the change just made, and cost more than one
   round of "the fix did not work" before anyone measured it.
+- **A receipt on a phone is read, and only then saved — and the two reports that started
+  this were both "a browser did something we did not measure"** (ADR 0034). The receipts tab
+  opened nothing and offered `ดาวน์โหลด`, a Blob plus `<a download>`; inside LINE's in-app
+  browser (a `WKWebView` with no download handling) that click is *ignored*, so the customer
+  got silence and no screen could report it. The row now opens the slip in an `Overlay`, and
+  how the picture leaves is one pure decision (`src/lib/receipt-save.ts`): the share sheet
+  when `canShare({ files })`, a download only on a browser that has one and is **not** an
+  embedded app, and otherwise the PNG itself with "กดค้างที่รูป" — iOS turns a long press into
+  the same save sheet. The same hour's other report was the storefront rendering as
+  screen-tall white cards on the shop's own phone: `aspect-ratio` on the frame plus
+  `height: 100%` on an in-flow photo made the *picture* the tile's ruler. The fill frame is
+  now a padding-box ratio (`padding-bottom: 75%` on a `height: 0` box, contents absolutely
+  placed) and the grid is `align-items: start`, so one tile can only break its own card.
+  `npm run shop:phone` is the gate, and it exists because every other gate here was green
+  on that deployment: it measures a card's height, its picture's ratio, the basket panel's
+  position and the save action a browser is offered, at 414×736, in WebKit and Chromium,
+  including a LINE user agent. The till's service worker is also scoped to `/pos` now
+  (`scope: '/'` had asked every customer's browser to run a cash-drawer worker, ADR 0024
+  amended). **Neither gate is a phone**: Playwright's WebKit is not iOS 15.6, so the shop's
+  own device still has to be looked at by a person.
 - **The build targets the phone a customer holds** (ADR 0031). `.browserslistrc` pins the
   floor at Safari 15.6, because an iPhone 7 Plus cannot be updated past iOS 15 and
   iOS has one engine — Safari, Chrome and LINE's in-app browser are all WebKit, so
@@ -237,8 +257,10 @@ Recorded so a session starts from the truth rather than from the last commit mes
 - **Deliberately not built**: README's *Not built yet* — overtime approval and leave, the
   rest of LINE (a rich menu's **upload half**, Flex/template editing, scheduled sends, an
   in-app reply box), multiple branches, a second register, **storing** a product image (a
-  photo is a link now — ADR 0014), RTL, object storage, and a reconciliation over a date range
-  rather than a day.
+  photo is a link now — ADR 0014), RTL, object storage, a reconciliation over a date range
+  rather than a day, and a **screenshot from the shop's own phone** replaying ADR 0034's two
+  defects — no gate here can load iOS 15.6 or LINE itself, so the last word on that phone is
+  still a person's.
 - **Not yet proven, and this is the honest half.** No shop has run this. There is no field pilot; Chromium now exercises the offline flow in CI, the restore
   recipe is rehearsed by `scripts/restore-drill.ts` (in `verify:all`), but nothing
   has ever loaded `deploy/systemd/` — those units were reviewed by reading, never
@@ -322,10 +344,11 @@ owner.
 | `npm run dev` | `src/server.ts` in dev mode: Next + Socket.io on one port. | — |
 | `npm run build` / `npm run start` | Production build, then the same custom server. | — |
 | `npm run verify` | `typecheck` → `ui:audit` → `doc:audit` → palette-up-to-date → `test`. **This is the gate.** | — |
-| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `browser:target` → `limiter:race` → `offline:browser` → `google:door` → `liff:door` → `restore:drill`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium + WebKit |
+| `npm run verify:all` | That gate, then `acceptance` → `route:audit` → `browser:target` → `limiter:race` → `offline:browser` → `google:door` → `liff:door` → `shop:phone` → `restore:drill`, stopping at first failure. One production build reused; matches CI. | Postgres + Chromium + WebKit |
 | `npm run offline:browser` | Actual Chromium/IndexedDB offline cash, replay/reconnect and recovery on a test-only scratch schema; `-- --skip-build` reuses the build. Install with `npx playwright install chromium`. | TEST_DATABASE_URL + Chromium |
 | `npm run google:door` | The Google sign-in door in actual WebKit under Playwright's iPhone profile: the UX mode a phone's page asks Google for, the credential coming back as a real cross-origin form POST, and the customer signed in afterwards. `-- --skip-build`, `-- --engine=chromium`, `-- --keep`. Install with `npx playwright install webkit`. | TEST_DATABASE_URL + WebKit |
 | `npm run liff:door` | `/line` in a real browser with LINE's own SDK chunk answered by a stand-in (ADR 0032 §9): the phone step inside the entry, a first sign-in finished with a code the shop's own gateway sent, one tap for a bound account, a token minted for another channel refused, and the two sentences for outside LINE and for a shop with no LIFF app. `-- --skip-build`, `-- --engine=webkit`, `-- --keep`. Install with `npx playwright install chromium`. | TEST_DATABASE_URL + Chromium |
+| `npm run shop:phone` | The customer's storefront and receipts tab at 414×736 in WebKit and Chromium (ADR 0034): a card's height, its picture's 4:3 frame, the basket below the catalogue, and which save action a receipt is offered — with a LINE user agent asserting the download button that failed silently is gone. `-- --skip-build`, `-- --engine=webkit`, `-- --keep`, or `-- --url <base> --member <phone>:<pw>` against a running deployment. Install with `npx playwright install chromium webkit`. | TEST_DATABASE_URL + Chromium + WebKit |
 | `npm test` | Vitest: unit + integration against real Postgres. | `TEST_DATABASE_URL` |
 | `npm run ui:audit` | Fails if the retired theme reappears in `src/`. | — |
 | `npm run doc:audit` | Fails if `package.json` defines a script no document runs, or a document runs a command that does not exist (ADR 0013). | — |
@@ -540,11 +563,11 @@ Then, for anything a person will look at:
 **CI runs all of it** (`.github/workflows/verify.yml`): `verify` in one job, then
 `acceptance` + `route:audit --skip-build` + `browser:target` + `limiter:race --skip-build` +
 `offline:browser --skip-build` + `google:door --skip-build` + `liff:door --skip-build` +
-`restore:drill` in a second, each with a PostgreSQL 17 service (the second job installs
+`shop:phone --skip-build` + `restore:drill` in a second, each with a PostgreSQL 17 service (the second job installs
 Chromium and WebKit for the gates that drive a real browser). Node is pinned by `.nvmrc` and
 `engines.node`, so the version the suite runs on is the version a renter is told to install.
 
-Locally the same thing is **one command**, `npm run verify:all`: it runs those nine in
+Locally the same thing is **one command**, `npm run verify:all`: it runs those ten in
 dependency order — nothing is built for the first, the journey builds once, and every
 gate after it walks the artefact it produced — and stops at the first failure, because every
 later gate would be measuring a commit that is already known to be broken. It is the

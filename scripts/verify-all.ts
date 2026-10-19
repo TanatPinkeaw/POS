@@ -33,12 +33,17 @@
  *      produces, and that a first sign-in finishes inside the entry with a code the
  *      shop itself sent. It serves the build rather than making one, and it needs
  *      `npx playwright install chromium`.
- *   9. `restore:drill` — §7 of docs/homelab-deploy.md performed by a machine: seed,
+ *   9. `shop:phone` — the customer's storefront and receipts tab at 414×736 in WebKit
+ *      and Chromium (`scripts/shop-phone.ts`). What it adds is a *measurement*: a tile's
+ *      height, its picture's ratio, whether the basket panel is below the catalogue, and
+ *      which save action a browser is offered. Every other gate here was green on the
+ *      deployment whose storefront rendered as white cards on the shop's own phone.
+ *  10. `restore:drill` — §7 of docs/homelab-deploy.md performed by a machine: seed,
  *      pg_dump, psql restore, count. It needs the database but no server and no
  *      build, so it sits last: the one gate that answers "would the backup save us",
  *      which no test of running code can answer.
  *
- * Steps 3–8 reuse step 2's build with `--skip-build`, deliberately. A release
+ * Steps 3–9 reuse step 2's build with `--skip-build`, deliberately. A release
  * check should be checking *one* artefact: rebuilding between gates would mean the
  * markup the audit walked is not the markup the journey sold through, and a build that
  * differs by nothing still costs a minute each time. `--skip-build` therefore means
@@ -121,6 +126,10 @@ const steps: Step[] = [
     command: `npm run liff:door --${reuseBuild}${keepFlag}`,
   },
   {
+    label: 'shop phone (WebKit + Chromium, the storefront and a receipt at 414×736)',
+    command: `npm run shop:phone --${reuseBuild}${keepFlag}`,
+  },
+  {
     label: 'restore drill (the §7 recipe: seed, pg_dump, psql restore, count)',
     command: 'npm run restore:drill',
   },
@@ -139,8 +148,8 @@ console.log('POS — every gate, in order');
 console.log('==========================');
 console.log(
   skipBuild
-    ? '\n9 steps. No build: every step reuses the existing `.next`.'
-    : '\n9 steps. The build is made once, by the journey, and the later gates reuse it.',
+    ? '\n10 steps. No build: every step reuses the existing `.next`.'
+    : '\n10 steps. The build is made once, by the journey, and the later gates reuse it.',
 );
 
 const results: Result[] = [];

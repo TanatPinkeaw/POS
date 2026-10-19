@@ -9,6 +9,7 @@ import {
   EmptyState,
   InlineNotice,
   Money,
+  Overlay,
   Pill,
   Spinner,
   Stack,
@@ -16,13 +17,18 @@ import {
   TextAreaField,
   TextField,
 } from '@/components/ds';
+import { Receipt, type ReceiptData } from '@/components/pos/Receipt';
 import { useRealtimeEvent } from '@/components/realtime/RealtimeProvider';
-import type { ReceiptData } from '@/components/pos/Receipt';
 import { ApiError, apiFetch, apiPatch, apiPost } from '@/lib/client-api';
 import { MAX_OFFER_DOCUMENTS, MAX_OFFER_PHOTOS } from '@/lib/consignment-rules';
 import { linePromoActionLabel, linePromoConsentSentence, linePromoConsentState } from '@/lib/line-promo-consent';
 import { formatThb } from '@/lib/money';
 import { receiptImageDataUrl } from '@/lib/receipt-image';
+import {
+  browserReceiptCapabilities,
+  receiptSaveAction,
+  type ReceiptSaveCapabilities,
+} from '@/lib/receipt-save';
 import { REALTIME_EVENTS } from '@/lib/realtime-events';
 import type { ShopView } from '@/lib/shop-view';
 
@@ -494,11 +500,40 @@ function PointsPanel() {
 
 /* ---------------------------------------------------------------- receipts */
 
+/**
+ * The PNG as a file the share sheet can carry.
+ *
+ * A data URL cannot be attached directly, and this is the only asynchronous step in the
+ * save path: everything before it is the customer's own tap.
+ */
+async function receiptFile(dataUrl: string, name: string): Promise<File> {
+  const blob = await (await fetch(dataUrl)).blob();
+  return new File([blob], `${name}.png`, { type: 'image/png' });
+}
+
 function ReceiptsPanel() {
   const [orders, setOrders] = useState<OrderRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [closedId, setClosedId] = useState<string | null>(null);
+  /**
+   * The receipt being looked at, with everything the dialog draws.
+   *
+   * The row used to *download* and never show, which is the whole defect: the customer
+   * was asked to keep a file on a device whose browser cannot save one, and could not
+   * even read the document to check the figure. The slip is on screen first now, and the
+   * file is the second question.
+   */
+  const [viewing, setViewing] = useState<{
+    order: OrderRow;
+    shop: ShopView;
+    receipt: ReceiptData;
+    imageUrl: string;
+  } | null>(null);
+  /** Probed when the dialog opens, never during render: it reads `navigator`. */
+  const [caps, setCaps] = useState<ReceiptSaveCapabilities | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -515,7 +550,13 @@ function ReceiptsPanel() {
   }, [load]);
   useRealtimeEvent(REALTIME_EVENTS.orderUpdated, useCallback(() => void load(), [load]));
 
-  async function download(order: OrderRow): Promise<void> {
+  function close(): void {
+    setViewing(null);
+    setNotice(null);
+    setSaving(false);
+  }
+
+  async function open(order: OrderRow): Promise<void> {
     setBusyId(order.id);
     setError(null);
     setClosedId(null);
@@ -523,24 +564,66 @@ function ReceiptsPanel() {
       const payload = await apiFetch<ReceiptPayload>(`/api/v1/orders/${order.id}/receipt`);
       // The same renderer the browser journey proves (ADR 0021): the customer's own
       // figures, drawn here rather than read back from a stored file.
-      const dataUrl = receiptImageDataUrl(payload.shop, payload.receipt);
-
-      const link = document.createElement('a');
-      link.href = dataUrl;
-      link.download = `${order.orderNumber}.png`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      setViewing({
+        order,
+        shop: payload.shop,
+        receipt: payload.receipt,
+        imageUrl: receiptImageDataUrl(payload.shop, payload.receipt),
+      });
+      setCaps(browserReceiptCapabilities());
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 410) {
         setClosedId(order.id);
       } else {
-        setError(caught instanceof Error ? caught.message : 'ดาวน์โหลดใบเสร็จไม่สำเร็จ');
+        setError(caught instanceof Error ? caught.message : 'เปิดใบเสร็จไม่สำเร็จ');
       }
     } finally {
       setBusyId(null);
     }
   }
+
+  /**
+   * Hands the picture over the way this browser can actually do it.
+   *
+   * `receiptSaveAction` decides which of the three mechanisms applies (share sheet,
+   * anchor download, press-and-hold) — see that module for why a download inside LINE is
+   * not a fallback but a silent failure. A cancelled share throws `AbortError`, which is
+   * the customer changing their mind, not an error to report.
+   */
+  async function save(): Promise<void> {
+    if (viewing === null || caps === null) {
+      return;
+    }
+    const action = receiptSaveAction(caps);
+    if (action === 'long-press') {
+      return;
+    }
+    setSaving(true);
+    setNotice(null);
+    try {
+      if (action === 'share') {
+        const file = await receiptFile(viewing.imageUrl, viewing.order.orderNumber);
+        await navigator.share({ files: [file], title: `ใบเสร็จ ${viewing.order.orderNumber}` });
+        setNotice('แชร์ใบเสร็จแล้ว — เลือก “บันทึกไปยังรูปภาพ” หรือ “บันทึกไปยังไฟล์”');
+      } else {
+        const link = document.createElement('a');
+        link.href = viewing.imageUrl;
+        link.download = `${viewing.order.orderNumber}.png`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setNotice('บันทึกรูปใบเสร็จแล้ว');
+      }
+    } catch (caught) {
+      if (!(caught instanceof DOMException && caught.name === 'AbortError')) {
+        setNotice('บันทึกไม่สำเร็จ — กดค้างที่รูปเพื่อบันทึกแทนได้');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const action = caps === null ? null : receiptSaveAction(caps);
 
   if (orders === null && error === null) {
     return <Spinner />;
@@ -561,7 +644,7 @@ function ReceiptsPanel() {
       ) : null}
 
       {orders && orders.length > 0 ? (
-        <Card title="ใบเสร็จของฉัน" subtitle="ดาวน์โหลดได้ภายใน 1 เดือนหลังการซื้อ">
+        <Card title="ใบเสร็จของฉัน" subtitle="เปิดดูได้ภายใน 1 เดือนหลังการซื้อ">
           <ul className={styles.ledger}>
             {orders.map((order) => (
               <li key={order.id} className={styles.ledgerRow}>
@@ -576,16 +659,16 @@ function ReceiptsPanel() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    icon="download"
+                    icon="receipt"
                     loading={busyId === order.id}
-                    onClick={() => void download(order)}
+                    onClick={() => void open(order)}
                   >
-                    ดาวน์โหลด
+                    ดูใบเสร็จ
                   </Button>
                 </div>
                 {closedId === order.id ? (
                   <p className={styles.closed}>
-                    ใบเสร็จนี้เกิน 1 เดือนแล้ว — ยังแสดงรายการได้ แต่ดาวน์โหลดไม่ได้
+                    ใบเสร็จนี้เกิน 1 เดือนแล้ว — ยังแสดงรายการได้ แต่บันทึกรูปไม่ได้
                   </p>
                 ) : null}
               </li>
@@ -593,6 +676,65 @@ function ReceiptsPanel() {
           </ul>
         </Card>
       ) : null}
+
+      {/*
+        The receipt itself, on the screen the customer already has.
+
+        Two things about this dialog are the repair. It is a *document to read*, where the
+        old screen offered only a file to save — and the file could not be saved at all in
+        the browser the shop's customers use. And the way out of it is chosen by what the
+        browser can do (`receipt-save.ts`): the share sheet where there is one, a download
+        where there is a download manager, and otherwise the picture itself with the one
+        instruction iOS honours — press and hold, save to photos.
+      */}
+      <Overlay
+        open={viewing !== null}
+        onClose={close}
+        size="lg"
+        title={viewing ? `ใบเสร็จ ${viewing.order.orderNumber}` : 'ใบเสร็จ'}
+        description="เอกสารนี้สร้างจากยอดที่บันทึกไว้ตอนขาย ไม่ใช่ราคาวันนี้"
+        footer={
+          <>
+            <Button variant="secondary" onClick={close}>
+              ปิด
+            </Button>
+            {action === 'share' ? (
+              <Button icon="share" loading={saving} onClick={() => void save()}>
+                แชร์ / บันทึก
+              </Button>
+            ) : null}
+            {action === 'download' ? (
+              <Button icon="download" loading={saving} onClick={() => void save()}>
+                บันทึกเป็นรูป
+              </Button>
+            ) : null}
+          </>
+        }
+      >
+        {viewing ? (
+          <Stack gap="md">
+            <div className={styles.receiptView}>
+              <Receipt shop={viewing.shop} data={viewing.receipt} when={viewing.order.createdAt} />
+            </div>
+
+            {action === 'long-press' ? (
+              <>
+                <p className="ln-muted ln-text-sm">
+                  เบราว์เซอร์นี้บันทึกไฟล์เองไม่ได้ — กดค้างที่รูปด้านล่างแล้วเลือก
+                  “บันทึกไปยังรูปภาพ”
+                </p>
+                <img
+                  className={styles.receiptImage}
+                  src={viewing.imageUrl}
+                  alt={`รูปใบเสร็จ ${viewing.order.orderNumber}`}
+                />
+              </>
+            ) : null}
+
+            {notice ? <InlineNotice tone="success">{notice}</InlineNotice> : null}
+          </Stack>
+        ) : null}
+      </Overlay>
     </Stack>
   );
 }

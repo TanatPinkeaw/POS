@@ -47,6 +47,7 @@
     "doc:audit": "tsx scripts/doc-audit.ts",
     "google:door": "tsx scripts/google-door-browser.ts",
     "liff:door": "tsx scripts/liff-door-browser.ts",
+    "shop:phone": "tsx scripts/shop-phone.ts",
     "google:check": "tsx scripts/google-check.ts"
   },
   "prisma": {

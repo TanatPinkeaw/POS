@@ -155,6 +155,13 @@ jobs:
       # because a production session cookie is `Secure` and this run serves plain http.
       - run: npm run liff:door -- --skip-build
 
+      # The customer's storefront and receipts tab at 414×736, in WebKit and Chromium:
+      # a product card's height, its picture's ratio, the basket panel's position, and
+      # which save action a browser is offered. Added after a defect that every other
+      # gate here reported green — the shop's own phone rendered the storefront as white
+      # cards, and its receipts button was a download LINE's browser ignores.
+      - run: npm run shop:phone -- --skip-build
+
       # The restore recipe of docs/homelab-deploy.md §7, performed by a machine:
       # demo shop → pg_dump → psql restore → count. No build, no server; the clients
       # are installed with the server image, which is why the drill belongs here

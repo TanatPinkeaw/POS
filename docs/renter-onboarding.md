@@ -211,6 +211,25 @@ registration gets found — and all three are cheap to fix before the shop is bu
 - **Still ask your accountant.** The credit-note layout follows the usual Thai
   format, but whether it satisfies the Revenue Department is their call.
 
+### 6.0 A customer wants their receipt on their phone
+
+Two ways to give one, and they are for different customers.
+
+- **A customer with an account** signs in and opens **บัญชีของฉัน → ใบเสร็จ**. The row says
+  **ดูใบเสร็จ** and opens the slip on their screen. Under it there is one button, and which
+  one depends on the phone, not on you: **แชร์ / บันทึก** opens the phone's own share sheet
+  (the customer taps “บันทึกไปยังรูปภาพ”), **บันทึกเป็นรูป** saves the picture on a computer,
+  and a phone whose browser cannot save files at all shows the picture with “กดค้างที่รูป” —
+  press and hold, then save. If a customer says "the button does nothing", they are most
+  likely on a phone where the old download button was silently ignored; ask them to press
+  and hold the picture instead. That is what the screen offers them now.
+- **A customer with no account** gets a **link** from the till: on the receipt, mint the
+  link and show the QR. It opens the same slip with no sign-in and can be printed, shared or
+  saved from there.
+
+Both are readable for **one month** after the sale. After that the bill still exists and can
+be reprinted from `/admin/sales` — the customer's own copy closes, the shop's records do not.
+
 ### 6.1 Letting a transfer close its own bill
 
 When a customer pays by PromptPay, the till shows a QR and waits. Somebody then

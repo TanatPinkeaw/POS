@@ -30,6 +30,8 @@ import { createContext, runInContext } from 'node:vm';
 
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { TILL_SHELL_SCOPE } from '@/lib/offline-shell';
+
 const ORIGIN = 'http://till.test';
 
 interface ShellContext {
@@ -264,6 +266,20 @@ describe('the till shell worker', () => {
     expect(shell.isOfflineRoute('/admin/dashboard')).toBe(false);
     expect(shell.isOfflineRoute('/pos/reports')).toBe(false);
     expect(shell.isOfflineRoute('/pos')).toBe(true);
+  });
+
+  it('is registered for the till only, and every route it prepares is inside that scope', () => {
+    /*
+     * Two halves of one rule, held together here because neither file can check the other:
+     * the registrar asks the browser for `TILL_SHELL_SCOPE`, and the worker's prepared routes
+     * are written in this file. A route outside the scope would be a screen the worker lists
+     * as offline-ready and can never be asked for, which reads as a working offline mode
+     * right up until the moment the network is gone.
+     */
+    expect(TILL_SHELL_SCOPE).toBe('/pos');
+    for (const route of shell.LN_SHELL.offlineRoutes) {
+      expect(route === TILL_SHELL_SCOPE || route.startsWith(`${TILL_SHELL_SCOPE}/`)).toBe(true);
+    }
   });
 
   it('keys a document by its own path, so no query can smuggle one past the cache', () => {

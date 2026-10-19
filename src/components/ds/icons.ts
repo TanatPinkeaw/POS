@@ -30,6 +30,12 @@ export const ICON_PATHS = {
   tag: 'M3 11.5 V4 H10.5 L20.5 12.5 L12.5 20.5 Z M7 7.5 m-0.9 0 a0.9 0.9 0 1 0 1.8 0 a0.9 0.9 0 1 0 -1.8 0',
   upload: 'M12 16.5 V4 M7.5 8.5 L12 4 L16.5 8.5 M4 20 H20',
   download: 'M12 4 V16.5 M7.5 12 L12 16.5 L16.5 12 M4 20 H20',
+  /*
+   * Handing something to another app — the receipt's share sheet. Drawn as the same tray
+   * as `download` with the arrow reversed, so "got it in" and "sent it out" read as one
+   * pair rather than as two unrelated glyphs.
+   */
+  share: 'M12 15.5 V3.5 M7.5 8 L12 3.5 L16.5 8 M4 20 H20',
   print: 'M7 8 V3.5 H17 V8 M7 18 H4 V10 H20 V18 H17 M7 14 H17 V21 H7 Z',
   search: 'M11 11 m-6.5 0 a6.5 6.5 0 1 0 13 0 a6.5 6.5 0 1 0 -13 0 M15.8 15.8 L20.5 20.5',
   scan: 'M4 5 V19 M7.5 5 V19 M11 5 V14 M14.5 5 V19 M17.5 5 V19 M20.5 5 V19',

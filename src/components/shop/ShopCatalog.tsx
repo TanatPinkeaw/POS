@@ -208,8 +208,19 @@ export function ShopCatalog({
                   const quantity = quantities[product.id] ?? 0;
                   const soldOut = product.availableQty <= 0;
 
+                  /*
+                   * `data-testid` names the card for `npm run shop:phone`: the tile has no
+                   * semantic role of its own — it is a picture, a label and a stepper in a
+                   * group — so the gate that asks "is this card the height it should be"
+                   * needs a handle that is not a hashed CSS class.
+                   */
                   return (
-                    <div className={styles.tile} key={product.id} data-sold-out={soldOut}>
+                    <div
+                      className={styles.tile}
+                      key={product.id}
+                      data-sold-out={soldOut}
+                      data-testid="shop-tile"
+                    >
                       {/*
                        * The photo takes the tile's whole width and the name sits under it —
                        * the till's tile, because this is the same sale seen from the other

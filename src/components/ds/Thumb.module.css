@@ -51,12 +51,42 @@
  * therefore the grid — decides how big the picture is, rather than the picture
  * deciding how big the tile has to be. `contain` on the placeholder's face keeps the
  * glyph from being stretched by a wide tile.
+ *
+ * **The 4:3 is a padding box, not `aspect-ratio`, and that is a field repair rather
+ * than a style.** This was `aspect-ratio: 4/3; height: auto;` with the photo as an
+ * in-flow child at `height: 100%`, which is the one shape in this file whose answer is
+ * decided by the engine: a percentage height against an indefinite box is a question
+ * browsers have answered differently for years, and the shop's own phone answered it by
+ * growing the tile past a screen height (the picture's own size became the tile's, the
+ * name and price went with it, and a customer saw a white card with a quantity stepper
+ * at the bottom). A padding percentage is resolved against the *width* of the box and
+ * has meant the same thing in every engine since CSS 2.1, so the photo can no longer
+ * vote on how tall a tile is. `padding-bottom` on a `height: 0` box, with the contents
+ * absolutely placed inside it below, is the whole trick.
+ *
+ * `box-sizing: content-box` because the base stylesheet sets `border-box`, under which a
+ * `height: 0` box would have the padding taken out of it again; the 2px border adds to
+ * the 75%, which is what the fixed sizes do too.
  */
 .size_fill {
+  display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 3;
+  height: 0;
+  padding-bottom: 75%;
+  box-sizing: content-box;
   border-radius: var(--ln-radius-md);
+}
+
+/*
+ * The fill variant's contents live in the padding box, so they are placed rather than
+ * flowed: the content box of a `height: 0` element has no height to centre in, and
+ * `overflow: hidden` on `.thumb` would otherwise clip the placeholder away entirely.
+ * The bare `<svg>` is the no-category fallback glyph.
+ */
+.size_fill > svg {
+  position: absolute;
+  inset: 0;
+  margin: auto;
 }
 
 /*
@@ -111,9 +141,10 @@
  * decision with a measurement behind it rather than a borrowed pretty colour.
  */
 .monogram {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--ln-font);
@@ -148,8 +179,15 @@
   color: var(--ln-cat-violet);
 }
 
+/*
+ * Absolutely placed inside the thumb, never an in-flow child sized by percentage: the
+ * photo decides how it is cropped inside the frame, and the frame decides how big the
+ * photo is. That direction is the whole point of the padding box above — a replaced
+ * element allowed to size itself is how the picture became the tile's ruler.
+ */
 .image {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
   display: block;
   width: 100%;

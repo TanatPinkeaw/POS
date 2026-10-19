@@ -152,3 +152,35 @@
   gap: var(--ln-space-2);
   align-items: end;
 }
+
+/*
+ * The receipt inside the customer's dialog.
+ *
+ * The slip keeps its own 80mm sheet (`ln-receipt-sheet`), so it is centred rather than
+ * stretched: a tax document drawn to the phone's width is a different document from the
+ * one the till prints. `overflow-x` is the guard for a phone narrower than 80mm — the
+ * sheet scrolls sideways instead of pushing the dialog wider than the screen.
+ */
+.receiptView {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  padding: var(--ln-space-2) 0;
+}
+
+/*
+ * The same document as a picture, and it is here to be *saved*.
+ *
+ * This is the last resort of `receipt-save.ts`: a browser with no download manager and no
+ * file sharing (LINE's in-app browser is one) still opens iOS's save sheet when the
+ * customer presses and holds an image. So the picture is a control, not an illustration,
+ * which is why it takes the full width and its own border rather than sitting in a caption.
+ */
+.receiptImage {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--ln-border);
+  border-radius: var(--ln-radius-md);
+  background: var(--ln-surface);
+}

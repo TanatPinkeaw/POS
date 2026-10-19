@@ -115,7 +115,8 @@ Three decisions are worth knowing before changing anything here:
 | `npm run line:wizard` | Walks the human half of the LINE feature (ADR 0030): the two channels to create in LINE's console, the values to paste, the callback/webhook URLs to register. `-- --verify` reports which doors the current `.env` opens. |
 | `npm run verify` | `typecheck` + `ui:audit` + `doc:audit` + palette-up-to-date + `test`. The inner loop. |
 | `npm run liff:door` | The in-LINE entry (`/line`) in a real browser, with LINE's own SDK chunk answered by a stand-in this run serves: an unknown LINE account gets the phone step *inside* the entry and a first sign-in finishes there with a code the shop itself sent, a LINE account already bound signs in with one tap, a token minted for another channel is refused, a link opened outside LINE says so, and an SDK that will not load or a shop with no LIFF app each have their own sentence. What it cannot drive is LINE's app handoff — no browser here is LINE. `-- --skip-build`, `-- --engine=webkit`, `-- --keep`. Install with `npx playwright install chromium`. | `TEST_DATABASE_URL` + Chromium |
-| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser`, `google:door`, `liff:door`, `restore:drill` against the one build the journey makes. Stops at first failure; matches CI. |
+| `npm run shop:phone` | The customer's storefront and receipts tab at 414×736, in WebKit and Chromium: a product card's height, its picture's 4:3 frame, the basket panel sitting below the catalogue rather than over it, and which save action a browser is offered for a receipt — with a LINE user agent proving the download button that silently did nothing is gone. `-- --skip-build`, `-- --engine=webkit`, `-- --keep`, `-- --url <base> --member <phone>:<password>` against a running deployment. Install with `npx playwright install chromium webkit`. | `TEST_DATABASE_URL` + Chromium + WebKit |
+| `npm run verify:all` | Every gate in dependency order — `verify`, then `acceptance`, `route:audit`, `browser:target`, `limiter:race`, `offline:browser`, `google:door`, `liff:door`, `shop:phone`, `restore:drill` against the one build the journey makes. Stops at first failure; matches CI. |
 | `npm run offline:browser` | Real Chromium/IndexedDB offline cash, replay/reconnect, loan release and recovery on a test-only scratch schema. Install Chromium with `npx playwright install chromium`; `-- --skip-build` reuses the production build. |
 | `npm run restore:drill` | Rehearses the restore recipe in `docs/homelab-deploy.md` §7 against a scratch schema: migrate + seed the demo shop, `pg_dump` with the backup's own command and compressor, then `psql --set ON_ERROR_STOP=1 --file` into a namespace that was empty a moment before, and count every table row-for-row — plus the two gapless counters byte-for-byte (ADR 0002). Needs the PostgreSQL client binaries (`pg_dump`, `psql`); `PG_BIN` in `.env` names the directory when the Windows installer left them off `PATH`. `-- --keep`, `-- --verbose`. | `TEST_DATABASE_URL` + pg client |
 
@@ -211,7 +212,7 @@ npm run verify:all     # every gate, in order, one command — this is the relea
 npm run typecheck       # tsc --noEmit
 npm run ui:audit        # the retired theme stays retired
 npm run doc:audit       # the documents still name the commands that exist
-npm test                # 1594 tests across 122 files: unit + integration
+npm test                # 1602 tests across 123 files: unit + integration
 npm run smoke           # 42 end-to-end checks over real HTTP (needs npm run dev)
 npm run acceptance      # 247 checks of the whole renter journey, from an empty schema
 npm run route:audit     # every screen (27 paths, 31 requests) renders, and renders styled
@@ -220,6 +221,7 @@ npm run limiter:race    # two servers against one database share one limit
 npm run offline:browser # real Chromium/IndexedDB and offline cashier/replay journey
 npm run google:door     # the Google door in real WebKit as an iPhone, its redirect landing, and where the front door's arrival words live (25 checks)
 npm run liff:door       # the in-LINE entry in a real browser, LINE's SDK answered by a stand-in (31 checks)
+npm run shop:phone      # the storefront and a receipt at 414×736, in WebKit and Chromium (80 checks)
 npm run restore:drill   # the homelab-deploy §7 restore recipe, rehearsed by a machine
 npm run bank:bridge     # the shop's own bank notifications, in and out of the till
 npm run notify:worker   # sends the queued messages, once (cron) or with --watch
@@ -1185,6 +1187,7 @@ goes through them.
 | `docs/adr/0026-the-counter-owns-its-own-rules.md` | Two rules that had been copied into a second place instead of asked for once: a staff pre-order cancel needs no supervisor (the PIN gated the *till's* void, which reverses money — a reservation is a shelf decision) but is still written to the trail with the employee named, and the Phase 1 deadline is stamped on the order rather than recomputed, so changing the timeout cannot re-date the orders already waiting. |
 | `docs/adr/0023-consigned-goods-and-the-consignors-share.md` | ฝากขาย: an owner and a percentage on `products`, a payables ledger, the shop selling as principal, and the share of the net excluding VAT. |
 | `docs/adr/0024-a-prepared-till-launches-without-the-network.md` | The cold launch: a prepared till keeps its own shell so it opens with no connection, what the worker may and may not cache (never the API), the drawer as the one thing a device may answer from memory, and offline navigation as a document load rather than a router change. |
+| `docs/adr/0034-a-receipt-on-a-phone-is-read-not-downloaded.md` | A receipt on a phone is something to read rather than a file to save: the row opens the slip, how the picture leaves follows one pure decision (share sheet, download, or press-and-hold where neither exists), a download inside LINE's browser is vetoed because it fails silently, and the till's service worker is scoped to `/pos` instead of the whole origin. |
 | `docs/adr/0033-the-shop-has-a-rich-menu.md` | The menu a friend of the shop's Official Account opens the chat to: three plain-URI doors to the customer's own three screens and deliberately never the till or the back office, tap areas measured from the artwork's own thirds rather than guessed, one image size because LINE refuses the rest, and the decision that makes this an operator's act this deployment stores nothing about — including the honest half, that no person has yet looked at it. |
 | `docs/offline-till-spec.md` | Shipped prepared cash offline flow: durable storage, exclusive writer, borrowed numbers, ordered idempotent replay, original cashier/shift, local tickets, close/release and admin recovery; actual Chromium proof and explicit limits. |
 | `docs/roadmap.md` | The next three efforts in order — the offline till to land, customer identity with electronic receipts and the role matrix, then consigned goods — and which document changes with each. |
@@ -1207,8 +1210,9 @@ one gap is the owner's **hosted signup door** (ADR 0016), which waits on the con
 does not exist yet: the shop's owner signs in today the same way staff do.
 - **Electronic receipts.** Decided in ADR 0021 (an image generated from the order, the last
 month downloadable, a signed link for a walk-in). Built end to end: the customer's own
-**account screen** lists the last month's receipts and downloads each as a PNG drawn from the
-order; a walk-in's signed link opens a printable **receipt page** with no session; and the
+**account screen** lists the last month's receipts and opens each slip on screen, with the PNG
+a second, explicit act (share sheet, download, or press-and-hold where neither exists — ADR
+0034); a walk-in's signed link opens a printable **receipt page** with no session; and the
 counter can hand one over — the till's receipt sheet mints a fresh link and shows a QR and URL
 for the customer to scan, print or read down the phone.
 - **Overtime approval and leave.** Attendance is recorded and measured, but there
