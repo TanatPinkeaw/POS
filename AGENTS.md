@@ -168,6 +168,20 @@ Recorded so a session starts from the truth rather than from the last commit mes
   because a Windows command line turns them into `?`. **The upload half is still not built**, and
   **no person has looked at it on a phone**: what is measured is that LINE created it, holds the
   image byte-identical at 2500×843, and answers it as the default for every user.
+- **A customer is told about their own order, and the shop can see whether they were**
+  (ADR 0035). Five messages on the customer's own LINE — accepted, ready, cancelled, one
+  reminder before the hold ends, and the receipt link with its expiry printed — each its own
+  `notifications.kind`, because the outbox dedupes on `(kind, order_id)` and a shared kind
+  would silently never send the reminder. The gate all five share is
+  **`NOTIFY_CHANNEL=line`, not `NOTIFY_LINE_TOKEN`**; that distinction was invisible, so it is
+  now one pure module (`src/lib/line-readiness.ts`) with three states per door — `ready`,
+  `blocked` (some values set: the state that sends nothing while looking configured), `off`
+  (none set) — read by `npm run line:wizard` (the file) and `/admin/line` (the process), and
+  their disagreement means somebody edited `.env` without restarting. A blocked message is
+  still **not** queued (ADR 0007), so the visibility lives elsewhere: the pre-order card says
+  per parcel whether the customer was told and why not, and the dashboard reports a queue
+  nobody is draining (`outboxStalled`, ten minutes) — the failure that leaves every row
+  `pending` and therefore looks like work in progress from every other screen.
 - **Google's button asks a phone for a different shape than a desktop** (ADR 0020 §1,
   amended). `src/lib/google-door.ts` picks the UX mode — Google's own footnote is "Due to ITP
   redirect mode is required for iOS", and the popup hands the credential back through a

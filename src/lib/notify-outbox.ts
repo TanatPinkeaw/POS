@@ -239,6 +239,28 @@ export async function outboxHealth(
   return { pending, dueNow, abandoned };
 }
 
+/**
+ * When the oldest *due* message became due, or null when nothing is.
+ *
+ * The dashboard needs this because `abandoned` is not the only way delivery fails. A
+ * worker that was never started leaves every row `pending` and nothing is ever abandoned
+ * — there is no gateway to refuse anything — so the queue looks like work in progress
+ * forever. A due row whose deadline is ten minutes old is one nobody is claiming, which
+ * is the only signal that exists without a heartbeat table (ADR 0035).
+ *
+ * `next_attempt_at`, not `created_at`: a message scheduled for tomorrow is not late, and
+ * measuring the row's age would call a freshly queued burst stalled the moment it waited
+ * for its first retry.
+ */
+export async function oldestDueAt(now: Date = new Date()): Promise<Date | null> {
+  const row = await prisma.notifications.findFirst({
+    where: { status: 'pending', next_attempt_at: { lte: now } },
+    orderBy: { next_attempt_at: 'asc' },
+    select: { next_attempt_at: true },
+  });
+  return row?.next_attempt_at ?? null;
+}
+
 /** The messages that gave up, newest first, with the error that stopped them. */
 export async function listAbandonedNotifications(limit = 5): Promise<
   { id: string; kind: string; recipient: string; lastError: string | null; attempts: number }[]

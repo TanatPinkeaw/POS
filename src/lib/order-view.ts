@@ -10,7 +10,10 @@ import type { ReceiptData } from '@/components/pos/Receipt';
 
 import { prisma } from './db';
 import { ConflictError, NotFoundError } from './errors';
+import { friendSubjects } from './line-friends';
+import { customerNoticeOutcome, type CustomerNoticeOutcome } from './line-notify';
 import { fromDecimal, sumThb } from './money';
+import { readNotifyConfig } from './notify-message';
 import { orderStatusLabel, type OrderStatus } from './order-state';
 import { createPickupToken } from './pickup-token';
 import { formatQueueNumber } from './queue-number';
@@ -136,6 +139,20 @@ export interface OrderListView {
   receiptNumber: string | null;
   /** When the sale closed — the receipt's own timestamp, for ordering and filtering. */
   completedAt: Date | null;
+  /**
+   * Whether this order's customer was actually told it is ready (ADR 0035).
+   *
+   * `markOrderReady` writes the message and forgets it, so a cashier had no way to answer
+   * "did they get the PIN" without the customer telling them. This is the same fact read
+   * back: the notification row when one exists, and the planner's own refusal when none
+   * does — the decision lives in `customerNoticeOutcome`, which is pure and tested, so
+   * the board only renders a sentence.
+   *
+   * On the list rather than the single-order projection because the *board* is the screen
+   * that asks, once per waiting parcel; the handover dialog is past the point where the
+   * answer would change anything.
+   */
+  readyNotice: CustomerNoticeOutcome;
 }
 
 const fullInclude = {
@@ -297,13 +314,43 @@ export async function listOrderViews(filter: {
         : {}),
     },
     include: {
-      customer: { select: { full_name: true, phone: true } },
+      /*
+       * The two LINE columns ride along because the board's notice line is decided from
+       * them; a second query per row would be a query per member on the customer's own
+       * order list.
+       */
+      customer: {
+        select: { full_name: true, phone: true, line_subject: true, line_consent_at: true },
+      },
       _count: { select: { items: true } },
     },
     orderBy: { created_at: 'desc' },
     skip: filter.offset,
     take: filter.limit,
   });
+
+  /*
+   * Two reads for the whole page rather than one per order: the notification rows for the
+   * parcels that are waiting, and the friend set for their customers. Both are indexed
+   * lookups (the outbox's unique `(kind, order_id)`, and `line_friends`' key), and both
+   * return nothing on a shop with no LINE customers — which is the common case.
+   */
+  const readyIds = orders.filter((order) => order.status === 'ready_for_pickup').map((order) => order.id);
+  const [notifications, friends] = await Promise.all([
+    readyIds.length === 0
+      ? Promise.resolve([] as { order_id: string | null; status: string }[])
+      : prisma.notifications.findMany({
+          where: { kind: 'order_ready', order_id: { in: readyIds } },
+          select: { order_id: true, status: true },
+        }),
+    friendSubjects(
+      orders
+        .map((order) => order.customer?.line_subject)
+        .filter((subject): subject is string => typeof subject === 'string'),
+    ),
+  ]);
+  const noticeStatus = new Map(notifications.map((row) => [row.order_id as string, row.status]));
+  const notifyConfig = readNotifyConfig();
 
   return Promise.all(
     orders.map(async (order) => ({
@@ -333,8 +380,32 @@ export async function listOrderViews(filter: {
       createdAt: order.created_at,
       readyAt: order.ready_at,
       completedAt: order.completed_at,
+      readyNotice: customerNoticeOutcome({
+        notification: asNotificationStatus(noticeStatus.get(order.id)),
+        channel: notifyConfig.channel,
+        customerLineSubject: order.customer?.line_subject ?? null,
+        consentAt: order.customer?.line_consent_at ?? null,
+        isFriend:
+          order.customer?.line_subject !== undefined &&
+          order.customer?.line_subject !== null &&
+          friends.has(order.customer.line_subject),
+        customerPhone: order.customer?.phone ?? null,
+        isReady: order.status === 'ready_for_pickup',
+      }),
     })),
   );
+}
+
+/**
+ * The outbox's status column as the three values the notice decision knows about.
+ *
+ * Anything else — a status this deployment has not seen — becomes null, which the decision
+ * reads as "no row": an unknown state must not be reported to a cashier as "sent".
+ */
+function asNotificationStatus(
+  status: string | undefined,
+): 'sent' | 'pending' | 'abandoned' | null {
+  return status === 'sent' || status === 'pending' || status === 'abandoned' ? status : null;
 }
 
 /**

@@ -46,6 +46,14 @@ interface OrderRow {
   confirmDeadline: string | null;
   createdAt: string;
   readyAt: string | null;
+  /**
+   * Did the customer hear that this parcel is ready — and if not, why (ADR 0035).
+   *
+   * Computed on the server from the notification row, falling back to the same refusal
+   * the planner used, so the card can say "ยังไม่ได้เพิ่มเพื่อนร้าน" instead of the
+   * cashier finding out when the customer never arrives.
+   */
+  readyNotice: { state: string; sentence: string | null } | null;
 }
 
 interface OrderDetail extends HandoverOrder {
@@ -289,6 +297,23 @@ export function PreOrderBoard() {
           <p className="ln-row">
             <span className={styles.meta}>PIN</span>
             <strong className="ln-figure ln-mono">{order.pickupPin}</strong>
+          </p>
+        ) : null}
+
+        {/*
+         * The customer's side of the handover. Before this line the board showed the PIN
+         * and nothing about whether anyone outside the shop knew it existed; a parcel
+         * whose message never left looked exactly like one that had gone.
+         */}
+        {order.readyNotice?.sentence ? (
+          <p
+            className={
+              order.readyNotice.state === 'sent' || order.readyNotice.state === 'queued'
+                ? styles.notice
+                : styles.noticeWarn
+            }
+          >
+            {order.readyNotice.sentence}
           </p>
         ) : null}
 

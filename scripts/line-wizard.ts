@@ -13,11 +13,26 @@
  * shut. It exits 0 on an unconfigured shop with "nothing configured" rather
  * than a traceback, because "not set up yet" is a state, not an error.
  *
+ * The doors it reports are **not** worked out here. They come from
+ * `src/lib/line-readiness.ts`, the same module `/admin/line` renders, because the
+ * version written inline in this file was wrong in the one way that mattered: it
+ * printed "push ลูกค้า: พร้อม" from a channel secret and a push token, while the
+ * customer's "order ready" message is also gated on `NOTIFY_CHANNEL=line` — a value
+ * this file never read (ADR 0035). A shop could follow the wizard, believe it was
+ * notifying customers, and send nothing, with no error anywhere.
+ *
+ * One more difference a reader should know before trusting the output: this reads
+ * `.env` from disk, and the running server holds whatever it read when it started.
+ * After a change the two disagree until a restart, and that is why the note at the
+ * bottom of the report exists rather than being left to memory.
+ *
  * No new dependency: `readline` from the standard library, in the shape
  * `scripts/setup.ts` already uses.
  */
 import { createInterface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
+
+import { lineReadiness, type LineDoorState } from '../src/lib/line-readiness';
 
 const ENV_FILE = '.env';
 
@@ -152,47 +167,29 @@ async function verify(): Promise<void> {
   }
 
   console.log('สถานะประตู LINE:');
-  const messagingSecret = env.LINE_MESSAGING_CHANNEL_SECRET?.trim();
-  const pushToken = env.NOTIFY_LINE_TOKEN?.trim();
-  const loginId = env.LINE_LOGIN_CHANNEL_ID?.trim();
-  const loginSecret = env.LINE_LOGIN_CHANNEL_SECRET?.trim();
-  const liffId = env.LINE_LIFF_ID?.trim();
-
-  console.log(
-    messagingSecret && pushToken
-      ? '  ✓ webhook + push ลูกค้า: พร้อม (Messaging API ครบ) — อย่าลืมลงทะเบียน webhook URL'
-      : messagingSecret
-        ? '  ✗ push ลูกค้า: ขาด NOTIFY_LINE_TOKEN'
-        : pushToken
-          ? '  ✗ webhook: ขาด LINE_MESSAGING_CHANNEL_SECRET (ประตู webhook ยังไม่เป็นประตู)'
-          : '  ✗ Messaging API: ยังไม่ตั้งค่า',
-  );
-  console.log(
-    loginId && loginSecret
-      ? '  ✓ ประตูล็อกอิน/ผูกบัญชีด้วย LINE: พร้อม (LINE Login ครบ)'
-      : loginId
-        ? '  ✗ ประตู LINE Login: ขาด LINE_LOGIN_CHANNEL_SECRET'
-        : '  ✗ LINE Login: ยังไม่ตั้งค่า (ลูกค้ายังใช้เบอร์/Google เข้าได้ตามปกติ)',
-  );
-  console.log(
-    liffId
-      ? '  ✓ ทางเข้าในแอป LINE (/line): พร้อม — ลิงก์ที่จะแนบในข้อความคือ https://liff.line.me/' + liffId
-      : '  ✗ ทางเข้าในแอป LINE (/line): ยังไม่ตั้งค่า LINE_LIFF_ID (หน้า /line จะบอกว่ายังไม่ได้ตั้งค่า และข้อความแจ้งลูกค้าจะไม่มีลิงก์)',
-  );
 
   /*
-   * The campaign door (ADR 0032 §7), reported beside the others because it is the same
-   * channel token with a second job: a promotion counts one message per recipient against
-   * the month's allowance, and a shop that has not set the token up should learn that here
-   * rather than from a failed send.
+   * Symbol per state, and the symbol is the whole distinction a terminal can carry: `✓`
+   * open, `✗` half-configured (the state that sends nothing while looking configured),
+   * `·` never set up (a shop that works without it).
    */
-  console.log(
-    pushToken && messagingSecret
-      ? '  ✓ ส่งโปรโมชัน (แคมเปญ): พร้อม — ส่งได้จากเมนู “LINE และโปรโมชัน” ในหน้าผู้จัดการ'
-      : pushToken
-        ? '  ! ส่งโปรโมชันได้ แต่ยังนับผู้รับไม่ได้: ไม่มี LINE_MESSAGING_CHANNEL_SECRET จึงไม่มีใครถูกบันทึกว่าเป็นเพื่อนร้าน — รายชื่อผู้รับจะว่าง'
-        : '  ✗ ส่งโปรโมชัน (แคมเปญ): ยังไม่พร้อม — ต้องมี NOTIFY_LINE_TOKEN (ไม่เกี่ยวกับ NOTIFY_CHANNEL ซึ่งเป็นปลายทางข้อความของร้านเอง)',
-  );
+  const MARK: Record<LineDoorState, string> = { ready: '✓', blocked: '✗', off: '·' };
+
+  for (const door of lineReadiness(env)) {
+    console.log(`  ${MARK[door.state]} ${door.title}: ${door.sentence}`);
+  }
+
+  if (lineReadiness(env).some((door) => door.state === 'blocked')) {
+    console.log('');
+    console.log(
+      '  หมายเหตุ: รายงานนี้อ่านจาก .env บนดิสก์ — ถ้าเพิ่งแก้ค่า ต้องรีสตาร์ตเซิร์ฟเวอร์ก่อน หน้า /admin/line จึงจะเห็นค่าใหม่',
+    );
+  }
+
+  const liffId = env.LINE_LIFF_ID?.trim();
+  if (liffId) {
+    console.log(`  ลิงก์ที่จะแนบในข้อความคือ https://liff.line.me/${liffId}`);
+  }
   /*
    * A loud line for the one setting that moves where the shop's own secret goes: it is a
    * legitimate setting (an egress proxy, or the acceptance run's stub) and an easy one to

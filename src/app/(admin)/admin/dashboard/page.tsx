@@ -29,7 +29,8 @@ import {
   type InboundTransferView,
 } from '@/lib/inbound-transfer-view';
 import { formatThb } from '@/lib/money';
-import { listAbandonedNotifications, outboxHealth } from '@/lib/notify-outbox';
+import { outboxStalled } from '@/lib/line-readiness';
+import { listAbandonedNotifications, oldestDueAt, outboxHealth } from '@/lib/notify-outbox';
 import { closedTransferTotals, listAwaitingCollection } from '@/lib/payment-intents';
 import type { AwaitingCollectionView } from '@/lib/payment-intents-view';
 import { requireShellUser } from '@/lib/shell';
@@ -51,6 +52,17 @@ import { requireShellUser } from '@/lib/shell';
 const NOTIFICATION_KIND_LABELS: Record<string, string> = {
   pre_order_placed: 'พรีออเดอร์ใหม่',
   order_ready: 'ของพร้อมรับ',
+  /*
+   * The customer's four order facts (ADR 0035). Without these the card prints the raw
+   * identifier, which is the one thing a shop cannot act on.
+   */
+  order_confirmed: 'ยืนยันออเดอร์แล้ว',
+  order_cancelled: 'ยกเลิกออเดอร์',
+  order_reminder: 'เตือนใกล้หมดเวลารับ',
+  order_receipt: 'ใบเสร็จ',
+  order_refunded: 'คืนเงินบิล',
+  inbound_dismissed: 'เงินโอนถูกปิด',
+  customer_message: 'ลูกค้าทักมา',
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -107,7 +119,7 @@ export default async function DashboardPage() {
    * system that queued it. Six failed attempts is a wrong gateway URL, and the
    * only place a shop will find that out is a screen like this one.
    */
-  const [snapshot, unattributed, inboundToday, closedToday, awaiting, outbox, undelivered, loans] =
+  const [snapshot, unattributed, inboundToday, closedToday, awaiting, outbox, undelivered, loans, oldestDue] =
     await Promise.all([
       dashboardSnapshot(),
       listInboundTransfers(),
@@ -117,7 +129,17 @@ export default async function DashboardPage() {
       outboxHealth(),
       listAbandonedNotifications(),
       loadOpenNumberBlocks(),
+      oldestDueAt(),
     ]);
+
+  /*
+   * Delivery that never started. A queue nobody drains is the one failure the card below
+   * cannot report: nothing is abandoned, because no gateway ever refused anything — the
+   * rows simply sit `pending` and every send looks like work in progress. The rule is
+   * `outboxStalled`, shared with `/admin/line`, so the two screens cannot disagree about
+   * what "stalled" means (ADR 0035).
+   */
+  const stalled = outboxStalled({ dueNow: outbox.dueNow, oldestDueAt: oldestDue });
 
   /*
    * The day's transfers, read two ways: what the bank confirmed, and what actually
@@ -642,6 +664,30 @@ export default async function DashboardPage() {
             getRowKey={(row) => row.id}
             caption="เงินโอนเข้าที่ระบบยังไม่รู้ว่าเป็นบิลไหน"
           />
+        </Card>
+      ) : null}
+
+      {/*
+        Delivery that never started, which is a different failure from delivery that gave
+        up and looks identical from every other screen: the queue is not empty, nothing is
+        abandoned, and the shop believes it is notifying customers.
+      */}
+      {stalled.stalled ? (
+        <Card
+          title="ข้อความค้างส่ง — ไม่มีใครรับไปส่ง"
+          subtitle="ข้อความถูกบันทึกไว้แล้ว แต่ไม่มีตัวส่งมารับ — มักเกิดจาก worker ไม่ได้ทำงาน"
+        >
+          <Stack gap="sm">
+            <InlineNotice tone="danger" title={`ค้าง ${outbox.dueNow} ข้อความ`}>
+              ถึงกำหนดส่งแล้ว
+              {stalled.waitingMinutes === null ? '' : ` ค้างนานสุด ${stalled.waitingMinutes} นาที`}
+              {' '}— เปิด worker แล้วข้อความจะออกเองทั้งหมด
+            </InlineNotice>
+            <p className="ln-muted ln-text-sm">
+              บนเครื่องร้าน: <code className="ln-mono">sudo systemctl enable --now pos-notify</code>{' '}
+              · ถ้ารันมือ: <code className="ln-mono">npm run notify:worker -- --watch</code>
+            </p>
+          </Stack>
         </Card>
       ) : null}
 

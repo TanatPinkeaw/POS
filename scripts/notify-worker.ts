@@ -34,6 +34,7 @@ import {
   markCampaignBatchFailed,
   markCampaignBatchSent,
 } from '../src/lib/line-campaigns';
+import { enqueueDuePickupReminders } from '../src/lib/orders';
 import {
   deliverCampaignBatch,
   deliverNotification,
@@ -62,6 +63,7 @@ async function pass(): Promise<{
   sent: number;
   failed: number;
   abandoned: number;
+  reminders: number;
   campaignBatches: number;
   campaignFailures: number;
 }> {
@@ -96,6 +98,22 @@ async function pass(): Promise<{
     }
   }
 
+  /*
+   * The reminder sweep (ADR 0035) sits between the two queues because it *feeds* the
+   * first one: it writes `order_reminder` rows and this same pass may deliver them. Its
+   * own precondition is `NOTIFY_CHANNEL=line`, checked inside rather than here — a shop
+   * whose own alerts go to a webhook can still have LINE-bound customers, and a shop with
+   * no channel at all simply gets zero.
+   *
+   * Bounded per pass (`take: 100` inside, and orders already reminded are excluded by the
+   * query), so a worker started after a week of downtime writes one batch and moves on
+   * rather than stalling the queue behind a backlog of reminders.
+   */
+  const reminders = await enqueueDuePickupReminders();
+  if (reminders.queued > 0) {
+    console.log(`  • queued ${reminders.queued} pickup reminder(s)`);
+  }
+
   const campaigns = await sendCampaigns();
 
   const health = await outboxHealth();
@@ -103,6 +121,7 @@ async function pass(): Promise<{
     sent,
     failed,
     abandoned: health.abandoned,
+    reminders: reminders.queued,
     campaignBatches: campaigns.sent,
     campaignFailures: campaigns.failed,
   };
@@ -191,6 +210,9 @@ async function main(): Promise<void> {
       console.log(
         `\nSent ${result.sent}, failed ${result.failed}, abandoned in total ${result.abandoned}`,
       );
+      if (result.reminders > 0) {
+        console.log(`Pickup reminders queued: ${result.reminders}`);
+      }
       if (result.campaignBatches + result.campaignFailures > 0) {
         console.log(
           `Campaign batches: sent ${result.campaignBatches}, failed ${result.campaignFailures}`,
@@ -209,9 +231,16 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (result.sent + result.failed + result.campaignBatches + result.campaignFailures > 0) {
+    if (
+      result.sent +
+        result.failed +
+        result.reminders +
+        result.campaignBatches +
+        result.campaignFailures >
+      0
+    ) {
       console.log(
-        `  • pass: sent ${result.sent}, failed ${result.failed}, campaign batches ${result.campaignBatches}/${result.campaignBatches + result.campaignFailures}`,
+        `  • pass: sent ${result.sent}, failed ${result.failed}, reminders ${result.reminders}, campaign batches ${result.campaignBatches}/${result.campaignBatches + result.campaignFailures}`,
       );
     }
     await new Promise((resolve) => setTimeout(resolve, IDLE_SECONDS * 1000));

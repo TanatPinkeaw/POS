@@ -24,8 +24,16 @@ import { bangkokTimeString } from './bangkok-time';
 import { liffEntryUrl } from './line-liff-entry';
 import type { NotificationChannel, PlannedNotification } from './notify-message';
 
-/** Version marker on the consent text; bumped when the wording changes materially. */
-export const LINE_CONSENT_VERSION = '2026-10-06';
+/**
+ * Version marker on the consent text; bumped when the wording changes materially.
+ *
+ * `2026-10-19` — the card now names the five facts this consent covers (accepted, ready,
+ * cancelled, a reminder before the hold ends, and the receipt link), rather than promising
+ * only the ready message. Recorded per row, never compared: the gate reads
+ * `line_consent_at`, so bumping this does not re-ask anyone and does not cut off a customer
+ * who agreed to the previous wording (ADR 0035 §6).
+ */
+export const LINE_CONSENT_VERSION = '2026-10-19';
 
 /**
  * Why a customer's code is not being pushed to their LINE, as the account page
@@ -67,6 +75,13 @@ export function lineCustomerNotifyBlock(input: LineCustomerNotifyInput): LineCus
   return null;
 }
 
+/** What a customer-facing planner returns: who, what, and which order it names. */
+export interface CustomerLinePlan {
+  recipient: string;
+  text: string;
+  orderId: string;
+}
+
 /**
  * The message a customer gets on their own LINE when their parcel is ready.
  *
@@ -93,7 +108,7 @@ export function planLineCustomerReadyMessage(
    * `readNotifyConfig` takes one: the tests drive both shapes without a `.env`.
    */
   env: Record<string, string | undefined> = process.env,
-): { recipient: string; text: string; orderId: string } | null {
+): CustomerLinePlan | null {
   if (lineCustomerNotifyBlock(input) !== null) {
     return null;
   }
@@ -117,6 +132,278 @@ export function planLineCustomerReadyMessage(
     orderId: input.orderId,
   };
 }
+
+/**
+ * The one-tap link, appended rather than woven in, so the four sentences stay readable.
+ *
+ * Null when this deployment has no LIFF app — a message that ends in a link to
+ * `https://liff.line.me/` with nothing after it is worse than a message without a link.
+ */
+function withEntry(text: string, env: Record<string, string | undefined>): string {
+  const entry = liffEntryUrl(env);
+  return entry === null ? text : `${text} เปิดดูก่อนได้ที่ ${entry}`;
+}
+
+/**
+ * The order was accepted, and the customer is told — possibly with lines dropped.
+ *
+ * The partial-confirmation case is why the count and the total are in the sentence: a
+ * customer who ordered three things and hears "ยืนยันแล้ว" about two needs the correction
+ * in the same breath, not on a screen they may not open before arriving.
+ *
+ * Null on every condition `lineCustomerNotifyBlock` names, exactly like the ready
+ * planner: an unreachable message must not become an outbox row retried forever.
+ */
+export function planLineCustomerConfirmedMessage(
+  input: {
+    orderId: string;
+    orderNumber: string;
+    itemCount: number;
+    finalAmountThb: number;
+    /** Lines staff dropped because they could not fulfil them. Zero is the usual case. */
+    removedCount: number;
+  } & LineCustomerNotifyInput,
+  env: Record<string, string | undefined> = process.env,
+): CustomerLinePlan | null {
+  if (lineCustomerNotifyBlock(input) !== null) {
+    return null;
+  }
+
+  const removed =
+    input.removedCount > 0 ? ` (ตัดออก ${input.removedCount} รายการที่ร้านไม่มี)` : '';
+
+  return {
+    recipient: input.customerLineSubject as string,
+    text: withEntry(
+      `ออเดอร์ ${input.orderNumber} ยืนยันแล้ว — ${input.itemCount} รายการ ` +
+        `รวม ${input.finalAmountThb} บาท${removed}`,
+      env,
+    ),
+    orderId: input.orderId,
+  };
+}
+
+/**
+ * The order was cancelled by the shop, and the customer hears it from the shop.
+ *
+ * **Only a staff cancellation.** A customer who withdrew their own pre-order is the actor,
+ * not the audience, and sending them a note about the thing they just did is noise —
+ * `cancelOrder` decides that (`staffVoid`), and this planner never sees the distinction.
+ *
+ * **No automatic-refund promise.** A cancellation releases stock; a refund reverses a sale
+ * and has its own document (`credit-notes.ts`). The sentence is conditional — "ถ้าโอนเงินมา
+ * แล้ว" — because a pre-order is usually unpaid at this point, and an unconditional promise
+ * would be a lie the shop has to explain at the counter.
+ */
+export function planLineCustomerCancelledMessage(
+  input: {
+    orderId: string;
+    orderNumber: string;
+    /** The shop's own reason, in the shop's own words. */
+    reason: string;
+  } & LineCustomerNotifyInput,
+  env: Record<string, string | undefined> = process.env,
+): CustomerLinePlan | null {
+  if (lineCustomerNotifyBlock(input) !== null) {
+    return null;
+  }
+
+  const why = input.reason.trim().length > 0 ? ` — เหตุผล: ${input.reason.trim()}` : '';
+
+  return {
+    recipient: input.customerLineSubject as string,
+    text: withEntry(
+      `ออเดอร์ ${input.orderNumber} ถูกยกเลิกแล้ว${why} ` +
+        'ถ้าโอนเงินมาแล้ว ร้านจะติดต่อคืนเงินให้โดยเร็ว',
+      env,
+    ),
+    orderId: input.orderId,
+  };
+}
+
+/**
+ * The hold is nearly over, and the customer is reminded once.
+ *
+ * A reminder is not a promotion and not a campaign: it is derived from the order's own
+ * deadline and deduped on the order, so it belongs to the transaction-shaped half of the
+ * outbox rather than to ADR 0032's scheduled sends. The PIN rides it because the customer
+ * may have scrolled past the first message, and the recipient is the same one who was
+ * allowed to receive it — this planner refuses exactly where the ready planner does.
+ */
+export function planLineCustomerReminderMessage(
+  input: {
+    orderId: string;
+    orderNumber: string;
+    pickupPin: string;
+    holdUntil: Date;
+  } & LineCustomerNotifyInput,
+  env: Record<string, string | undefined> = process.env,
+): CustomerLinePlan | null {
+  if (lineCustomerNotifyBlock(input) !== null) {
+    return null;
+  }
+
+  return {
+    recipient: input.customerLineSubject as string,
+    text: withEntry(
+      `ออเดอร์ ${input.orderNumber} ใกล้หมดเวลารับของแล้ว — ` +
+        `รหัสรับของ ${input.pickupPin} ร้านเก็บถึง ${bangkokTimeString(input.holdUntil)} น.`,
+      env,
+    ),
+    orderId: input.orderId,
+  };
+}
+
+/**
+ * The receipt, pushed to the customer's own LINE after handover.
+ *
+ * **The expiry is stated in the message, and that is the decision.** A receipt link lives
+ * for `RECEIPT_LINK_TTL_MINUTES` (60 by default) and never past the one-month access window
+ * (`receipt-link.ts`), so a customer who opens the chat tomorrow would find a dead page and
+ * no explanation. Saying "ใช้ได้ถึง HH:MM" turns that into an instruction: save it now, or
+ * open the receipt again from the orders screen, which keeps it for the whole window.
+ *
+ * The alternative was a message with no credential at all — "ใบเสร็จพร้อมแล้ว เปิดที่หน้า
+ * ออเดอร์" — and it was rejected because the customer asked for the receipt at the counter
+ * and a link is what they can save. The exposure is bounded: the token names one order, it
+ * dies within the hour, and it is sent only to the person who paid.
+ */
+export function planLineCustomerReceiptMessage(
+  input: {
+    orderId: string;
+    orderNumber: string;
+    receiptUrl: string;
+    /** When the link stops verifying — printed, never rounded into "1 ชั่วโมง". */
+    expiresAt: Date;
+  } & LineCustomerNotifyInput,
+  env: Record<string, string | undefined> = process.env,
+): CustomerLinePlan | null {
+  if (lineCustomerNotifyBlock(input) !== null) {
+    return null;
+  }
+
+  return {
+    recipient: input.customerLineSubject as string,
+    text: withEntry(
+      `ใบเสร็จบิล ${input.orderNumber} พร้อมแล้ว — ${input.receiptUrl} ` +
+        `(ลิงก์ใช้ได้ถึง ${bangkokTimeString(input.expiresAt)} น. หลังจากนั้นเปิดดูซ้ำได้ที่หน้าออเดอร์ของคุณ)`,
+      env,
+    ),
+    orderId: input.orderId,
+  };
+}
+
+/**
+ * Why a ready order's customer has not been told, or did not get told.
+ *
+ * The four LINE reasons are the planner's own (`lineCustomerNotifyBlock`), so the
+ * counter's explanation and the planner's refusal cannot drift. The other three are
+ * facts about the *shop*, which the planner never sees because it is handed one channel
+ * at a time.
+ */
+export type CustomerNoticeReason = LineCustomerNotifyBlock | 'no_channel' | 'no_phone';
+
+/** What the board says about one order's ready message. */
+export type CustomerNoticeState = 'sent' | 'queued' | 'failed' | 'not_sent' | 'not_ready';
+
+export interface CustomerNoticeOutcome {
+  state: CustomerNoticeState;
+  /** Null only for `sent`/`queued`/`failed`/`not_ready`; never null for `not_sent`. */
+  reason: CustomerNoticeReason | null;
+  /** The sentence a card prints, or null when there is nothing to say. */
+  sentence: string | null;
+}
+
+/**
+ * Did the customer hear that their parcel is ready? — asked at the counter.
+ *
+ * `markOrderReady` plans one message per order and then forgets it, so until now the only
+ * way for staff to know whether a customer was told was for the customer to say so. This
+ * function reads the same fact from the record (a notification row, if one was written)
+ * and, when there is none, from the same refusal the planner used — so "why not" is an
+ * answer at the till rather than a shrug.
+ *
+ * A null `notification` with every LINE condition satisfied means the row was not found:
+ * either this read raced the pack, or the message was planned by the other channel. It is
+ * reported as `not_sent` with no reason rather than guessed at.
+ */
+export function customerNoticeOutcome(input: {
+  /** The `order_ready` row's status, if one exists for this order. */
+  notification: 'sent' | 'pending' | 'abandoned' | null;
+  /** The shop's configured outbox channel; null when delivery is off entirely. */
+  channel: NotificationChannel | null;
+  customerLineSubject: string | null;
+  consentAt: Date | null;
+  isFriend: boolean;
+  customerPhone: string | null;
+  /** Whether this order is at the phase that has something to say at all. */
+  isReady: boolean;
+}): CustomerNoticeOutcome {
+  if (!input.isReady) {
+    return { state: 'not_ready', reason: null, sentence: null };
+  }
+
+  /*
+   * The row is the record, so it wins over any re-derivation: a message LINE refused after
+   * six attempts is `failed` even though every condition was satisfied when it was queued.
+   */
+  if (input.notification === 'sent') {
+    return { state: 'sent', reason: null, sentence: 'แจ้งเตือนลูกค้าแล้ว' };
+  }
+  if (input.notification === 'pending') {
+    return { state: 'queued', reason: null, sentence: 'แจ้งเตือนอยู่ในคิว — จะออกในไม่กี่วินาที' };
+  }
+  if (input.notification === 'abandoned') {
+    return {
+      state: 'failed',
+      reason: null,
+      sentence: 'ส่งแจ้งเตือนไม่สำเร็จ — ตรวจช่องทางและคิวที่หน้า LINE และโปรโมชัน',
+    };
+  }
+
+  if (input.channel === null) {
+    return { state: 'not_sent', reason: 'no_channel', sentence: NO_REASON_SENTENCE.no_channel };
+  }
+
+  if (input.channel === 'line') {
+    const reason = lineCustomerNotifyBlock({
+      channel: input.channel,
+      staffTo: null,
+      customerLineSubject: input.customerLineSubject,
+      consentAt: input.consentAt,
+      isFriend: input.isFriend,
+    });
+    return {
+      state: 'not_sent',
+      reason,
+      sentence: reason === null ? 'ยังไม่ได้ส่งแจ้งเตือน' : NO_REASON_SENTENCE[reason],
+    };
+  }
+
+  /*
+   * A webhook shop texts the customer, which needs a phone number — the one requirement the
+   * LINE planner never has to think about, and the one this channel fails on.
+   */
+  if ((input.customerPhone ?? '').trim().length === 0) {
+    return { state: 'not_sent', reason: 'no_phone', sentence: NO_REASON_SENTENCE.no_phone };
+  }
+  return { state: 'not_sent', reason: null, sentence: 'ยังไม่ได้ส่งแจ้งเตือน' };
+}
+
+/**
+ * One sentence per reason, written as what the *shop* can do — the same rule
+ * `linePromoBlockSentence` follows: a customer who withdrew is not going to be re-asked by
+ * a red banner, and a customer who has not added the shop as a friend is a person the
+ * counter can tell about the friend step.
+ */
+const NO_REASON_SENTENCE: Record<CustomerNoticeReason, string> = {
+  channel_not_line: 'ไม่ได้ส่งทาง LINE — ร้านตั้งช่องทางแจ้งเตือนเป็นอย่างอื่น',
+  not_bound: 'ยังไม่แจ้งลูกค้า — ลูกค้ายังไม่ได้ผูกบัญชี LINE',
+  no_consent: 'ยังไม่แจ้งลูกค้า — ลูกค้ายังไม่ยินยอมรับแจ้งเตือน',
+  not_a_friend: 'ยังไม่แจ้งลูกค้า — ลูกค้ายังไม่ได้เพิ่มเพื่อนร้านใน LINE',
+  no_channel: 'ยังไม่แจ้งลูกค้า — ร้านยังไม่ได้ตั้งช่องทางแจ้งเตือน',
+  no_phone: 'ยังไม่แจ้งลูกค้า — ไม่มีเบอร์โทรของลูกค้า',
+};
 
 /**
  * A fact about the shop's own money, for the shop's own destination.

@@ -1,11 +1,14 @@
 import { LineConsole, type LineCampaignRow, type LineOutboxRow } from '@/components/admin/LineConsole';
+import { LineReadinessPanel } from '@/components/admin/LineReadinessPanel';
 import { PageHeader, Stack } from '@/components/ds';
 import { bangkokDateTimeString } from '@/lib/bangkok-time';
+import { readNoticeAudience } from '@/lib/line-audience';
 import { planCampaign, listCampaigns } from '@/lib/line-campaigns';
 import { countLineFriends } from '@/lib/line-friends';
 import { readLiffId } from '@/lib/line-liff-entry';
 import { LineQuotaUnavailableError, readLineQuota, type LineQuota } from '@/lib/line-quota';
-import { listAbandonedNotifications } from '@/lib/notify-outbox';
+import { lineReadiness, outboxStalled } from '@/lib/line-readiness';
+import { listAbandonedNotifications, oldestDueAt, outboxHealth } from '@/lib/notify-outbox';
 import { readLineChannelToken } from '@/lib/notify-channel';
 import { requireShellUser } from '@/lib/shell';
 
@@ -77,11 +80,31 @@ export default async function AdminLinePage() {
     attempts: row.attempts,
   }));
 
+  /*
+   * The readiness half, read from the **process's** environment rather than from `.env`:
+   * this is the environment the planner will actually use when a cashier packs an order,
+   * and a panel that read the file would answer a different question from the one that
+   * matters. `npm run line:wizard` is the file's reader.
+   *
+   * `outboxHealth` and `oldestDueAt` are two reads of one question, and both are needed:
+   * the count says whether anything is waiting, the timestamp says for how long. A worker
+   * that was never started leaves everything pending and nothing abandoned, so neither
+   * the dashboard's existing card nor a status column would show it (ADR 0035).
+   */
+  const [health, oldest] = await Promise.all([outboxHealth(), oldestDueAt()]);
+
   return (
     <Stack gap="lg">
       <PageHeader
         title="LINE และโปรโมชัน"
         subtitle="ส่งโปรโมชันถึงลูกค้าที่ผูกบัญชี LINE ไว้ เพิ่มเพื่อนร้าน และยินยอมรับโปรโมชันแล้ว — ดูยอดโควตาก่อนกดส่ง"
+      />
+
+      <LineReadinessPanel
+        doors={lineReadiness()}
+        audience={await readNoticeAudience()}
+        outbox={health}
+        stalled={outboxStalled({ dueNow: health.dueNow, oldestDueAt: oldest })}
       />
 
       <LineConsole

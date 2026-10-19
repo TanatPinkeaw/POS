@@ -1,0 +1,74 @@
+/*
+ * The LINE readiness panel.
+ *
+ * One row per door, separated by a rule rather than boxed: five boxes on a settings-style
+ * card read as five things to configure, and only the blocked ones are work. The rule lets
+ * the eye run down the state pills, which is the column that answers the question.
+ */
+
+.doors {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--ln-border-subtle);
+  border-radius: var(--ln-radius-sm);
+}
+
+.door {
+  display: grid;
+  gap: var(--ln-space-1);
+  padding: var(--ln-space-3) var(--ln-space-4);
+  border-bottom: 1px solid var(--ln-border-subtle);
+}
+
+.door:last-child {
+  border-bottom: 0;
+}
+
+.doorHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ln-space-2);
+}
+
+.doorTitle {
+  font-weight: 600;
+}
+
+.sentence {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--ln-space-3);
+  margin: 0;
+}
+
+.number {
+  display: grid;
+  gap: var(--ln-space-1);
+}
+
+.label {
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}
+
+.value {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin: 0;
+  color: var(--ln-text-muted);
+  font-size: var(--ln-size-sm);
+}

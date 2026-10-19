@@ -8,8 +8,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  customerNoticeOutcome,
   lineCustomerNotifyBlock,
+  planLineCustomerCancelledMessage,
+  planLineCustomerConfirmedMessage,
   planLineCustomerReadyMessage,
+  planLineCustomerReceiptMessage,
+  planLineCustomerReminderMessage,
   planShopFactMessage,
   planShopInboundDismissedMessage,
 } from '@/lib/line-notify';
@@ -83,6 +88,162 @@ describe('the customer planner', () => {
     });
 
     expect(plan).toBeNull();
+  });
+});
+
+describe('the customer`s other order facts (ADR 0035)', () => {
+  const ORDER = {
+    orderId: '11111111-2222-3333-4444-555555555555',
+    orderNumber: 'PO-20261019-000007',
+  };
+  /* A deployment with no LIFF app: the sentences must carry no dangling link. */
+  const NO_ENV = {};
+
+  it('tells the customer the order was accepted, and what changed if lines were dropped', () => {
+    const plan = planLineCustomerConfirmedMessage(
+      {
+        ...ORDER,
+        itemCount: 2,
+        finalAmountThb: 240,
+        removedCount: 1,
+        ...happy(),
+      },
+      NO_ENV,
+    );
+
+    expect(plan?.recipient).toBe('Ucustomer');
+    expect(plan?.text).toContain(ORDER.orderNumber);
+    expect(plan?.text).toContain('2 รายการ');
+    expect(plan?.text).toContain('240');
+    // The dropped line is in the same sentence as the count: a customer who ordered
+    // three must not learn about two only by arriving.
+    expect(plan?.text).toContain('ตัดออก 1 รายการ');
+  });
+
+  it('says nothing about removed lines when nothing was removed', () => {
+    const plan = planLineCustomerConfirmedMessage(
+      { ...ORDER, itemCount: 1, finalAmountThb: 35, removedCount: 0, ...happy() },
+      NO_ENV,
+    );
+
+    expect(plan?.text).not.toContain('ตัดออก');
+  });
+
+  it('tells the customer a cancellation with the shop`s own reason, and reports nothing when they cannot be reached', () => {
+    const plan = planLineCustomerCancelledMessage(
+      { ...ORDER, reason: 'สินค้าไม่พร้อม', ...happy() },
+      NO_ENV,
+    );
+
+    expect(plan?.text).toContain('ถูกยกเลิก');
+    expect(plan?.text).toContain('สินค้าไม่พร้อม');
+    // Conditional, because an unpaid pre-order owes nobody a refund.
+    expect(plan?.text).toContain('ถ้าโอนเงินมาแล้ว');
+
+    expect(
+      planLineCustomerCancelledMessage(
+        { ...ORDER, reason: 'x', ...happy({ isFriend: false }) },
+        NO_ENV,
+      ),
+    ).toBeNull();
+  });
+
+  it('reminds with the PIN and the hold, in Bangkok time', () => {
+    const plan = planLineCustomerReminderMessage(
+      { ...ORDER, pickupPin: '7391', holdUntil: HOLDS_UNTIL, ...happy() },
+      NO_ENV,
+    );
+
+    expect(plan?.text).toContain('7391');
+    // The hold was declared at 18:00 Bangkok; a server in another zone must not move it.
+    expect(plan?.text).toContain('18:00');
+    expect(plan?.text).toContain('ใกล้หมดเวลา');
+  });
+
+  it('carries the receipt link and states when it dies', () => {
+    const expiresAt = new Date('2026-10-19T13:30:00+07:00');
+    const plan = planLineCustomerReceiptMessage(
+      {
+        ...ORDER,
+        receiptUrl: 'https://pos.example.com/receipts?t=signed',
+        expiresAt,
+        ...happy(),
+      },
+      NO_ENV,
+    );
+
+    expect(plan?.text).toContain('https://pos.example.com/receipts?t=signed');
+    // A link that dies in an hour is only usable if the message says so.
+    expect(plan?.text).toContain('13:30');
+    expect(plan?.text).toContain('หน้าออเดอร์');
+  });
+
+  it('appends the in-app entry only when this deployment has one', () => {
+    const plan = planLineCustomerReminderMessage(
+      { ...ORDER, pickupPin: '7391', holdUntil: HOLDS_UNTIL, ...happy() },
+      { LINE_LIFF_ID: '2000000000-abcdefgh' },
+    );
+
+    expect(plan?.text).toContain('https://liff.line.me/2000000000-abcdefgh');
+  });
+});
+
+describe('the notice read back to the counter', () => {
+  const READY = {
+    channel: 'line' as const,
+    customerLineSubject: 'Ucustomer',
+    consentAt: new Date('2026-10-01T09:00:00+07:00'),
+    isFriend: true,
+    customerPhone: '0800000002',
+    isReady: true,
+  };
+
+  it('reports the record before re-deriving anything', () => {
+    expect(customerNoticeOutcome({ ...READY, notification: 'sent' }).state).toBe('sent');
+    expect(customerNoticeOutcome({ ...READY, notification: 'pending' }).state).toBe('queued');
+
+    // A message LINE refused after every retry is `failed` even though every condition
+    // was satisfied when it was queued — the row is the record.
+    const failed = customerNoticeOutcome({ ...READY, notification: 'abandoned' });
+    expect(failed.state).toBe('failed');
+    expect(failed.sentence).toContain('ไม่สำเร็จ');
+  });
+
+  it('says nothing at all about an order that is not ready', () => {
+    const outcome = customerNoticeOutcome({ ...READY, isReady: false, notification: null });
+
+    expect(outcome.state).toBe('not_ready');
+    expect(outcome.sentence).toBeNull();
+  });
+
+  it('names the exact reason a LINE customer was not told', () => {
+    const outcome = customerNoticeOutcome({ ...READY, isFriend: false, notification: null });
+
+    expect(outcome.state).toBe('not_sent');
+    expect(outcome.reason).toBe('not_a_friend');
+    expect(outcome.sentence).toContain('เพิ่มเพื่อนร้าน');
+  });
+
+  it('separates "the shop configured nothing" from "this customer cannot be reached"', () => {
+    const none = customerNoticeOutcome({ ...READY, channel: null, notification: null });
+    expect(none.reason).toBe('no_channel');
+
+    const webhook = customerNoticeOutcome({
+      ...READY,
+      channel: 'webhook',
+      customerPhone: null,
+      notification: null,
+    });
+    // A webhook shop texts; no phone is the failure, not the LINE binding.
+    expect(webhook.reason).toBe('no_phone');
+
+    const texted = customerNoticeOutcome({
+      ...READY,
+      channel: 'webhook',
+      notification: null,
+    });
+    expect(texted.state).toBe('not_sent');
+    expect(texted.reason).toBeNull();
   });
 });
 

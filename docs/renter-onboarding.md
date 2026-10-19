@@ -279,14 +279,30 @@ message to actually leave the shop:
 2. Run the worker on something always on: `npm run notify:worker -- --watch` (or
    `npm run notify:worker` from cron once a minute).
 
-Two messages go out: the shop gets a note when a pre-order arrives, and the
-customer gets their pickup PIN and hold deadline when their parcel is packed. Set
-nothing and nothing is queued — the app keeps working exactly as it does now.
-When a bill is refunded, or a bank notification is dismissed by hand on the
-dashboard, the shop's own destination hears about that too — the two facts an
-owner otherwise learns late. A message from a customer is one more: the group is
-told **once per customer per ten minutes**, however many messages they send in that
-time (§6.3).
+The **shop** hears about the things an owner otherwise learns late: a new pre-order,
+a refund, a bank notification dismissed by hand on the dashboard, and a customer
+writing in. The last one is capped on purpose — the group is told **once per
+customer per ten minutes**, however many messages they send in that time (§6.3).
+
+A **customer** hears about their own order, on LINE, at most five times: when staff
+accept it, when it is packed (the PIN and the hold deadline), once shortly before
+the hold ends, if the shop cancels it, and after handover with a receipt link that
+says how long the link lasts. A customer who cancels their own order is not told —
+they just did it. The reminder's lead time is `PICKUP_REMINDER_HOURS` (3 by
+default; `0` turns it off).
+
+Set nothing and nothing is queued: the app keeps working exactly as it does now,
+and the customer reads the code on their own order screen.
+
+**The one setting people get wrong.** All five customer messages need
+`NOTIFY_CHANNEL="line"`. A push token alone is not enough, and a shop on
+`NOTIFY_CHANNEL="webhook"` gets its own alerts by SMS but sends **no** LINE message
+to customers. Nothing errors when this is wrong — the message is simply never
+planned, so there is no failed row to find. To see which door is shut:
+`npm run line:wizard -- --verify` on the machine, or open `/admin/line` while the
+server runs (it reads the settings the server is actually using — after editing
+`.env`, restart it). At the counter, the pre-order card also says whether that
+customer was told, or why not; "ยังไม่ได้เพิ่มเพื่อนร้าน" is the usual answer.
 
 `NOTIFY_CHANNEL` decides where the *shop's own* messages go. Sending a **promotion**
 to your customers is a different switch: it needs `NOTIFY_LINE_TOKEN`, and it works

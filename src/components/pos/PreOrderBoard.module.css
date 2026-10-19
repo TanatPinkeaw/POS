@@ -129,6 +129,25 @@
   margin: 0;
 }
 
+/*
+ * Whether the customer was told the parcel is ready (ADR 0035). A quiet line when it
+ * went, and the same line in warning when it did not — the counter's question is not
+ * "was a message queued" but "will this customer know to come", and a silent card was
+ * the answer before.
+ */
+.notice {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  color: var(--ln-text-subtle);
+}
+
+.noticeWarn {
+  margin: 0;
+  font-size: var(--ln-size-sm);
+  font-weight: 600;
+  color: var(--ln-warning);
+}
+
 .lines {
   display: grid;
   gap: var(--ln-space-2);

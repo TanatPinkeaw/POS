@@ -32,6 +32,17 @@ export type NotificationChannel = 'line' | 'webhook';
 export type NotificationKind =
   | 'pre_order_placed'
   | 'order_ready'
+  /*
+   * The customer's four order facts (ADR 0035). They are separate kinds rather than one
+   * "order_updated" because the outbox dedupes on `(kind, order_id)`: one kind would make
+   * the reminder collide with the ready message and silently never send, and would also
+   * make "which message did this customer get" unanswerable from the row. The reminder in
+   * particular must be its own kind for exactly that reason.
+   */
+  | 'order_confirmed'
+  | 'order_cancelled'
+  | 'order_reminder'
+  | 'order_receipt'
   | 'order_refunded'
   | 'inbound_dismissed'
   /*

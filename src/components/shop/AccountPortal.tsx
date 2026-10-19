@@ -342,7 +342,8 @@ function LinePanel({ line }: { line: LineBindingView }) {
           {binding.lineSubject === null ? (
             <>
               <p className="ln-muted">
-                ผูกบัญชี LINE เพื่อรับแจ้งเตือน "สินค้าพร้อมรับ" ทาง LINE ของคุณเอง แทนที่จะต้องเปิดหน้าเว็บดู
+                ผูกบัญชี LINE เพื่อรับแจ้งเตือนเรื่องออเดอร์ของคุณเอง — ยืนยันแล้ว พร้อมรับ
+                เตือนก่อนหมดเวลารับ ยกเลิก และลิงก์ใบเสร็จ — แทนที่จะต้องเปิดหน้าเว็บดู
               </p>
               <Button
                 variant="primary"
@@ -373,7 +374,9 @@ function LinePanel({ line }: { line: LineBindingView }) {
               {binding.consentAt ? (
                 <InlineNotice tone="success" title="รับการแจ้งเตือนทาง LINE">
                   ยืนยันไว้เมื่อ {new Date(binding.consentAt).toLocaleString('th-TH')} —
-                  อย่าลืมเพิ่มเพื่อนร้านใน LINE ด้วย มิฉะนั้นข้อความจะส่งไม่ถึง
+                  ร้านจะส่งเรื่องออเดอร์ของคุณเอง: ยืนยันแล้ว พร้อมรับ เตือนก่อนหมดเวลารับ
+                  ยกเลิก และลิงก์ใบเสร็จ · อย่าลืมเพิ่มเพื่อนร้านใน LINE ด้วย มิฉะนั้น
+                  ข้อความจะส่งไม่ถึง
                 </InlineNotice>
               ) : (
                 <Button variant="secondary" loading={busy} onClick={() => void reconsent()}>
@@ -383,7 +386,7 @@ function LinePanel({ line }: { line: LineBindingView }) {
               {/*
                 The second consent, as its own control with its own wording (ADR 0032 §5).
                 It is deliberately not the same act as the notification consent above: that
-                one means "tell me my order is ready", which placing the order asked for. A
+                one covers the five facts about the customer's own order (ADR 0035). A
                 promotion is a different purpose, so it is offered here, withdrawn here, and
                 nothing about it moves the binding.
               */}

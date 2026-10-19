@@ -337,18 +337,34 @@ unproven. See [operator instructions](docs/renter-onboarding.md).
 ### Telling people things (SRS §3, §4.2)
 
 Alerts used to be in-app only: whoever was not looking at the screen heard nothing.
-Two things now leave the building, and both are written **in the same transaction**
-as the order they are about (`notifications`, ADR 0007):
+Messages now leave the building, and every one of them is written **in the same
+transaction** as the fact it is about (`notifications`, ADR 0007):
 
 | Moment | Who is told | What it says |
 | --- | --- | --- |
 | A pre-order is placed | The shop's own destination | The order number, the customer, the size and the money |
-| An order is packed | The customer's phone | The order number, their pickup PIN, and when the hold ends (Bangkok time) |
+| Staff accept it | The customer's own LINE | The number, the item count and the total — including what was dropped |
+| It is packed | The customer's own LINE (or the shop's SMS) | The number, their pickup PIN, and when the hold ends (Bangkok time) |
+| The hold nears its end | The customer's own LINE | One reminder — the PIN and the deadline, once per order |
+| The shop cancels it | The customer's own LINE | The reason; a customer who cancels their own pre-order is not told |
+| It is handed over | The customer's own LINE | A receipt link, and the time it stops working |
+| A bill is refunded · a transfer is dismissed · a customer writes | The shop's own destination | The fact, in the shop's words |
 
 Delivery is off until a channel is configured, and **off means nothing is queued at
 all** — a shop with no gateway gets no rows to clean up, and the in-app path it has
 always had keeps working. `NOTIFY_CHANNEL=line` addresses a LINE user id or group
 id; `NOTIFY_CHANNEL=webhook` POSTs `{ to, text, kind }` to the shop's own gateway.
+
+**`NOTIFY_CHANNEL=line` is also the gate on everything a customer is told**, and that
+is the setting people get wrong: a push token on its own plans nothing, and a shop on
+`webhook` sends only the packed note by SMS. A blocked message is not queued — there
+is no row and no error — so the answer is read, not guessed. `npm run line:wizard --
+--verify` reports the doors from `.env`, `/admin/line` reports them from the running
+process, and each waiting parcel's card on `/pos/preorders` says whether that
+customer was told and, if not, why ("ยังไม่ได้เพิ่มเพื่อนร้าน" is the usual answer).
+A queue nobody is draining is its own card on the dashboard: a due message older than
+ten minutes with no attempt is a worker that is not running, which looks like work in
+progress from every other screen (ADR 0035).
 
 A customer's collection code is never pushed to the **shop's own group**, and that
 is a decision rather than an oversight: a room full of staff phones must not hold
@@ -1222,9 +1238,11 @@ for the customer to scan, print or read down the phone.
   menu was made by hand through the Messaging API and this deployment stores nothing about it).
   What is still not built: the **upload and screen half of that menu** (image constraints,
   upload, per-user menus — its own effort), editing **Flex/template** messages rather than
-  writing text, **scheduled sends**, an **in-app reply box** (staff answer in LINE's own
+  writing text,  **scheduled sends**, an **in-app reply box** (staff answer in LINE's own
   Official Account app), and storing the bytes of an image a customer sends — a message of
-  any non-text kind is recorded as its kind and nothing more (ADR 0032 §3). The LIFF
+  any non-text kind is recorded as its kind and nothing more (ADR 0032 §3). The four newer
+  order notices (accepted, cancelled, the hold reminder, the receipt link) are **LINE only**:
+  a shop on `NOTIFY_CHANNEL=webhook` still texts just the packed note (ADR 0035). The LIFF
   handshake is driven in a real browser by `npm run liff:door` with LINE's SDK replaced by a
   stand-in, so what is still unmeasured is **LINE's app handoff** alone — the SDK is the stub,
   and no browser in this repository is LINE.

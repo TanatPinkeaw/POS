@@ -47,8 +47,18 @@ import { enqueueNotification } from './notify-outbox';
  * who the code goes to, and the webhook-channel planner below plans nothing on
  * a LINE channel exactly as ADR 0007 decision 3 wrote.
  */
-import { planLineCustomerReadyMessage } from './line-notify';
+import {
+  planLineCustomerCancelledMessage,
+  planLineCustomerConfirmedMessage,
+  planLineCustomerReadyMessage,
+  planLineCustomerReceiptMessage,
+  planLineCustomerReminderMessage,
+  type CustomerLinePlan,
+} from './line-notify';
+import { friendSubjects } from './line-friends';
 import { prisma as lineFriendDb } from './db';
+import { readPublicBaseUrl } from './public-url';
+import { createReceiptToken, receiptLinkExpiry } from './receipt-link';
 import { consumeIntent } from './payment-intents';
 import { fromDecimal, roundThb, sumThb } from './money';
 import { canTransition, orderStatusLabel, type OrderStatus } from './order-state';
@@ -76,6 +86,78 @@ import { computeVat, type VatBreakdown } from './vat';
  * copy of a timeout would be a second answer to how long a shop will wait.
  */
 export const TRANSACTION_OPTIONS = { timeout: 30_000, maxWait: 30_000 } as const;
+
+/** The customer columns every customer-facing planner needs, as the order row carries them. */
+interface CustomerLineFacts {
+  line_subject: string | null;
+  line_consent_at: Date | null;
+}
+
+/** The four facts `LineCustomerNotifyInput` asks for, once the caller has read them. */
+interface CustomerLineAudience {
+  channel: 'line';
+  staffTo: string | null;
+  customerLineSubject: string;
+  consentAt: Date | null;
+  isFriend: boolean;
+}
+
+/**
+ * Queues one message to a customer's own LINE, or nothing (ADR 0035).
+ *
+ * Every customer-facing message goes through here because the four conditions are the same
+ * four every time, and the failure mode of getting them wrong is silence. The order of the
+ * checks is the cost model: the channel and the bound subject are free, the friend row is a
+ * query, and the planner is pure — so a shop on a webhook channel or a customer with no LINE
+ * account never pays for the query, and every refusal is still named by the planner rather
+ * than by a second copy of the rule.
+ *
+ * No `dedupeKey` here on purpose: every message this helper writes names an order, so the
+ * outbox's own `(kind, order_id)` makes each one a single fact — including the reminder,
+ * which is why that got its own kind rather than reusing `order_ready`.
+ */
+async function queueLineNoticeForCustomer(
+  tx: Db,
+  input: {
+    customer: CustomerLineFacts | null;
+    kind: 'order_confirmed' | 'order_cancelled' | 'order_reminder' | 'order_receipt';
+    plan: (audience: CustomerLineAudience) => CustomerLinePlan | null;
+  },
+): Promise<void> {
+  const config = readNotifyConfig();
+  if (config.channel !== 'line') {
+    return;
+  }
+
+  const subject = input.customer?.line_subject;
+  if (!subject) {
+    return;
+  }
+
+  const friend = await tx.line_friends.findUnique({
+    where: { line_subject: subject },
+    select: { line_subject: true },
+  });
+
+  const plan = input.plan({
+    channel: 'line',
+    staffTo: config.staffTo,
+    customerLineSubject: subject,
+    consentAt: input.customer?.line_consent_at ?? null,
+    isFriend: friend !== null,
+  });
+  if (plan === null) {
+    return;
+  }
+
+  await enqueueNotification(tx, {
+    kind: input.kind,
+    channel: 'line',
+    recipient: plan.recipient,
+    text: plan.text,
+    orderId: plan.orderId,
+  });
+}
 
 export interface CartLine {
   productId: string;
@@ -968,6 +1050,11 @@ export async function confirmOrder(input: {
     }
 
     const removeIds = new Set(input.removeItemIds ?? []);
+    /*
+     * Counted because the customer is told, and a confirmation that silently dropped a
+     * line is the message that makes them turn up expecting it (ADR 0035).
+     */
+    let removedCount = 0;
     if (removeIds.size > 0) {
       const items = await tx.order_items.findMany({ where: { order_id: input.orderId } });
       for (const item of items) {
@@ -987,6 +1074,7 @@ export async function confirmOrder(input: {
           note: 'Removed during confirmation',
         });
         await tx.order_items.delete({ where: { id: item.id } });
+        removedCount += 1;
       }
     }
 
@@ -1006,7 +1094,7 @@ export async function confirmOrder(input: {
     const subtotal = fromDecimal(remaining._sum.total_price ?? 0);
     const finalAmount = roundThb(subtotal);
 
-    await tx.orders.update({
+    const confirmed = await tx.orders.update({
       where: { id: input.orderId },
       data: {
         status: 'confirmed',
@@ -1020,6 +1108,34 @@ export async function confirmOrder(input: {
         net_amount: finalAmount,
         vat_amount: 0,
       },
+      /*
+       * The customer rides back from the same statement rather than costing a second
+       * read: the notice below is decided from these two columns, and a transaction that
+       * asked for them separately could see a consent written between the two.
+       */
+      select: {
+        customer: { select: { line_subject: true, line_consent_at: true } },
+      },
+    });
+
+    /*
+     * The customer hears that the shop accepted it — and, when lines were dropped, what
+     * changed and what the bill is now. Written in this transaction for the reason the
+     * ready message is: a message that commits separately from the fact it names is a
+     * message about a state the shop may have already rolled back.
+     */
+    await queueLineNoticeForCustomer(tx, {
+      customer: confirmed.customer,
+      kind: 'order_confirmed',
+      plan: (audience) =>
+        planLineCustomerConfirmedMessage({
+          orderId: input.orderId,
+          orderNumber: locked.order_number,
+          itemCount: remaining._count._all,
+          finalAmountThb: finalAmount,
+          removedCount,
+          ...audience,
+        }),
     });
 
     return { orderId: input.orderId, status: 'confirmed' as OrderStatus, finalAmountThb: finalAmount };
@@ -1175,7 +1291,10 @@ export async function completeOrder(input: {
 
     const order = await tx.orders.findUniqueOrThrow({
       where: { id: input.orderId },
-      include: { items: { include: { product: { select: { name: true } } } } },
+      include: {
+        items: { include: { product: { select: { name: true } } } },
+        customer: { select: { line_subject: true, line_consent_at: true } },
+      },
     });
 
     const amountDue = fromDecimal(order.final_amount);
@@ -1294,6 +1413,32 @@ export async function completeOrder(input: {
      */
     await recordConsignorShares(tx, { orderId: order.id, at });
 
+    /*
+     * The receipt, to the customer's own LINE, with its expiry stated (ADR 0035).
+     *
+     * Two reasons it is guarded rather than attempted: without `PUBLIC_BASE_URL` the
+     * link would name `localhost` — the customer's own machine, which serves nothing — and
+     * a receipt link that has already aged past the one-month window is one the counter
+     * would not mint either. Both are "no message", never a message with a dead link.
+     */
+    const receiptExpiry = receiptLinkExpiry({ soldAt: at, now: at });
+    const baseUrl = readPublicBaseUrl();
+    if (receiptExpiry !== null && baseUrl !== null) {
+      const token = await createReceiptToken({ orderId: order.id, expiresAt: receiptExpiry });
+      await queueLineNoticeForCustomer(tx, {
+        customer: order.customer,
+        kind: 'order_receipt',
+        plan: (audience) =>
+          planLineCustomerReceiptMessage({
+            orderId: order.id,
+            orderNumber: order.order_number,
+            receiptUrl: `${baseUrl}/receipts?t=${encodeURIComponent(token)}`,
+            expiresAt: receiptExpiry,
+            ...audience,
+          }),
+      });
+    }
+
     return {
       orderId: order.id,
       orderNumber: order.order_number,
@@ -1379,7 +1524,10 @@ export async function cancelOrder(input: {
         cancelled_at: new Date(),
         cancel_reason: input.reason,
       },
-      select: { order_number: true },
+      select: {
+        order_number: true,
+        customer: { select: { line_subject: true, line_consent_at: true } },
+      },
     });
 
     // Only a staff cancellation is an audited void. A member withdrawing their own
@@ -1407,6 +1555,26 @@ export async function cancelOrder(input: {
         },
         tx,
       );
+    }
+
+    /*
+     * **Only a staff cancellation.** A member withdrawing their own pre-order is the actor,
+     * and a note telling them what they just did is noise — so the same `staffVoid` flag
+     * that decides whether the void is audited decides whether the customer is told. The
+     * second return path (the expiry sweeper) queues its own message with its own wording.
+     */
+    if (input.staffVoid) {
+      await queueLineNoticeForCustomer(tx, {
+        customer: cancelled.customer,
+        kind: 'order_cancelled',
+        plan: (audience) =>
+          planLineCustomerCancelledMessage({
+            orderId: input.orderId,
+            orderNumber: cancelled.order_number,
+            reason: input.reason,
+            ...audience,
+          }),
+      });
     }
 
     return {
@@ -1453,7 +1621,11 @@ export async function expireStalePendingOrders(
         status: 'pending',
         OR: [{ confirm_deadline: { lt: now } }, { confirm_deadline: null, created_at: { lt: cutoff } }],
       },
-      select: { id: true, order_number: true },
+      select: {
+        id: true,
+        order_number: true,
+        customer: { select: { line_subject: true, line_consent_at: true } },
+      },
       orderBy: { created_at: 'asc' },
       take: 200,
     });
@@ -1486,10 +1658,143 @@ export async function expireStalePendingOrders(
         },
       });
 
+      /*
+       * The customer is told here too. An order that vanishes because nobody confirmed it
+       * is the same defect as one a cashier cancelled by hand — the shop knows and the
+       * customer does not — and this is the path where nobody is standing at a screen to
+       * remember to call them. The wording names the timeout, because "ยกเลิก" alone reads
+       * as a decision somebody made about them.
+       */
+      await queueLineNoticeForCustomer(tx, {
+        customer: order.customer,
+        kind: 'order_cancelled',
+        plan: (audience) =>
+          planLineCustomerCancelledMessage({
+            orderId: order.id,
+            orderNumber: order.order_number,
+            reason: `หมดเวลายืนยันภายใน ${confirmTimeoutMinutes()} นาที`,
+            ...audience,
+          }),
+      });
+
       orderIds.push(order.id);
     }
 
     return { expired: orderIds.length, orderIds };
+  }, TRANSACTION_OPTIONS);
+}
+
+// -------------------------------------------------------- pickup reminder
+
+/** How long before a parcel's hold ends the customer is reminded, in hours. */
+export function pickupReminderHours(): number {
+  return optionalNumberEnv('PICKUP_REMINDER_HOURS', 3);
+}
+
+/**
+ * Queues the one reminder a waiting parcel earns (ADR 0035).
+ *
+ * **Called by the notify worker, not by a clock of its own.** It is derived from
+ * `pickup_expires_at`, so it is a fact about an order rather than a scheduled send, and the
+ * worker that already drains the outbox is the only process that needs to know about it.
+ * Running it every pass is safe because the work is bounded twice over: the query excludes
+ * orders that already carry an `order_reminder` row, and a racing second worker loses the
+ * advisory lock before it reads anything.
+ *
+ * The friend set is read once for the whole batch, not per order — a shop with twelve
+ * parcels waiting must not pay twelve queries to tell twelve people, and the ready path's
+ * one-customer helper is the wrong shape here for exactly that reason.
+ */
+export async function enqueueDuePickupReminders(
+  now: Date = new Date(),
+): Promise<{ queued: number }> {
+  const config = readNotifyConfig();
+  if (config.channel !== 'line') {
+    return { queued: 0 };
+  }
+
+  return prisma.$transaction(async (tx) => {
+    /*
+     * The same transaction-scoped advisory lock the expiry sweeper takes, for the same
+     * reason: two app instances would otherwise enumerate the same parcels in the same
+     * second, and the outbox's unique index would turn the loser's work into an exception
+     * rather than a no-op.
+     */
+    const lock = await tx.$queryRaw<{ locked: boolean }[]>`
+      SELECT pg_try_advisory_xact_lock(hashtext('pos:pickup-reminder')) AS locked
+    `;
+    if (!lock[0]?.locked) {
+      return { queued: 0 };
+    }
+
+    const horizon = new Date(now.getTime() + pickupReminderHours() * 60 * 60 * 1000);
+    const orders = await tx.orders.findMany({
+      where: {
+        status: 'ready_for_pickup',
+        /*
+         * `gt: now` as well as `lte: horizon`: a hold that has already ended is not a
+         * reminder, it is a late parcel, and telling the customer about a deadline that
+         * has passed is worse than saying nothing.
+         */
+        pickup_expires_at: { gt: now, lte: horizon },
+        pickup_pin: { not: null },
+        customer: { is: { line_subject: { not: null } } },
+        notifications: { none: { kind: 'order_reminder' } },
+      },
+      select: {
+        id: true,
+        order_number: true,
+        pickup_pin: true,
+        pickup_expires_at: true,
+        customer: { select: { line_subject: true, line_consent_at: true } },
+      },
+      orderBy: { pickup_expires_at: 'asc' },
+      take: 100,
+    });
+    if (orders.length === 0) {
+      return { queued: 0 };
+    }
+
+    const friends = await friendSubjects(
+      orders
+        .map((order) => order.customer?.line_subject)
+        .filter((subject): subject is string => typeof subject === 'string'),
+      tx,
+    );
+
+    let queued = 0;
+    for (const order of orders) {
+      const subject = order.customer?.line_subject;
+      if (!subject || !order.pickup_pin || !order.pickup_expires_at) {
+        continue;
+      }
+
+      const plan = planLineCustomerReminderMessage({
+        orderId: order.id,
+        orderNumber: order.order_number,
+        pickupPin: order.pickup_pin,
+        holdUntil: order.pickup_expires_at,
+        channel: config.channel,
+        staffTo: config.staffTo,
+        customerLineSubject: subject,
+        consentAt: order.customer?.line_consent_at ?? null,
+        isFriend: friends.has(subject),
+      });
+      if (plan === null) {
+        continue;
+      }
+
+      await enqueueNotification(tx, {
+        kind: 'order_reminder',
+        channel: 'line',
+        recipient: plan.recipient,
+        text: plan.text,
+        orderId: plan.orderId,
+      });
+      queued += 1;
+    }
+
+    return { queued };
   }, TRANSACTION_OPTIONS);
 }
 
